@@ -25,13 +25,13 @@ type User struct {
 type CreateUserReq struct {
 	Phone    string `json:"phone" binding:"required,len=11"`   // 手机号验证
 	Password string `json:"password" binding:"required,min=6"` // 密码至少6位
-	Nickname string `json:"nickname"`
-	Email    string `json:"email" binding:"omitempty,email"` // 可选，但如果提供则必须是有效的邮箱
+	Username string `json:"username" binding:"required"`       // 强制要求非空
+	Email    string `json:"email" binding:"omitempty,email"`   // 可选，但如果提供则必须是有效的邮箱
 }
 
 type UpdateUserReq struct {
 	Password string `json:"password,omitempty" binding:"omitempty,min=6"`
-	Nickname string `json:"nickname,omitempty"`
+	Username string `json:"username,omitempty"`
 	Email    string `json:"email,omitempty" binding:"omitempty,email"`
 	Phone    string `json:"phone,omitempty" binding:"omitempty,len=11"`
 }

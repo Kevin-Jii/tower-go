@@ -35,7 +35,7 @@ func (s *UserService) CreateUser(req *model.CreateUserReq) error {
 	user := &model.User{
 		Phone:    req.Phone,
 		Password: hashedPassword,
-		Nickname: req.Nickname,
+		Username: req.Username,
 		Email:    req.Email,
 		Status:   1, // 默认状态为正常
 	}
@@ -64,8 +64,8 @@ func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
 		}
 		user.Password = hashedPassword
 	}
-	if req.Nickname != "" {
-		user.Nickname = req.Nickname
+	if req.Username != "" {
+		user.Username = req.Username
 	}
 	if req.Email != "" {
 		user.Email = req.Email

@@ -1,0 +1,11 @@
+app:
+  name: tower-go
+  port: 8080
+
+database:
+  driver: mysql
+  host: 47.98.138.169
+  port: 3306
+  username: jing
+  password: cesp!001
+  database: tower

@@ -17,6 +17,7 @@ dependencies:
   collection: ^1.18.0
   intl: ^0.19.0
   tdesign_flutter: ^0.2.5
+  shared_preferences: ^2.2.3
 
   # UI & helper 可后续添加
 

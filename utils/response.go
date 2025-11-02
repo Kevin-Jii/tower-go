@@ -19,6 +19,25 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// Meta 分页或额外信息元数据
+type Meta struct {
+	Total     int64 `json:"total"`
+	Page      int   `json:"page"`
+	PageSize  int   `json:"page_size"`
+	PageCount int   `json:"page_count"`
+	HasMore   bool  `json:"has_more"`
+}
+
+// StandardResponse 统一响应（支持可选 meta）
+type StandardResponse struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+	Meta    *Meta       `json:"meta"` // 始终返回（为空则为 null），方便前端统一解析
+}
+
+// PaginationResponse (已兼容旧结构，保留以避免前端立刻修改) — 标记为 deprecated
+// Deprecated: 请使用 StandardResponse + Meta
 type PaginationResponse struct {
 	Response
 	Total    int64 `json:"total"`
@@ -27,28 +46,39 @@ type PaginationResponse struct {
 }
 
 func Success(ctx *gin.Context, data interface{}) {
-	ctx.JSON(http.StatusOK, Response{
+	ctx.JSON(http.StatusOK, StandardResponse{
 		Code:    http.StatusOK,
 		Message: "success",
 		Data:    data,
 	})
 }
 
+// SuccessWithPagination 旧调用入口，内部转换为新结构
 func SuccessWithPagination(ctx *gin.Context, data interface{}, total int64, page, pageSize int) {
-	ctx.JSON(http.StatusOK, PaginationResponse{
-		Response: Response{
-			Code:    http.StatusOK,
-			Message: "success",
-			Data:    data,
+	pageCount := int((total + int64(pageSize) - 1) / int64(pageSize))
+	hasMore := page < pageCount
+	ctx.JSON(http.StatusOK, StandardResponse{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    data,
+		Meta: &Meta{
+			Total: total, Page: page, PageSize: pageSize, PageCount: pageCount, HasMore: hasMore,
 		},
-		Total:    total,
-		Page:     page,
-		PageSize: pageSize,
+	})
+}
+
+// SuccessWithMeta 新的显式调用（如果未来有非分页 meta 也可复用）
+func SuccessWithMeta(ctx *gin.Context, data interface{}, meta *Meta) {
+	ctx.JSON(http.StatusOK, StandardResponse{
+		Code:    http.StatusOK,
+		Message: "success",
+		Data:    data,
+		Meta:    meta,
 	})
 }
 
 func Error(ctx *gin.Context, code int, message string) {
-	ctx.JSON(code, Response{
+	ctx.JSON(code, StandardResponse{
 		Code:    code,
 		Message: message,
 	})

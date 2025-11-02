@@ -20,16 +20,18 @@ type User struct {
 
 	// --- 状态与安全管理 ---
 	Status      int       `json:"status" gorm:"not null;default:1"` // 账号状态：1=正常，2=禁用
+	Gender      int       `json:"gender" gorm:"not null;default:1"` // 性别：1=男，2=女
 	LastLoginAt time.Time `json:"last_login_at"`                    // 记录最后登录时间
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type CreateUserReq struct {
-	Phone    string `json:"phone" binding:"required,len=11"`   // 手机号验证
-	Password string `json:"password" binding:"required,min=6"` // 密码至少6位
-	Username string `json:"username" binding:"required"`       // 强制要求非空
-	Email    string `json:"email" binding:"omitempty,email"`   // 可选，但如果提供则必须是有效的邮箱
+	Phone    string `json:"phone" binding:"required,len=11"`      // 手机号验证
+	Password string `json:"password" binding:"required,min=6"`    // 密码至少6位
+	Username string `json:"username" binding:"required"`          // 强制要求非空
+	Email    string `json:"email" binding:"omitempty,email"`      // 可选，但如果提供则必须是有效的邮箱
+	Gender   int    `json:"gender" binding:"omitempty,oneof=1 2"` // 1男 2女，未传使用默认1
 }
 
 type UpdateUserReq struct {
@@ -37,4 +39,6 @@ type UpdateUserReq struct {
 	Username string `json:"username,omitempty"`
 	Email    string `json:"email,omitempty" binding:"omitempty,email"`
 	Phone    string `json:"phone,omitempty" binding:"omitempty,len=11"`
+	Status   *int   `json:"status,omitempty"`                               // 账号状态：1=正常，2=禁用；指针允许区分未提供 vs 提供0或2
+	Gender   *int   `json:"gender,omitempty" binding:"omitempty,oneof=1 2"` // 性别：1男 2女
 }

@@ -333,15 +333,16 @@ class __$$LoginResponseImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$LoginResponseImpl implements _LoginResponse {
   const _$LoginResponseImpl(
-      {required this.token,
-      @JsonKey(name: 'token_type') required this.tokenType,
-      @JsonKey(name: 'expires_in') required this.expiresIn,
+      {this.token = '',
+      @JsonKey(name: 'token_type') this.tokenType = 'Bearer',
+      @JsonKey(name: 'expires_in') this.expiresIn = 0,
       @JsonKey(name: 'user_info') required this.userInfo});
 
   factory _$LoginResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$LoginResponseImplFromJson(json);
 
   @override
+  @JsonKey()
   final String token;
   @override
   @JsonKey(name: 'token_type')
@@ -395,9 +396,9 @@ class _$LoginResponseImpl implements _LoginResponse {
 
 abstract class _LoginResponse implements LoginResponse {
   const factory _LoginResponse(
-          {required final String token,
-          @JsonKey(name: 'token_type') required final String tokenType,
-          @JsonKey(name: 'expires_in') required final int expiresIn,
+          {final String token,
+          @JsonKey(name: 'token_type') final String tokenType,
+          @JsonKey(name: 'expires_in') final int expiresIn,
           @JsonKey(name: 'user_info') required final UserInfo userInfo}) =
       _$LoginResponseImpl;
 
@@ -439,7 +440,7 @@ mixin _$UserInfo {
   int get storeId => throw _privateConstructorUsedError;
   @JsonKey(name: 'role_id')
   int get roleId => throw _privateConstructorUsedError;
-  Role get role => throw _privateConstructorUsedError;
+  Role? get role => throw _privateConstructorUsedError;
   int get status => throw _privateConstructorUsedError;
   @JsonKey(name: 'last_login_at')
   String get lastLoginAt => throw _privateConstructorUsedError;
@@ -471,13 +472,13 @@ abstract class $UserInfoCopyWith<$Res> {
       String email,
       @JsonKey(name: 'store_id') int storeId,
       @JsonKey(name: 'role_id') int roleId,
-      Role role,
+      Role? role,
       int status,
       @JsonKey(name: 'last_login_at') String lastLoginAt,
       @JsonKey(name: 'created_at') String createdAt,
       @JsonKey(name: 'updated_at') String updatedAt});
 
-  $RoleCopyWith<$Res> get role;
+  $RoleCopyWith<$Res>? get role;
 }
 
 /// @nodoc
@@ -502,7 +503,7 @@ class _$UserInfoCopyWithImpl<$Res, $Val extends UserInfo>
     Object? email = null,
     Object? storeId = null,
     Object? roleId = null,
-    Object? role = null,
+    Object? role = freezed,
     Object? status = null,
     Object? lastLoginAt = null,
     Object? createdAt = null,
@@ -537,10 +538,10 @@ class _$UserInfoCopyWithImpl<$Res, $Val extends UserInfo>
           ? _value.roleId
           : roleId // ignore: cast_nullable_to_non_nullable
               as int,
-      role: null == role
+      role: freezed == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
-              as Role,
+              as Role?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -564,8 +565,12 @@ class _$UserInfoCopyWithImpl<$Res, $Val extends UserInfo>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $RoleCopyWith<$Res> get role {
-    return $RoleCopyWith<$Res>(_value.role, (value) {
+  $RoleCopyWith<$Res>? get role {
+    if (_value.role == null) {
+      return null;
+    }
+
+    return $RoleCopyWith<$Res>(_value.role!, (value) {
       return _then(_value.copyWith(role: value) as $Val);
     });
   }
@@ -587,14 +592,14 @@ abstract class _$$UserInfoImplCopyWith<$Res>
       String email,
       @JsonKey(name: 'store_id') int storeId,
       @JsonKey(name: 'role_id') int roleId,
-      Role role,
+      Role? role,
       int status,
       @JsonKey(name: 'last_login_at') String lastLoginAt,
       @JsonKey(name: 'created_at') String createdAt,
       @JsonKey(name: 'updated_at') String updatedAt});
 
   @override
-  $RoleCopyWith<$Res> get role;
+  $RoleCopyWith<$Res>? get role;
 }
 
 /// @nodoc
@@ -617,7 +622,7 @@ class __$$UserInfoImplCopyWithImpl<$Res>
     Object? email = null,
     Object? storeId = null,
     Object? roleId = null,
-    Object? role = null,
+    Object? role = freezed,
     Object? status = null,
     Object? lastLoginAt = null,
     Object? createdAt = null,
@@ -652,10 +657,10 @@ class __$$UserInfoImplCopyWithImpl<$Res>
           ? _value.roleId
           : roleId // ignore: cast_nullable_to_non_nullable
               as int,
-      role: null == role
+      role: freezed == role
           ? _value.role
           : role // ignore: cast_nullable_to_non_nullable
-              as Role,
+              as Role?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -681,17 +686,17 @@ class __$$UserInfoImplCopyWithImpl<$Res>
 class _$UserInfoImpl implements _UserInfo {
   const _$UserInfoImpl(
       {required this.id,
-      required this.phone,
-      required this.username,
+      this.phone = '',
+      this.username = '',
       this.nickname = '',
       this.email = '',
-      @JsonKey(name: 'store_id') required this.storeId,
-      @JsonKey(name: 'role_id') required this.roleId,
-      required this.role,
-      required this.status,
-      @JsonKey(name: 'last_login_at') required this.lastLoginAt,
-      @JsonKey(name: 'created_at') required this.createdAt,
-      @JsonKey(name: 'updated_at') required this.updatedAt});
+      @JsonKey(name: 'store_id') this.storeId = 0,
+      @JsonKey(name: 'role_id') this.roleId = 0,
+      this.role,
+      this.status = 1,
+      @JsonKey(name: 'last_login_at') this.lastLoginAt = '',
+      @JsonKey(name: 'created_at') this.createdAt = '',
+      @JsonKey(name: 'updated_at') this.updatedAt = ''});
 
   factory _$UserInfoImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserInfoImplFromJson(json);
@@ -699,8 +704,10 @@ class _$UserInfoImpl implements _UserInfo {
   @override
   final int id;
   @override
+  @JsonKey()
   final String phone;
   @override
+  @JsonKey()
   final String username;
   @override
   @JsonKey()
@@ -715,8 +722,9 @@ class _$UserInfoImpl implements _UserInfo {
   @JsonKey(name: 'role_id')
   final int roleId;
   @override
-  final Role role;
+  final Role? role;
   @override
+  @JsonKey()
   final int status;
   @override
   @JsonKey(name: 'last_login_at')
@@ -780,19 +788,18 @@ class _$UserInfoImpl implements _UserInfo {
 
 abstract class _UserInfo implements UserInfo {
   const factory _UserInfo(
-          {required final int id,
-          required final String phone,
-          required final String username,
-          final String nickname,
-          final String email,
-          @JsonKey(name: 'store_id') required final int storeId,
-          @JsonKey(name: 'role_id') required final int roleId,
-          required final Role role,
-          required final int status,
-          @JsonKey(name: 'last_login_at') required final String lastLoginAt,
-          @JsonKey(name: 'created_at') required final String createdAt,
-          @JsonKey(name: 'updated_at') required final String updatedAt}) =
-      _$UserInfoImpl;
+      {required final int id,
+      final String phone,
+      final String username,
+      final String nickname,
+      final String email,
+      @JsonKey(name: 'store_id') final int storeId,
+      @JsonKey(name: 'role_id') final int roleId,
+      final Role? role,
+      final int status,
+      @JsonKey(name: 'last_login_at') final String lastLoginAt,
+      @JsonKey(name: 'created_at') final String createdAt,
+      @JsonKey(name: 'updated_at') final String updatedAt}) = _$UserInfoImpl;
 
   factory _UserInfo.fromJson(Map<String, dynamic> json) =
       _$UserInfoImpl.fromJson;
@@ -814,7 +821,7 @@ abstract class _UserInfo implements UserInfo {
   @JsonKey(name: 'role_id')
   int get roleId;
   @override
-  Role get role;
+  Role? get role;
   @override
   int get status;
   @override
@@ -992,23 +999,27 @@ class __$$RoleImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$RoleImpl implements _Role {
   const _$RoleImpl(
-      {required this.id,
-      required this.name,
-      required this.code,
-      required this.description,
-      @JsonKey(name: 'created_at') required this.createdAt,
-      @JsonKey(name: 'updated_at') required this.updatedAt});
+      {this.id = 0,
+      this.name = '',
+      this.code = '',
+      this.description = '',
+      @JsonKey(name: 'created_at') this.createdAt = '',
+      @JsonKey(name: 'updated_at') this.updatedAt = ''});
 
   factory _$RoleImpl.fromJson(Map<String, dynamic> json) =>
       _$$RoleImplFromJson(json);
 
   @override
+  @JsonKey()
   final int id;
   @override
+  @JsonKey()
   final String name;
   @override
+  @JsonKey()
   final String code;
   @override
+  @JsonKey()
   final String description;
   @override
   @JsonKey(name: 'created_at')
@@ -1061,13 +1072,12 @@ class _$RoleImpl implements _Role {
 
 abstract class _Role implements Role {
   const factory _Role(
-          {required final int id,
-          required final String name,
-          required final String code,
-          required final String description,
-          @JsonKey(name: 'created_at') required final String createdAt,
-          @JsonKey(name: 'updated_at') required final String updatedAt}) =
-      _$RoleImpl;
+      {final int id,
+      final String name,
+      final String code,
+      final String description,
+      @JsonKey(name: 'created_at') final String createdAt,
+      @JsonKey(name: 'updated_at') final String updatedAt}) = _$RoleImpl;
 
   factory _Role.fromJson(Map<String, dynamic> json) = _$RoleImpl.fromJson;
 

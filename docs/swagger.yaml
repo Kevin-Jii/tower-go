@@ -472,6 +472,19 @@ definitions:
       username:
         type: string
     type: object
+  utils.Meta:
+    properties:
+      has_more:
+        type: boolean
+      page:
+        type: integer
+      page_count:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+    type: object
   utils.Response:
     properties:
       code:
@@ -479,6 +492,18 @@ definitions:
       data: {}
       message:
         type: string
+    type: object
+  utils.StandardResponse:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      meta:
+        allOf:
+        - $ref: '#/definitions/utils.Meta'
+        description: 始终返回（为空则为 null），方便前端统一解析
     type: object
 host: localhost:10024
 info:
@@ -513,7 +538,7 @@ paths:
           description: 登录成功返回 token、token_type=Bearer、expires_in(秒)
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   $ref: '#/definitions/controller.LoginResponse'
@@ -539,7 +564,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       summary: 用户注册
       tags:
       - auth
@@ -565,10 +590,10 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: '分页 meta: total,page,page_size,page_count,has_more'
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -597,7 +622,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 创建菜品
@@ -620,7 +645,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 删除菜品
@@ -643,7 +668,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   $ref: '#/definitions/model.Dish'
@@ -675,7 +700,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 更新菜品信息
@@ -707,10 +732,10 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: '分页 meta: total,page,page_size,page_count,has_more'
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -868,7 +893,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -897,7 +922,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 创建菜单
@@ -920,7 +945,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 删除菜单
@@ -943,7 +968,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   $ref: '#/definitions/model.Menu'
@@ -975,7 +1000,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 更新菜单
@@ -1023,7 +1048,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 为门店角色分配菜单
@@ -1047,7 +1072,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 复制门店菜单权限
@@ -1071,7 +1096,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1101,7 +1126,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1136,7 +1161,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1171,7 +1196,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1195,7 +1220,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1219,7 +1244,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1243,7 +1268,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1273,10 +1298,10 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: '分页 meta: total,page,page_size,page_count,has_more'
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1305,7 +1330,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 创建门店
@@ -1328,7 +1353,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 删除门店
@@ -1351,7 +1376,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   $ref: '#/definitions/model.Store'
@@ -1383,7 +1408,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 更新门店信息
@@ -1407,10 +1432,10 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: '分页 meta: total,page,page_size,page_count,has_more'
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   items:
@@ -1439,7 +1464,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 创建用户
@@ -1462,7 +1487,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 删除用户
@@ -1485,7 +1510,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   $ref: '#/definitions/model.User'
@@ -1517,7 +1542,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 更新用户
@@ -1535,7 +1560,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/utils.Response'
+            - $ref: '#/definitions/utils.StandardResponse'
             - properties:
                 data:
                   $ref: '#/definitions/model.User'
@@ -1562,7 +1587,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/utils.StandardResponse'
       security:
       - Bearer: []
       summary: 更新个人信息

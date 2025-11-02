@@ -1,6 +1,7 @@
 package module
 
 import (
+	"log"
 	"tower-go/model"
 
 	"gorm.io/gorm"
@@ -94,6 +95,27 @@ func (m *UserModule) ListByStoreID(storeID uint, page, pageSize int) ([]*model.U
 	return users, total, nil
 }
 
+// ListByStoreIDWithKeyword 根据门店ID与关键字(匹配 username 或 phone)获取用户列表
+func (m *UserModule) ListByStoreIDWithKeyword(storeID uint, keyword string, page, pageSize int) ([]*model.User, int64, error) {
+	var users []*model.User
+	var total int64
+
+	query := m.db.Model(&model.User{}).Where("store_id = ?", storeID)
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("username LIKE ? OR phone LIKE ?", like, like)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
+}
+
 // UpdateByID 根据ID更新用户信息
 func (m *UserModule) UpdateByID(id uint, req *model.UpdateUserReq) error {
 	updates := make(map[string]interface{})
@@ -110,11 +132,23 @@ func (m *UserModule) UpdateByID(id uint, req *model.UpdateUserReq) error {
 	if req.Email != "" {
 		updates["email"] = req.Email
 	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+	if req.Gender != nil { // 支持性别更新 1男2女
+		updates["gender"] = *req.Gender
+	}
 
+	log.Printf("[UserModule.UpdateByID] id=%d updates=%v", id, updates)
 	return m.db.Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
 }
 
 // DeleteByUserIDAndStoreID 根据用户ID和门店ID删除用户
 func (m *UserModule) DeleteByUserIDAndStoreID(userID uint, storeID uint) error {
 	return m.db.Where("id = ? AND store_id = ?", userID, storeID).Delete(&model.User{}).Error
+}
+
+// UpdatePasswordByID 仅更新密码字段
+func (m *UserModule) UpdatePasswordByID(id uint, hashed string) error {
+	return m.db.Model(&model.User{}).Where("id = ?", id).Update("password", hashed).Error
 }

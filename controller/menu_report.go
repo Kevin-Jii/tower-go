@@ -85,7 +85,7 @@ func (c *MenuReportController) GetMenuReport(ctx *gin.Context) {
 // @Param page_size query int false "每页数量"
 // @Param start_date query string false "开始日期 (YYYY-MM-DD)"
 // @Param end_date query string false "结束日期 (YYYY-MM-DD)"
-// @Success 200 {object} utils.Response{data=[]model.MenuReport}
+// @Success 200 {object} utils.StandardResponse{data=[]model.MenuReport} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /menu-reports [get]
 func (c *MenuReportController) ListMenuReports(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)

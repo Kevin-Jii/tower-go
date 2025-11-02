@@ -127,8 +127,12 @@ SKIP_SEED:
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 	menuController := controller.NewMenuController(menuService)
 
+	// 初始化 WebSocket 会话管理：策略可配置，这里先写死 single (单点登录)
+	utils.InitSessionManager("single", 3)
+
 	// 启动 HTTP 服务
 	r := gin.Default()
+	r.Use(middleware.RequestLoggerMiddleware(4096))
 	v1 := r.Group("/api/v1")
 
 	// 公开路由 (无需认证)
@@ -153,6 +157,7 @@ SKIP_SEED:
 		users.GET("/:id", userController.GetUser)
 		users.PUT("/:id", userController.UpdateUser)
 		users.DELETE("/:id", userController.DeleteUser)
+		users.POST(":id/reset-password", userController.ResetUserPassword)
 	}
 
 	// 门店管理路由 (需要认证)
@@ -216,6 +221,9 @@ SKIP_SEED:
 		menus.GET("/user-menus", menuController.GetUserMenus)
 		menus.GET("/user-permissions", menuController.GetUserPermissions)
 	}
+
+	// WebSocket 路由 (基于 JWT 的连接认证)
+	r.GET("/ws", controller.WebSocketHandler)
 
 	// swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

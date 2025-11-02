@@ -32,7 +32,7 @@ type UpdateStoreReq struct {
 	Address       string `json:"address,omitempty"`
 	Phone         string `json:"phone,omitempty"`
 	BusinessHours string `json:"business_hours,omitempty"`
-	Status        *int   `json:"status,omitempty"` // 使用指针以支持设置为0
+	Status        *int   `json:"status,omitempty"`
 	ContactPerson string `json:"contact_person,omitempty"`
 	Remark        string `json:"remark,omitempty"`
 }

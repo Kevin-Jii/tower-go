@@ -27,7 +27,7 @@ func NewDishController(dishService *service.DishService) *DishController {
 // @Produce json
 // @Security Bearer
 // @Param dish body model.CreateDishReq true "菜品信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /dishes [post]
 func (c *DishController) CreateDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -54,7 +54,7 @@ func (c *DishController) CreateDish(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "菜品ID"
-// @Success 200 {object} utils.Response{data=model.Dish}
+// @Success 200 {object} utils.StandardResponse{data=model.Dish}
 // @Router /dishes/{id} [get]
 func (c *DishController) GetDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -84,7 +84,7 @@ func (c *DishController) GetDish(ctx *gin.Context) {
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Param category query string false "菜品分类"
-// @Success 200 {object} utils.Response{data=[]model.Dish}
+// @Success 200 {object} utils.StandardResponse{data=[]model.Dish} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /dishes [get]
 func (c *DishController) ListDishes(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -123,7 +123,7 @@ func (c *DishController) ListDishes(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "菜品ID"
 // @Param dish body model.UpdateDishReq true "菜品信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /dishes/{id} [put]
 func (c *DishController) UpdateDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -156,7 +156,7 @@ func (c *DishController) UpdateDish(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "菜品ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /dishes/{id} [delete]
 func (c *DishController) DeleteDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)

@@ -27,7 +27,7 @@ func NewStoreController(storeService *service.StoreService) *StoreController {
 // @Produce json
 // @Security Bearer
 // @Param store body model.CreateStoreReq true "门店信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /stores [post]
 func (c *StoreController) CreateStore(ctx *gin.Context) {
 	// 检查是否是总部管理员
@@ -58,7 +58,7 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.Response{data=model.Store}
+// @Success 200 {object} utils.StandardResponse{data=model.Store}
 // @Router /stores/{id} [get]
 func (c *StoreController) GetStore(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
@@ -85,7 +85,7 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.Response{data=[]model.Store}
+// @Success 200 {object} utils.StandardResponse{data=[]model.Store} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /stores [get]
 func (c *StoreController) ListStores(ctx *gin.Context) {
 	page := utils.GetPage(ctx)
@@ -109,7 +109,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param store body model.UpdateStoreReq true "门店信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /stores/{id} [put]
 func (c *StoreController) UpdateStore(ctx *gin.Context) {
 	// 检查是否是总部管理员
@@ -146,7 +146,7 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /stores/{id} [delete]
 func (c *StoreController) DeleteStore(ctx *gin.Context) {
 	// 检查是否是总部管理员

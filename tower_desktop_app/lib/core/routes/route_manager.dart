@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/menu/models.dart';
 import '../icons/td_icon_mapper.dart';
 import '../constants/menu_types.dart';
+import '../../features/user/user_management_page.dart';
 
 /// 路由管理器
 class RouteManager {
@@ -23,7 +24,7 @@ class RouteManager {
     switch (component) {
       // 系统管理
       case 'system/user/index':
-        return _buildModulePage('用户管理', menuItem);
+        return const UserManagementPage();
       case 'system/role/index':
         return _buildModulePage('角色管理', menuItem);
       case 'system/menu/index':

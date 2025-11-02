@@ -6,6 +6,7 @@ import 'models.dart';
 import 'session_manager.dart';
 import '../menu/menu_api.dart';
 import '../menu/menu_provider.dart';
+import 'permission_provider.dart';
 import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -37,13 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
           LoginRequest(phone: _phoneCtrl.text.trim(), password: _pwdCtrl.text));
       final menuApi = MenuApi();
       final perms = await menuApi.getUserPermissions();
+      // 保存权限到 PermissionProvider 以便 UI 立即生效
+      final permProvider = context.read<PermissionProvider>();
+      permProvider.setPermissions(perms);
       SessionManager().updateSession(
-          token: resp.token, userInfo: resp.userInfo, permissions: perms);
+          token: resp.token,
+          userInfo: resp.userInfo,
+          permissions: perms,
+          expiresIn: resp.expiresIn == 0 ? null : resp.expiresIn);
       if (!mounted) return;
 
       // 登录成功后先加载菜单
       final menuProvider = context.read<MenuProvider>();
-      await menuProvider.load();
+      await menuProvider.load(permissionProvider: permProvider);
       if (!mounted) return;
 
       Navigator.of(context).pushReplacement(

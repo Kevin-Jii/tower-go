@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 	"time"
 	"tower-go/model"
 	"tower-go/module"
@@ -44,7 +45,11 @@ func (s *UserService) CreateUser(storeID uint, req *model.CreateUserReq) error {
 		Username: req.Username,
 		Email:    req.Email,
 		Status:   1,       // 默认状态为正常
+		Gender:   1,       // 默认男
 		StoreID:  storeID, // **🔑 关键：设置 StoreID**
+	}
+	if req.Gender == 2 { // 如果传了2则覆盖
+		user.Gender = 2
 	}
 	return s.userModule.Create(user)
 }
@@ -60,6 +65,11 @@ func (s *UserService) GetUserByStoreID(userID uint, storeID uint) (*model.User, 
 func (s *UserService) ListUsersByStoreID(storeID uint, page, pageSize int) ([]*model.User, int64, error) {
 	// Module 层会使用 storeID 和分页参数进行隔离查询
 	return s.userModule.ListByStoreID(storeID, page, pageSize)
+}
+
+// ListUsersByStoreIDWithKeyword 支持用户名或手机号模糊匹配
+func (s *UserService) ListUsersByStoreIDWithKeyword(storeID uint, keyword string, page, pageSize int) ([]*model.User, int64, error) {
+	return s.userModule.ListByStoreIDWithKeyword(storeID, keyword, page, pageSize)
 }
 
 // UpdateUserByStoreID 更新指定门店下的用户数据。
@@ -84,6 +94,13 @@ func (s *UserService) UpdateUserByStoreID(userID uint, storeID uint, req *model.
 	}
 	if req.Email != "" {
 		user.Email = req.Email
+	}
+	if req.Status != nil { // 允许设置 0 / 2 等
+		log.Printf("[UserService.UpdateUserByStoreID] updating status to %d for user %d", *req.Status, user.ID)
+		user.Status = *req.Status
+	}
+	if req.Gender != nil {
+		user.Gender = *req.Gender
 	}
 
 	// StoreID 在这里不需要更新，因为它在数据库中是固定的
@@ -133,4 +150,17 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 
 	// **🔑 关键：返回的 user 必须包含 StoreID 字段**
 	return user, nil
+}
+
+// ResetPassword 重置指定用户密码为默认值（已加密）。
+func (s *UserService) ResetPassword(userID uint, newPlain string) error {
+	// 确认用户存在
+	if _, err := s.userModule.GetByID(userID); err != nil {
+		return errors.New("user not found")
+	}
+	hashed, err := utils.HashPassword(newPlain)
+	if err != nil {
+		return err
+	}
+	return s.userModule.UpdatePasswordByID(userID, hashed)
 }

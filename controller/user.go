@@ -24,7 +24,11 @@ type LoginResponse struct {
 	TokenType string      `json:"token_type"` // 固定 "Bearer"
 	ExpiresIn int64       `json:"expires_in"` // 过期时间（秒）
 	UserInfo  *model.User `json:"user_info"`
+	Strategy  string      `json:"strategy"` // 会话策略 single/multi
 }
+
+// ResetPasswordRequest 重置密码请求（可后续扩展指定密码，当前固定无需 body）
+type ResetPasswordRequest struct{}
 
 type UserController struct {
 	userService *service.UserService
@@ -42,7 +46,7 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Produce json
 // @Security Bearer
 // @Param user body model.CreateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -69,7 +73,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.Response{data=model.User}
+// @Success 200 {object} utils.StandardResponse{data=model.User}
 // @Router /users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
@@ -96,14 +100,25 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.Response{data=[]model.User}
+// @Param keyword query string false "模糊关键字(匹配用户名或手机号任意部分，如手机号后4位)"
+// @Success 200 {object} utils.StandardResponse{data=[]model.User} "分页 meta: total,page,page_size,page_count,has_more；支持 keyword 模糊匹配用户名或手机号"
 // @Router /users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	page := utils.GetPage(ctx)
 	pageSize := utils.GetPageSize(ctx)
 
-	users, total, err := c.userService.ListUsersByStoreID(storeID, page, pageSize)
+	keyword := ctx.Query("keyword")
+	var (
+		users []*model.User
+		total int64
+		err   error
+	)
+	if keyword != "" {
+		users, total, err = c.userService.ListUsersByStoreIDWithKeyword(storeID, keyword, page, pageSize)
+	} else {
+		users, total, err = c.userService.ListUsersByStoreID(storeID, page, pageSize)
+	}
 	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -121,7 +136,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "用户ID"
 // @Param user body model.UpdateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
@@ -152,7 +167,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -173,6 +188,46 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	utils.Success(ctx, nil)
 }
 
+// ResetUserPassword godoc
+// @Summary 重置用户密码
+// @Description 将指定用户密码重置为 123456
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "用户ID"
+// @Success 200 {object} utils.StandardResponse
+// @Router /users/{id}/reset-password [post]
+func (c *UserController) ResetUserPassword(ctx *gin.Context) {
+	// 仅总部管理员或同门店管理员才能重置（此处：若为 admin 放行；否则必须该用户同门店）
+	requesterStoreID := middleware.GetStoreID(ctx)
+	requesterRoleCode := middleware.GetRoleCode(ctx)
+
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		utils.Error(ctx, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	targetUser, err := c.userService.GetUser(uint(id))
+	if err != nil {
+		utils.Error(ctx, http.StatusNotFound, "user not found")
+		return
+	}
+
+	if requesterRoleCode != model.RoleCodeAdmin && targetUser.StoreID != requesterStoreID {
+		utils.Error(ctx, http.StatusForbidden, "无权重置其他门店用户密码")
+		return
+	}
+
+	if err := c.userService.ResetPassword(uint(id), "123456"); err != nil {
+		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.Success(ctx, nil)
+}
+
 // Register godoc
 // @Summary 用户注册
 // @Description 创建新用户账号
@@ -180,7 +235,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user body model.CreateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /auth/register [post]
 func (c *UserController) Register(ctx *gin.Context) {
 	var req model.CreateUserReq
@@ -205,7 +260,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param login body LoginRequest true "登录信息"
-// @Success 200 {object} utils.Response{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
+// @Success 200 {object} utils.StandardResponse{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
 // @Router /auth/login [post]
 func (c *UserController) Login(ctx *gin.Context) {
 	var req LoginRequest
@@ -235,11 +290,22 @@ func (c *UserController) Login(ctx *gin.Context) {
 		return
 	}
 
+	// 如果会话管理器策略为 single，则登录时踢出旧会话（可选增强）
+	strategy := ""
+	if sm := utils.GetSessionManager(); sm != nil {
+		strategy = "single"
+		if smSessions := sm.ListUserSessions(user.ID); len(smSessions) > 0 && smSessions[0] != nil {
+			// 踢出全部旧会话
+			sm.KickUser(user.ID, "login_replace")
+		}
+	}
+
 	utils.Success(ctx, LoginResponse{
 		Token:     token,
 		TokenType: "Bearer",
 		ExpiresIn: expiresIn,
 		UserInfo:  user,
+		Strategy:  strategy,
 	})
 }
 
@@ -250,7 +316,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=model.User}
+// @Success 200 {object} utils.StandardResponse{data=model.User}
 // @Router /users/profile [get]
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
@@ -271,7 +337,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param user body model.UpdateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} utils.StandardResponse
 // @Router /users/profile [put]
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")

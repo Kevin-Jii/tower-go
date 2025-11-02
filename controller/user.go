@@ -20,8 +20,10 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token    string      `json:"token"`
-	UserInfo *model.User `json:"user_info"`
+	Token     string      `json:"token"`
+	TokenType string      `json:"token_type"` // 固定 "Bearer"
+	ExpiresIn int64       `json:"expires_in"` // 过期时间（秒）
+	UserInfo  *model.User `json:"user_info"`
 }
 
 type UserController struct {
@@ -41,7 +43,7 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Security Bearer
 // @Param user body model.CreateUserReq true "用户信息"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/users [post]
+// @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
@@ -68,7 +70,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "用户ID"
 // @Success 200 {object} utils.Response{data=model.User}
-// @Router /api/v1/users/{id} [get]
+// @Router /users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
@@ -95,7 +97,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} utils.Response{data=[]model.User}
-// @Router /api/v1/users [get]
+// @Router /users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	page := utils.GetPage(ctx)
@@ -120,7 +122,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Param id path int true "用户ID"
 // @Param user body model.UpdateUserReq true "用户信息"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/users/{id} [put]
+// @Router /users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
@@ -151,7 +153,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "用户ID"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/users/{id} [delete]
+// @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	idStr := ctx.Param("id")
@@ -179,7 +181,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Produce json
 // @Param user body model.CreateUserReq true "用户信息"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/auth/register [post]
+// @Router /auth/register [post]
 func (c *UserController) Register(ctx *gin.Context) {
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -203,8 +205,8 @@ func (c *UserController) Register(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param login body LoginRequest true "登录信息"
-// @Success 200 {object} utils.Response{data=LoginResponse}
-// @Router /api/v1/auth/login [post]
+// @Success 200 {object} utils.Response{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
+// @Router /auth/login [post]
 func (c *UserController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -227,15 +229,17 @@ func (c *UserController) Login(ctx *gin.Context) {
 	}
 
 	// 生成token（包含 StoreID、RoleCode 和 RoleID）
-	token, err := utils.GenerateToken(user.ID, user.Username, user.StoreID, roleCode, roleID)
+	token, expiresIn, err := utils.GenerateToken(user.ID, user.Username, user.StoreID, roleCode, roleID)
 	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, "Failed to generate token")
 		return
 	}
 
 	utils.Success(ctx, LoginResponse{
-		Token:    token,
-		UserInfo: user,
+		Token:     token,
+		TokenType: "Bearer",
+		ExpiresIn: expiresIn,
+		UserInfo:  user,
 	})
 }
 
@@ -247,7 +251,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Success 200 {object} utils.Response{data=model.User}
-// @Router /api/v1/users/profile [get]
+// @Router /users/profile [get]
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
 	user, err := c.userService.GetUser(userID.(uint))
@@ -268,7 +272,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 // @Security Bearer
 // @Param user body model.UpdateUserReq true "用户信息"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/users/profile [put]
+// @Router /users/profile [put]
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
 

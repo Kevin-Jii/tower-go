@@ -6,7 +6,7 @@ part 'models.g.dart';
 class MenuItem with _$MenuItem {
   const factory MenuItem({
     required int id,
-    required int parentId,
+    @JsonKey(name: 'parent_id') required int parentId,
     required String name,
     required String title,
     String? icon,
@@ -16,9 +16,15 @@ class MenuItem with _$MenuItem {
     int? sort,
     int? visible,
     int? status,
+    // 后端有的可能是单个 permission，也可能未来扩展成数组 perms
     String? permission,
+    @JsonKey(name: 'perms') @Default([]) List<String> permissions, // 兼容数组形式
+    String? remark,
+    @JsonKey(name: 'created_at') String? createdAt,
+    @JsonKey(name: 'updated_at') String? updatedAt,
     @Default([]) List<MenuItem> children,
   }) = _MenuItem;
 
-  factory MenuItem.fromJson(Map<String, dynamic> json) => _$MenuItemFromJson(json);
+  factory MenuItem.fromJson(Map<String, dynamic> json) =>
+      _$MenuItemFromJson(json);
 }

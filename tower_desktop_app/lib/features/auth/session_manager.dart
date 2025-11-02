@@ -7,25 +7,28 @@ class SessionManager {
   SessionManager._internal();
 
   String? _token;
-  UserInfo? _user;
+  UserInfo? _userInfo;
   List<String> _permissions = [];
 
   String? get token => _token;
-  UserInfo? get user => _user;
+  UserInfo? get userInfo => _userInfo;
   List<String> get permissions => _permissions;
 
-  bool get isLoggedIn => _token != null && _user != null;
+  bool get isLoggedIn => _token != null && _userInfo != null;
 
-  void updateSession({required String token, required UserInfo user, required List<String> permissions}) {
+  void updateSession(
+      {required String token,
+      required UserInfo userInfo,
+      required List<String> permissions}) {
     _token = token;
-    _user = user;
+    _userInfo = userInfo;
     _permissions = permissions;
     ApiClient().setToken(token);
   }
 
   void clear() {
     _token = null;
-    _user = null;
+    _userInfo = null;
     _permissions = [];
     ApiClient().setToken(null);
   }

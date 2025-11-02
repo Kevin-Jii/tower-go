@@ -24,7 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/auth/login": {
+        "/auth/login": {
             "post": {
                 "description": "用户登录并获取token",
                 "consumes": [
@@ -50,7 +50,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "登录成功返回 token、token_type=Bearer、expires_in(秒)",
                         "schema": {
                             "allOf": [
                                 {
@@ -70,7 +70,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/register": {
+        "/auth/register": {
             "post": {
                 "description": "创建新用户账号",
                 "consumes": [
@@ -104,7 +104,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dishes": {
+        "/dishes": {
             "get": {
                 "security": [
                     {
@@ -204,7 +204,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dishes/{id}": {
+        "/dishes/{id}": {
             "get": {
                 "security": [
                     {
@@ -332,7 +332,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menu-reports": {
+        "/menu-reports": {
             "get": {
                 "security": [
                     {
@@ -438,7 +438,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menu-reports/statistics": {
+        "/menu-reports/statistics": {
             "get": {
                 "security": [
                     {
@@ -494,7 +494,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menu-reports/{id}": {
+        "/menu-reports/{id}": {
             "get": {
                 "security": [
                     {
@@ -622,7 +622,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus": {
+        "/menus": {
             "get": {
                 "security": [
                     {
@@ -702,7 +702,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/assign-role": {
+        "/menus/assign-role": {
             "post": {
                 "security": [
                     {
@@ -741,7 +741,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/assign-store-role": {
+        "/menus/assign-store-role": {
             "post": {
                 "security": [
                     {
@@ -780,7 +780,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/copy-store": {
+        "/menus/copy-store": {
             "post": {
                 "security": [
                     {
@@ -819,7 +819,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/role": {
+        "/menus/role": {
             "get": {
                 "security": [
                     {
@@ -871,7 +871,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/role-ids": {
+        "/menus/role-ids": {
             "get": {
                 "security": [
                     {
@@ -923,7 +923,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/store-role": {
+        "/menus/store-role": {
             "get": {
                 "security": [
                     {
@@ -982,7 +982,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/store-role-ids": {
+        "/menus/store-role-ids": {
             "get": {
                 "security": [
                     {
@@ -1041,7 +1041,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/tree": {
+        "/menus/tree": {
             "get": {
                 "security": [
                     {
@@ -1084,7 +1084,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/user-menus": {
+        "/menus/user-menus": {
             "get": {
                 "security": [
                     {
@@ -1127,7 +1127,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/user-permissions": {
+        "/menus/user-permissions": {
             "get": {
                 "security": [
                     {
@@ -1170,7 +1170,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/menus/{id}": {
+        "/menus/{id}": {
             "get": {
                 "security": [
                     {
@@ -1298,7 +1298,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/stores": {
+        "/stores": {
             "get": {
                 "security": [
                     {
@@ -1392,7 +1392,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/stores/{id}": {
+        "/stores/{id}": {
             "get": {
                 "security": [
                     {
@@ -1520,7 +1520,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users": {
+        "/users": {
             "get": {
                 "security": [
                     {
@@ -1614,7 +1614,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/profile": {
+        "/users/profile": {
             "get": {
                 "security": [
                     {
@@ -1691,7 +1691,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{id}": {
+        "/users/{id}": {
             "get": {
                 "security": [
                     {
@@ -1842,7 +1842,15 @@ const docTemplate = `{
         "controller.LoginResponse": {
             "type": "object",
             "properties": {
+                "expires_in": {
+                    "description": "过期时间（秒）",
+                    "type": "integer"
+                },
                 "token": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "description": "固定 \"Bearer\"",
                     "type": "string"
                 },
                 "user_info": {
@@ -2539,7 +2547,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "localhost:10024",
 	BasePath:         "/api/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "Tower Go API",

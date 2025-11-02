@@ -28,7 +28,7 @@ func NewStoreController(storeService *service.StoreService) *StoreController {
 // @Security Bearer
 // @Param store body model.CreateStoreReq true "门店信息"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/stores [post]
+// @Router /stores [post]
 func (c *StoreController) CreateStore(ctx *gin.Context) {
 	// 检查是否是总部管理员
 	if !middleware.IsAdmin(ctx) {
@@ -59,7 +59,7 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Success 200 {object} utils.Response{data=model.Store}
-// @Router /api/v1/stores/{id} [get]
+// @Router /stores/{id} [get]
 func (c *StoreController) GetStore(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} utils.Response{data=[]model.Store}
-// @Router /api/v1/stores [get]
+// @Router /stores [get]
 func (c *StoreController) ListStores(ctx *gin.Context) {
 	page := utils.GetPage(ctx)
 	pageSize := utils.GetPageSize(ctx)
@@ -110,7 +110,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 // @Param id path int true "门店ID"
 // @Param store body model.UpdateStoreReq true "门店信息"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/stores/{id} [put]
+// @Router /stores/{id} [put]
 func (c *StoreController) UpdateStore(ctx *gin.Context) {
 	// 检查是否是总部管理员
 	if !middleware.IsAdmin(ctx) {
@@ -147,7 +147,7 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Success 200 {object} utils.Response
-// @Router /api/v1/stores/{id} [delete]
+// @Router /stores/{id} [delete]
 func (c *StoreController) DeleteStore(ctx *gin.Context) {
 	// 检查是否是总部管理员
 	if !middleware.IsAdmin(ctx) {

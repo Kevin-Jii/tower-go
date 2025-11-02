@@ -21,7 +21,8 @@ type Claims struct {
 }
 
 // GenerateToken 生成JWT token
-func GenerateToken(userID uint, username string, storeID uint, roleCode string, roleID uint) (string, error) {
+func GenerateToken(userID uint, username string, storeID uint, roleCode string, roleID uint) (string, int64, error) {
+	expiration := time.Now().Add(24 * time.Hour)
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
@@ -29,14 +30,18 @@ func GenerateToken(userID uint, username string, storeID uint, roleCode string, 
 		RoleCode: roleCode,
 		RoleID:   roleID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(expiration),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	signed, err := token.SignedString(jwtSecret)
+	if err != nil {
+		return "", 0, err
+	}
+	return signed, int64(time.Until(expiration).Seconds()), nil
 }
 
 // ValidateToken 验证并解析 Token

@@ -19,7 +19,7 @@ func InitDB(cfg config.DatabaseConfig) error {
 		cfg.Database,
 	)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
 		return err
 	}

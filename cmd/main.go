@@ -10,7 +10,7 @@
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost:8080
+// @host localhost:10024
 // @BasePath /api/v1
 // @schemes http https
 
@@ -24,6 +24,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"tower-go/config"
 	"tower-go/controller"
@@ -45,6 +46,17 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	// 如果需要可以通过环境变量覆盖端口（如 PORT=10024）
+	if portEnv := os.Getenv("PORT"); portEnv != "" {
+		// 简单转换
+		var p int
+		_, err := fmt.Sscanf(portEnv, "%d", &p)
+		if err == nil && p > 0 {
+			cfg := config.GetConfig()
+			cfg.App.Port = p
+		}
+	}
+
 	// 初始化数据库连接
 	dbConfig := config.GetDatabaseConfig()
 	if err := utils.InitDB(dbConfig); err != nil {
@@ -52,22 +64,31 @@ func main() {
 	}
 	fmt.Printf("\n数据库连接成功！\n")
 
-	// 自动迁移数据表
-	// 确保所有模型已包含正确的字段和关联
-	if err := utils.DB.AutoMigrate(
-		&model.Role{},
-		&model.Store{},
-		&model.User{},
-		&model.Dish{},
-		&model.MenuReport{},
-		&model.Menu{},          // 菜单表
-		&model.RoleMenu{},      // 角色菜单关联表
-		&model.StoreRoleMenu{}, // 门店角色菜单关联表
-	); err != nil {
-		log.Printf("AutoMigrate failed: %v", err)
+	// 外键前置数据完整性检查（users.store_id 但 stores 中缺失）
+	var invalidUserCount int64
+	utils.DB.Raw("SELECT COUNT(*) FROM users u LEFT JOIN stores s ON u.store_id = s.id WHERE u.store_id <> 0 AND s.id IS NULL").Scan(&invalidUserCount)
+	if invalidUserCount > 0 {
+		log.Printf("警告: 发现 %d 条用户记录的 store_id 无效，请修复 stores 表或重置这些用户的 store_id=0", invalidUserCount)
 	}
 
-	// 初始化种子数据
+	// 自动迁移数据表（按外键依赖顺序）
+	// 顺序：Store -> Role -> Menu -> User -> Dish -> MenuReport -> RoleMenu -> StoreRoleMenu
+	migrateModels := []interface{}{&model.Store{}, &model.Role{}, &model.Menu{}, &model.User{}, &model.Dish{}, &model.MenuReport{}, &model.RoleMenu{}, &model.StoreRoleMenu{}}
+	for _, m := range migrateModels {
+		if err := utils.DB.AutoMigrate(m); err != nil {
+			log.Printf("AutoMigrate model %T failed: %v", m, err)
+			log.Printf("迁移失败，后续种子数据将跳过。")
+			goto SKIP_SEED
+		}
+	}
+	log.Println("数据表迁移完成")
+
+	// 初始化种子数据（仅在迁移成功后）
+	if err := utils.InitRoleSeeds(utils.DB); err != nil {
+		log.Printf("InitRoleSeeds failed: %v", err)
+	} else {
+		fmt.Println("角色基础数据初始化成功")
+	}
 	if err := utils.InitMenuSeeds(utils.DB); err != nil {
 		log.Printf("InitMenuSeeds failed: %v", err)
 	} else {
@@ -79,6 +100,8 @@ func main() {
 	} else {
 		fmt.Println("角色菜单权限初始化成功")
 	}
+
+SKIP_SEED:
 
 	// 初始化模块/服务/控制器
 	userModule := userModulePkg.NewUserModule(utils.DB)

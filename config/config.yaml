@@ -1,6 +1,6 @@
 app:
   name: tower-go
-  port: 8080
+  port: 10024
 
 database:
   driver: mysql

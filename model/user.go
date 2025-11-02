@@ -4,20 +4,23 @@ import "time"
 
 type User struct {
 	ID       uint   `json:"id" gorm:"primarykey"`
-	Username string `json:"username" gorm:"uniqueIndex;not null;type:varchar(191)"`
 	Password string `json:"-" gorm:"not null"`
+	Phone    string `json:"phone" gorm:"uniqueIndex;type:varchar(20)"`
+	Username string `json:"username" gorm:"not null;uniqueIndex:idx_store_username;type:varchar(191)"`
+	Nickname string `json:"nickname" gorm:"type:varchar(100)"`
+	Email    string `json:"email" gorm:"type:varchar(255)"`
+
+	// --- 门店关联 ---
+	StoreID uint   `json:"store_id" gorm:"not null;uniqueIndex:idx_store_username"`
+	Store   *Store `json:"store,omitempty" gorm:"foreignKey:StoreID"` // 门店关联
 
 	// --- 权限管理 (RBAC) ---
-	// RoleID: 关联到 'roles' 表的主键。这是 RBAC 的核心。
-	RoleID uint `json:"role_id" gorm:"not null;default:1"` // default:1 可以是默认的“普通用户”角色ID
+	RoleID uint  `json:"role_id" gorm:"not null;default:3"`       // 角色ID：1=总部管理员，2=门店管理员，3=普通员工
+	Role   *Role `json:"role,omitempty" gorm:"foreignKey:RoleID"` // 角色关联
 
 	// --- 状态与安全管理 ---
-	// Status: 账号状态 (1=正常, 2=禁用, 3=未激活等)
-	Status      int       `json:"status" gorm:"not null;default:1"`
-	Nickname    string    `json:"nickname" gorm:"type:varchar(100)"` // 推荐限制长度
-	Email       string    `json:"email" gorm:"type:varchar(255)"`
-	Phone       string    `json:"phone" gorm:"uniqueIndex;type:varchar(20)"`
-	LastLoginAt time.Time `json:"last_login_at"` // 记录最后登录时间
+	Status      int       `json:"status" gorm:"not null;default:1"` // 账号状态：1=正常，2=禁用
+	LastLoginAt time.Time `json:"last_login_at"`                    // 记录最后登录时间
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

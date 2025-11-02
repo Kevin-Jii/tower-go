@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"tower-go/middleware"
 	"tower-go/model"
 	"tower-go/service"
 	"tower-go/utils"
@@ -36,17 +38,20 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param user body model.CreateUserReq true "用户信息"
 // @Success 200 {object} utils.Response
 // @Router /api/v1/users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		utils.Error(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := c.userService.CreateUser(&req); err != nil {
+	if err := c.userService.CreateUser(storeID, &req); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -60,6 +65,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param id path int true "用户ID"
 // @Success 200 {object} utils.Response{data=model.User}
 // @Router /api/v1/users/{id} [get]
@@ -85,15 +91,17 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} utils.Response{data=[]model.User}
 // @Router /api/v1/users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
 	page := utils.GetPage(ctx)
 	pageSize := utils.GetPageSize(ctx)
 
-	users, total, err := c.userService.ListUsers(page, pageSize)
+	users, total, err := c.userService.ListUsersByStoreID(storeID, page, pageSize)
 	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -108,6 +116,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param id path int true "用户ID"
 // @Param user body model.UpdateUserReq true "用户信息"
 // @Success 200 {object} utils.Response
@@ -139,17 +148,22 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param id path int true "用户ID"
 // @Success 200 {object} utils.Response
 // @Router /api/v1/users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
-	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	storeID := middleware.GetStoreID(ctx)
+	idStr := ctx.Param("id")
+	log.Printf("Attempting to delete user with ID string: %s", idStr)
+
+	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		utils.Error(ctx, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
-	if err := c.userService.DeleteUser(uint(id)); err != nil {
+	if err := c.userService.DeleteUserByStoreID(uint(id), storeID); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -173,7 +187,8 @@ func (c *UserController) Register(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.userService.CreateUser(&req); err != nil {
+	// 注册时默认不分配门店（由管理员后续分配）
+	if err := c.userService.CreateUser(0, &req); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -203,8 +218,16 @@ func (c *UserController) Login(ctx *gin.Context) {
 		return
 	}
 
-	// 生成token
-	token, err := utils.GenerateToken(user.ID, user.Username)
+	// 获取角色代码和角色ID
+	roleCode := ""
+	roleID := uint(0)
+	if user.Role != nil {
+		roleCode = user.Role.Code
+		roleID = user.RoleID
+	}
+
+	// 生成token（包含 StoreID、RoleCode 和 RoleID）
+	token, err := utils.GenerateToken(user.ID, user.Username, user.StoreID, roleCode, roleID)
 	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, "Failed to generate token")
 		return
@@ -238,7 +261,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 
 // UpdateProfile godoc
 // @Summary 更新个人信息
-// @Description 更新当前登录用户的信息
+// @Description 更新当前登录用户的个人信息
 // @Tags users
 // @Accept json
 // @Produce json

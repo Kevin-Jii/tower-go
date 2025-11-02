@@ -16,8 +16,14 @@ func NewUserService(userModule *module.UserModule) *UserService {
 	return &UserService{userModule: userModule}
 }
 
-func (s *UserService) CreateUser(req *model.CreateUserReq) error {
-	// 检查手机号是否已存在
+// --- 用户管理接口 (需要 StoreID 隔离) ---
+
+// CreateUser 在指定 StoreID 下创建用户。
+// 这里的 storeID 参数由 Controller 从 Token 中获取并传递。
+// 注意：如果这是用户自注册接口，你需要调整逻辑以分配默认的 StoreID。
+func (s *UserService) CreateUser(storeID uint, req *model.CreateUserReq) error {
+	// 1. 检查手机号在【全局】或【当前门店】是否已存在 (取决于业务需求)
+	// 假设我们在【全局】检查手机号唯一性
 	exists, err := s.userModule.ExistsByPhone(req.Phone)
 	if err != nil {
 		return err
@@ -37,27 +43,36 @@ func (s *UserService) CreateUser(req *model.CreateUserReq) error {
 		Password: hashedPassword,
 		Username: req.Username,
 		Email:    req.Email,
-		Status:   1, // 默认状态为正常
+		Status:   1,       // 默认状态为正常
+		StoreID:  storeID, // **🔑 关键：设置 StoreID**
 	}
 	return s.userModule.Create(user)
 }
 
-func (s *UserService) GetUser(id uint) (*model.User, error) {
-	return s.userModule.GetByID(id)
+// GetUserByStoreID 在指定门店下，根据用户ID获取单个用户。
+// Module 层将负责使用 StoreID 限制查询。
+func (s *UserService) GetUserByStoreID(userID uint, storeID uint) (*model.User, error) {
+	// Module 层会使用 userID 和 storeID 进行复合查询
+	return s.userModule.GetByUserIDAndStoreID(userID, storeID)
 }
 
-func (s *UserService) ListUsers(page, pageSize int) ([]*model.User, int64, error) {
-	return s.userModule.List(page, pageSize)
+// ListUsersByStoreID 获取指定门店下的用户列表。
+func (s *UserService) ListUsersByStoreID(storeID uint, page, pageSize int) ([]*model.User, int64, error) {
+	// Module 层会使用 storeID 和分页参数进行隔离查询
+	return s.userModule.ListByStoreID(storeID, page, pageSize)
 }
 
-func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
-	user, err := s.userModule.GetByID(id)
+// UpdateUserByStoreID 更新指定门店下的用户数据。
+func (s *UserService) UpdateUserByStoreID(userID uint, storeID uint, req *model.UpdateUserReq) error {
+	// 1. 先获取用户，并确保用户属于该门店
+	user, err := s.userModule.GetByUserIDAndStoreID(userID, storeID)
 	if err != nil {
-		return err
+		// 如果用户不存在或不属于该门店，Module 层应该返回 'record not found'
+		return errors.New("user not found or access denied")
 	}
 
+	// 2. 更新字段
 	if req.Password != "" {
-		// 密码加密
 		hashedPassword, err := utils.HashPassword(req.Password)
 		if err != nil {
 			return err
@@ -71,11 +86,35 @@ func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
 		user.Email = req.Email
 	}
 
+	// StoreID 在这里不需要更新，因为它在数据库中是固定的
 	return s.userModule.Update(user)
 }
 
+// DeleteUserByStoreID 删除指定门店下的用户。
+func (s *UserService) DeleteUserByStoreID(userID uint, storeID uint) error {
+	// Module 层将负责在删除前，复合校验 userID 和 storeID
+	return s.userModule.DeleteByUserIDAndStoreID(userID, storeID)
+}
+
+// --- 个人档案 / 认证接口 (无需 StoreID 作为查询参数) ---
+
+// GetUser 获取用户详情（用于 Profile 接口）
+func (s *UserService) GetUser(id uint) (*model.User, error) {
+	// Profile 接口访问的是用户自己的信息，直接使用 ID 即可
+	return s.userModule.GetByID(id)
+}
+
+// UpdateUser 更新用户（用于 Profile 接口）
+func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
+	// Profile 接口访问的是用户自己的信息，直接使用 ID 即可
+	// 实际操作中，最好在 UpdateUser Module 层再次校验 StoreID，以防万一
+	return s.userModule.UpdateByID(id, req)
+}
+
+// ValidateUser 登录验证，跨门店查询，用于身份识别。
+// **🔑 关键：必须返回包含 StoreID 的 User 对象**
 func (s *UserService) ValidateUser(phone, password string) (*model.User, error) {
-	// 获取用户信息
+	// 获取用户信息 (Module 层全局查询)
 	user, err := s.userModule.GetByPhone(phone)
 	if err != nil {
 		return nil, errors.New("user not found")
@@ -92,9 +131,6 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 		return nil, err
 	}
 
+	// **🔑 关键：返回的 user 必须包含 StoreID 字段**
 	return user, nil
-}
-
-func (s *UserService) DeleteUser(id uint) error {
-	return s.userModule.Delete(id)
 }

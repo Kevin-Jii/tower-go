@@ -50,6 +50,7 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
+	roleCode := middleware.GetRoleCode(ctx)
 
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -57,7 +58,12 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.userService.CreateUser(storeID, &req); err != nil {
+	targetStoreID := storeID
+	if roleCode == model.RoleCodeAdmin && req.StoreID > 0 {
+		targetStoreID = req.StoreID
+	}
+
+	if err := c.userService.CreateUser(targetStoreID, roleCode, &req); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -260,7 +266,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 	}
 
 	// 注册时默认不分配门店（由管理员后续分配）
-	if err := c.userService.CreateUser(0, &req); err != nil {
+	if err := c.userService.CreateUser(0, "", &req); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}

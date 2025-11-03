@@ -4,6 +4,7 @@ import (
 	"errors"
 	"tower-go/model"
 	"tower-go/module"
+	"tower-go/utils"
 )
 
 type StoreService struct {
@@ -16,7 +17,13 @@ func NewStoreService(storeModule *module.StoreModule) *StoreService {
 
 // CreateStore 创建门店（仅总部管理员）
 func (s *StoreService) CreateStore(req *model.CreateStoreReq) error {
+	storeCode, err := utils.GenerateStoreCode(s.storeModule.GetDB())
+	if err != nil {
+		return err
+	}
+
 	store := &model.Store{
+		StoreCode:     &storeCode,
 		Name:          req.Name,
 		Address:       req.Address,
 		Phone:         req.Phone,

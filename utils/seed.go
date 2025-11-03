@@ -3,6 +3,7 @@ package utils
 import (
 	"tower-go/model"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -104,7 +105,95 @@ func InitRoleSeeds(db *gorm.DB) error {
 	return nil
 }
 
-// InitRoleMenuSeeds 初始化角色菜单关联（默认权限）
+// InitSuperAdmin 初始化超级管理员
+func InitSuperAdmin(db *gorm.DB) error {
+	// 检查超级管理员是否已存在
+	var existingUser model.User
+	if err := db.Where("id = ?", 999).First(&existingUser).Error; err == nil {
+		// 超级管理员已存在
+		LogInfo("超级管理员已存在，跳过创建", zap.Uint("user_id", existingUser.ID))
+		return nil
+	}
+
+	// 1. 创建/检查超级门店（ID=999）
+	var superStore model.Store
+	if err := db.Where("id = ?", 999).First(&superStore).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			superStore = model.Store{
+				ID:            999,
+				Name:          "总部",
+				Address:       "系统默认总部",
+				Phone:         "13082848180",
+				BusinessHours: "全天",
+				Status:        1,
+				ContactPerson: "超级管理员",
+				Remark:        "系统默认总部门店",
+			}
+			if err := db.Create(&superStore).Error; err != nil {
+				LogError("创建超级门店失败", zap.Error(err))
+				return err
+			}
+			LogInfo("超级门店创建成功", zap.Uint("store_id", superStore.ID))
+		} else {
+			return err
+		}
+	}
+
+	// 2. 确保超级管理员角色存在（ID=999）
+	var superRole model.Role
+	if err := db.Where("id = ?", 999).First(&superRole).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// 查找 admin 角色
+			var adminRole model.Role
+			if err := db.Where("code = ?", model.RoleCodeAdmin).First(&adminRole).Error; err != nil {
+				LogError("查找admin角色失败", zap.Error(err))
+				return err
+			}
+
+			// 创建超级管理员角色
+			superRole = model.Role{
+				ID:          999,
+				Name:        "超级管理员",
+				Code:        "super_admin",
+				Description: "系统最高权限，不可删除",
+			}
+			if err := db.Create(&superRole).Error; err != nil {
+				LogError("创建超级管理员角色失败", zap.Error(err))
+				return err
+			}
+			LogInfo("超级管理员角色创建成功", zap.Uint("role_id", superRole.ID))
+		} else {
+			return err
+		}
+	}
+
+	// 3. 创建超级管理员用户
+	hashedPassword, err := HashPassword("admin123456") // 默认密码
+	if err != nil {
+		LogError("密码加密失败", zap.Error(err))
+		return err
+	}
+
+	// 使用原始 SQL 插入，避免 LastLoginAt 零值问题
+	// 超级管理员固定工号为 999999
+	sql := `INSERT INTO users (id, username, phone, password, nickname, email, employee_no, store_id, role_id, status, gender, created_at, updated_at) 
+	        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`
+
+	if err := db.Exec(sql, 999, "admin", "13082848180", hashedPassword, "超级管理员", "admin@tower.com", "999999", 999, 999, 1, 1).Error; err != nil {
+		LogError("创建超级管理员失败", zap.Error(err))
+		return err
+	}
+
+	LogInfo("✅ 超级管理员创建成功",
+		zap.Uint("user_id", 999),
+		zap.String("username", "admin"),
+		zap.String("phone", "13082848180"),
+		zap.String("employee_no", "999999"),
+		zap.String("default_password", "admin123456"),
+	)
+
+	return nil
+} // InitRoleMenuSeeds 初始化角色菜单关联（默认权限）
 func InitRoleMenuSeeds(db *gorm.DB) error {
 	// 检查是否已有数据
 	var count int64
@@ -152,6 +241,34 @@ func InitRoleMenuSeeds(db *gorm.DB) error {
 
 	if err := db.Create(&allMenus).Error; err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// EnsureStoreCodes 为缺失编码的门店生成编码
+func EnsureStoreCodes(db *gorm.DB) error {
+	var stores []model.Store
+	if err := db.Where("store_code IS NULL OR store_code = ''").Find(&stores).Error; err != nil {
+		LogError("查询缺失门店编码失败", zap.Error(err))
+		return err
+	}
+
+	if len(stores) == 0 {
+		LogInfo("所有门店均已具备编码")
+		return nil
+	}
+
+	for _, store := range stores {
+		code, err := GenerateStoreCode(db)
+		if err != nil {
+			return err
+		}
+		if err := db.Model(&model.Store{}).Where("id = ?", store.ID).Update("store_code", code).Error; err != nil {
+			LogDatabaseError("更新门店编码失败", err, zap.Uint("store_id", store.ID))
+			return err
+		}
+		LogInfo("门店编码已补全", zap.Uint("store_id", store.ID))
 	}
 
 	return nil

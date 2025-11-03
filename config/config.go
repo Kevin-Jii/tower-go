@@ -9,6 +9,7 @@ import (
 type Config struct {
 	App      AppConfig      `yaml:"app"`
 	Database DatabaseConfig `yaml:"database"`
+	Redis    RedisConfig    `yaml:"redis"`
 }
 
 type AppConfig struct {
@@ -23,6 +24,14 @@ type DatabaseConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 	Database string `yaml:"database"`
+}
+
+type RedisConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
+	Enabled  bool   `yaml:"enabled"`
 }
 
 var cfg Config
@@ -47,4 +56,8 @@ func GetConfig() Config {
 
 func GetDatabaseConfig() DatabaseConfig {
 	return cfg.Database
+}
+
+func GetRedisConfig() RedisConfig {
+	return cfg.Redis
 }

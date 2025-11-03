@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const (
@@ -51,6 +52,10 @@ func Success(ctx *gin.Context, data interface{}) {
 		Message: "success",
 		Data:    data,
 	})
+	LogDebug("Success Response",
+		zap.String("path", ctx.Request.URL.Path),
+		zap.String("method", ctx.Request.Method),
+	)
 }
 
 // SuccessWithPagination 旧调用入口，内部转换为新结构
@@ -82,6 +87,57 @@ func Error(ctx *gin.Context, code int, message string) {
 		Code:    code,
 		Message: message,
 	})
+	LogWarn("Error Response",
+		zap.Int("code", code),
+		zap.String("message", message),
+		zap.String("path", ctx.Request.URL.Path),
+		zap.String("method", ctx.Request.Method),
+		zap.String("ip", ctx.ClientIP()),
+	)
+}
+
+// ErrorWithCode 使用错误码响应
+func ErrorWithCode(ctx *gin.Context, errCode ErrorCode) {
+	httpCode := http.StatusBadRequest
+	if errCode.Code >= 2000 && errCode.Code < 3000 {
+		httpCode = http.StatusUnauthorized
+	} else if errCode.Code >= 1000 && errCode.Code < 2000 {
+		httpCode = http.StatusInternalServerError
+	}
+
+	ctx.JSON(httpCode, StandardResponse{
+		Code:    errCode.Code,
+		Message: errCode.Message,
+	})
+
+	LogBusinessError(errCode, nil,
+		zap.String("path", ctx.Request.URL.Path),
+		zap.String("method", ctx.Request.Method),
+		zap.String("ip", ctx.ClientIP()),
+	)
+}
+
+// ErrorWithCodeAndData 使用错误码响应（带额外数据）
+func ErrorWithCodeAndData(ctx *gin.Context, errCode ErrorCode, data interface{}) {
+	httpCode := http.StatusBadRequest
+	if errCode.Code >= 2000 && errCode.Code < 3000 {
+		httpCode = http.StatusUnauthorized
+	} else if errCode.Code >= 1000 && errCode.Code < 2000 {
+		httpCode = http.StatusInternalServerError
+	}
+
+	ctx.JSON(httpCode, StandardResponse{
+		Code:    errCode.Code,
+		Message: errCode.Message,
+		Data:    data,
+	})
+
+	LogBusinessError(errCode, nil,
+		zap.String("path", ctx.Request.URL.Path),
+		zap.String("method", ctx.Request.Method),
+		zap.String("ip", ctx.ClientIP()),
+		zap.Any("data", data),
+	)
 }
 
 func GetPage(ctx *gin.Context) int {

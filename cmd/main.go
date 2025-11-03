@@ -23,7 +23,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"tower-go/config"
@@ -38,13 +37,33 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 )
 
 func main() {
+	// 初始化日志系统
+	logConfig := &utils.LogConfig{
+		Level:      "info",
+		FilePath:   "logs/app.log",
+		MaxSize:    100,
+		MaxBackups: 10,
+		MaxAge:     30,
+		Compress:   true,
+		Console:    true,
+	}
+	if err := utils.InitLogger(logConfig); err != nil {
+		fmt.Printf("初始化日志系统失败: %v\n", err)
+		os.Exit(1)
+	}
+	defer utils.CloseLogger()
+
+	utils.LogInfo("=== Tower Go 服务启动 ===")
+
 	// 加载配置文件
 	if err := config.LoadConfig("config/config.yaml"); err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		utils.LogFatal("配置文件加载失败", zap.Error(err))
 	}
+	utils.LogInfo("配置文件加载成功")
 
 	// 如果需要可以通过环境变量覆盖端口（如 PORT=10024）
 	if portEnv := os.Getenv("PORT"); portEnv != "" {
@@ -54,21 +73,31 @@ func main() {
 		if err == nil && p > 0 {
 			cfg := config.GetConfig()
 			cfg.App.Port = p
+			utils.LogInfo("使用环境变量端口", zap.Int("port", p))
 		}
 	}
 
 	// 初始化数据库连接
 	dbConfig := config.GetDatabaseConfig()
 	if err := utils.InitDB(dbConfig); err != nil {
-		log.Fatalf("数据库连接失败: %v", err)
+		utils.LogFatal("数据库连接失败", zap.Error(err))
 	}
-	fmt.Printf("\n数据库连接成功！\n")
+	utils.LogInfo("数据库连接成功")
+
+	// 初始化 Redis 缓存
+	redisConfig := config.GetRedisConfig()
+	if err := utils.InitRedis(redisConfig); err != nil {
+		utils.LogWarn("Redis 连接失败，缓存功能将禁用", zap.Error(err))
+	} else if utils.IsRedisEnabled() {
+		utils.LogInfo("Redis 缓存已启用")
+	}
+	defer utils.CloseRedis()
 
 	// 外键前置数据完整性检查（users.store_id 但 stores 中缺失）
 	var invalidUserCount int64
 	utils.DB.Raw("SELECT COUNT(*) FROM users u LEFT JOIN stores s ON u.store_id = s.id WHERE u.store_id <> 0 AND s.id IS NULL").Scan(&invalidUserCount)
 	if invalidUserCount > 0 {
-		log.Printf("警告: 发现 %d 条用户记录的 store_id 无效，请修复 stores 表或重置这些用户的 store_id=0", invalidUserCount)
+		utils.LogWarn("发现无效用户记录", zap.Int64("count", invalidUserCount))
 	}
 
 	// 自动迁移数据表（按外键依赖顺序）
@@ -76,29 +105,48 @@ func main() {
 	migrateModels := []interface{}{&model.Store{}, &model.Role{}, &model.Menu{}, &model.User{}, &model.Dish{}, &model.MenuReport{}, &model.RoleMenu{}, &model.StoreRoleMenu{}}
 	for _, m := range migrateModels {
 		if err := utils.DB.AutoMigrate(m); err != nil {
-			log.Printf("AutoMigrate model %T failed: %v", m, err)
-			log.Printf("迁移失败，后续种子数据将跳过。")
+			utils.LogError("数据表迁移失败", zap.String("model", fmt.Sprintf("%T", m)), zap.Error(err))
+			utils.LogWarn("迁移失败，后续种子数据将跳过")
 			goto SKIP_SEED
 		}
 	}
-	log.Println("数据表迁移完成")
+	utils.LogInfo("数据表迁移完成")
+
+	// 创建优化索引
+	if err := utils.CreateOptimizedIndexes(utils.DB); err != nil {
+		utils.LogError("创建优化索引失败", zap.Error(err))
+	} else {
+		utils.LogInfo("优化索引创建成功")
+	}
 
 	// 初始化种子数据（仅在迁移成功后）
 	if err := utils.InitRoleSeeds(utils.DB); err != nil {
-		log.Printf("InitRoleSeeds failed: %v", err)
+		utils.LogError("角色基础数据初始化失败", zap.Error(err))
 	} else {
-		fmt.Println("角色基础数据初始化成功")
+		utils.LogInfo("角色基础数据初始化成功")
 	}
 	if err := utils.InitMenuSeeds(utils.DB); err != nil {
-		log.Printf("InitMenuSeeds failed: %v", err)
+		utils.LogError("菜单种子数据初始化失败", zap.Error(err))
 	} else {
-		fmt.Println("菜单种子数据初始化成功")
+		utils.LogInfo("菜单种子数据初始化成功")
 	}
 
 	if err := utils.InitRoleMenuSeeds(utils.DB); err != nil {
-		log.Printf("InitRoleMenuSeeds failed: %v", err)
+		utils.LogError("角色菜单权限初始化失败", zap.Error(err))
 	} else {
-		fmt.Println("角色菜单权限初始化成功")
+		utils.LogInfo("角色菜单权限初始化成功")
+	}
+
+	// 初始化超级管理员（ID=999）
+	if err := utils.InitSuperAdmin(utils.DB); err != nil {
+		utils.LogError("超级管理员初始化失败", zap.Error(err))
+	}
+
+	// 确保门店编码完整
+	if err := utils.EnsureStoreCodes(utils.DB); err != nil {
+		utils.LogError("门店编码补全失败", zap.Error(err))
+	} else {
+		utils.LogInfo("门店编码检查完成")
 	}
 
 SKIP_SEED:
@@ -129,6 +177,7 @@ SKIP_SEED:
 
 	// 初始化 WebSocket 会话管理：策略可配置，这里先写死 single (单点登录)
 	utils.InitSessionManager("single", 3)
+	utils.LogInfo("WebSocket 会话管理初始化成功")
 
 	// 启动 HTTP 服务
 	r := gin.Default()
@@ -229,13 +278,12 @@ SKIP_SEED:
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	addr := fmt.Sprintf(":%d", config.GetConfig().App.Port)
-	fmt.Printf("starting server at %s\n", addr)
 
 	// 打印 Swagger UI 路径到控制台
 	swaggerURL := fmt.Sprintf("http://localhost%s/swagger/index.html", addr)
-	fmt.Printf("Swagger UI: %s\n", swaggerURL)
+	fmt.Printf("📚 Swagger UI: %s\n\n", swaggerURL)
 
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("server exit: %v", err)
+		utils.LogFatal("服务启动失败", zap.Error(err))
 	}
 }

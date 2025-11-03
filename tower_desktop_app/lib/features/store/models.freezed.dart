@@ -21,6 +21,8 @@ Store _$StoreFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Store {
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'store_code')
+  String? get storeCode => throw _privateConstructorUsedError; // 门店编号
   String get name => throw _privateConstructorUsedError;
   String? get address => throw _privateConstructorUsedError;
   int? get status => throw _privateConstructorUsedError; // 0=禁用 1=启用
@@ -51,6 +53,7 @@ abstract class $StoreCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
+      @JsonKey(name: 'store_code') String? storeCode,
       String name,
       String? address,
       int? status,
@@ -78,6 +81,7 @@ class _$StoreCopyWithImpl<$Res, $Val extends Store>
   @override
   $Res call({
     Object? id = null,
+    Object? storeCode = freezed,
     Object? name = null,
     Object? address = freezed,
     Object? status = freezed,
@@ -93,6 +97,10 @@ class _$StoreCopyWithImpl<$Res, $Val extends Store>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      storeCode: freezed == storeCode
+          ? _value.storeCode
+          : storeCode // ignore: cast_nullable_to_non_nullable
+              as String?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -142,6 +150,7 @@ abstract class _$$StoreImplCopyWith<$Res> implements $StoreCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
+      @JsonKey(name: 'store_code') String? storeCode,
       String name,
       String? address,
       int? status,
@@ -167,6 +176,7 @@ class __$$StoreImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
+    Object? storeCode = freezed,
     Object? name = null,
     Object? address = freezed,
     Object? status = freezed,
@@ -182,6 +192,10 @@ class __$$StoreImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as int,
+      storeCode: freezed == storeCode
+          ? _value.storeCode
+          : storeCode // ignore: cast_nullable_to_non_nullable
+              as String?,
       name: null == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
@@ -227,6 +241,7 @@ class __$$StoreImplCopyWithImpl<$Res>
 class _$StoreImpl implements _Store {
   const _$StoreImpl(
       {required this.id,
+      @JsonKey(name: 'store_code') this.storeCode,
       required this.name,
       this.address,
       this.status,
@@ -242,6 +257,10 @@ class _$StoreImpl implements _Store {
 
   @override
   final int id;
+  @override
+  @JsonKey(name: 'store_code')
+  final String? storeCode;
+// 门店编号
   @override
   final String name;
   @override
@@ -270,7 +289,7 @@ class _$StoreImpl implements _Store {
 
   @override
   String toString() {
-    return 'Store(id: $id, name: $name, address: $address, status: $status, remark: $remark, businessHours: $businessHours, contactPerson: $contactPerson, phone: $phone, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Store(id: $id, storeCode: $storeCode, name: $name, address: $address, status: $status, remark: $remark, businessHours: $businessHours, contactPerson: $contactPerson, phone: $phone, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -279,6 +298,8 @@ class _$StoreImpl implements _Store {
         (other.runtimeType == runtimeType &&
             other is _$StoreImpl &&
             (identical(other.id, id) || other.id == id) &&
+            (identical(other.storeCode, storeCode) ||
+                other.storeCode == storeCode) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.address, address) || other.address == address) &&
             (identical(other.status, status) || other.status == status) &&
@@ -296,8 +317,19 @@ class _$StoreImpl implements _Store {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, address, status,
-      remark, businessHours, contactPerson, phone, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      storeCode,
+      name,
+      address,
+      status,
+      remark,
+      businessHours,
+      contactPerson,
+      phone,
+      createdAt,
+      updatedAt);
 
   /// Create a copy of Store
   /// with the given fields replaced by the non-null parameter values.
@@ -318,6 +350,7 @@ class _$StoreImpl implements _Store {
 abstract class _Store implements Store {
   const factory _Store(
       {required final int id,
+      @JsonKey(name: 'store_code') final String? storeCode,
       required final String name,
       final String? address,
       final int? status,
@@ -332,6 +365,9 @@ abstract class _Store implements Store {
 
   @override
   int get id;
+  @override
+  @JsonKey(name: 'store_code')
+  String? get storeCode; // 门店编号
   @override
   String get name;
   @override

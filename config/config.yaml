@@ -4,8 +4,15 @@ app:
 
 database:
   driver: mysql
-  host: 47.98.138.169
+  host: localhost
   port: 3306
-  username: jing
-  password: cesp!001
+  username: root
+  password: cesp001
   database: tower
+
+redis:
+  host: localhost
+  port: 6379
+  password: cesp@001
+  db: 0
+  enabled: true

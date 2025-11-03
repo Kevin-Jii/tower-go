@@ -40,6 +40,10 @@ func (s *MenuService) CreateMenu(req *model.CreateMenuReq) error {
 		Status:     req.Status,
 		Remark:     req.Remark,
 	}
+
+	// 创建菜单后使缓存失效
+	defer s.InvalidateMenuCache()
+
 	return s.menuModule.Create(menu)
 }
 
@@ -61,26 +65,14 @@ func (s *MenuService) GetMenuTree() ([]*model.Menu, error) {
 		return nil, err
 	}
 
-	// 构建树形结构
-	return s.buildMenuTree(menus, 0), nil
+	// 使用优化的树构建算法 + 缓存
+	cacheKey := "menu_tree_all"
+	return s.buildMenuTreeWithCache(menus, 0, cacheKey), nil
 }
 
-// buildMenuTree 构建树形菜单结构
+// buildMenuTree 构建树形菜单结构（保留旧方法用于兼容，但内部调用优化版本）
 func (s *MenuService) buildMenuTree(menus []*model.Menu, parentID uint) []*model.Menu {
-	var tree []*model.Menu
-
-	for _, menu := range menus {
-		if menu.ParentID == parentID {
-			// 递归查找子菜单
-			children := s.buildMenuTree(menus, menu.ID)
-			if len(children) > 0 {
-				menu.Children = children
-			}
-			tree = append(tree, menu)
-		}
-	}
-
-	return tree
+	return s.buildMenuTreeOptimized(menus, parentID)
 }
 
 // UpdateMenu 更新菜单
@@ -97,6 +89,9 @@ func (s *MenuService) UpdateMenu(id uint, req *model.UpdateMenuReq) error {
 			return err
 		}
 	}
+
+	// 更新菜单后使缓存失效
+	defer s.InvalidateMenuCache()
 
 	return s.menuModule.Update(id, req)
 }
@@ -139,6 +134,9 @@ func (s *MenuService) DeleteMenu(id uint) error {
 	_ = s.roleMenuModule.DeleteByMenuID(id)
 	_ = s.storeRoleMenuModule.DeleteByMenuID(id)
 
+	// 删除菜单后使缓存失效
+	defer s.InvalidateMenuCache()
+
 	return s.menuModule.Delete(id)
 }
 
@@ -158,7 +156,9 @@ func (s *MenuService) GetRoleMenuTree(roleID uint) ([]*model.Menu, error) {
 	if err != nil {
 		return nil, err
 	}
-	return s.buildMenuTree(menus, 0), nil
+	// 使用缓存优化
+	cacheKey := "role_menu_tree_" + string(rune(roleID))
+	return s.buildMenuTreeWithCache(menus, 0, cacheKey), nil
 }
 
 // GetRoleMenuIDs 获取角色的所有菜单ID（用于前端回显）

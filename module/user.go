@@ -3,6 +3,7 @@ package module
 import (
 	"log"
 	"tower-go/model"
+	"tower-go/utils"
 
 	"gorm.io/gorm"
 )
@@ -13,6 +14,11 @@ type UserModule struct {
 
 func NewUserModule(db *gorm.DB) *UserModule {
 	return &UserModule{db: db}
+}
+
+// GetDB 返回数据库连接实例
+func (m *UserModule) GetDB() *gorm.DB {
+	return m.db
 }
 
 func (m *UserModule) Create(user *model.User) error {
@@ -101,9 +107,14 @@ func (m *UserModule) ListByStoreIDWithKeyword(storeID uint, keyword string, page
 	var total int64
 
 	query := m.db.Model(&model.User{}).Where("store_id = ?", storeID)
+
 	if keyword != "" {
-		like := "%" + keyword + "%"
-		query = query.Where("username LIKE ? OR phone LIKE ?", like, like)
+		// 使用优化的搜索条件
+		conditions := utils.OptimizeSearchKeyword(keyword)
+		if len(conditions) > 0 {
+			sql, args := utils.BuildSearchSQL(conditions)
+			query = query.Where(sql, args...)
+		}
 	}
 
 	if err := query.Count(&total).Error; err != nil {
@@ -122,9 +133,14 @@ func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.
 	var total int64
 
 	query := m.db.Model(&model.User{})
+
 	if keyword != "" {
-		like := "%" + keyword + "%"
-		query = query.Where("username LIKE ? OR phone LIKE ?", like, like)
+		// 使用优化的搜索条件
+		conditions := utils.OptimizeSearchKeyword(keyword)
+		if len(conditions) > 0 {
+			sql, args := utils.BuildSearchSQL(conditions)
+			query = query.Where(sql, args...)
+		}
 	}
 
 	if err := query.Count(&total).Error; err != nil {

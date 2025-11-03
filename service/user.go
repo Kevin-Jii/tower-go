@@ -22,7 +22,7 @@ func NewUserService(userModule *module.UserModule) *UserService {
 // CreateUser 在指定 StoreID 下创建用户。
 // 这里的 storeID 参数由 Controller 从 Token 中获取并传递。
 // 注意：如果这是用户自注册接口，你需要调整逻辑以分配默认的 StoreID。
-func (s *UserService) CreateUser(storeID uint, req *model.CreateUserReq) error {
+func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.CreateUserReq) error {
 	// 1. 检查手机号在【全局】或【当前门店】是否已存在 (取决于业务需求)
 	// 假设我们在【全局】检查手机号唯一性
 	exists, err := s.userModule.ExistsByPhone(req.Phone)
@@ -33,24 +33,45 @@ func (s *UserService) CreateUser(storeID uint, req *model.CreateUserReq) error {
 		return errors.New("phone number already exists")
 	}
 
-	// 密码加密
+	// 2. 生成唯一工号
+	db := s.userModule.GetDB() // 假设 Module 层有 GetDB() 方法
+	employeeNo, err := utils.GenerateEmployeeNo(db)
+	if err != nil {
+		return errors.New("生成工号失败: " + err.Error())
+	}
+
+	// 3. 密码加密
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}
 
 	user := &model.User{
-		Phone:    req.Phone,
-		Password: hashedPassword,
-		Username: req.Username,
-		Email:    req.Email,
-		Status:   1,       // 默认状态为正常
-		Gender:   1,       // 默认男
-		StoreID:  storeID, // **🔑 关键：设置 StoreID**
+		Phone:      req.Phone,
+		Password:   hashedPassword,
+		Username:   req.Username,
+		Email:      req.Email,
+		EmployeeNo: employeeNo,
+		Status:     1,
+		Gender:     1,
+		StoreID:    storeID,
+		Nickname:   req.Nickname,
 	}
-	if req.Gender == 2 { // 如果传了2则覆盖
+
+	if req.Gender == 2 {
 		user.Gender = 2
 	}
+
+	if req.Status != nil {
+		user.Status = *req.Status
+	}
+
+	if req.RoleID > 0 {
+		user.RoleID = req.RoleID
+	} else if roleCode == model.RoleCodeAdmin && req.RoleID == 0 {
+		// 保持默认
+	}
+
 	return s.userModule.Create(user)
 }
 
@@ -155,8 +176,9 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 		return nil, errors.New("invalid password")
 	}
 
-	// 更新最后登录时间
-	user.LastLoginAt = time.Now()
+	// 更新最后登录时间（仅后端维护）
+	loginTime := time.Now()
+	user.LastLoginAt = &loginTime
 	if err := s.userModule.Update(user); err != nil {
 		return nil, err
 	}

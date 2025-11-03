@@ -14,6 +14,11 @@ func NewStoreModule(db *gorm.DB) *StoreModule {
 	return &StoreModule{db: db}
 }
 
+// GetDB 返回底层数据库实例
+func (m *StoreModule) GetDB() *gorm.DB {
+	return m.db
+}
+
 // Create 创建门店
 func (m *StoreModule) Create(store *model.Store) error {
 	return m.db.Create(store).Error

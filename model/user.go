@@ -3,12 +3,13 @@ package model
 import "time"
 
 type User struct {
-	ID       uint   `json:"id" gorm:"primarykey"`
-	Password string `json:"-" gorm:"not null"`
-	Phone    string `json:"phone" gorm:"uniqueIndex;type:varchar(20)"`
-	Username string `json:"username" gorm:"not null;uniqueIndex:idx_store_username;type:varchar(191)"`
-	Nickname string `json:"nickname" gorm:"type:varchar(100)"`
-	Email    string `json:"email" gorm:"type:varchar(255)"`
+	ID         uint   `json:"id" gorm:"primarykey"`
+	EmployeeNo string `json:"employee_no" gorm:"uniqueIndex;type:varchar(6);not null"` // 工号，6位数字
+	Password   string `json:"-" gorm:"not null"`
+	Phone      string `json:"phone" gorm:"uniqueIndex;type:varchar(20)"`
+	Username   string `json:"username" gorm:"not null;uniqueIndex:idx_store_username;type:varchar(191)"`
+	Nickname   string `json:"nickname" gorm:"type:varchar(100)"`
+	Email      string `json:"email" gorm:"type:varchar(255)"`
 
 	// --- 门店关联 ---
 	StoreID uint   `json:"store_id" gorm:"uniqueIndex:idx_store_username"` // 允许为空(0)，避免迁移外键失败
@@ -19,11 +20,11 @@ type User struct {
 	Role   *Role `json:"role,omitempty" gorm:"foreignKey:RoleID"` // 角色关联
 
 	// --- 状态与安全管理 ---
-	Status      int       `json:"status" gorm:"not null;default:1"` // 账号状态：1=正常，2=禁用
-	Gender      int       `json:"gender" gorm:"not null;default:1"` // 性别：1=男，2=女
-	LastLoginAt time.Time `json:"last_login_at"`                    // 记录最后登录时间
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Status      int        `json:"status" gorm:"not null;default:1"`  // 账号状态：1=正常，2=禁用
+	Gender      int        `json:"gender" gorm:"not null;default:1"`  // 性别：1=男，2=女
+	LastLoginAt *time.Time `json:"last_login_at" gorm:"default:null"` // 记录最后登录时间（仅后端维护）
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type CreateUserReq struct {
@@ -32,6 +33,11 @@ type CreateUserReq struct {
 	Username string `json:"username" binding:"required"`          // 强制要求非空
 	Email    string `json:"email" binding:"omitempty,email"`      // 可选，但如果提供则必须是有效的邮箱
 	Gender   int    `json:"gender" binding:"omitempty,oneof=1 2"` // 1男 2女，未传使用默认1
+	StoreID  uint   `json:"store_id,omitempty"`
+	RoleID   uint   `json:"role_id,omitempty"`
+	Status   *int   `json:"status,omitempty"`
+	Nickname string `json:"nickname,omitempty"`
+	Remark   string `json:"remark,omitempty"`
 }
 
 type UpdateUserReq struct {

@@ -1,7 +1,9 @@
 package module
 
 import (
+	"fmt"
 	"tower-go/model"
+	"tower-go/utils"
 
 	"gorm.io/gorm"
 )
@@ -14,9 +16,13 @@ func NewMenuModule(db *gorm.DB) *MenuModule {
 	return &MenuModule{db: db}
 }
 
-// Create 创建菜单
+// Create 创建菜单（清除缓存）
 func (m *MenuModule) Create(menu *model.Menu) error {
-	return m.db.Create(menu).Error
+	err := m.db.Create(menu).Error
+	if err == nil {
+		utils.InvalidateMenuCache()
+	}
+	return err
 }
 
 // GetByID 根据ID获取菜单
@@ -28,12 +34,24 @@ func (m *MenuModule) GetByID(id uint) (*model.Menu, error) {
 	return &menu, nil
 }
 
-// List 获取所有菜单
+// List 获取所有菜单（带缓存）
 func (m *MenuModule) List() ([]*model.Menu, error) {
 	var menus []*model.Menu
+
+	// 尝试从缓存获取
+	cacheKey := utils.CacheKeyMenuTree
+	err := utils.CacheGet(cacheKey, &menus)
+	if err == nil && len(menus) > 0 {
+		return menus, nil
+	}
+
+	// 缓存未命中，从数据库查询
 	if err := m.db.Order("sort ASC, id ASC").Find(&menus).Error; err != nil {
 		return nil, err
 	}
+
+	// 保存到缓存
+	utils.CacheSet(cacheKey, menus, utils.MenuTreeTTL)
 	return menus, nil
 }
 
@@ -46,7 +64,7 @@ func (m *MenuModule) ListByParentID(parentID uint) ([]*model.Menu, error) {
 	return menus, nil
 }
 
-// Update 更新菜单
+// Update 更新菜单（清除缓存）
 func (m *MenuModule) Update(id uint, req *model.UpdateMenuReq) error {
 	updates := make(map[string]interface{})
 
@@ -87,31 +105,62 @@ func (m *MenuModule) Update(id uint, req *model.UpdateMenuReq) error {
 		updates["remark"] = req.Remark
 	}
 
-	return m.db.Model(&model.Menu{}).Where("id = ?", id).Updates(updates).Error
+	err := m.db.Model(&model.Menu{}).Where("id = ?", id).Updates(updates).Error
+	if err == nil {
+		utils.InvalidateMenuCache()
+	}
+	return err
 }
 
-// Delete 删除菜单
+// Delete 删除菜单（清除缓存）
 func (m *MenuModule) Delete(id uint) error {
-	return m.db.Delete(&model.Menu{}, id).Error
+	err := m.db.Delete(&model.Menu{}, id).Error
+	if err == nil {
+		utils.InvalidateMenuCache()
+	}
+	return err
 }
 
-// GetMenusByRoleID 根据角色ID获取菜单列表
+// GetMenusByRoleID 根据角色ID获取菜单列表（带缓存）
 func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 	var menus []*model.Menu
-	err := m.db.Table("menus").
+
+	// 尝试从缓存获取
+	cacheKey := fmt.Sprintf(utils.CacheKeyRoleMenus, roleID)
+	err := utils.CacheGet(cacheKey, &menus)
+	if err == nil && len(menus) > 0 {
+		return menus, nil
+	}
+
+	// 缓存未命中，从数据库查询
+	err = m.db.Table("menus").
 		Joins("INNER JOIN role_menus ON menus.id = role_menus.menu_id").
 		Where("role_menus.role_id = ? AND menus.status = 1", roleID).
 		Order("menus.sort ASC").
 		Find(&menus).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 保存到缓存
+	utils.CacheSet(cacheKey, menus, utils.PermissionsTTL)
 	return menus, err
 }
 
-// GetMenusByStoreAndRole 根据门店ID和角色ID获取菜单（门店定制权限）
+// GetMenusByStoreAndRole 根据门店ID和角色ID获取菜单（门店定制权限，带缓存）
 func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model.Menu, error) {
 	var menus []*model.Menu
 
-	// 优先查询门店定制权限
-	err := m.db.Table("menus").
+	// 尝试从缓存获取
+	cacheKey := fmt.Sprintf(utils.CacheKeyStoreRoleMenus, storeID, roleID)
+	err := utils.CacheGet(cacheKey, &menus)
+	if err == nil && len(menus) > 0 {
+		return menus, nil
+	}
+
+	// 缓存未命中，优先查询门店定制权限
+	err = m.db.Table("menus").
 		Joins("INNER JOIN store_role_menus ON menus.id = store_role_menus.menu_id").
 		Where("store_role_menus.store_id = ? AND store_role_menus.role_id = ? AND menus.status = 1", storeID, roleID).
 		Order("menus.sort ASC").
@@ -122,5 +171,11 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 		return m.GetMenusByRoleID(roleID)
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
+	// 保存到缓存
+	utils.CacheSet(cacheKey, menus, utils.PermissionsTTL)
 	return menus, err
 }

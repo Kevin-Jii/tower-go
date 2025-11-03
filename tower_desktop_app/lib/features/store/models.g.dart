@@ -8,6 +8,7 @@ part of 'models.dart';
 
 _$StoreImpl _$$StoreImplFromJson(Map<String, dynamic> json) => _$StoreImpl(
       id: (json['id'] as num).toInt(),
+      storeCode: json['store_code'] as String?,
       name: json['name'] as String,
       address: json['address'] as String?,
       status: (json['status'] as num?)?.toInt(),
@@ -22,6 +23,7 @@ _$StoreImpl _$$StoreImplFromJson(Map<String, dynamic> json) => _$StoreImpl(
 Map<String, dynamic> _$$StoreImplToJson(_$StoreImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
+      'store_code': instance.storeCode,
       'name': instance.name,
       'address': instance.address,
       'status': instance.status,

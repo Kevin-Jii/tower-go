@@ -6,6 +6,7 @@ part 'models.g.dart';
 class Store with _$Store {
   const factory Store({
     required int id,
+    @JsonKey(name: 'store_code') String? storeCode, // 门店编号
     required String name,
     String? address,
     int? status, // 0=禁用 1=启用

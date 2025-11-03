@@ -6,6 +6,25 @@ part of 'models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_$RoleImpl _$$RoleImplFromJson(Map<String, dynamic> json) => _$RoleImpl(
+      id: (json['id'] as num).toInt(),
+      name: json['name'] as String,
+      code: json['code'] as String,
+      description: json['description'] as String?,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+    );
+
+Map<String, dynamic> _$$RoleImplToJson(_$RoleImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'code': instance.code,
+      'description': instance.description,
+      'created_at': instance.createdAt,
+      'updated_at': instance.updatedAt,
+    };
+
 _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       id: (json['id'] as num).toInt(),
       username: json['username'] as String,
@@ -15,7 +34,9 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       avatar: json['avatar'] as String?,
       gender: (json['gender'] as num?)?.toInt(),
       roleId: (json['role_id'] as num?)?.toInt(),
-      roleName: json['role_name'] as String?,
+      role: json['role'] == null
+          ? null
+          : Role.fromJson(json['role'] as Map<String, dynamic>),
       storeId: (json['store_id'] as num?)?.toInt(),
       storeName: json['store_name'] as String?,
       status: (json['status'] as num?)?.toInt(),
@@ -34,7 +55,7 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'avatar': instance.avatar,
       'gender': instance.gender,
       'role_id': instance.roleId,
-      'role_name': instance.roleName,
+      'role': instance.role,
       'store_id': instance.storeId,
       'store_name': instance.storeName,
       'status': instance.status,

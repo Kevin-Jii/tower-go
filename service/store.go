@@ -33,41 +33,21 @@ func (s *StoreService) GetStore(id uint) (*model.Store, error) {
 	return s.storeModule.GetByID(id)
 }
 
-// ListStores 获取门店列表
-func (s *StoreService) ListStores(page, pageSize int) ([]*model.Store, int64, error) {
-	return s.storeModule.List(page, pageSize)
+// ListStores 获取门店列表（全部数据）
+func (s *StoreService) ListStores() ([]*model.Store, int64, error) {
+	return s.storeModule.List()
 }
 
 // UpdateStore 更新门店信息
 func (s *StoreService) UpdateStore(id uint, req *model.UpdateStoreReq) error {
-	store, err := s.storeModule.GetByID(id)
+	// 确认门店存在
+	_, err := s.storeModule.GetByID(id)
 	if err != nil {
 		return errors.New("store not found")
 	}
 
-	if req.Name != "" {
-		store.Name = req.Name
-	}
-	if req.Address != "" {
-		store.Address = req.Address
-	}
-	if req.Phone != "" {
-		store.Phone = req.Phone
-	}
-	if req.BusinessHours != "" {
-		store.BusinessHours = req.BusinessHours
-	}
-	if req.Status != nil {
-		store.Status = *req.Status
-	}
-	if req.ContactPerson != "" {
-		store.ContactPerson = req.ContactPerson
-	}
-	if req.Remark != "" {
-		store.Remark = req.Remark
-	}
-
-	return s.storeModule.Update(store)
+	// 使用动态更新避免整行覆盖
+	return s.storeModule.UpdateByID(id, req)
 }
 
 // DeleteStore 删除门店

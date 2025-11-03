@@ -137,6 +137,145 @@ class ApiClient {
     }
   }
 
+  // ============= 智能封装方法 =============
+
+  /// 智能 POST - 自动处理 data 提取和 null 过滤
+  /// 返回 data 中的对象，如果不存在则返回 null
+  Future<T?> postSmart<T>({
+    required String path,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    required T Function(Map<String, dynamic>) fromJson,
+    bool filterNulls = false,
+  }) async {
+    try {
+      // 如果需要过滤 null 值
+      Object? finalData = data;
+      if (filterNulls && data is Map<String, dynamic>) {
+        finalData = Map<String, dynamic>.from(data)
+          ..removeWhere((key, value) => value == null);
+      }
+
+      final resp = await dio.post(path,
+          data: finalData, queryParameters: queryParameters);
+      final body = _validateResponse(resp);
+
+      // 尝试从 data 字段提取
+      final responseData = body['data'];
+      if (responseData == null) return null;
+
+      if (responseData is Map<String, dynamic>) {
+        return fromJson(responseData);
+      }
+
+      throw ApiException('响应 data 格式错误，期望 Map，实际为 ${responseData.runtimeType}');
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
+  /// 智能 PUT - 自动处理 data 提取和 null 过滤
+  /// 返回 data 中的对象，如果不存在则返回 null
+  Future<T?> putSmart<T>({
+    required String path,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    required T Function(Map<String, dynamic>) fromJson,
+    bool filterNulls = true, // PUT 默认过滤 null
+  }) async {
+    try {
+      // 如果需要过滤 null 值
+      Object? finalData = data;
+      if (filterNulls && data is Map<String, dynamic>) {
+        finalData = Map<String, dynamic>.from(data)
+          ..removeWhere((key, value) => value == null);
+      }
+
+      final resp = await dio.put(path,
+          data: finalData, queryParameters: queryParameters);
+      final body = _validateResponse(resp);
+
+      // 尝试从 data 字段提取
+      final responseData = body['data'];
+      if (responseData == null) return null;
+
+      if (responseData is Map<String, dynamic>) {
+        return fromJson(responseData);
+      }
+
+      throw ApiException('响应 data 格式错误，期望 Map，实际为 ${responseData.runtimeType}');
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
+  /// 智能 GET - 自动处理 data 提取
+  /// 返回 data 中的对象
+  Future<T> getSmart<T>({
+    required String path,
+    Map<String, dynamic>? queryParameters,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    try {
+      final resp = await dio.get(path, queryParameters: queryParameters);
+      final body = _validateResponse(resp);
+
+      final responseData = body['data'];
+      if (responseData == null) {
+        throw ApiException('GET 请求响应 data 为空');
+      }
+
+      if (responseData is Map<String, dynamic>) {
+        return fromJson(responseData);
+      }
+
+      throw ApiException('响应 data 格式错误，期望 Map，实际为 ${responseData.runtimeType}');
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
+  /// 智能 DELETE - 不期望返回数据
+  Future<void> deleteSmart({
+    required String path,
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      await dio.delete(path, data: data, queryParameters: queryParameters);
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
+  /// 智能 GET List - 自动提取 data 中的列表
+  Future<List<T>> getListSmart<T>({
+    required String path,
+    Map<String, dynamic>? queryParameters,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    try {
+      final resp = await dio.get(path, queryParameters: queryParameters);
+      final body = _validateResponse(resp);
+
+      final responseData = body['data'];
+      if (responseData == null) {
+        return [];
+      }
+
+      if (responseData is List) {
+        return responseData
+            .map((item) => fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+      }
+
+      throw ApiException(
+          '响应 data 格式错误，期望 List，实际为 ${responseData.runtimeType}');
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
   ApiException _toApiException(DioException e) {
     String msg;
     switch (e.type) {

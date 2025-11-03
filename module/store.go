@@ -28,8 +28,8 @@ func (m *StoreModule) GetByID(id uint) (*model.Store, error) {
 	return &store, nil
 }
 
-// List 获取门店列表（支持分页）
-func (m *StoreModule) List(page, pageSize int) ([]*model.Store, int64, error) {
+// List 获取门店列表（全部数据，不分页）
+func (m *StoreModule) List() ([]*model.Store, int64, error) {
 	var stores []*model.Store
 	var total int64
 
@@ -37,7 +37,7 @@ func (m *StoreModule) List(page, pageSize int) ([]*model.Store, int64, error) {
 		return nil, 0, err
 	}
 
-	if err := m.db.Offset((page - 1) * pageSize).Limit(pageSize).Find(&stores).Error; err != nil {
+	if err := m.db.Find(&stores).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -47,6 +47,35 @@ func (m *StoreModule) List(page, pageSize int) ([]*model.Store, int64, error) {
 // Update 更新门店信息
 func (m *StoreModule) Update(store *model.Store) error {
 	return m.db.Save(store).Error
+}
+
+// UpdateByID 根据ID更新门店信息（动态更新，避免整行覆盖）
+func (m *StoreModule) UpdateByID(id uint, req *model.UpdateStoreReq) error {
+	updates := make(map[string]interface{})
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Address != "" {
+		updates["address"] = req.Address
+	}
+	if req.Phone != "" {
+		updates["phone"] = req.Phone
+	}
+	if req.BusinessHours != "" {
+		updates["business_hours"] = req.BusinessHours
+	}
+	if req.ContactPerson != "" {
+		updates["contact_person"] = req.ContactPerson
+	}
+	if req.Remark != "" {
+		updates["remark"] = req.Remark
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+
+	return m.db.Model(&model.Store{}).Where("id = ?", id).Updates(updates).Error
 }
 
 // Delete 删除门店

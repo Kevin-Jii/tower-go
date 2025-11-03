@@ -93,7 +93,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 
 // ListUsers godoc
 // @Summary 用户列表
-// @Description 获取用户列表，支持分页
+// @Description 获取用户列表。总部管理员返回全部用户（跨门店，支持分页），门店管理员返回其门店用户（分页）
 // @Tags users
 // @Accept json
 // @Produce json
@@ -101,19 +101,34 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Param keyword query string false "模糊关键字(匹配用户名或手机号任意部分，如手机号后4位)"
-// @Success 200 {object} utils.StandardResponse{data=[]model.User} "分页 meta: total,page,page_size,page_count,has_more；支持 keyword 模糊匹配用户名或手机号"
+// @Success 200 {object} utils.StandardResponse{data=[]model.User} "支持 keyword 模糊匹配用户名或手机号；总部管理员查看全部用户，门店管理员仅查看本门店用户"
 // @Router /users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
+	roleCode := middleware.GetRoleCode(ctx)
+	keyword := ctx.Query("keyword")
 	page := utils.GetPage(ctx)
 	pageSize := utils.GetPageSize(ctx)
 
-	keyword := ctx.Query("keyword")
 	var (
 		users []*model.User
 		total int64
 		err   error
 	)
+
+	// 总部管理员返回全部用户（跨门店），支持分页
+	if roleCode == model.RoleCodeAdmin {
+		users, total, err = c.userService.ListAllUsers(keyword, page, pageSize)
+		if err != nil {
+			utils.Error(ctx, http.StatusInternalServerError, err.Error())
+			return
+		}
+		utils.SuccessWithPagination(ctx, users, total, page, pageSize)
+		return
+	}
+
+	// 门店管理员/普通员工：返回门店用户列表，分页
+	storeID := middleware.GetStoreID(ctx)
+
 	if keyword != "" {
 		users, total, err = c.userService.ListUsersByStoreIDWithKeyword(storeID, keyword, page, pageSize)
 	} else {

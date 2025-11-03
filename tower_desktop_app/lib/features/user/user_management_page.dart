@@ -376,7 +376,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   'username': u.username,
                   'phone': u.phone,
                   'gender': '', // 占位，实际通过 cellBuilder
-                  'role': u.roleName ?? '—',
+                  'role': u.role?.name ?? '—',
                   'store': u.storeName ?? '—',
                   'status': u.status == 1 ? '启用' : '禁用',
                   'actions': '', // 占位，实际通过 cellBuilder
@@ -414,10 +414,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   )
                 : ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: TDTable(
-                      columns: columns,
-                      data: data,
-                      rowHeight: 50,
+                    child: SingleChildScrollView(
+                      child: TDTable(
+                        columns: columns,
+                        data: data,
+                        rowHeight: 50,
+                      ),
                     ),
                   ),
           ),

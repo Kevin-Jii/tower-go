@@ -14,6 +14,264 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
+Role _$RoleFromJson(Map<String, dynamic> json) {
+  return _Role.fromJson(json);
+}
+
+/// @nodoc
+mixin _$Role {
+  int get id => throw _privateConstructorUsedError;
+  String get name => throw _privateConstructorUsedError;
+  String get code => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
+  String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt => throw _privateConstructorUsedError;
+
+  /// Serializes this Role to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of Role
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $RoleCopyWith<Role> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $RoleCopyWith<$Res> {
+  factory $RoleCopyWith(Role value, $Res Function(Role) then) =
+      _$RoleCopyWithImpl<$Res, Role>;
+  @useResult
+  $Res call(
+      {int id,
+      String name,
+      String code,
+      String? description,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
+}
+
+/// @nodoc
+class _$RoleCopyWithImpl<$Res, $Val extends Role>
+    implements $RoleCopyWith<$Res> {
+  _$RoleCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of Role
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? code = null,
+    Object? description = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      code: null == code
+          ? _value.code
+          : code // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$RoleImplCopyWith<$Res> implements $RoleCopyWith<$Res> {
+  factory _$$RoleImplCopyWith(
+          _$RoleImpl value, $Res Function(_$RoleImpl) then) =
+      __$$RoleImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int id,
+      String name,
+      String code,
+      String? description,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
+}
+
+/// @nodoc
+class __$$RoleImplCopyWithImpl<$Res>
+    extends _$RoleCopyWithImpl<$Res, _$RoleImpl>
+    implements _$$RoleImplCopyWith<$Res> {
+  __$$RoleImplCopyWithImpl(_$RoleImpl _value, $Res Function(_$RoleImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of Role
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? code = null,
+    Object? description = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+  }) {
+    return _then(_$RoleImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as int,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      code: null == code
+          ? _value.code
+          : code // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$RoleImpl implements _Role {
+  const _$RoleImpl(
+      {required this.id,
+      required this.name,
+      required this.code,
+      this.description,
+      @JsonKey(name: 'created_at') this.createdAt,
+      @JsonKey(name: 'updated_at') this.updatedAt});
+
+  factory _$RoleImpl.fromJson(Map<String, dynamic> json) =>
+      _$$RoleImplFromJson(json);
+
+  @override
+  final int id;
+  @override
+  final String name;
+  @override
+  final String code;
+  @override
+  final String? description;
+  @override
+  @JsonKey(name: 'created_at')
+  final String? createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  final String? updatedAt;
+
+  @override
+  String toString() {
+    return 'Role(id: $id, name: $name, code: $code, description: $description, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$RoleImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.code, code) || other.code == code) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, id, name, code, description, createdAt, updatedAt);
+
+  /// Create a copy of Role
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$RoleImplCopyWith<_$RoleImpl> get copyWith =>
+      __$$RoleImplCopyWithImpl<_$RoleImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$RoleImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _Role implements Role {
+  const factory _Role(
+      {required final int id,
+      required final String name,
+      required final String code,
+      final String? description,
+      @JsonKey(name: 'created_at') final String? createdAt,
+      @JsonKey(name: 'updated_at') final String? updatedAt}) = _$RoleImpl;
+
+  factory _Role.fromJson(Map<String, dynamic> json) = _$RoleImpl.fromJson;
+
+  @override
+  int get id;
+  @override
+  String get name;
+  @override
+  String get code;
+  @override
+  String? get description;
+  @override
+  @JsonKey(name: 'created_at')
+  String? get createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt;
+
+  /// Create a copy of Role
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$RoleImplCopyWith<_$RoleImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 User _$UserFromJson(Map<String, dynamic> json) {
   return _User.fromJson(json);
 }
@@ -29,12 +287,11 @@ mixin _$User {
   int? get gender => throw _privateConstructorUsedError; // 1=男 2=女
   @JsonKey(name: 'role_id')
   int? get roleId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'role_name')
-  String? get roleName => throw _privateConstructorUsedError;
+  Role? get role => throw _privateConstructorUsedError; // 嵌套的角色对象
   @JsonKey(name: 'store_id')
   int? get storeId => throw _privateConstructorUsedError;
   @JsonKey(name: 'store_name')
-  String? get storeName => throw _privateConstructorUsedError;
+  String? get storeName => throw _privateConstructorUsedError; // 门店名称（前端填充）
   int? get status => throw _privateConstructorUsedError; // 0=禁用 1=启用
   String? get remark => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
@@ -65,13 +322,15 @@ abstract class $UserCopyWith<$Res> {
       String? avatar,
       int? gender,
       @JsonKey(name: 'role_id') int? roleId,
-      @JsonKey(name: 'role_name') String? roleName,
+      Role? role,
       @JsonKey(name: 'store_id') int? storeId,
       @JsonKey(name: 'store_name') String? storeName,
       int? status,
       String? remark,
       @JsonKey(name: 'created_at') String? createdAt,
       @JsonKey(name: 'updated_at') String? updatedAt});
+
+  $RoleCopyWith<$Res>? get role;
 }
 
 /// @nodoc
@@ -97,7 +356,7 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? avatar = freezed,
     Object? gender = freezed,
     Object? roleId = freezed,
-    Object? roleName = freezed,
+    Object? role = freezed,
     Object? storeId = freezed,
     Object? storeName = freezed,
     Object? status = freezed,
@@ -138,10 +397,10 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.roleId
           : roleId // ignore: cast_nullable_to_non_nullable
               as int?,
-      roleName: freezed == roleName
-          ? _value.roleName
-          : roleName // ignore: cast_nullable_to_non_nullable
-              as String?,
+      role: freezed == role
+          ? _value.role
+          : role // ignore: cast_nullable_to_non_nullable
+              as Role?,
       storeId: freezed == storeId
           ? _value.storeId
           : storeId // ignore: cast_nullable_to_non_nullable
@@ -168,6 +427,20 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
               as String?,
     ) as $Val);
   }
+
+  /// Create a copy of User
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $RoleCopyWith<$Res>? get role {
+    if (_value.role == null) {
+      return null;
+    }
+
+    return $RoleCopyWith<$Res>(_value.role!, (value) {
+      return _then(_value.copyWith(role: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -186,13 +459,16 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       String? avatar,
       int? gender,
       @JsonKey(name: 'role_id') int? roleId,
-      @JsonKey(name: 'role_name') String? roleName,
+      Role? role,
       @JsonKey(name: 'store_id') int? storeId,
       @JsonKey(name: 'store_name') String? storeName,
       int? status,
       String? remark,
       @JsonKey(name: 'created_at') String? createdAt,
       @JsonKey(name: 'updated_at') String? updatedAt});
+
+  @override
+  $RoleCopyWith<$Res>? get role;
 }
 
 /// @nodoc
@@ -215,7 +491,7 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? avatar = freezed,
     Object? gender = freezed,
     Object? roleId = freezed,
-    Object? roleName = freezed,
+    Object? role = freezed,
     Object? storeId = freezed,
     Object? storeName = freezed,
     Object? status = freezed,
@@ -256,10 +532,10 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.roleId
           : roleId // ignore: cast_nullable_to_non_nullable
               as int?,
-      roleName: freezed == roleName
-          ? _value.roleName
-          : roleName // ignore: cast_nullable_to_non_nullable
-              as String?,
+      role: freezed == role
+          ? _value.role
+          : role // ignore: cast_nullable_to_non_nullable
+              as Role?,
       storeId: freezed == storeId
           ? _value.storeId
           : storeId // ignore: cast_nullable_to_non_nullable
@@ -300,7 +576,7 @@ class _$UserImpl implements _User {
       this.avatar,
       this.gender,
       @JsonKey(name: 'role_id') this.roleId,
-      @JsonKey(name: 'role_name') this.roleName,
+      this.role,
       @JsonKey(name: 'store_id') this.storeId,
       @JsonKey(name: 'store_name') this.storeName,
       this.status,
@@ -330,14 +606,15 @@ class _$UserImpl implements _User {
   @JsonKey(name: 'role_id')
   final int? roleId;
   @override
-  @JsonKey(name: 'role_name')
-  final String? roleName;
+  final Role? role;
+// 嵌套的角色对象
   @override
   @JsonKey(name: 'store_id')
   final int? storeId;
   @override
   @JsonKey(name: 'store_name')
   final String? storeName;
+// 门店名称（前端填充）
   @override
   final int? status;
 // 0=禁用 1=启用
@@ -352,7 +629,7 @@ class _$UserImpl implements _User {
 
   @override
   String toString() {
-    return 'User(id: $id, username: $username, phone: $phone, email: $email, nickname: $nickname, avatar: $avatar, gender: $gender, roleId: $roleId, roleName: $roleName, storeId: $storeId, storeName: $storeName, status: $status, remark: $remark, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'User(id: $id, username: $username, phone: $phone, email: $email, nickname: $nickname, avatar: $avatar, gender: $gender, roleId: $roleId, role: $role, storeId: $storeId, storeName: $storeName, status: $status, remark: $remark, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -370,8 +647,7 @@ class _$UserImpl implements _User {
             (identical(other.avatar, avatar) || other.avatar == avatar) &&
             (identical(other.gender, gender) || other.gender == gender) &&
             (identical(other.roleId, roleId) || other.roleId == roleId) &&
-            (identical(other.roleName, roleName) ||
-                other.roleName == roleName) &&
+            (identical(other.role, role) || other.role == role) &&
             (identical(other.storeId, storeId) || other.storeId == storeId) &&
             (identical(other.storeName, storeName) ||
                 other.storeName == storeName) &&
@@ -395,7 +671,7 @@ class _$UserImpl implements _User {
       avatar,
       gender,
       roleId,
-      roleName,
+      role,
       storeId,
       storeName,
       status,
@@ -429,7 +705,7 @@ abstract class _User implements User {
       final String? avatar,
       final int? gender,
       @JsonKey(name: 'role_id') final int? roleId,
-      @JsonKey(name: 'role_name') final String? roleName,
+      final Role? role,
       @JsonKey(name: 'store_id') final int? storeId,
       @JsonKey(name: 'store_name') final String? storeName,
       final int? status,
@@ -457,14 +733,13 @@ abstract class _User implements User {
   @JsonKey(name: 'role_id')
   int? get roleId;
   @override
-  @JsonKey(name: 'role_name')
-  String? get roleName;
+  Role? get role; // 嵌套的角色对象
   @override
   @JsonKey(name: 'store_id')
   int? get storeId;
   @override
   @JsonKey(name: 'store_name')
-  String? get storeName;
+  String? get storeName; // 门店名称（前端填充）
   @override
   int? get status; // 0=禁用 1=启用
   @override

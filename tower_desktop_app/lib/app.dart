@@ -8,6 +8,8 @@ import 'features/menu/menu_api.dart';
 import 'features/menu/menu_provider.dart';
 import 'features/user/user_api.dart';
 import 'features/user/user_provider.dart';
+import 'features/store/store_api.dart';
+import 'features/store/store_provider.dart';
 import 'core/network/api_client.dart';
 
 class TowerApp extends StatelessWidget {
@@ -16,11 +18,15 @@ class TowerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final apiClient = ApiClient();
+    final storeApi = StoreApi(apiClient);
+    final userApi = UserApi(apiClient);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PermissionProvider()),
         ChangeNotifierProvider(create: (_) => MenuProvider(MenuApi())),
-        ChangeNotifierProvider(create: (_) => UserProvider(UserApi(apiClient))),
+        ChangeNotifierProvider(create: (_) => UserProvider(userApi, storeApi)),
+        ChangeNotifierProvider(create: (_) => StoreProvider(storeApi)),
       ],
       child: FutureBuilder(
         future: _bootstrap(context),
@@ -56,7 +62,9 @@ class _DeferredHomeState extends State<_DeferredHome> {
   @override
   void initState() {
     super.initState();
-    _prepare();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _prepare();
+    });
   }
 
   Future<void> _prepare() async {

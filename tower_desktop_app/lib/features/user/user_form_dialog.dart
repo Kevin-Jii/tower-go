@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:tdesign_flutter/tdesign_flutter.dart';
 import 'models.dart';
+import '../store/store_provider.dart';
+import '../store/models.dart';
 
 class UserFormDialog extends StatefulWidget {
   const UserFormDialog({super.key});
@@ -19,6 +22,34 @@ class _UserFormDialogState extends State<UserFormDialog> {
   final _remarkController = TextEditingController();
 
   int? _gender; // 1=男 2=女
+  Store? _selectedStore; // 选中的门店
+  List<Store> _stores = [];
+  bool _loadingStores = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadStores();
+    });
+  }
+
+  Future<void> _loadStores() async {
+    if (!mounted) return;
+    setState(() => _loadingStores = true);
+    try {
+      final provider = context.read<StoreProvider>();
+      await provider.loadStores(page: 1, pageSize: 100); // 加载所有门店
+      if (!mounted) return;
+      setState(() {
+        _stores = provider.stores;
+        _loadingStores = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingStores = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +80,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
           ? null
           : _nicknameController.text.trim(),
       gender: _gender,
+      storeId: _selectedStore?.id,
       status: 1, // 默认启用
       remark: _remarkController.text.trim().isEmpty
           ? null
@@ -175,39 +207,72 @@ class _UserFormDialogState extends State<UserFormDialog> {
                   label: '性别',
                   child: Row(
                     children: [
-                      TDButton(
-                        text: '男',
-                        size: TDButtonSize.medium,
-                        type: _gender == 1
-                            ? TDButtonType.fill
-                            : TDButtonType.outline,
-                        theme: _gender == 1
-                            ? TDButtonTheme.primary
-                            : TDButtonTheme.defaultTheme,
-                        onTap: () {
+                      Radio<int>(
+                        value: 1,
+                        groupValue: _gender,
+                        onChanged: (value) {
                           setState(() {
-                            _gender = 1;
+                            _gender = value;
                           });
                         },
                       ),
-                      const SizedBox(width: 12),
-                      TDButton(
-                        text: '女',
-                        size: TDButtonSize.medium,
-                        type: _gender == 2
-                            ? TDButtonType.fill
-                            : TDButtonType.outline,
-                        theme: _gender == 2
-                            ? TDButtonTheme.primary
-                            : TDButtonTheme.defaultTheme,
-                        onTap: () {
+                      const Text('男'),
+                      const SizedBox(width: 24),
+                      Radio<int>(
+                        value: 2,
+                        groupValue: _gender,
+                        onChanged: (value) {
                           setState(() {
-                            _gender = 2;
+                            _gender = value;
                           });
                         },
                       ),
+                      const Text('女'),
                     ],
                   ),
+                ),
+
+                // 归属门店
+                _buildFormItem(
+                  label: '归属门店',
+                  child: _loadingStores
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(12.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<Store>(
+                              value: _selectedStore,
+                              hint: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('请选择归属门店'),
+                              ),
+                              isExpanded: true,
+                              items: _stores.map((store) {
+                                return DropdownMenuItem<Store>(
+                                  value: store,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text(store.name),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (Store? store) {
+                                setState(() {
+                                  _selectedStore = store;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
                 ),
 
                 // 备注

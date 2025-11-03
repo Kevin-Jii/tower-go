@@ -72,6 +72,11 @@ func (s *UserService) ListUsersByStoreIDWithKeyword(storeID uint, keyword string
 	return s.userModule.ListByStoreIDWithKeyword(storeID, keyword, page, pageSize)
 }
 
+// ListAllUsers 获取全部用户（支持分页，用于总部管理员）
+func (s *UserService) ListAllUsers(keyword string, page, pageSize int) ([]*model.User, int64, error) {
+	return s.userModule.ListAllUsers(keyword, page, pageSize)
+}
+
 // UpdateUserByStoreID 更新指定门店下的用户数据。
 func (s *UserService) UpdateUserByStoreID(userID uint, storeID uint, req *model.UpdateUserReq) error {
 	// 1. 先获取用户，并确保用户属于该门店
@@ -135,6 +140,14 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 	user, err := s.userModule.GetByPhone(phone)
 	if err != nil {
 		return nil, errors.New("user not found")
+	}
+	if user.Status == 2 {
+		return nil, errors.New("该账号已经被禁用，请联系管理员")
+	}
+
+	// 检查门店状态：如果用户有门店且门店已停业，禁止登录
+	if user.Store != nil && user.Store.Status == 2 {
+		return nil, errors.New("该门店已停业，暂时无法登录")
 	}
 
 	// 验证密码

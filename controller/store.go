@@ -78,26 +78,22 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 
 // ListStores godoc
 // @Summary 门店列表
-// @Description 获取门店列表，支持分页
+// @Description 获取全部门店列表（不分页）
 // @Tags stores
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param page query int false "页码"
-// @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.StandardResponse{data=[]model.Store} "分页 meta: total,page,page_size,page_count,has_more"
+// @Success 200 {object} utils.StandardResponse{data=[]model.Store} "返回全部门店数据，meta 包含 total"
 // @Router /stores [get]
 func (c *StoreController) ListStores(ctx *gin.Context) {
-	page := utils.GetPage(ctx)
-	pageSize := utils.GetPageSize(ctx)
-
-	stores, total, err := c.storeService.ListStores(page, pageSize)
+	stores, total, err := c.storeService.ListStores()
 	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.SuccessWithPagination(ctx, stores, total, page, pageSize)
+	// 使用分页格式返回，但不实际分页（page=1, pageSize=total）
+	utils.SuccessWithPagination(ctx, stores, total, 1, int(total))
 }
 
 // UpdateStore godoc

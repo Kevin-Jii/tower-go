@@ -4,6 +4,20 @@ part 'models.freezed.dart';
 part 'models.g.dart';
 
 @freezed
+class Role with _$Role {
+  const factory Role({
+    required int id,
+    required String name,
+    required String code,
+    String? description,
+    @JsonKey(name: 'created_at') String? createdAt,
+    @JsonKey(name: 'updated_at') String? updatedAt,
+  }) = _Role;
+
+  factory Role.fromJson(Map<String, dynamic> json) => _$RoleFromJson(json);
+}
+
+@freezed
 class User with _$User {
   const factory User({
     required int id,
@@ -14,9 +28,9 @@ class User with _$User {
     String? avatar,
     int? gender, // 1=男 2=女
     @JsonKey(name: 'role_id') int? roleId,
-    @JsonKey(name: 'role_name') String? roleName,
+    Role? role, // 嵌套的角色对象
     @JsonKey(name: 'store_id') int? storeId,
-    @JsonKey(name: 'store_name') String? storeName,
+    @JsonKey(name: 'store_name') String? storeName, // 门店名称（前端填充）
     int? status, // 0=禁用 1=启用
     String? remark,
     @JsonKey(name: 'created_at') String? createdAt,

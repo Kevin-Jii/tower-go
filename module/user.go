@@ -85,7 +85,7 @@ func (m *UserModule) ListByStoreID(storeID uint, page, pageSize int) ([]*model.U
 		return nil, 0, err
 	}
 
-	if err := m.db.Where("store_id = ?", storeID).
+	if err := m.db.Preload("Role").Where("store_id = ?", storeID).
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&users).Error; err != nil {
@@ -110,7 +110,28 @@ func (m *UserModule) ListByStoreIDWithKeyword(storeID uint, keyword string, page
 		return nil, 0, err
 	}
 
-	if err := query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
+	if err := query.Preload("Role").Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
+}
+
+// ListAllUsers 获取所有用户（支持分页，用于总部管理员）
+func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.User, int64, error) {
+	var users []*model.User
+	var total int64
+
+	query := m.db.Model(&model.User{})
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("username LIKE ? OR phone LIKE ?", like, like)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Preload("Role").Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	return users, total, nil

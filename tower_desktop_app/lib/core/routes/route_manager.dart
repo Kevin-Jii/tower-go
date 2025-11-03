@@ -3,6 +3,7 @@ import '../../features/menu/models.dart';
 import '../icons/td_icon_mapper.dart';
 import '../constants/menu_types.dart';
 import '../../features/user/user_management_page.dart';
+import '../../features/store/store_management_page.dart';
 
 /// 路由管理器
 class RouteManager {
@@ -32,7 +33,7 @@ class RouteManager {
 
       // 门店管理
       case 'store/list/index':
-        return _buildModulePage('门店列表', menuItem);
+        return const StoreManagementPage();
 
       // 菜品管理
       case 'dish/list/index':

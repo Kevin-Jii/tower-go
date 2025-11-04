@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/constants/app_constants.dart';
 import 'models.dart';
 
 class UserApi {
@@ -15,7 +16,7 @@ class UserApi {
     int? status,
   }) async {
     final pageResp = await _client.getPage<User>(
-      '/users',
+      ApiPaths.users,
       queryParameters: {
         'page': page,
         'page_size': pageSize,
@@ -37,7 +38,7 @@ class UserApi {
   /// 创建用户
   Future<void> createUser(CreateUserRequest req) async {
     await _client.post<void>(
-      '/users',
+      ApiPaths.users,
       data: req.toJson(),
     );
   }
@@ -49,7 +50,7 @@ class UserApi {
     json.removeWhere((key, value) => value == null);
 
     await _client.request<void>(
-      '/users/$id',
+      '${ApiPaths.users}/$id',
       method: 'PUT',
       data: json,
     );
@@ -57,17 +58,17 @@ class UserApi {
 
   /// 删除用户
   Future<void> deleteUser(int id) async {
-    await _client.request('/users/$id', method: 'DELETE');
+    await _client.request('${ApiPaths.users}/$id', method: 'DELETE');
   }
 
   /// 批量删除用户
   Future<void> batchDelete(List<int> ids) async {
-    await _client.post('/users/batch-delete', data: {'ids': ids});
+    await _client.post('${ApiPaths.users}/batch-delete', data: {'ids': ids});
   }
 
   /// 重置密码
   Future<void> resetPassword(int id, String newPassword) async {
-    await _client
-        .post('/users/$id/reset-password', data: {'password': newPassword});
+    await _client.post('${ApiPaths.users}/$id/reset-password',
+        data: {'password': newPassword});
   }
 }

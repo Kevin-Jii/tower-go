@@ -36,6 +36,15 @@ mixin _$MenuItem {
   String? get permission => throw _privateConstructorUsedError;
   @JsonKey(name: 'perms')
   List<String> get permissions => throw _privateConstructorUsedError; // 兼容数组形式
+// 是否外链: 1是 0否（假设后端字段 is_external）
+  @JsonKey(name: 'is_external')
+  int? get isExternal =>
+      throw _privateConstructorUsedError; // 是否缓存: 1缓存 0不缓存（假设后端字段 cache 或 keep_alive，这里使用 cache）
+  @JsonKey(name: 'cache')
+  int? get cache =>
+      throw _privateConstructorUsedError; // 路由参数（假设后端字段 route_params，使用字符串保存原始表达式）
+  @JsonKey(name: 'route_params')
+  String? get routeParams => throw _privateConstructorUsedError;
   String? get remark => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   String? get createdAt => throw _privateConstructorUsedError;
@@ -72,6 +81,9 @@ abstract class $MenuItemCopyWith<$Res> {
       int? status,
       String? permission,
       @JsonKey(name: 'perms') List<String> permissions,
+      @JsonKey(name: 'is_external') int? isExternal,
+      @JsonKey(name: 'cache') int? cache,
+      @JsonKey(name: 'route_params') String? routeParams,
       String? remark,
       @JsonKey(name: 'created_at') String? createdAt,
       @JsonKey(name: 'updated_at') String? updatedAt,
@@ -106,6 +118,9 @@ class _$MenuItemCopyWithImpl<$Res, $Val extends MenuItem>
     Object? status = freezed,
     Object? permission = freezed,
     Object? permissions = null,
+    Object? isExternal = freezed,
+    Object? cache = freezed,
+    Object? routeParams = freezed,
     Object? remark = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -164,6 +179,18 @@ class _$MenuItemCopyWithImpl<$Res, $Val extends MenuItem>
           ? _value.permissions
           : permissions // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      isExternal: freezed == isExternal
+          ? _value.isExternal
+          : isExternal // ignore: cast_nullable_to_non_nullable
+              as int?,
+      cache: freezed == cache
+          ? _value.cache
+          : cache // ignore: cast_nullable_to_non_nullable
+              as int?,
+      routeParams: freezed == routeParams
+          ? _value.routeParams
+          : routeParams // ignore: cast_nullable_to_non_nullable
+              as String?,
       remark: freezed == remark
           ? _value.remark
           : remark // ignore: cast_nullable_to_non_nullable
@@ -206,6 +233,9 @@ abstract class _$$MenuItemImplCopyWith<$Res>
       int? status,
       String? permission,
       @JsonKey(name: 'perms') List<String> permissions,
+      @JsonKey(name: 'is_external') int? isExternal,
+      @JsonKey(name: 'cache') int? cache,
+      @JsonKey(name: 'route_params') String? routeParams,
       String? remark,
       @JsonKey(name: 'created_at') String? createdAt,
       @JsonKey(name: 'updated_at') String? updatedAt,
@@ -238,6 +268,9 @@ class __$$MenuItemImplCopyWithImpl<$Res>
     Object? status = freezed,
     Object? permission = freezed,
     Object? permissions = null,
+    Object? isExternal = freezed,
+    Object? cache = freezed,
+    Object? routeParams = freezed,
     Object? remark = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -296,6 +329,18 @@ class __$$MenuItemImplCopyWithImpl<$Res>
           ? _value._permissions
           : permissions // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      isExternal: freezed == isExternal
+          ? _value.isExternal
+          : isExternal // ignore: cast_nullable_to_non_nullable
+              as int?,
+      cache: freezed == cache
+          ? _value.cache
+          : cache // ignore: cast_nullable_to_non_nullable
+              as int?,
+      routeParams: freezed == routeParams
+          ? _value.routeParams
+          : routeParams // ignore: cast_nullable_to_non_nullable
+              as String?,
       remark: freezed == remark
           ? _value.remark
           : remark // ignore: cast_nullable_to_non_nullable
@@ -333,6 +378,9 @@ class _$MenuItemImpl implements _MenuItem {
       this.status,
       this.permission,
       @JsonKey(name: 'perms') final List<String> permissions = const [],
+      @JsonKey(name: 'is_external') this.isExternal,
+      @JsonKey(name: 'cache') this.cache,
+      @JsonKey(name: 'route_params') this.routeParams,
       this.remark,
       @JsonKey(name: 'created_at') this.createdAt,
       @JsonKey(name: 'updated_at') this.updatedAt,
@@ -379,6 +427,18 @@ class _$MenuItemImpl implements _MenuItem {
   }
 
 // 兼容数组形式
+// 是否外链: 1是 0否（假设后端字段 is_external）
+  @override
+  @JsonKey(name: 'is_external')
+  final int? isExternal;
+// 是否缓存: 1缓存 0不缓存（假设后端字段 cache 或 keep_alive，这里使用 cache）
+  @override
+  @JsonKey(name: 'cache')
+  final int? cache;
+// 路由参数（假设后端字段 route_params，使用字符串保存原始表达式）
+  @override
+  @JsonKey(name: 'route_params')
+  final String? routeParams;
   @override
   final String? remark;
   @override
@@ -398,7 +458,7 @@ class _$MenuItemImpl implements _MenuItem {
 
   @override
   String toString() {
-    return 'MenuItem(id: $id, parentId: $parentId, name: $name, title: $title, icon: $icon, path: $path, component: $component, type: $type, sort: $sort, visible: $visible, status: $status, permission: $permission, permissions: $permissions, remark: $remark, createdAt: $createdAt, updatedAt: $updatedAt, children: $children)';
+    return 'MenuItem(id: $id, parentId: $parentId, name: $name, title: $title, icon: $icon, path: $path, component: $component, type: $type, sort: $sort, visible: $visible, status: $status, permission: $permission, permissions: $permissions, isExternal: $isExternal, cache: $cache, routeParams: $routeParams, remark: $remark, createdAt: $createdAt, updatedAt: $updatedAt, children: $children)';
   }
 
   @override
@@ -423,6 +483,11 @@ class _$MenuItemImpl implements _MenuItem {
                 other.permission == permission) &&
             const DeepCollectionEquality()
                 .equals(other._permissions, _permissions) &&
+            (identical(other.isExternal, isExternal) ||
+                other.isExternal == isExternal) &&
+            (identical(other.cache, cache) || other.cache == cache) &&
+            (identical(other.routeParams, routeParams) ||
+                other.routeParams == routeParams) &&
             (identical(other.remark, remark) || other.remark == remark) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -433,25 +498,29 @@ class _$MenuItemImpl implements _MenuItem {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      parentId,
-      name,
-      title,
-      icon,
-      path,
-      component,
-      type,
-      sort,
-      visible,
-      status,
-      permission,
-      const DeepCollectionEquality().hash(_permissions),
-      remark,
-      createdAt,
-      updatedAt,
-      const DeepCollectionEquality().hash(_children));
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        parentId,
+        name,
+        title,
+        icon,
+        path,
+        component,
+        type,
+        sort,
+        visible,
+        status,
+        permission,
+        const DeepCollectionEquality().hash(_permissions),
+        isExternal,
+        cache,
+        routeParams,
+        remark,
+        createdAt,
+        updatedAt,
+        const DeepCollectionEquality().hash(_children)
+      ]);
 
   /// Create a copy of MenuItem
   /// with the given fields replaced by the non-null parameter values.
@@ -484,6 +553,9 @@ abstract class _MenuItem implements MenuItem {
       final int? status,
       final String? permission,
       @JsonKey(name: 'perms') final List<String> permissions,
+      @JsonKey(name: 'is_external') final int? isExternal,
+      @JsonKey(name: 'cache') final int? cache,
+      @JsonKey(name: 'route_params') final String? routeParams,
       final String? remark,
       @JsonKey(name: 'created_at') final String? createdAt,
       @JsonKey(name: 'updated_at') final String? updatedAt,
@@ -520,6 +592,16 @@ abstract class _MenuItem implements MenuItem {
   @override
   @JsonKey(name: 'perms')
   List<String> get permissions; // 兼容数组形式
+// 是否外链: 1是 0否（假设后端字段 is_external）
+  @override
+  @JsonKey(name: 'is_external')
+  int? get isExternal; // 是否缓存: 1缓存 0不缓存（假设后端字段 cache 或 keep_alive，这里使用 cache）
+  @override
+  @JsonKey(name: 'cache')
+  int? get cache; // 路由参数（假设后端字段 route_params，使用字符串保存原始表达式）
+  @override
+  @JsonKey(name: 'route_params')
+  String? get routeParams;
   @override
   String? get remark;
   @override

@@ -175,6 +175,9 @@ SKIP_SEED:
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 	menuController := controller.NewMenuController(menuService)
 
+	// 角色模块初始化（只需设置DB即可）
+	userModulePkg.SetDB(utils.DB)
+
 	// 初始化 WebSocket 会话管理：策略可配置，这里先写死 single (单点登录)
 	utils.InitSessionManager("single", 3)
 	utils.LogInfo("WebSocket 会话管理初始化成功")
@@ -269,6 +272,17 @@ SKIP_SEED:
 		// 获取当前用户的菜单和权限（所有认证用户）
 		menus.GET("/user-menus", menuController.GetUserMenus)
 		menus.GET("/user-permissions", menuController.GetUserPermissions)
+	}
+
+	// 角色管理路由 (需要认证)
+	roles := v1.Group("/roles")
+	roles.Use(middleware.AuthMiddleware())
+	{
+		roles.POST("", controller.CreateRole)
+		roles.GET("", controller.ListRoles)
+		roles.GET("/:id", controller.GetRole)
+		roles.PUT("/:id", controller.UpdateRole)
+		roles.DELETE("/:id", controller.DeleteRole)
 	}
 
 	// WebSocket 路由 (基于 JWT 的连接认证)

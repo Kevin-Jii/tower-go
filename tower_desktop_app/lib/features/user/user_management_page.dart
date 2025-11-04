@@ -5,6 +5,7 @@ import 'user_provider.dart';
 import 'models.dart';
 import 'user_form_dialog.dart';
 import '../../features/auth/permission_gate.dart';
+import '../../core/constants/app_constants.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -89,7 +90,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
   }
 
   void _handleStatusChange(User user, bool value) async {
-    final newStatus = value ? 1 : 0;
+    final newStatus = value ? StatusValues.enabled : StatusValues.disabled;
     final req = UpdateUserRequest(
       status: newStatus,
     );
@@ -229,7 +230,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
           ),
           const SizedBox(width: 12),
           PermissionGate(
-            required: 'system:user:add',
+            required: PermissionCodes.userAdd,
             child: TDButton(
               text: '新增用户',
               theme: TDButtonTheme.primary,
@@ -311,7 +312,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
             width: 90,
             cellBuilder: (ctx, index) {
               final u = provider.users[index];
-              final isActive = u.status == 1;
+              final isActive = u.status == StatusValues.enabled;
               return TDSwitch(
                 isOn: isActive,
                 type: TDSwitchType.icon,
@@ -332,7 +333,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   PermissionGate(
-                    required: 'system:user:delete',
+                    required: PermissionCodes.userDelete,
                     child: GestureDetector(
                       onTap: () => _handleDelete(u),
                       child: Padding(
@@ -349,7 +350,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     ),
                   ),
                   PermissionGate(
-                    required: 'system:user:edit',
+                    required: PermissionCodes.userEdit,
                     child: GestureDetector(
                       onTap: () => _handleResetPassword(u),
                       child: Padding(
@@ -378,7 +379,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   'gender': '', // 占位，实际通过 cellBuilder
                   'role': u.role?.name ?? '—',
                   'store': u.storeName ?? '—',
-                  'status': u.status == 1 ? '启用' : '禁用',
+                  'status': u.status == StatusValues.enabled ? '启用' : '禁用',
                   'actions': '', // 占位，实际通过 cellBuilder
                 })
             .toList();

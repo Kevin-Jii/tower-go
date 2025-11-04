@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/tower_colors.dart';
 import 'package:provider/provider.dart';
 import 'menu_provider.dart';
 import 'models.dart';
@@ -64,50 +65,84 @@ class _MenuNodeState extends State<_MenuNode> {
     final hasChildren = widget.item.children.isNotEmpty;
     final mp = context.read<MenuProvider>();
     final selected = mp.selected?.id == widget.item.id;
-    final tile = ListTile(
-      dense: true,
-      selected: selected,
-      leading: hasChildren
-          ? GestureDetector(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Icon(
-                _expanded ? Icons.folder_open : Icons.folder,
-                size: 18,
-                color: selected ? Theme.of(context).colorScheme.primary : null,
-              ),
-            )
-          : TdIconMapper.build(
-              widget.item.icon,
-              size: 18,
-              color: selected ? Theme.of(context).colorScheme.primary : null,
-            ),
-      title: Text(
-        widget.item.title,
-        style: TextStyle(
-          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-          color: selected
-              ? Theme.of(context).colorScheme.onPrimary
-              : Theme.of(context).colorScheme.onSurface,
-        ),
-        overflow: TextOverflow.ellipsis,
-      ),
+    final isDirectory = hasChildren; // 目录节点
+    final canSelect = !isDirectory; // 只有叶子(页面)才触发 select
+
+    final tc = Theme.of(context).extension<TowerColors>();
+    final accent = Theme.of(context).colorScheme.primary;
+    final tile = InkWell(
+      borderRadius: BorderRadius.circular(8),
       onTap: () {
-        widget.onTap(widget.item);
+        if (isDirectory) {
+          setState(() => _expanded = !_expanded);
+        } else {
+          widget.onTap(widget.item);
+        }
       },
-      contentPadding: EdgeInsets.only(left: 8.0 + widget.depth * 12, right: 8),
-      trailing: hasChildren
-          ? IconButton(
-              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-              onPressed: () => setState(() => _expanded = !_expanded),
-            )
-          : null,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 6 + widget.depth * 14,
+          right: 8,
+          top: 4,
+          bottom: 4,
+        ),
+        child: Row(
+          children: [
+            // 图标 / 展开指示
+            if (isDirectory)
+              AnimatedRotation(
+                turns: _expanded ? 0.0 : -0.25,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  Icons.expand_more,
+                  size: 18,
+                  color: tc?.navBarForeground.withOpacity(.6) ??
+                      Colors.blueGrey.shade600,
+                ),
+              )
+            else
+              TdIconMapper.build(
+                widget.item.icon,
+                size: 18,
+                color: selected
+                    ? (tc?.accentGradientStart ?? accent)
+                    : tc?.navBarForeground.withOpacity(.65) ??
+                        Colors.blueGrey.shade600,
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.item.title,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected
+                      ? (tc?.accentGradientStart ?? accent)
+                      : tc?.navBarForeground.withOpacity(.75) ??
+                          Colors.blueGrey.shade700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (canSelect && selected)
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: tc?.accentGradientStart ?? accent,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
     Widget styledTile = Theme(
       data: Theme.of(context).copyWith(
         listTileTheme: ListTileThemeData(
-          selectedColor: Theme.of(context).colorScheme.onPrimary,
+          selectedColor: (tc?.navBarForeground ?? Colors.white),
           selectedTileColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.85),
+              (tc?.accentGradientStart ?? accent).withOpacity(0.18),
         ),
       ),
       child: tile,
@@ -118,9 +153,18 @@ class _MenuNodeState extends State<_MenuNode> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         styledTile,
-        if (_expanded)
-          ...widget.item.children.map((c) =>
-              _MenuNode(item: c, depth: widget.depth + 1, onTap: widget.onTap)),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Column(
+            children: widget.item.children
+                .map((c) => _MenuNode(
+                    item: c, depth: widget.depth + 1, onTap: widget.onTap))
+                .toList(),
+          ),
+          crossFadeState:
+              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 180),
+        ),
       ],
     );
   }

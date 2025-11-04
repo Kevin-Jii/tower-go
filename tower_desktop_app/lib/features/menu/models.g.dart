@@ -23,6 +23,9 @@ _$MenuItemImpl _$$MenuItemImplFromJson(Map<String, dynamic> json) =>
       permissions:
           (json['perms'] as List<dynamic>?)?.map((e) => e as String).toList() ??
               const [],
+      isExternal: (json['is_external'] as num?)?.toInt(),
+      cache: (json['cache'] as num?)?.toInt(),
+      routeParams: json['route_params'] as String?,
       remark: json['remark'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
@@ -47,6 +50,9 @@ Map<String, dynamic> _$$MenuItemImplToJson(_$MenuItemImpl instance) =>
       'status': instance.status,
       'permission': instance.permission,
       'perms': instance.permissions,
+      'is_external': instance.isExternal,
+      'cache': instance.cache,
+      'route_params': instance.routeParams,
       'remark': instance.remark,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,

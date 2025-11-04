@@ -11,6 +11,7 @@ import 'features/user/user_provider.dart';
 import 'features/store/store_api.dart';
 import 'features/store/store_provider.dart';
 import 'core/network/api_client.dart';
+import 'core/theme/theme_provider.dart';
 
 class TowerApp extends StatelessWidget {
   const TowerApp({super.key});
@@ -21,30 +22,36 @@ class TowerApp extends StatelessWidget {
     final storeApi = StoreApi(apiClient);
     final userApi = UserApi(apiClient);
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => PermissionProvider()),
-        ChangeNotifierProvider(create: (_) => MenuProvider(MenuApi())),
-        ChangeNotifierProvider(create: (_) => UserProvider(userApi, storeApi)),
-        ChangeNotifierProvider(create: (_) => StoreProvider(storeApi)),
-      ],
-      child: FutureBuilder(
-        future: _bootstrap(context),
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const MaterialApp(
-              home: Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              ),
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => PermissionProvider()),
+          ChangeNotifierProvider(create: (_) => MenuProvider(MenuApi())),
+          ChangeNotifierProvider(
+              create: (_) => UserProvider(userApi, storeApi)),
+          ChangeNotifierProvider(create: (_) => StoreProvider(storeApi)),
+        ],
+        child: FutureBuilder(
+          future: _bootstrap(context),
+          builder: (context, snap) {
+            if (snap.connectionState != ConnectionState.done) {
+              return const MaterialApp(
+                home: Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
+              );
+            }
+            final themeProvider = Provider.of<ThemeProvider>(context);
+            return MaterialApp(
+              title: 'Tower Desktop',
+              theme: themeProvider.theme,
+              home: snap.data == true
+                  ? const _DeferredHome()
+                  : const LoginScreen(),
             );
-          }
-          return MaterialApp(
-            title: 'Tower Desktop',
-            theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
-            home:
-                snap.data == true ? const _DeferredHome() : const LoginScreen(),
-          );
-        },
+          },
+        ),
       ),
     );
   }

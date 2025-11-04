@@ -180,3 +180,62 @@
 {"level":"info","timestamp":"2025-11-03 21:42:52.393","caller":"cmd/main.go:180","msg":"WebSocket 会话管理初始化成功"}
 {"level":"warn","timestamp":"2025-11-03 21:44:35.585","caller":"utils/response.go:90","msg":"Error Response","code":400,"message":"Key: 'CreateUserReq.Phone' Error:Field validation for 'Phone' failed on the 'len' tag","path":"/api/v1/users","method":"POST","ip":"127.0.0.1"}
 {"level":"info","timestamp":"2025-11-03 21:45:18.367","caller":"utils/employee.go:45","msg":"生成新工号"}
+{"level":"info","timestamp":"2025-11-03 21:50:09.239","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-03 21:50:09.244","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-03 21:50:09.252","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-03 21:50:09.261","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-03 21:50:09.261","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-03 21:50:23.364","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.001","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.133","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.176","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.178","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.179","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-03 21:50:24.225","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.226","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-03 21:50:24.227","caller":"cmd/main.go:180","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-04 17:07:56.879","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-04 17:07:56.885","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-04 17:07:56.903","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-04 17:07:56.911","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-04 17:07:56.911","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-04 17:08:10.158","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-04 17:08:10.780","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-04 17:08:10.914","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 17:08:10.956","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 17:08:10.957","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-04 17:08:10.957","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-04 17:08:11.000","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-04 17:08:11.000","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-04 17:08:11.000","caller":"cmd/main.go:180","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-04 17:33:37.928","caller":"utils/employee.go:45","msg":"生成新工号"}
+{"level":"warn","timestamp":"2025-11-04 18:17:56.146","caller":"utils/response.go:90","msg":"Error Response","code":401,"message":"Invalid token","path":"/api/v1/menus","method":"GET","ip":"::1"}
+{"level":"info","timestamp":"2025-11-04 19:09:15.303","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-04 19:09:15.309","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-04 19:09:15.320","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-04 19:09:15.327","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-04 19:09:15.327","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.066","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.715","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.861","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.905","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.907","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.914","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-04 19:09:29.956","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.956","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-04 19:09:29.956","caller":"cmd/main.go:180","msg":"WebSocket 会话管理初始化成功"}
+{"level":"warn","timestamp":"2025-11-04 19:21:49.099","caller":"utils/response.go:90","msg":"Error Response","code":401,"message":"Authorization header is required","path":"/api/v1/menus/tree","method":"GET","ip":"::1"}
+{"level":"info","timestamp":"2025-11-04 22:49:50.260","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-04 22:49:50.265","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-04 22:49:50.278","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-04 22:49:50.285","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-04 22:49:50.285","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-04 22:50:03.670","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.301","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.443","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.485","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.485","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.487","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-04 22:50:04.529","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.529","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-04 22:50:04.529","caller":"cmd/main.go:180","msg":"WebSocket 会话管理初始化成功"}

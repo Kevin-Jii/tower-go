@@ -8,6 +8,7 @@ import '../menu/menu_api.dart';
 import '../menu/menu_provider.dart';
 import 'permission_provider.dart';
 import '../home/home_screen.dart';
+import '../../core/constants/app_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -152,14 +153,13 @@ class _LoginScreenState extends State<LoginScreen>
         Expanded(
           flex: 1,
           child: Container(
-            padding: const EdgeInsets.all(48),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: [
-                  Colors.blue.shade400,
-                  Colors.purple.shade400,
+                  Colors.blue.shade600,
+                  Colors.indigo.shade600,
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -167,7 +167,10 @@ class _LoginScreenState extends State<LoginScreen>
                 bottomLeft: Radius.circular(24),
               ),
             ),
-            child: _buildBrandingSection(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(40, 48, 40, 40),
+              child: _buildBrandingSection(),
+            ),
           ),
         ),
 
@@ -186,56 +189,142 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildBrandingSection({bool compact = false}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    // 左侧品牌区域新的视觉：顶部 Logo + 系统名 + 门店/环境标签 + 功能列表 + 底部版权
+    final brandTitle = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Logo/Icon
         Container(
-          width: compact ? 80 : 120,
-          height: compact ? 80 : 120,
+          width: compact ? 46 : 54,
+          height: compact ? 46 : 54,
           decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [Colors.white, Colors.white.withOpacity(.85)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
+                color: Colors.black.withOpacity(.15),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              )
             ],
           ),
-          child: Icon(
-            Icons.restaurant_menu,
-            size: compact ? 40 : 60,
-            color: Colors.blue.shade600,
-          ),
+          child: Icon(Icons.storefront_rounded,
+              size: compact ? 30 : 34, color: Colors.indigo.shade600),
         ),
-        SizedBox(height: compact ? 16 : 32),
-        Text(
-          'Tower 餐饮管理系统',
-          style: TextStyle(
-            fontSize: compact ? 24 : 32,
-            fontWeight: FontWeight.bold,
-            color: compact ? Colors.blue.shade900 : Colors.white,
-            letterSpacing: 1.2,
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppTexts.appName,
+                style: TextStyle(
+                  fontSize: compact ? 18 : 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: .5,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  _tag('API'),
+                  const SizedBox(width: 6),
+                  // 门店名称占位（登录前可展示“未登录”或主品牌）
+                  Flexible(
+                    child: Text(
+                      AppTexts.defaultStoreName,
+                      style: TextStyle(
+                        fontSize: compact ? 11 : 12,
+                        color: Colors.white.withOpacity(.9),
+                        fontWeight: FontWeight.w500,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
           ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: compact ? 8 : 16),
-        Text(
-          '智能化餐饮管理，提升运营效率',
-          style: TextStyle(
-            fontSize: compact ? 14 : 16,
-            color:
-                compact ? Colors.grey.shade700 : Colors.white.withOpacity(0.9),
-          ),
-          textAlign: TextAlign.center,
-        ),
-        if (!compact) ...[
-          const SizedBox(height: 48),
-          _buildFeaturesList(),
-        ],
+        )
       ],
+    );
+
+    final featureList = !compact
+        ? Padding(
+            padding: const EdgeInsets.only(top: 36),
+            child: _buildFeaturesList(),
+          )
+        : const SizedBox.shrink();
+
+    final footer = !compact
+        ? Padding(
+            padding: const EdgeInsets.only(top: 48),
+            child: Opacity(
+              opacity: .85,
+              child: Text(
+                '© 2025 Tower Suite\nAll Rights Reserved',
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.4,
+                  color: Colors.white.withOpacity(.85),
+                  letterSpacing: .5,
+                ),
+              ),
+            ),
+          )
+        : const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        brandTitle,
+        const SizedBox(height: 28),
+        Text(
+          '智能化餐饮管理平台',
+          style: TextStyle(
+            fontSize: compact ? 16 : 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            letterSpacing: .8,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          '聚合门店 · 人员 · 菜品 · 库存 · 经营数据\n助力高效决策与增长',
+          style: TextStyle(
+            fontSize: compact ? 12 : 13.5,
+            height: 1.5,
+            color: Colors.white.withOpacity(.90),
+          ),
+        ),
+        featureList,
+        const Spacer(),
+        footer,
+      ],
+    );
+  }
+
+  Widget _tag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white.withOpacity(.4), width: .8),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: .5,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 

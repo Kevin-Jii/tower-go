@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tower_desktop_app/features/menu/menu_management_page.dart';
+import 'package:tower_desktop_app/features/role/role_management_page.dart';
 import '../../features/menu/models.dart';
 import '../icons/td_icon_mapper.dart';
 import '../constants/menu_types.dart';
@@ -27,10 +29,9 @@ class RouteManager {
       case 'system/user/index':
         return const UserManagementPage();
       case 'system/role/index':
-        return _buildModulePage('角色管理', menuItem);
+        return RoleManagementScope();
       case 'system/menu/index':
-        return _buildModulePage('菜单管理', menuItem);
-
+        return const MenuManagementScope();
       // 门店管理
       case 'store/list/index':
         return const StoreManagementPage();

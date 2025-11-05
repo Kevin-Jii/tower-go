@@ -20,14 +20,17 @@ RoleItem _$RoleItemFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$RoleItem {
+  @JsonKey(fromJson: parseInt)
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get code => throw _privateConstructorUsedError;
-  String? get remark => throw _privateConstructorUsedError;
+  @JsonKey(name: 'description')
+  String? get description => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseIntNullable)
   int? get status => throw _privateConstructorUsedError; // 1启用 0禁用
-  @JsonKey(name: 'created_at')
+  @JsonKey(name: 'created_at', fromJson: parseStringNullable)
   String? get createdAt => throw _privateConstructorUsedError;
-  @JsonKey(name: 'updated_at')
+  @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
   String? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this RoleItem to a JSON map.
@@ -46,13 +49,15 @@ abstract class $RoleItemCopyWith<$Res> {
       _$RoleItemCopyWithImpl<$Res, RoleItem>;
   @useResult
   $Res call(
-      {int id,
+      {@JsonKey(fromJson: parseInt) int id,
       String name,
       String code,
-      String? remark,
-      int? status,
-      @JsonKey(name: 'created_at') String? createdAt,
-      @JsonKey(name: 'updated_at') String? updatedAt});
+      @JsonKey(name: 'description') String? description,
+      @JsonKey(fromJson: parseIntNullable) int? status,
+      @JsonKey(name: 'created_at', fromJson: parseStringNullable)
+      String? createdAt,
+      @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
+      String? updatedAt});
 }
 
 /// @nodoc
@@ -73,7 +78,7 @@ class _$RoleItemCopyWithImpl<$Res, $Val extends RoleItem>
     Object? id = null,
     Object? name = null,
     Object? code = null,
-    Object? remark = freezed,
+    Object? description = freezed,
     Object? status = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -91,9 +96,9 @@ class _$RoleItemCopyWithImpl<$Res, $Val extends RoleItem>
           ? _value.code
           : code // ignore: cast_nullable_to_non_nullable
               as String,
-      remark: freezed == remark
-          ? _value.remark
-          : remark // ignore: cast_nullable_to_non_nullable
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
               as String?,
       status: freezed == status
           ? _value.status
@@ -120,13 +125,15 @@ abstract class _$$RoleItemImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int id,
+      {@JsonKey(fromJson: parseInt) int id,
       String name,
       String code,
-      String? remark,
-      int? status,
-      @JsonKey(name: 'created_at') String? createdAt,
-      @JsonKey(name: 'updated_at') String? updatedAt});
+      @JsonKey(name: 'description') String? description,
+      @JsonKey(fromJson: parseIntNullable) int? status,
+      @JsonKey(name: 'created_at', fromJson: parseStringNullable)
+      String? createdAt,
+      @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
+      String? updatedAt});
 }
 
 /// @nodoc
@@ -145,7 +152,7 @@ class __$$RoleItemImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? code = null,
-    Object? remark = freezed,
+    Object? description = freezed,
     Object? status = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -163,9 +170,9 @@ class __$$RoleItemImplCopyWithImpl<$Res>
           ? _value.code
           : code // ignore: cast_nullable_to_non_nullable
               as String,
-      remark: freezed == remark
-          ? _value.remark
-          : remark // ignore: cast_nullable_to_non_nullable
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
               as String?,
       status: freezed == status
           ? _value.status
@@ -187,38 +194,43 @@ class __$$RoleItemImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$RoleItemImpl implements _RoleItem {
   const _$RoleItemImpl(
-      {required this.id,
+      {@JsonKey(fromJson: parseInt) required this.id,
       required this.name,
       required this.code,
-      this.remark,
-      this.status,
-      @JsonKey(name: 'created_at') this.createdAt,
-      @JsonKey(name: 'updated_at') this.updatedAt});
+      @JsonKey(name: 'description') this.description,
+      @JsonKey(fromJson: parseIntNullable) this.status,
+      @JsonKey(name: 'created_at', fromJson: parseStringNullable)
+      this.createdAt,
+      @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
+      this.updatedAt});
 
   factory _$RoleItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$RoleItemImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: parseInt)
   final int id;
   @override
   final String name;
   @override
   final String code;
   @override
-  final String? remark;
+  @JsonKey(name: 'description')
+  final String? description;
   @override
+  @JsonKey(fromJson: parseIntNullable)
   final int? status;
 // 1启用 0禁用
   @override
-  @JsonKey(name: 'created_at')
+  @JsonKey(name: 'created_at', fromJson: parseStringNullable)
   final String? createdAt;
   @override
-  @JsonKey(name: 'updated_at')
+  @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
   final String? updatedAt;
 
   @override
   String toString() {
-    return 'RoleItem(id: $id, name: $name, code: $code, remark: $remark, status: $status, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'RoleItem(id: $id, name: $name, code: $code, description: $description, status: $status, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -229,7 +241,8 @@ class _$RoleItemImpl implements _RoleItem {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.code, code) || other.code == code) &&
-            (identical(other.remark, remark) || other.remark == remark) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
@@ -240,7 +253,7 @@ class _$RoleItemImpl implements _RoleItem {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-      runtimeType, id, name, code, remark, status, createdAt, updatedAt);
+      runtimeType, id, name, code, description, status, createdAt, updatedAt);
 
   /// Create a copy of RoleItem
   /// with the given fields replaced by the non-null parameter values.
@@ -260,32 +273,37 @@ class _$RoleItemImpl implements _RoleItem {
 
 abstract class _RoleItem implements RoleItem {
   const factory _RoleItem(
-      {required final int id,
+      {@JsonKey(fromJson: parseInt) required final int id,
       required final String name,
       required final String code,
-      final String? remark,
-      final int? status,
-      @JsonKey(name: 'created_at') final String? createdAt,
-      @JsonKey(name: 'updated_at') final String? updatedAt}) = _$RoleItemImpl;
+      @JsonKey(name: 'description') final String? description,
+      @JsonKey(fromJson: parseIntNullable) final int? status,
+      @JsonKey(name: 'created_at', fromJson: parseStringNullable)
+      final String? createdAt,
+      @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
+      final String? updatedAt}) = _$RoleItemImpl;
 
   factory _RoleItem.fromJson(Map<String, dynamic> json) =
       _$RoleItemImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: parseInt)
   int get id;
   @override
   String get name;
   @override
   String get code;
   @override
-  String? get remark;
+  @JsonKey(name: 'description')
+  String? get description;
   @override
+  @JsonKey(fromJson: parseIntNullable)
   int? get status; // 1启用 0禁用
   @override
-  @JsonKey(name: 'created_at')
+  @JsonKey(name: 'created_at', fromJson: parseStringNullable)
   String? get createdAt;
   @override
-  @JsonKey(name: 'updated_at')
+  @JsonKey(name: 'updated_at', fromJson: parseStringNullable)
   String? get updatedAt;
 
   /// Create a copy of RoleItem

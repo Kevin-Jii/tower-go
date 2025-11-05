@@ -4,6 +4,7 @@ import (
 	"errors"
 	"tower-go/model"
 	"tower-go/module"
+	"tower-go/utils"
 )
 
 type DishService struct {
@@ -17,15 +18,19 @@ func NewDishService(dishModule *module.DishModule) *DishService {
 // CreateDish 创建菜品（自动关联当前门店）
 func (s *DishService) CreateDish(storeID uint, req *model.CreateDishReq) error {
 	dish := &model.Dish{
-		StoreID:  storeID,
-		Name:     req.Name,
-		Price:    req.Price,
-		Category: req.Category,
-		Image:    req.Image,
-		Remark:   req.Remark,
-		Status:   1, // 默认上架
+		StoreID:    storeID,
+		Name:       req.Name,
+		Price:      req.Price,
+		CategoryID: req.CategoryID,
+		Image:      req.Image,
+		Remark:     req.Remark,
+		Status:     1, // 默认上架
 	}
-	return s.dishModule.Create(dish)
+	if err := s.dishModule.Create(dish); err != nil {
+		return err
+	}
+	utils.InvalidateDishCategoryCache(storeID)
+	return nil
 }
 
 // GetDish 获取菜品详情（门店隔离）
@@ -39,8 +44,8 @@ func (s *DishService) ListDishes(storeID uint, page, pageSize int) ([]*model.Dis
 }
 
 // ListDishesByCategory 根据分类获取菜品
-func (s *DishService) ListDishesByCategory(storeID uint, category string) ([]*model.Dish, error) {
-	return s.dishModule.ListByCategory(storeID, category)
+func (s *DishService) ListDishesByCategory(storeID uint, categoryID uint) ([]*model.Dish, error) {
+	return s.dishModule.ListByCategory(storeID, categoryID)
 }
 
 // UpdateDish 更新菜品信息
@@ -56,8 +61,8 @@ func (s *DishService) UpdateDish(id, storeID uint, req *model.UpdateDishReq) err
 	if req.Price != nil {
 		dish.Price = *req.Price
 	}
-	if req.Category != "" {
-		dish.Category = req.Category
+	if req.CategoryID != nil {
+		dish.CategoryID = req.CategoryID
 	}
 	if req.Status != nil {
 		dish.Status = *req.Status
@@ -69,10 +74,19 @@ func (s *DishService) UpdateDish(id, storeID uint, req *model.UpdateDishReq) err
 		dish.Remark = req.Remark
 	}
 
-	return s.dishModule.Update(dish)
+	if err := s.dishModule.Update(dish); err != nil {
+		return err
+	}
+	utils.InvalidateDishCache(dish.ID, storeID)
+	return nil
 }
 
 // DeleteDish 删除菜品
 func (s *DishService) DeleteDish(id, storeID uint) error {
-	return s.dishModule.Delete(id, storeID)
+	if err := s.dishModule.Delete(id, storeID); err != nil {
+		return err
+	}
+	utils.InvalidateDishCache(id, storeID)
+	utils.InvalidateDishCategoryCache(storeID)
+	return nil
 }

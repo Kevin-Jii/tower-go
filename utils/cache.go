@@ -11,15 +11,17 @@ import (
 
 // CacheKey 缓存键常量
 const (
-	CacheKeyRole            = "role:%d"                // 角色缓存 role:1
-	CacheKeyRoleMenus       = "role:menus:%d"          // 角色菜单缓存 role:menus:1
-	CacheKeyStoreRoleMenus  = "store:role:menus:%d:%d" // 门店角色菜单缓存 store:role:menus:1:2
-	CacheKeyMenuTree        = "menu:tree"              // 菜单树缓存
-	CacheKeyUserPermissions = "user:permissions:%d"    // 用户权限缓存 user:permissions:1
-	CacheKeyUser            = "user:%d"                // 用户缓存 user:1
-	CacheKeyStore           = "store:%d"               // 门店缓存 store:1
-	CacheKeyDish            = "dish:%d"                // 菜品缓存 dish:1
-	CacheKeyDishList        = "dish:list:store:%d"     // 门店菜品列表缓存 dish:list:store:1
+	CacheKeyRole                     = "role:%d"                              // 角色缓存 role:1
+	CacheKeyRoleMenus                = "role:menus:%d"                        // 角色菜单缓存 role:menus:1
+	CacheKeyStoreRoleMenus           = "store:role:menus:%d:%d"               // 门店角色菜单缓存 store:role:menus:1:2
+	CacheKeyMenuTree                 = "menu:tree"                            // 菜单树缓存
+	CacheKeyUserPermissions          = "user:permissions:%d"                  // 用户权限缓存 user:permissions:1
+	CacheKeyUser                     = "user:%d"                              // 用户缓存 user:1
+	CacheKeyStore                    = "store:%d"                             // 门店缓存 store:1
+	CacheKeyDish                     = "dish:%d"                              // 菜品缓存 dish:1
+	CacheKeyDishList                 = "dish:list:store:%d"                   // 门店菜品列表缓存 dish:list:store:1
+	CacheKeyDishCategories           = "dish:categories:store:%d"             // 门店分类列表
+	CacheKeyDishCategoriesWithDishes = "dish:categories:with:dishes:store:%d" // 门店分类+菜品聚合
 )
 
 // 默认缓存过期时间
@@ -226,6 +228,17 @@ func InvalidateDishCache(dishID uint, storeID uint) {
 	keys := []string{
 		fmt.Sprintf(CacheKeyDish, dishID),
 		fmt.Sprintf(CacheKeyDishList, storeID),
+		fmt.Sprintf(CacheKeyDishCategoriesWithDishes, storeID),
+		fmt.Sprintf(CacheKeyDishCategories, storeID),
+	}
+	CacheDelete(keys...)
+}
+
+// InvalidateDishCategoryCache 清除分类相关缓存
+func InvalidateDishCategoryCache(storeID uint) {
+	keys := []string{
+		fmt.Sprintf(CacheKeyDishCategories, storeID),
+		fmt.Sprintf(CacheKeyDishCategoriesWithDishes, storeID),
 	}
 	CacheDelete(keys...)
 }

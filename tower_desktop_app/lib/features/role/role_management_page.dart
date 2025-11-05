@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../auth/permission_gate.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../core/widgets/date_text.dart';
 import 'role_provider.dart';
 import 'role_api.dart';
 import 'role_form_dialog.dart';
@@ -33,7 +34,12 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
   void _openCreate() async {
     final req = await showDialog<CreateRoleRequest>(
       context: context,
-      builder: (_) => const RoleFormDialog(),
+      // 重新在对话框作用域内提供 RoleProvider，避免在某些布局/多 Navigator 场景下
+      // showDialog 创建的 route 脱离原有 InheritedElement 链导致的 Provider 未找到异常。
+      builder: (_) => ChangeNotifierProvider.value(
+        value: context.read<RoleProvider>(),
+        child: const RoleFormDialog(),
+      ),
     );
     if (req != null) {
       final ok = await context.read<RoleProvider>().create(req);
@@ -47,7 +53,10 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
   void _openEdit(RoleItem r) async {
     final req = await showDialog<UpdateRoleRequest>(
       context: context,
-      builder: (_) => RoleFormDialog(editing: r),
+      builder: (_) => ChangeNotifierProvider.value(
+        value: context.read<RoleProvider>(),
+        child: RoleFormDialog(editing: r),
+      ),
     );
     if (req != null) {
       final ok = await context.read<RoleProvider>().update(r.id, req);
@@ -243,7 +252,7 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                                       color: Colors.blueGrey.shade600))),
                           SizedBox(
                               width: 200,
-                              child: Text(r.remark ?? '-',
+                              child: Text(r.description ?? '-',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -251,11 +260,13 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                                       color: Colors.grey.shade600))),
                           SizedBox(width: 80, child: _buildStatusTag(active)),
                           SizedBox(
-                              width: 160,
-                              child: Text(r.createdAt ?? '-',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade500))),
+                            width: 160,
+                            child: DateText(
+                              raw: r.createdAt,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade500),
+                            ),
+                          ),
                           Expanded(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -301,9 +312,9 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
           SizedBox(width: 60, child: h('ID')),
           SizedBox(width: 160, child: h('角色名称')),
           SizedBox(width: 160, child: h('角色编码')),
-          SizedBox(width: 200, child: h('备注')),
-          SizedBox(width: 80, child: h('状态')),
+          SizedBox(width: 160, child: h('状态')),
           SizedBox(width: 160, child: h('创建时间')),
+          SizedBox(width: 200, child: h('备注')),
           const Expanded(
               child: Align(
                   alignment: Alignment.centerRight,

@@ -47,9 +47,9 @@ func (m *DishModule) List(storeID uint, page, pageSize int) ([]*model.Dish, int6
 }
 
 // ListByCategory 根据分类获取菜品列表
-func (m *DishModule) ListByCategory(storeID uint, category string) ([]*model.Dish, error) {
+func (m *DishModule) ListByCategory(storeID uint, categoryID uint) ([]*model.Dish, error) {
 	var dishes []*model.Dish
-	if err := m.db.Where("store_id = ? AND category = ? AND status = 1", storeID, category).Find(&dishes).Error; err != nil {
+	if err := m.db.Where("store_id = ? AND category_id = ? AND status = 1", storeID, categoryID).Find(&dishes).Error; err != nil {
 		return nil, err
 	}
 	return dishes, nil

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tdesign_flutter/tdesign_flutter.dart';
 import 'auth_api.dart';
+import 'credential_storage.dart';
 import 'models.dart';
 import 'session_manager.dart';
 import '../menu/menu_api.dart';
@@ -24,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen>
   final _pwdCtrl = TextEditingController();
   bool _loading = false;
   bool _obscurePassword = true;
+  bool _remember = false;
+  List<String> _accountHistory = [];
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -38,6 +41,20 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
+    // 读取已记住的账号密码
+    CredentialStorage().read().then((value) {
+      final (acc, pwd, remember) = value;
+      if (!mounted) return;
+      setState(() {
+        if (acc != null) _phoneCtrl.text = acc;
+        if (pwd != null) _pwdCtrl.text = pwd;
+        _remember = remember;
+      });
+    });
+    CredentialStorage().getAccountsHistory().then((h) {
+      if (!mounted) return;
+      setState(() => _accountHistory = h);
+    });
   }
 
   @override
@@ -79,6 +96,14 @@ class _LoginScreenState extends State<LoginScreen>
 
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()));
+
+      // 处理记住我逻辑
+      if (_remember) {
+        await CredentialStorage()
+            .save(account: _phoneCtrl.text.trim(), password: _pwdCtrl.text);
+      } else {
+        await CredentialStorage().clear();
+      }
     } catch (e) {
       if (!mounted) return;
       TDToast.showText(e.toString(), context: context);
@@ -140,6 +165,30 @@ class _LoginScreenState extends State<LoginScreen>
         children: [
           _buildBrandingSection(compact: true),
           const SizedBox(height: 32),
+          // 记住我 + 忘记密码占位行
+          Row(
+            children: [
+              SizedBox(
+                height: 24,
+                width: 24,
+                child: Checkbox(
+                  value: _remember,
+                  onChanged: (v) => setState(() => _remember = v ?? false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text('记住账号密码', style: TextStyle(fontSize: 13)),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  // TODO: 可跳转找回密码页面或弹出提示
+                  TDToast.showText('请联系管理员重置密码', context: context);
+                },
+                child: const Text('忘记密码?', style: TextStyle(fontSize: 13)),
+              )
+            ],
+          ),
+          const SizedBox(height: 16),
           _buildLoginForm(),
         ],
       ),
@@ -180,7 +229,37 @@ class _LoginScreenState extends State<LoginScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 48),
             child: SingleChildScrollView(
-              child: _buildLoginForm(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 记住我 + 忘记密码（桌面端也展示）
+                  Row(
+                    children: [
+                      SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: Checkbox(
+                          value: _remember,
+                          onChanged: (v) =>
+                              setState(() => _remember = v ?? false),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('记住账号密码', style: TextStyle(fontSize: 13)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          TDToast.showText('请联系管理员重置密码', context: context);
+                        },
+                        child:
+                            const Text('忘记密码?', style: TextStyle(fontSize: 13)),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildLoginForm(),
+                ],
+              ),
             ),
           ),
         ),
@@ -389,37 +468,53 @@ class _LoginScreenState extends State<LoginScreen>
           const SizedBox(height: 40),
 
           // 手机号输入框
-          TextFormField(
-            controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              labelText: '手机号',
-              hintText: '请输入11位手机号',
-              prefixIcon:
-                  Icon(Icons.phone_android, color: Colors.blue.shade600),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: '手机号',
+                    hintText: '请输入11位手机号',
+                    prefixIcon:
+                        Icon(Icons.phone_android, color: Colors.blue.shade600),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          BorderSide(color: Colors.blue.shade600, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return '请输入手机号';
+                    }
+                    if (value.trim().length != 11) {
+                      return '请输入11位手机号';
+                    }
+                    return null;
+                  },
+                  onChanged: (_) {
+                    // 切换账号时，若记住密码并存在映射，尝试回填
+                    if (_remember) {
+                      _tryFillPasswordFor(_phoneCtrl.text.trim());
+                    }
+                  },
+                ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return '请输入手机号';
-              }
-              if (value.trim().length != 11) {
-                return '请输入11位手机号';
-              }
-              return null;
-            },
+              const SizedBox(width: 8),
+              _buildAccountDropdown(),
+            ],
           ),
           const SizedBox(height: 20),
 
@@ -515,5 +610,55 @@ class _LoginScreenState extends State<LoginScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildAccountDropdown() {
+    if (_accountHistory.isEmpty) {
+      return const SizedBox(width: 0, height: 0);
+    }
+    return SizedBox(
+      width: 60,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+            isExpanded: true,
+            hint: const Icon(Icons.history, size: 22),
+            items: _accountHistory
+                .map((a) => DropdownMenuItem<String>(
+                      value: a,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person, size: 16),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(a,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
+            onChanged: (v) async {
+              if (v == null) return;
+              setState(() {
+                _phoneCtrl.text = v;
+              });
+              await CredentialStorage().selectAccount(v);
+              if (_remember) {
+                _tryFillPasswordFor(v);
+              } else {
+                _pwdCtrl.clear();
+              }
+            }),
+      ),
+    );
+  }
+
+  Future<void> _tryFillPasswordFor(String account) async {
+    final pwd = await CredentialStorage().getPasswordFor(account);
+    if (!mounted) return;
+    if (pwd != null) {
+      setState(() => _pwdCtrl.text = pwd);
+    }
   }
 }

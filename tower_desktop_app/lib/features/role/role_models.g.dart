@@ -8,13 +8,13 @@ part of 'role_models.dart';
 
 _$RoleItemImpl _$$RoleItemImplFromJson(Map<String, dynamic> json) =>
     _$RoleItemImpl(
-      id: (json['id'] as num).toInt(),
+      id: parseInt(json['id']),
       name: json['name'] as String,
       code: json['code'] as String,
-      remark: json['remark'] as String?,
-      status: (json['status'] as num?)?.toInt(),
-      createdAt: json['created_at'] as String?,
-      updatedAt: json['updated_at'] as String?,
+      description: json['description'] as String?,
+      status: parseIntNullable(json['status']),
+      createdAt: parseStringNullable(json['created_at']),
+      updatedAt: parseStringNullable(json['updated_at']),
     );
 
 Map<String, dynamic> _$$RoleItemImplToJson(_$RoleItemImpl instance) =>
@@ -22,7 +22,7 @@ Map<String, dynamic> _$$RoleItemImplToJson(_$RoleItemImpl instance) =>
       'id': instance.id,
       'name': instance.name,
       'code': instance.code,
-      'remark': instance.remark,
+      'description': instance.description,
       'status': instance.status,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,

@@ -83,16 +83,19 @@ func (c *DishController) GetDish(ctx *gin.Context) {
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Param category query string false "菜品分类"
+// @Param category_id query int false "分类ID"
 // @Success 200 {object} utils.StandardResponse{data=[]model.Dish} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /dishes [get]
 func (c *DishController) ListDishes(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	category := ctx.Query("category")
-
-	// 如果指定了分类，返回该分类的所有菜品
-	if category != "" {
-		dishes, err := c.dishService.ListDishesByCategory(storeID, category)
+	categoryIDStr := ctx.Query("category_id")
+	if categoryIDStr != "" {
+		cid, err := strconv.ParseUint(categoryIDStr, 10, 32)
+		if err != nil {
+			utils.Error(ctx, http.StatusBadRequest, "invalid category_id")
+			return
+		}
+		dishes, err := c.dishService.ListDishesByCategory(storeID, uint(cid))
 		if err != nil {
 			utils.Error(ctx, http.StatusInternalServerError, err.Error())
 			return

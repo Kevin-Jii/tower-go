@@ -239,3 +239,93 @@
 {"level":"info","timestamp":"2025-11-04 22:50:04.529","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
 {"level":"info","timestamp":"2025-11-04 22:50:04.529","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
 {"level":"info","timestamp":"2025-11-04 22:50:04.529","caller":"cmd/main.go:180","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:30.830","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-04 22:52:30.836","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:30.844","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:30.851","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-04 22:52:30.851","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-04 22:52:44.514","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.143","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.280","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.321","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.322","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.323","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-04 22:52:45.365","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.365","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-04 22:52:45.365","caller":"cmd/main.go:183","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:37.263","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-05 15:12:37.269","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:37.278","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:37.285","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-05 15:12:37.285","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-05 15:12:50.580","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.196","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.328","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.371","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.371","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.372","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-05 15:12:51.415","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.415","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-05 15:12:51.415","caller":"cmd/main.go:183","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:15.159","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-05 15:46:15.165","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:15.174","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:15.182","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-05 15:46:15.182","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-05 15:46:28.764","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.401","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.535","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.580","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.582","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.588","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-05 15:46:29.631","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.631","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-05 15:46:29.631","caller":"cmd/main.go:183","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:32.823","caller":"cmd/main.go:60","msg":"=== Tower Go 服务启动 ==="}
+{"level":"info","timestamp":"2025-11-05 15:53:32.830","caller":"cmd/main.go:66","msg":"配置文件加载成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:32.841","caller":"cmd/main.go:85","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:32.852","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-05 15:53:32.852","caller":"cmd/main.go:92","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-05 15:53:49.390","caller":"cmd/main.go:113","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.040","caller":"cmd/main.go:119","msg":"优化索引创建成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.181","caller":"cmd/main.go:126","msg":"角色基础数据初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.225","caller":"cmd/main.go:131","msg":"菜单种子数据初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.227","caller":"cmd/main.go:137","msg":"角色菜单权限初始化成功"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.230","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-05 15:53:50.274","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.274","caller":"cmd/main.go:149","msg":"门店编码检查完成"}
+{"level":"info","timestamp":"2025-11-05 15:53:50.274","caller":"cmd/main.go:188","msg":"WebSocket 会话管理初始化成功"}
+{"level":"info","timestamp":"2025-11-05 16:06:50.071","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-05 16:06:50.144","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成","output":"2025/11/05 16:06:50 Generate swagger docs....\n2025/11/05 16:06:50 Generate general API Info, search dir:./\n2025/11/05 16:06:50 warning: failed to get package name in dir: ./, error: execute go list command, exit status 1, stdout:, stderr:no Go files in C:\\Users\\Administrator\\Desktop\\xdAdmin\\tower-go\n2025/11/05 16:06:50 Generating model.CreateDishCategoryReq\n2025/11/05 16:06:50 Generating utils.StandardResponse\n2025/11/05 16:06:50 Generating utils.Meta\n2025/11/05 16:06:50 Generating model.UpdateDishCategoryReq\n2025/11/05 16:06:50 Generating model.DishCategory\n2025/11/05 16:06:50 Generating model.Dish\n2025/11/05 16:06:50 Generating model.Store\n2025/11/05 16:06:50 Skipping 'model.DishCategory', recursion detected.\n2025/11/05 16:06:50 Generating model.ReorderDishCategoriesReq\n2025/11/05 16:06:50 Generating model.ReorderDishCategoryItem\n2025/11/05 16:06:50 Generating model.CreateDishReq\n2025/11/05 16:06:50 Generating model.UpdateDishReq\n2025/11/05 16:06:50 Generating model.CreateMenuReq\n2025/11/05 16:06:50 Generating model.Menu\n2025/11/05 16:06:50 Skipping 'model.Menu', recursion detected.\n2025/11/05 16:06:50 Generating model.UpdateMenuReq\n2025/11/05 16:06:50 Generating model.AssignMenusToRoleReq\n2025/11/05 16:06:50 Generating utils.Response\n2025/11/05 16:06:50 Generating model.AssignStoreMenusReq\n2025/11/05 16:06:50 Generating model.CopyStoreMenusReq\n2025/11/05 16:06:50 Generating model.CreateMenuReportReq\n2025/11/05 16:06:50 Generating model.MenuReport\n2025/11/05 16:06:50 Generating model.User\n2025/11/05 16:06:50 Generating model.Role\n2025/11/05 16:06:50 Generating model.UpdateMenuReportReq\n2025/11/05 16:06:50 Generating model.MenuReportStats\n2025/11/05 16:06:50 Generating model.CreateStoreReq\n2025/11/05 16:06:50 Generating model.UpdateStoreReq\n2025/11/05 16:06:50 Generating model.CreateUserReq\n2025/11/05 16:06:50 Generating model.UpdateUserReq\n2025/11/05 16:06:50 Generating controller.LoginRequest\n2025/11/05 16:06:50 Generating controller.LoginResponse\n2025/11/05 16:06:50 create docs.go at docs/docs.go\n2025/11/05 16:06:50 create swagger.json at docs/swagger.json\n2025/11/05 16:06:50 create swagger.yaml at docs/swagger.yaml\n"}
+{"level":"info","timestamp":"2025-11-05 16:06:50.145","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-05 16:06:50.156","caller":"bootstrap/database.go:15","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-05 16:06:50.163","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-05 16:06:50.163","caller":"bootstrap/redis.go:17","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-05 16:07:07.688","caller":"bootstrap/migrate.go:27","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-05 16:07:07.792","caller":"utils/migrate_dish_category.go:63","msg":"旧category列已删除"}
+{"level":"info","timestamp":"2025-11-05 16:07:07.792","caller":"bootstrap/migrate.go:32","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-05 16:07:08.596","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-05 16:07:08.641","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-05 16:07:08.641","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-05 16:19:02.156","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-05 16:19:02.235","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成","output":"2025/11/05 16:19:02 Generate swagger docs....\n2025/11/05 16:19:02 Generate general API Info, search dir:./\n2025/11/05 16:19:02 warning: failed to get package name in dir: ./, error: execute go list command, exit status 1, stdout:, stderr:no Go files in C:\\Users\\Administrator\\Desktop\\xdAdmin\\tower-go\n2025/11/05 16:19:02 Generating model.CreateDishCategoryReq\n2025/11/05 16:19:02 Generating utils.StandardResponse\n2025/11/05 16:19:02 Generating utils.Meta\n2025/11/05 16:19:02 Generating model.UpdateDishCategoryReq\n2025/11/05 16:19:02 Generating model.DishCategory\n2025/11/05 16:19:02 Generating model.Dish\n2025/11/05 16:19:02 Generating model.Store\n2025/11/05 16:19:02 Skipping 'model.DishCategory', recursion detected.\n2025/11/05 16:19:02 Generating model.ReorderDishCategoriesReq\n2025/11/05 16:19:02 Generating model.ReorderDishCategoryItem\n2025/11/05 16:19:02 Generating model.CreateDishReq\n2025/11/05 16:19:02 Generating model.UpdateDishReq\n2025/11/05 16:19:02 Generating model.CreateMenuReq\n2025/11/05 16:19:02 Generating model.Menu\n2025/11/05 16:19:02 Skipping 'model.Menu', recursion detected.\n2025/11/05 16:19:02 Generating model.UpdateMenuReq\n2025/11/05 16:19:02 Generating model.AssignMenusToRoleReq\n2025/11/05 16:19:02 Generating utils.Response\n2025/11/05 16:19:02 Generating model.AssignStoreMenusReq\n2025/11/05 16:19:02 Generating model.CopyStoreMenusReq\n2025/11/05 16:19:02 Generating model.CreateMenuReportReq\n2025/11/05 16:19:02 Generating model.MenuReport\n2025/11/05 16:19:02 Generating model.User\n2025/11/05 16:19:02 Generating model.Role\n2025/11/05 16:19:02 Generating model.UpdateMenuReportReq\n2025/11/05 16:19:02 Generating model.MenuReportStats\n2025/11/05 16:19:02 Generating model.CreateStoreReq\n2025/11/05 16:19:02 Generating model.UpdateStoreReq\n2025/11/05 16:19:02 Generating model.CreateUserReq\n2025/11/05 16:19:02 Generating model.UpdateUserReq\n2025/11/05 16:19:02 Generating controller.LoginRequest\n2025/11/05 16:19:02 Generating controller.LoginResponse\n2025/11/05 16:19:02 create docs.go at docs/docs.go\n2025/11/05 16:19:02 create swagger.json at docs/swagger.json\n2025/11/05 16:19:02 create swagger.yaml at docs/swagger.yaml\n"}
+{"level":"info","timestamp":"2025-11-05 16:19:02.236","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-05 16:19:02.254","caller":"bootstrap/database.go:15","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-05 16:19:02.263","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-05 16:19:02.263","caller":"bootstrap/redis.go:17","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-05 16:19:19.040","caller":"bootstrap/migrate.go:27","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-05 16:19:19.085","caller":"bootstrap/migrate.go:32","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-05 16:19:19.881","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-05 16:19:19.925","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-05 16:19:19.926","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-05 16:25:25.123","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-05 16:25:25.197","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成","output":"2025/11/05 16:25:25 Generate swagger docs....\n2025/11/05 16:25:25 Generate general API Info, search dir:./\n2025/11/05 16:25:25 warning: failed to get package name in dir: ./, error: execute go list command, exit status 1, stdout:, stderr:no Go files in C:\\Users\\Administrator\\Desktop\\xdAdmin\\tower-go\n2025/11/05 16:25:25 Generating model.CreateDishCategoryReq\n2025/11/05 16:25:25 Generating utils.StandardResponse\n2025/11/05 16:25:25 Generating utils.Meta\n2025/11/05 16:25:25 Generating model.UpdateDishCategoryReq\n2025/11/05 16:25:25 Generating model.DishCategory\n2025/11/05 16:25:25 Generating model.Dish\n2025/11/05 16:25:25 Generating model.Store\n2025/11/05 16:25:25 Skipping 'model.DishCategory', recursion detected.\n2025/11/05 16:25:25 Generating model.ReorderDishCategoriesReq\n2025/11/05 16:25:25 Generating model.ReorderDishCategoryItem\n2025/11/05 16:25:25 Generating model.CreateDishReq\n2025/11/05 16:25:25 Generating model.UpdateDishReq\n2025/11/05 16:25:25 Generating model.CreateMenuReq\n2025/11/05 16:25:25 Generating model.Menu\n2025/11/05 16:25:25 Skipping 'model.Menu', recursion detected.\n2025/11/05 16:25:25 Generating model.UpdateMenuReq\n2025/11/05 16:25:25 Generating model.AssignMenusToRoleReq\n2025/11/05 16:25:25 Generating utils.Response\n2025/11/05 16:25:25 Generating model.AssignStoreMenusReq\n2025/11/05 16:25:25 Generating model.CopyStoreMenusReq\n2025/11/05 16:25:25 Generating model.CreateMenuReportReq\n2025/11/05 16:25:25 Generating model.MenuReport\n2025/11/05 16:25:25 Generating model.User\n2025/11/05 16:25:25 Generating model.Role\n2025/11/05 16:25:25 Generating model.UpdateMenuReportReq\n2025/11/05 16:25:25 Generating model.MenuReportStats\n2025/11/05 16:25:25 Generating model.CreateStoreReq\n2025/11/05 16:25:25 Generating model.UpdateStoreReq\n2025/11/05 16:25:25 Generating model.CreateUserReq\n2025/11/05 16:25:25 Generating model.UpdateUserReq\n2025/11/05 16:25:25 Generating controller.LoginRequest\n2025/11/05 16:25:25 Generating controller.LoginResponse\n2025/11/05 16:25:25 create docs.go at docs/docs.go\n2025/11/05 16:25:25 create swagger.json at docs/swagger.json\n2025/11/05 16:25:25 create swagger.yaml at docs/swagger.yaml\n"}
+{"level":"info","timestamp":"2025-11-05 16:25:25.197","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-05 16:25:25.207","caller":"bootstrap/database.go:15","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-05 16:25:25.214","caller":"utils/redis.go:38","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-05 16:25:25.214","caller":"bootstrap/redis.go:17","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-05 16:25:41.674","caller":"bootstrap/migrate.go:27","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-05 16:25:41.721","caller":"bootstrap/migrate.go:32","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-05 16:25:42.543","caller":"utils/seed.go:114","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-05 16:25:42.586","caller":"utils/seed.go:258","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-05 16:25:42.586","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}

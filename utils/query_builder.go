@@ -27,6 +27,21 @@ func NewQueryBuilder(db *gorm.DB) *QueryBuilder {
 	}
 }
 
+// ForStore 统一门店过滤
+func (qb *QueryBuilder) ForStore(storeID uint) *QueryBuilder {
+	if storeID > 0 {
+		qb.conditions = append(qb.conditions, "store_id = ?")
+		qb.args = append(qb.args, storeID)
+	}
+	return qb
+}
+
+// WhereStatusEnabled 简化启用状态过滤（适用于 status=1 约定）
+func (qb *QueryBuilder) WhereStatusEnabled() *QueryBuilder {
+	qb.conditions = append(qb.conditions, "status = 1")
+	return qb
+}
+
 // Where 添加 WHERE 条件
 func (qb *QueryBuilder) Where(condition string, args ...interface{}) *QueryBuilder {
 	qb.conditions = append(qb.conditions, condition)

@@ -21,11 +21,21 @@ Dish _$DishFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Dish {
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'store_id')
   int get storeId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseDoubleNullable)
   double? get price => throw _privateConstructorUsedError;
+  @JsonKey(name: 'category_id')
+  int? get categoryId => throw _privateConstructorUsedError;
   int? get status => throw _privateConstructorUsedError;
+  String? get image => throw _privateConstructorUsedError;
+  String? get remark => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
+  String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this Dish to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -43,11 +53,16 @@ abstract class $DishCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      int storeId,
+      @JsonKey(name: 'store_id') int storeId,
       String name,
       String? description,
-      double? price,
-      int? status});
+      @JsonKey(fromJson: parseDoubleNullable) double? price,
+      @JsonKey(name: 'category_id') int? categoryId,
+      int? status,
+      String? image,
+      String? remark,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
 }
 
 /// @nodoc
@@ -70,7 +85,12 @@ class _$DishCopyWithImpl<$Res, $Val extends Dish>
     Object? name = null,
     Object? description = freezed,
     Object? price = freezed,
+    Object? categoryId = freezed,
     Object? status = freezed,
+    Object? image = freezed,
+    Object? remark = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -93,10 +113,30 @@ class _$DishCopyWithImpl<$Res, $Val extends Dish>
           ? _value.price
           : price // ignore: cast_nullable_to_non_nullable
               as double?,
+      categoryId: freezed == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as int?,
       status: freezed == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as int?,
+      image: freezed == image
+          ? _value.image
+          : image // ignore: cast_nullable_to_non_nullable
+              as String?,
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -110,11 +150,16 @@ abstract class _$$DishImplCopyWith<$Res> implements $DishCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      int storeId,
+      @JsonKey(name: 'store_id') int storeId,
       String name,
       String? description,
-      double? price,
-      int? status});
+      @JsonKey(fromJson: parseDoubleNullable) double? price,
+      @JsonKey(name: 'category_id') int? categoryId,
+      int? status,
+      String? image,
+      String? remark,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
 }
 
 /// @nodoc
@@ -134,7 +179,12 @@ class __$$DishImplCopyWithImpl<$Res>
     Object? name = null,
     Object? description = freezed,
     Object? price = freezed,
+    Object? categoryId = freezed,
     Object? status = freezed,
+    Object? image = freezed,
+    Object? remark = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(_$DishImpl(
       id: null == id
@@ -157,10 +207,30 @@ class __$$DishImplCopyWithImpl<$Res>
           ? _value.price
           : price // ignore: cast_nullable_to_non_nullable
               as double?,
+      categoryId: freezed == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as int?,
       status: freezed == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as int?,
+      image: freezed == image
+          ? _value.image
+          : image // ignore: cast_nullable_to_non_nullable
+              as String?,
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -170,11 +240,16 @@ class __$$DishImplCopyWithImpl<$Res>
 class _$DishImpl implements _Dish {
   const _$DishImpl(
       {required this.id,
-      required this.storeId,
+      @JsonKey(name: 'store_id') required this.storeId,
       required this.name,
       this.description,
-      this.price,
-      this.status});
+      @JsonKey(fromJson: parseDoubleNullable) this.price,
+      @JsonKey(name: 'category_id') this.categoryId,
+      this.status,
+      this.image,
+      this.remark,
+      @JsonKey(name: 'created_at') this.createdAt,
+      @JsonKey(name: 'updated_at') this.updatedAt});
 
   factory _$DishImpl.fromJson(Map<String, dynamic> json) =>
       _$$DishImplFromJson(json);
@@ -182,19 +257,34 @@ class _$DishImpl implements _Dish {
   @override
   final int id;
   @override
+  @JsonKey(name: 'store_id')
   final int storeId;
   @override
   final String name;
   @override
   final String? description;
   @override
+  @JsonKey(fromJson: parseDoubleNullable)
   final double? price;
   @override
+  @JsonKey(name: 'category_id')
+  final int? categoryId;
+  @override
   final int? status;
+  @override
+  final String? image;
+  @override
+  final String? remark;
+  @override
+  @JsonKey(name: 'created_at')
+  final String? createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  final String? updatedAt;
 
   @override
   String toString() {
-    return 'Dish(id: $id, storeId: $storeId, name: $name, description: $description, price: $price, status: $status)';
+    return 'Dish(id: $id, storeId: $storeId, name: $name, description: $description, price: $price, categoryId: $categoryId, status: $status, image: $image, remark: $remark, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -208,13 +298,21 @@ class _$DishImpl implements _Dish {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.price, price) || other.price == price) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.image, image) || other.image == image) &&
+            (identical(other.remark, remark) || other.remark == remark) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, storeId, name, description, price, status);
+  int get hashCode => Object.hash(runtimeType, id, storeId, name, description,
+      price, categoryId, status, image, remark, createdAt, updatedAt);
 
   /// Create a copy of Dish
   /// with the given fields replaced by the non-null parameter values.
@@ -235,26 +333,46 @@ class _$DishImpl implements _Dish {
 abstract class _Dish implements Dish {
   const factory _Dish(
       {required final int id,
-      required final int storeId,
+      @JsonKey(name: 'store_id') required final int storeId,
       required final String name,
       final String? description,
-      final double? price,
-      final int? status}) = _$DishImpl;
+      @JsonKey(fromJson: parseDoubleNullable) final double? price,
+      @JsonKey(name: 'category_id') final int? categoryId,
+      final int? status,
+      final String? image,
+      final String? remark,
+      @JsonKey(name: 'created_at') final String? createdAt,
+      @JsonKey(name: 'updated_at') final String? updatedAt}) = _$DishImpl;
 
   factory _Dish.fromJson(Map<String, dynamic> json) = _$DishImpl.fromJson;
 
   @override
   int get id;
   @override
+  @JsonKey(name: 'store_id')
   int get storeId;
   @override
   String get name;
   @override
   String? get description;
   @override
+  @JsonKey(fromJson: parseDoubleNullable)
   double? get price;
   @override
+  @JsonKey(name: 'category_id')
+  int? get categoryId;
+  @override
   int? get status;
+  @override
+  String? get image;
+  @override
+  String? get remark;
+  @override
+  @JsonKey(name: 'created_at')
+  String? get createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt;
 
   /// Create a copy of Dish
   /// with the given fields replaced by the non-null parameter values.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tower_desktop_app/features/menu/menu_management_page.dart';
 import 'package:tower_desktop_app/features/role/role_management_page.dart';
+import 'package:tower_desktop_app/features/dish/dish_management_page.dart';
 import '../../features/menu/models.dart';
 import '../icons/td_icon_mapper.dart';
 import '../constants/menu_types.dart';
@@ -38,7 +39,7 @@ class RouteManager {
 
       // 菜品管理
       case 'dish/list/index':
-        return _buildModulePage('菜品列表', menuItem);
+        return const DishManagementScope();
 
       // 报菜管理
       case 'report/list/index':

@@ -155,27 +155,11 @@ func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.
 
 // UpdateByID 根据ID更新用户信息
 func (m *UserModule) UpdateByID(id uint, req *model.UpdateUserReq) error {
-	updates := make(map[string]interface{})
-
-	if req.Username != "" {
-		updates["username"] = req.Username
+	updates := utils.BuildUpdatesFromReq(req)
+	if len(updates) == 0 {
+		log.Printf("[UserModule.UpdateByID] id=%d no fields to update", id)
+		return nil
 	}
-	if req.Phone != "" {
-		updates["phone"] = req.Phone
-	}
-	if req.Password != "" {
-		updates["password"] = req.Password
-	}
-	if req.Email != "" {
-		updates["email"] = req.Email
-	}
-	if req.Status != nil {
-		updates["status"] = *req.Status
-	}
-	if req.Gender != nil { // 支持性别更新 1男2女
-		updates["gender"] = *req.Gender
-	}
-
 	log.Printf("[UserModule.UpdateByID] id=%d updates=%v", id, updates)
 	return m.db.Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
 }

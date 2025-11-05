@@ -1,3 +1,5 @@
+// Ensure MSVC treats this file as UTF-8 regardless of code page.
+#pragma execution_character_set("utf-8")
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
@@ -27,7 +29,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1800, 1200);
-  if (!window.Create(L"tower_desktop_app", origin, size)) {
+  // Window title uses Unicode escape sequences for Chinese characters
+  if (!window.Create(L"Tower\u7ba1\u7406\u684c\u9762\u7aef", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

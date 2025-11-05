@@ -2,6 +2,7 @@ package module
 
 import (
 	"tower-go/model"
+	"tower-go/utils"
 
 	"gorm.io/gorm"
 )
@@ -56,30 +57,10 @@ func (m *StoreModule) Update(store *model.Store) error {
 
 // UpdateByID 根据ID更新门店信息（动态更新，避免整行覆盖）
 func (m *StoreModule) UpdateByID(id uint, req *model.UpdateStoreReq) error {
-	updates := make(map[string]interface{})
-
-	if req.Name != "" {
-		updates["name"] = req.Name
+	updates := utils.BuildUpdatesFromReq(req)
+	if len(updates) == 0 {
+		return nil
 	}
-	if req.Address != "" {
-		updates["address"] = req.Address
-	}
-	if req.Phone != "" {
-		updates["phone"] = req.Phone
-	}
-	if req.BusinessHours != "" {
-		updates["business_hours"] = req.BusinessHours
-	}
-	if req.ContactPerson != "" {
-		updates["contact_person"] = req.ContactPerson
-	}
-	if req.Remark != "" {
-		updates["remark"] = req.Remark
-	}
-	if req.Status != nil {
-		updates["status"] = *req.Status
-	}
-
 	return m.db.Model(&model.Store{}).Where("id = ?", id).Updates(updates).Error
 }
 

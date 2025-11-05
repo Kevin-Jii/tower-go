@@ -32,3 +32,27 @@ String? parseStringNullable(dynamic v) {
   if (v is num || v is bool) return v.toString();
   return v.toString();
 }
+
+double parseDouble(dynamic v, {double defaultValue = 0.0}) {
+  if (v == null) return defaultValue;
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  if (v is String) {
+    final t = v.trim();
+    if (t.isEmpty) return defaultValue;
+    return double.tryParse(t) ?? defaultValue;
+  }
+  return defaultValue;
+}
+
+double? parseDoubleNullable(dynamic v) {
+  if (v == null) return null;
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  if (v is String) {
+    final t = v.trim();
+    if (t.isEmpty) return null;
+    return double.tryParse(t);
+  }
+  return null;
+}

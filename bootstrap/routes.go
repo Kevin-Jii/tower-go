@@ -40,7 +40,7 @@ func BuildControllers() *AppControllers {
 	storeService := service.NewStoreService(storeModule)
 	dishService := service.NewDishService(dishModule)
 	menuReportService := service.NewMenuReportService(menuReportModule, dishModule)
-	dishCategoryService := service.NewDishCategoryService(dishCategoryModule)
+	dishCategoryService := service.NewDishCategoryService(dishCategoryModule, dishModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 
 	return &AppControllers{
@@ -51,6 +51,36 @@ func BuildControllers() *AppControllers {
 		MenuReport:   controller.NewMenuReportController(menuReportService),
 		Menu:         controller.NewMenuController(menuService),
 	}
+}
+
+// CRUDController 通用 CRUD 适配接口
+type CRUDController interface {
+	Create(*gin.Context)
+	List(*gin.Context)
+	Get(*gin.Context)
+	Update(*gin.Context)
+	Delete(*gin.Context)
+}
+
+// dishCategoryCRUDAdapter 适配已有 DishCategoryController 命名到标准 CRUD 接口
+type dishCategoryCRUDAdapter struct {
+	inner *controller.DishCategoryController
+}
+
+func (a dishCategoryCRUDAdapter) Create(ctx *gin.Context) { a.inner.CreateCategory(ctx) }
+func (a dishCategoryCRUDAdapter) List(ctx *gin.Context)   { a.inner.ListCategories(ctx) }
+
+// 暂无单分类详情接口，这里复用跨门店列表逻辑作为占位；后续可实现 GetCategory(id)
+func (a dishCategoryCRUDAdapter) Get(ctx *gin.Context)    { a.inner.ListCategoriesForStore(ctx) }
+func (a dishCategoryCRUDAdapter) Update(ctx *gin.Context) { a.inner.UpdateCategory(ctx) }
+func (a dishCategoryCRUDAdapter) Delete(ctx *gin.Context) { a.inner.DeleteCategory(ctx) }
+
+// registerCRUD 注册标准 CRUD 路由集合（不包含 GET /:id 逻辑占位示例可扩展）
+func registerCRUD(group *gin.RouterGroup, ctrl CRUDController) {
+	group.POST("", ctrl.Create)
+	group.GET("", ctrl.List)
+	group.PUT(":id", ctrl.Update)
+	group.DELETE(":id", ctrl.Delete)
 }
 
 func RegisterRoutes(r *gin.Engine, c *AppControllers) {
@@ -80,6 +110,17 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 	{
 		stores.POST("", c.Store.CreateStore)
 		stores.GET("", c.Store.ListStores)
+		stores.GET("/all", c.Store.ListAllStores)
+		// 门店分类：创建 / 列表 / 分类菜品 / 删除（在单门店详情前声明避免冲突）
+		stores.POST("/:id/dish-categories", c.DishCategory.CreateCategoryForStore)
+		stores.GET("/:id/dish-categories", c.DishCategory.ListCategoriesForStore)
+		stores.POST("/:id/dish-categories/:cid/dishes", c.DishCategory.CreateDishForStoreCategory)
+		stores.GET("/:id/dish-categories/:cid/dishes", c.DishCategory.ListDishesForStoreCategory)
+		stores.PUT("/:id/dish-categories/:cid/dishes/:did", c.DishCategory.UpdateDishForStoreCategory)
+		stores.PUT("/:id/dish-categories/:cid", c.DishCategory.UpdateCategoryForStore)
+		stores.DELETE("/:id/dish-categories/:cid", c.DishCategory.DeleteCategoryForStore)
+		stores.PUT("/:id/dishes/:did", c.Dish.UpdateDishForStore)
+		stores.DELETE("/:id/dishes/:did", c.Dish.DeleteDishForStore)
 		stores.GET("/:id", c.Store.GetStore)
 		stores.PUT("/:id", c.Store.UpdateStore)
 		stores.DELETE("/:id", c.Store.DeleteStore)
@@ -99,10 +140,7 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 	cats := v1.Group("/dish-categories")
 	cats.Use(middleware.StoreAuthMiddleware())
 	{
-		cats.POST("", c.DishCategory.CreateCategory)
-		cats.GET("", c.DishCategory.ListCategories)
-		cats.PUT("/:id", c.DishCategory.UpdateCategory)
-		cats.DELETE("/:id", c.DishCategory.DeleteCategory)
+		registerCRUD(cats, dishCategoryCRUDAdapter{inner: c.DishCategory})
 		cats.POST("/reorder", c.DishCategory.ReorderCategories)
 	}
 

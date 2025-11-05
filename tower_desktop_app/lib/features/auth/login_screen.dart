@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tdesign_flutter/tdesign_flutter.dart';
+import 'package:tower_desktop_app/core/constants/ui_texts.dart';
 import 'auth_api.dart';
 import 'credential_storage.dart';
 import 'models.dart';
@@ -165,31 +166,7 @@ class _LoginScreenState extends State<LoginScreen>
         children: [
           _buildBrandingSection(compact: true),
           const SizedBox(height: 32),
-          // 记住我 + 忘记密码占位行
-          Row(
-            children: [
-              SizedBox(
-                height: 24,
-                width: 24,
-                child: Checkbox(
-                  value: _remember,
-                  onChanged: (v) => setState(() => _remember = v ?? false),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text('记住账号密码', style: TextStyle(fontSize: 13)),
-              const Spacer(),
-              TextButton(
-                onPressed: () {
-                  // TODO: 可跳转找回密码页面或弹出提示
-                  TDToast.showText('请联系管理员重置密码', context: context);
-                },
-                child: const Text('忘记密码?', style: TextStyle(fontSize: 13)),
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildLoginForm(),
+          _buildLoginForm(placeRememberRowOnTop: true),
         ],
       ),
     );
@@ -222,44 +199,13 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
-
         // 右侧登录表单区域
         Expanded(
           flex: 1,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 48),
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 记住我 + 忘记密码（桌面端也展示）
-                  Row(
-                    children: [
-                      SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: Checkbox(
-                          value: _remember,
-                          onChanged: (v) =>
-                              setState(() => _remember = v ?? false),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('记住账号密码', style: TextStyle(fontSize: 13)),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          TDToast.showText('请联系管理员重置密码', context: context);
-                        },
-                        child:
-                            const Text('忘记密码?', style: TextStyle(fontSize: 13)),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLoginForm(),
-                ],
-              ),
+              child: _buildLoginForm(placeRememberRowOnTop: true),
             ),
           ),
         ),
@@ -441,16 +387,18 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm({bool placeRememberRowOnTop = false}) {
     return Form(
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 顶部不再放记住行，改为放在密码输入框与登录按钮之间（根据用户选择 C）
+          if (placeRememberRowOnTop) ...[],
           // 标题
           Text(
-            '欢迎回来',
+            UITexts.loginWelcome,
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -459,15 +407,13 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            '请登录您的账户',
+            UITexts.loginSubtitle,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 40),
-
-          // 手机号输入框
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -559,7 +505,30 @@ class _LoginScreenState extends State<LoginScreen>
             },
             onFieldSubmitted: (_) => _doLogin(),
           ),
-          const SizedBox(height: 32),
+          // 记住账号密码行（放在密码框与登录按钮之间）
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              SizedBox(
+                height: 24,
+                width: 24,
+                child: Checkbox(
+                  value: _remember,
+                  onChanged: (v) => setState(() => _remember = v ?? false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(UITexts.loginRemember, style: TextStyle(fontSize: 13)),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  TDToast.showText(UITexts.loginForgotHint, context: context);
+                },
+                child: const Text('忘记密码?', style: TextStyle(fontSize: 13)),
+              )
+            ],
+          ),
+          const SizedBox(height: 28),
 
           // 登录按钮
           SizedBox(
@@ -586,7 +555,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     )
                   : const Text(
-                      '登录',
+                      UITexts.loginButton,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -600,7 +569,7 @@ class _LoginScreenState extends State<LoginScreen>
           // 底部提示
           Center(
             child: Text(
-              'Tower 餐饮管理系统 v1.0',
+              UITexts.loginVersion,
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 12,

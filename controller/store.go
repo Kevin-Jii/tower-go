@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 	"tower-go/middleware"
 	"tower-go/model"
 	"tower-go/service"
@@ -30,15 +29,13 @@ func NewStoreController(storeService *service.StoreService) *StoreController {
 // @Success 200 {object} utils.StandardResponse
 // @Router /stores [post]
 func (c *StoreController) CreateStore(ctx *gin.Context) {
-	// 检查是否是总部管理员
-	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "Only admin can create stores")
+	// 管理员校验
+	if !utils.RequireAdmin(ctx) {
 		return
 	}
 
 	var req model.CreateStoreReq
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+	if !utils.BindJSON(ctx, &req) {
 		return
 	}
 
@@ -61,13 +58,11 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 // @Success 200 {object} utils.StandardResponse{data=model.Store}
 // @Router /stores/{id} [get]
 func (c *StoreController) GetStore(ctx *gin.Context) {
-	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
-	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid store ID")
+	id, ok := utils.ParseUintParam(ctx, "id")
+	if !ok {
 		return
 	}
-
-	store, err := c.storeService.GetStore(uint(id))
+	store, err := c.storeService.GetStore(id)
 	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -96,6 +91,28 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 	utils.SuccessWithPagination(ctx, stores, total, 1, int(total))
 }
 
+// ListAllStores godoc
+// @Summary 全部门店（无分页）
+// @Description 返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断。
+// @Tags stores
+// @Security Bearer
+// @Produce json
+// @Success 200 {object} utils.StandardResponse{data=[]model.Store}
+// @Router /stores/all [get]
+func (c *StoreController) ListAllStores(ctx *gin.Context) {
+	// 权限限制：仅 admin，避免普通门店账号看到其他门店
+	if !middleware.IsAdmin(ctx) {
+		utils.Error(ctx, http.StatusForbidden, "Only admin can list all stores")
+		return
+	}
+	stores, _, err := c.storeService.ListStores()
+	if err != nil {
+		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.Success(ctx, stores)
+}
+
 // UpdateStore godoc
 // @Summary 更新门店信息
 // @Description 更新门店信息（仅总部管理员）
@@ -108,25 +125,18 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 // @Success 200 {object} utils.StandardResponse
 // @Router /stores/{id} [put]
 func (c *StoreController) UpdateStore(ctx *gin.Context) {
-	// 检查是否是总部管理员
-	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "Only admin can update stores")
+	if !utils.RequireAdmin(ctx) {
 		return
 	}
-
-	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
-	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid store ID")
+	id, ok := utils.ParseUintParam(ctx, "id")
+	if !ok {
 		return
 	}
-
 	var req model.UpdateStoreReq
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+	if !utils.BindJSON(ctx, &req) {
 		return
 	}
-
-	if err := c.storeService.UpdateStore(uint(id), &req); err != nil {
+	if err := c.storeService.UpdateStore(id, &req); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -145,19 +155,14 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 // @Success 200 {object} utils.StandardResponse
 // @Router /stores/{id} [delete]
 func (c *StoreController) DeleteStore(ctx *gin.Context) {
-	// 检查是否是总部管理员
-	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "Only admin can delete stores")
+	if !utils.RequireAdmin(ctx) {
 		return
 	}
-
-	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
-	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid store ID")
+	id, ok := utils.ParseUintParam(ctx, "id")
+	if !ok {
 		return
 	}
-
-	if err := c.storeService.DeleteStore(uint(id)); err != nil {
+	if err := c.storeService.DeleteStore(id); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}

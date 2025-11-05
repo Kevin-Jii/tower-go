@@ -58,6 +58,12 @@ func Success(ctx *gin.Context, data interface{}) {
 	)
 }
 
+// SuccessEmpty 语义化返回空成功
+func SuccessEmpty(ctx *gin.Context) { Success(ctx, nil) }
+
+// SuccessList 针对简单列表（无需分页 meta）
+func SuccessList[T any](ctx *gin.Context, list []T) { Success(ctx, list) }
+
 // SuccessWithPagination 旧调用入口，内部转换为新结构
 func SuccessWithPagination(ctx *gin.Context, data interface{}, total int64, page, pageSize int) {
 	pageCount := int((total + int64(pageSize) - 1) / int64(pageSize))

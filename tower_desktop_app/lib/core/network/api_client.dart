@@ -375,6 +375,28 @@ class ApiClient {
 
     return body as Map<String, dynamic>;
   }
+
+  /// 安全调用包装：统一捕获 DioException 并返回 ApiResult<T>
+  /// 使用方式：
+  ///   final result = await safeCall(() => dio.get('/path'));
+  ///   result.when(success: (data){}, error: (msg, code){});
+  Future<ApiResult<R>> safeCall<R>(Future<Response> Function() action,
+      {R Function(dynamic json)? transform}) async {
+    try {
+      final resp = await action();
+      final body = _validateResponse(resp);
+      dynamic data = body['data'];
+      if (transform != null) {
+        data = transform(body);
+      }
+      return ApiResult.success(data as R);
+    } on DioException catch (e) {
+      final ex = _toApiException(e);
+      return ApiResult.error(ex.message, ex.statusCode);
+    } catch (e) {
+      return ApiResult.error(e.toString(), null);
+    }
+  }
 }
 
 class ApiException implements Exception {
@@ -383,4 +405,22 @@ class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
   @override
   String toString() => 'ApiException($statusCode): $message';
+}
+
+/// 统一结果模型（若已有则可复用此定义）
+class ApiResult<T> {
+  final T? data;
+  final String? error;
+  final int? statusCode;
+  bool get isSuccess => error == null;
+  ApiResult._({this.data, this.error, this.statusCode});
+  factory ApiResult.success(T data) => ApiResult._(data: data);
+  factory ApiResult.error(String message, int? code) =>
+      ApiResult._(error: message, statusCode: code);
+  R when<R>(
+      {required R Function(T data) success,
+      required R Function(String msg, int? code) error}) {
+    if (isSuccess && data != null) return success(data as T);
+    return error(this.error ?? '未知错误', statusCode);
+  }
 }

@@ -5,15 +5,15 @@ import "time"
 // DishCategory 菜品分类表
 type DishCategory struct {
 	ID        uint      `json:"id" gorm:"primarykey"`
-	StoreID   uint      `json:"store_id" gorm:"not null;index"`                                              // 所属门店
+	StoreID   uint      `json:"store_id" gorm:"not null;uniqueIndex:idx_store_name,priority:1"`              // 所属门店（与 name 组成唯一）
 	Name      string    `json:"name" gorm:"not null;type:varchar(50);uniqueIndex:idx_store_name,priority:2"` // 分类名称（同门店唯一）
-	Code      string    `json:"code" gorm:"type:varchar(50);uniqueIndex"`                                    // 可选的编码
+	Code      string    `json:"code" gorm:"type:varchar(50);uniqueIndex"`                                    // 可选的编码（全局唯一）
 	Sort      int       `json:"sort" gorm:"default:0"`                                                       // 排序（升序）
 	Status    int       `json:"status" gorm:"default:1"`                                                     // 1=启用 0=禁用
 	Remark    string    `json:"remark" gorm:"type:varchar(255)"`                                             // 备注
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Dishes    []*Dish   `json:"dishes,omitempty" gorm:"foreignKey:CategoryID"` // 关联菜品
+	CreatedAt time.Time `json:"-"`                                                                           // 不返回前端
+	UpdatedAt time.Time `json:"-"`                                                                           // 不返回前端
+	Dishes    []*Dish   `json:"dishes,omitempty" gorm:"foreignKey:CategoryID"`                               // 关联菜品
 }
 
 // CreateDishCategoryReq 创建分类请求

@@ -1519,7 +1519,7 @@ const docTemplate = `{
         },
         "/roles": {
             "get": {
-                "description": "获取所有角色（不含admin）",
+                "description": "获取角色列表（排除admin），支持 keyword 模糊查询 name/code/description，status=0|1 过滤",
                 "produces": [
                     "application/json"
                 ],
@@ -1527,20 +1527,46 @@ const docTemplate = `{
                     "角色管理"
                 ],
                 "summary": "获取角色列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键字(模糊匹配 name/code/description)",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "状态过滤 1=启用 0=禁用",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Role"
-                            }
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Role"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
             },
             "post": {
-                "description": "新增一个角色",
+                "description": "新增一个角色，status：1=启用 0=禁用（默认为1）",
                 "consumes": [
                     "application/json"
                 ],
@@ -1566,7 +1592,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Role"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Role"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1604,7 +1642,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Role"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Role"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
@@ -1619,7 +1669,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "根据ID更新角色信息",
+                "description": "根据ID更新角色信息，可局部更新，仅传需要修改的字段；status=1启用 0禁用",
                 "consumes": [
                     "application/json"
                 ],
@@ -1639,12 +1689,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "角色信息",
+                        "description": "仅传需要修改的字段 (name, code, description, status)，未传字段保持原值",
                         "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Role"
+                            "$ref": "#/definitions/model.UpdateRoleReq"
                         }
                     }
                 ],
@@ -1652,7 +1702,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Role"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Role"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1688,10 +1750,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/utils.Response"
                         }
                     },
                     "400": {
@@ -1781,6 +1840,46 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/all": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stores"
+                ],
+                "summary": "全部门店（无分页）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Store"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1900,6 +1999,459 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "门店ID",
                         "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/{id}/dish-categories": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "dish-categories"
+                ],
+                "summary": "指定门店分类列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.DishCategory"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dish-categories"
+                ],
+                "summary": "指定门店创建菜品分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "分类数据",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateDishCategoryReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.DishCategory"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/{id}/dish-categories/{cid}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dish-categories"
+                ],
+                "summary": "更新指定门店的菜品分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "分类更新数据",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateDishCategoryReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "dish-categories"
+                ],
+                "summary": "删除指定门店的菜品分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/{id}/dish-categories/{cid}/dishes": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "dish-categories"
+                ],
+                "summary": "门店分类下菜品列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Dish"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dishes"
+                ],
+                "summary": "在门店指定分类下创建菜品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "菜品数据 (category_id 忽略, 以路径分类为准)",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateDishReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Dish"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/{id}/dish-categories/{cid}/dishes/{did}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dishes"
+                ],
+                "summary": "在门店指定分类下更新菜品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "菜品ID",
+                        "name": "did",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "菜品更新数据（忽略 category_id 防止跨分类）",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateDishReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/{id}/dishes/{did}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dishes"
+                ],
+                "summary": "更新指定门店的菜品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "菜品ID",
+                        "name": "did",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "菜品信息",
+                        "name": "dish",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateDishReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dishes"
+                ],
+                "summary": "删除指定门店的菜品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "菜品ID",
+                        "name": "did",
                         "in": "path",
                         "required": true
                     }
@@ -2559,7 +3111,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "category_id": {
-                    "description": "分类ID",
+                    "description": "分类ID (复合唯一的一部分)",
                     "type": "integer"
                 },
                 "category_ref": {
@@ -2570,9 +3122,6 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -2581,7 +3130,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "菜品名称",
+                    "description": "菜品名称（同门店同分类唯一）",
                     "type": "string"
                 },
                 "price": {
@@ -2605,11 +3154,8 @@ const docTemplate = `{
                     ]
                 },
                 "store_id": {
-                    "description": "所属门店 ID",
+                    "description": "所属门店 ID (复合唯一的一部分)",
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -2617,10 +3163,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "description": "可选的编码",
-                    "type": "string"
-                },
-                "created_at": {
+                    "description": "可选的编码（全局唯一）",
                     "type": "string"
                 },
                 "dishes": {
@@ -2650,11 +3193,8 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "store_id": {
-                    "description": "所属门店",
+                    "description": "所属门店（与 name 组成唯一）",
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -2848,6 +3388,10 @@ const docTemplate = `{
                     "description": "角色名称",
                     "type": "string"
                 },
+                "status": {
+                    "description": "状态：1=启用 0=禁用",
+                    "type": "integer"
+                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -3007,28 +3551,56 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UpdateRoleReq": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "角色代码（可选）",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "允许清空描述",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "角色名称（可选）",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "允许更新为0（禁用）",
+                    "type": "integer"
+                }
+            }
+        },
         "model.UpdateStoreReq": {
             "type": "object",
             "properties": {
                 "address": {
+                    "description": "允许清空地址",
                     "type": "string"
                 },
                 "business_hours": {
+                    "description": "允许清空营业时间",
                     "type": "string"
                 },
                 "contact_person": {
+                    "description": "允许清空联系人",
                     "type": "string"
                 },
                 "name": {
+                    "description": "名称不允许置空，保持非指针",
                     "type": "string"
                 },
                 "phone": {
+                    "description": "允许清空电话",
                     "type": "string"
                 },
                 "remark": {
+                    "description": "允许清空备注",
                     "type": "string"
                 },
                 "status": {
+                    "description": "允许更新为0或2（指针已可）加 tag 标识意图",
                     "type": "integer"
                 }
             }

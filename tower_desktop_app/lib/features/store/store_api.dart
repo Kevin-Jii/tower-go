@@ -1,6 +1,7 @@
 import '../../core/network/api_client.dart';
 import '../../core/network/api_response.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/map_utils.dart';
 import 'models.dart';
 
 class StoreApi {
@@ -43,20 +44,19 @@ class StoreApi {
   Future<Store?> createStore(CreateStoreRequest request) async {
     return await _client.postSmart<Store>(
       path: ApiPaths.stores,
-      data: request.toJson(),
+      data: compact(request.toJson()),
       fromJson: Store.fromJson,
-      filterNulls: true, // 自动过滤 null 值
+      filterNulls: true,
     );
   }
 
   /// 更新门店
-  /// 返回更新后的门店对象（如果后端返回），否则返回 null
   Future<Store?> updateStore(int id, UpdateStoreRequest request) async {
     return await _client.putSmart<Store>(
       path: '${ApiPaths.stores}/$id',
-      data: request.toJson(),
+      data: compact(request.toJson()),
       fromJson: Store.fromJson,
-      filterNulls: true, // 自动过滤 null 值
+      filterNulls: true,
     );
   }
 

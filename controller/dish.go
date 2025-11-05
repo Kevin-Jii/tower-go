@@ -39,7 +39,11 @@ func (c *DishController) CreateDish(ctx *gin.Context) {
 	}
 
 	if err := c.dishService.CreateDish(storeID, &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		status := http.StatusInternalServerError
+		if err.Error() == "dish name already exists in this category" {
+			status = http.StatusConflict
+		}
+		utils.Error(ctx, status, err.Error())
 		return
 	}
 
@@ -175,5 +179,82 @@ func (c *DishController) DeleteDish(ctx *gin.Context) {
 		return
 	}
 
+	utils.Success(ctx, nil)
+}
+
+// DeleteDishForStore godoc
+// @Summary 删除指定门店的菜品
+// @Tags dishes
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "门店ID"
+// @Param did path int true "菜品ID"
+// @Success 200 {object} utils.StandardResponse
+// @Router /stores/{id}/dishes/{did} [delete]
+func (c *DishController) DeleteDishForStore(ctx *gin.Context) {
+	storeID, ok := utils.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	dishID, ok := utils.ParseUintParam(ctx, "did")
+	if !ok {
+		return
+	}
+	currentStoreID := middleware.GetStoreID(ctx)
+	if currentStoreID != storeID && !middleware.IsAdmin(ctx) {
+		utils.Error(ctx, http.StatusForbidden, "forbidden: cross-store delete")
+		return
+	}
+	if err := c.dishService.DeleteDish(dishID, storeID); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "dish not found" {
+			status = http.StatusNotFound
+		}
+		utils.Error(ctx, status, err.Error())
+		return
+	}
+	utils.Success(ctx, nil)
+}
+
+// UpdateDishForStore godoc
+// @Summary 更新指定门店的菜品
+// @Tags dishes
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "门店ID"
+// @Param did path int true "菜品ID"
+// @Param dish body model.UpdateDishReq true "菜品信息"
+// @Success 200 {object} utils.StandardResponse
+// @Router /stores/{id}/dishes/{did} [put]
+func (c *DishController) UpdateDishForStore(ctx *gin.Context) {
+	storeID, ok := utils.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	dishID, ok := utils.ParseUintParam(ctx, "did")
+	if !ok {
+		return
+	}
+	currentStoreID := middleware.GetStoreID(ctx)
+	if currentStoreID != storeID && !middleware.IsAdmin(ctx) {
+		utils.Error(ctx, http.StatusForbidden, "forbidden: cross-store update")
+		return
+	}
+	var req model.UpdateDishReq
+	if !utils.BindJSON(ctx, &req) {
+		return
+	}
+	if err := c.dishService.UpdateDish(dishID, storeID, &req); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "dish not found" {
+			status = http.StatusNotFound
+		} else if err.Error() == "dish name already exists in this category" {
+			status = http.StatusConflict
+		}
+		utils.Error(ctx, status, err.Error())
+		return
+	}
 	utils.Success(ctx, nil)
 }

@@ -1,4 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../core/utils/value_parsers.dart';
+
 part 'models.freezed.dart';
 part 'models.g.dart';
 
@@ -6,11 +8,16 @@ part 'models.g.dart';
 class Dish with _$Dish {
   const factory Dish({
     required int id,
-    required int storeId,
+    @JsonKey(name: 'store_id') required int storeId,
     required String name,
     String? description,
-    double? price,
+    @JsonKey(fromJson: parseDoubleNullable) double? price,
+    @JsonKey(name: 'category_id') int? categoryId,
     int? status,
+    String? image,
+    String? remark,
+    @JsonKey(name: 'created_at') String? createdAt,
+    @JsonKey(name: 'updated_at') String? updatedAt,
   }) = _Dish;
 
   factory Dish.fromJson(Map<String, dynamic> json) => _$DishFromJson(json);
@@ -24,7 +31,8 @@ class CreateDishRequest with _$CreateDishRequest {
     double? price,
   }) = _CreateDishRequest;
 
-  factory CreateDishRequest.fromJson(Map<String, dynamic> json) => _$CreateDishRequestFromJson(json);
+  factory CreateDishRequest.fromJson(Map<String, dynamic> json) =>
+      _$CreateDishRequestFromJson(json);
 }
 
 @freezed
@@ -36,5 +44,6 @@ class UpdateDishRequest with _$UpdateDishRequest {
     int? status,
   }) = _UpdateDishRequest;
 
-  factory UpdateDishRequest.fromJson(Map<String, dynamic> json) => _$UpdateDishRequestFromJson(json);
+  factory UpdateDishRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateDishRequestFromJson(json);
 }

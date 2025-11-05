@@ -17,6 +17,16 @@ func NewDishService(dishModule *module.DishModule) *DishService {
 
 // CreateDish 创建菜品（自动关联当前门店）
 func (s *DishService) CreateDish(storeID uint, req *model.CreateDishReq) error {
+	// 同分类下名称唯一校验（仅在指定分类时；未分类允许重复不同分类的同名）
+	if req.Name != "" {
+		exists, err := s.dishModule.ExistsByNameInCategory(storeID, req.CategoryID, req.Name)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return errors.New("dish name already exists in this category")
+		}
+	}
 	dish := &model.Dish{
 		StoreID:    storeID,
 		Name:       req.Name,
@@ -50,34 +60,14 @@ func (s *DishService) ListDishesByCategory(storeID uint, categoryID uint) ([]*mo
 
 // UpdateDish 更新菜品信息
 func (s *DishService) UpdateDish(id, storeID uint, req *model.UpdateDishReq) error {
-	dish, err := s.dishModule.GetByID(id, storeID)
-	if err != nil {
+	// 为保持“存在性”语义，先检查是否存在
+	if _, err := s.dishModule.GetByID(id, storeID); err != nil {
 		return errors.New("dish not found")
 	}
-
-	if req.Name != "" {
-		dish.Name = req.Name
-	}
-	if req.Price != nil {
-		dish.Price = *req.Price
-	}
-	if req.CategoryID != nil {
-		dish.CategoryID = req.CategoryID
-	}
-	if req.Status != nil {
-		dish.Status = *req.Status
-	}
-	if req.Image != "" {
-		dish.Image = req.Image
-	}
-	if req.Remark != "" {
-		dish.Remark = req.Remark
-	}
-
-	if err := s.dishModule.Update(dish); err != nil {
+	if err := s.dishModule.UpdateByIDAndStoreID(id, storeID, req); err != nil {
 		return err
 	}
-	utils.InvalidateDishCache(dish.ID, storeID)
+	utils.InvalidateDishCache(id, storeID)
 	return nil
 }
 

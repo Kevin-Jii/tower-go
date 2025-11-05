@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/map_utils.dart';
 import 'models.dart';
 
 class UserApi {
@@ -39,16 +40,13 @@ class UserApi {
   Future<void> createUser(CreateUserRequest req) async {
     await _client.post<void>(
       ApiPaths.users,
-      data: req.toJson(),
+      data: compact(req.toJson()),
     );
   }
 
   /// 更新用户
   Future<void> updateUser(int id, UpdateUserRequest req) async {
-    // 过滤掉 null 值,仅发送有值的字段
-    final json = req.toJson();
-    json.removeWhere((key, value) => value == null);
-
+    final json = compact(req.toJson());
     await _client.request<void>(
       '${ApiPaths.users}/$id',
       method: 'PUT',

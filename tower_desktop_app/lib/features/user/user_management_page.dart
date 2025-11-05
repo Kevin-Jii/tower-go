@@ -309,7 +309,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
           TDTableCol(
             title: '状态',
             colKey: 'status',
-            width: 90,
+            width: 130,
             cellBuilder: (ctx, index) {
               final u = provider.users[index];
               final isActive = u.status == StatusValues.enabled;

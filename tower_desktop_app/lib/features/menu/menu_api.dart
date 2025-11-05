@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import '../../core/network/api_client.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/network/response_utils.dart';
+import '../../core/constants/error_texts.dart';
+import '../../core/utils/map_utils.dart';
 import 'models.dart';
 
 /// 菜单管理 & 用户菜单 API
@@ -20,13 +23,10 @@ class MenuApi {
   Future<List<MenuItem>> getUserMenus() async {
     try {
       final resp = await _dio.get('${ApiPaths.menus}/user-menus');
-      final data = resp.data['data'] ?? resp.data;
-      final List list = data is List ? data : (data['menus'] ?? []);
-      return list
-          .map((e) => MenuItem.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      final list = ResponseUtils.payloadToList(resp.data, listKey: 'menus');
+      return list.map(MenuItem.fromJson).toList();
     } on DioException catch (e) {
-      throw ApiException(e.message ?? '加载菜单失败',
+      throw ApiException(e.message ?? ErrorTexts.loadMenus,
           statusCode: e.response?.statusCode);
     }
   }
@@ -34,11 +34,13 @@ class MenuApi {
   Future<List<String>> getUserPermissions() async {
     try {
       final resp = await _dio.get('${ApiPaths.menus}/user-permissions');
-      final data = resp.data['data'] ?? resp.data;
-      final List list = data is List ? data : (data['permissions'] ?? []);
-      return list.map((e) => e.toString()).toList();
+      final list =
+          ResponseUtils.payloadToList(resp.data, listKey: 'permissions');
+      return list
+          .map((e) => e['permission']?.toString() ?? e.values.first.toString())
+          .toList();
     } on DioException catch (e) {
-      throw ApiException(e.message ?? '加载权限失败',
+      throw ApiException(e.message ?? ErrorTexts.loadPermissions,
           statusCode: e.response?.statusCode);
     }
   }
@@ -46,14 +48,11 @@ class MenuApi {
   /// 获取完整菜单树（管理界面使用，不带分页 meta）
   Future<List<MenuItem>> getMenuTree() async {
     try {
-      final resp = await _dio.get(ApiPaths.menus); // 后端直接返回树
-      final data = resp.data['data'] ?? resp.data;
-      final List list = data is List ? data : (data['menus'] ?? []);
-      return list
-          .map((e) => MenuItem.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      final resp = await _dio.get(ApiPaths.menus); // 后端直接返回树或包裹
+      final list = ResponseUtils.payloadToList(resp.data, listKey: 'menus');
+      return list.map(MenuItem.fromJson).toList();
     } on DioException catch (e) {
-      throw ApiException(e.message ?? '加载菜单树失败',
+      throw ApiException(e.message ?? ErrorTexts.loadMenuTree,
           statusCode: e.response?.statusCode);
     }
   }
@@ -65,7 +64,7 @@ class MenuApi {
 
   /// 更新菜单
   Future<void> updateMenu(int id, UpdateMenuRequest req) async {
-    final data = req.toJson()..removeWhere((k, v) => v == null);
+    final data = compact(req.toJson());
     await _client.request<void>('${ApiPaths.menus}/$id',
         method: 'PUT', data: data);
   }

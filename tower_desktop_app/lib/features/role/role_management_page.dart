@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth/permission_gate.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/ui_texts.dart';
 import '../../core/network/api_client.dart';
 import '../../core/widgets/date_text.dart';
+import '../../core/widgets/status_tag.dart';
+import '../../core/widgets/admin_table.dart';
 import 'role_provider.dart';
 import 'role_api.dart';
 import 'role_form_dialog.dart';
@@ -16,18 +19,18 @@ class RoleManagementPage extends StatefulWidget {
 }
 
 class _RoleManagementPageState extends State<RoleManagementPage> {
-  final _keywordCtrl = TextEditingController();
+  final TextEditingController _searchCtrl = TextEditingController();
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RoleProvider>().load();
+      context.read<RoleProvider>().loadRoles();
     });
   }
 
   @override
   void dispose() {
-    _keywordCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -45,7 +48,8 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
       final ok = await context.read<RoleProvider>().create(req);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? '创建成功' : '创建失败'),
+        content:
+            Text(ok ? UITexts.roleCreateSuccess : UITexts.roleCreateFailed),
       ));
     }
   }
@@ -62,7 +66,8 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
       final ok = await context.read<RoleProvider>().update(r.id, req);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? '更新成功' : '更新失败'),
+        content:
+            Text(ok ? UITexts.roleUpdateSuccess : UITexts.roleUpdateFailed),
       ));
     }
   }
@@ -71,15 +76,16 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定删除角色 "${r.name}" ?'),
+        title: const Text(UITexts.roleDeleteConfirmTitle),
+        content:
+            Text('${UITexts.roleDeleteConfirmContentPrefix} "${r.name}" ?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
+              child: const Text(UITexts.roleDeleteConfirmCancel)),
           ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('删除')),
+              child: const Text(UITexts.roleDeleteConfirmOk)),
         ],
       ),
     );
@@ -87,7 +93,8 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
       final ok = await context.read<RoleProvider>().remove(r.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? '删除成功' : '删除失败'),
+        content:
+            Text(ok ? UITexts.roleDeleteSuccess : UITexts.roleDeleteFailed),
       ));
     }
   }
@@ -107,7 +114,7 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
 
   Widget _buildToolbar() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -119,42 +126,15 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
       ),
       child: Row(
         children: [
-          const Text('角色管理',
+          const Text(UITexts.roleTitle,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
           const Spacer(),
-          SizedBox(
-            width: 200,
-            child: TextField(
-              controller: _keywordCtrl,
-              decoration: InputDecoration(
-                hintText: '关键字',
-                isDense: true,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(8)),
-                prefixIcon: const Icon(Icons.search, size: 18),
-              ),
-              onSubmitted: (_) => context
-                  .read<RoleProvider>()
-                  .load(keyword: _keywordCtrl.text.trim()),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: () => context
-                .read<RoleProvider>()
-                .load(keyword: _keywordCtrl.text.trim()),
-            child: const Text('搜索'),
-          ),
-          const SizedBox(width: 12),
           PermissionGate(
             required: PermissionCodes.roleAdd,
             child: ElevatedButton.icon(
               onPressed: _openCreate,
               icon: const Icon(Icons.add),
-              label: const Text('新增角色'),
+              label: const Text(UITexts.roleAddButton),
             ),
           ),
         ],
@@ -178,9 +158,8 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                   style: TextStyle(color: Colors.red.shade700)),
               const SizedBox(height: 12),
               ElevatedButton(
-                onPressed: () =>
-                    provider.load(keyword: _keywordCtrl.text.trim()),
-                child: const Text('重试'),
+                onPressed: () => provider.loadRoles(keyword: provider.keyword),
+                child: const Text(UITexts.roleRetryButton),
               )
             ],
           ),
@@ -193,7 +172,7 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
             children: [
               Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade300),
               const SizedBox(height: 16),
-              const Text('暂无角色',
+              const Text(UITexts.roleEmpty,
                   style: TextStyle(fontSize: 16, color: Colors.grey)),
             ],
           ),
@@ -201,151 +180,120 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
       }
       return Padding(
         padding: const EdgeInsets.all(20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildHeaderRow(),
-              Divider(height: 1, color: Colors.grey.shade200),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: provider.list.length,
-                  separatorBuilder: (_, __) =>
-                      Divider(height: 1, color: Colors.grey.shade100),
-                  itemBuilder: (ctx, i) {
-                    final r = provider.list[i];
-                    final active = (r.status ?? 1) == 1;
-                    return Container(
-                      color: i.isEven ? Colors.white : Colors.grey.shade50,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                              width: 60,
-                              child: Text('${r.id}',
-                                  style: const TextStyle(fontSize: 12))),
-                          SizedBox(
-                              width: 160,
-                              child: Text(r.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500))),
-                          SizedBox(
-                              width: 160,
-                              child: Text(r.code,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blueGrey.shade600))),
-                          SizedBox(
-                              width: 200,
-                              child: Text(r.description ?? '-',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600))),
-                          SizedBox(width: 80, child: _buildStatusTag(active)),
-                          SizedBox(
-                            width: 160,
-                            child: DateText(
-                              raw: r.createdAt,
-                              style: TextStyle(
-                                  fontSize: 12, color: Colors.grey.shade500),
-                            ),
-                          ),
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                PermissionGate(
-                                  required: PermissionCodes.roleEdit,
-                                  child: TextButton(
-                                      onPressed: () => _openEdit(r),
-                                      child: const Text('修改')),
-                                ),
-                                PermissionGate(
-                                  required: PermissionCodes.roleDelete,
-                                  child: TextButton(
-                                    onPressed: () => _delete(r),
-                                    child: const Text('删除',
-                                        style:
-                                            TextStyle(color: Colors.redAccent)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        ],
-                      ),
-                    );
-                  },
+        child: AdminTable<RoleItem>(
+          enableSearch: true,
+          searchController: _searchCtrl,
+          searchPlaceholder: UITexts.roleSearchPlaceholder,
+          onSearch: (kw) => context.read<RoleProvider>().loadRoles(keyword: kw),
+          page: provider.page,
+          pageSize: provider.pageSize,
+          total: provider.total,
+          onPageChange: (p) => provider.setPage(p),
+          columns: const [
+            AdminTableColumn(
+                width: _colId,
+                label: UITexts.roleColumnId,
+                alignment: Alignment.center),
+            AdminTableColumn(width: _colName, label: UITexts.roleColumnName),
+            AdminTableColumn(width: _colCode, label: UITexts.roleColumnCode),
+            AdminTableColumn(
+                width: _colStatus,
+                label: UITexts.roleColumnStatus,
+                alignment: Alignment.center),
+            AdminTableColumn(
+                width: _colCreated, label: UITexts.roleColumnCreated),
+            AdminTableColumn(width: _colDesc, label: UITexts.roleColumnDesc),
+            AdminTableColumn(
+                label: UITexts.roleColumnActions,
+                alignment: Alignment.centerRight),
+          ],
+          data: provider.currentPageItems,
+          rowBuilder: (r, i) {
+            final active = (r.status ?? 1) == 1;
+            return Row(
+              children: [
+                SizedBox(
+                  width: _colId,
+                  child: Text('${r.id}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12)),
                 ),
-              ),
-            ],
-          ),
+                SizedBox(
+                  width: _colName,
+                  child: Text(r.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500)),
+                ),
+                SizedBox(
+                  width: _colCode,
+                  child: Text(r.code,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.blueGrey.shade600)),
+                ),
+                SizedBox(
+                  width: _colStatus,
+                  child: StatusTag(
+                      active: active,
+                      enabledText: UITexts.roleStatusEnabled,
+                      disabledText: UITexts.roleStatusDisabled),
+                ),
+                SizedBox(
+                  width: _colCreated,
+                  child: DateText(
+                      raw: r.createdAt,
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                ),
+                SizedBox(
+                  width: _colDesc,
+                  child: Text(r.description ?? '-',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      PermissionGate(
+                        required: PermissionCodes.roleEdit,
+                        child: TextButton(
+                          onPressed: () => _openEdit(r),
+                          child: const Text(UITexts.roleEditButton),
+                        ),
+                      ),
+                      PermissionGate(
+                        required: PermissionCodes.roleDelete,
+                        child: TextButton(
+                          onPressed: () => _delete(r),
+                          child: const Text(UITexts.roleDeleteButton,
+                              style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       );
     });
   }
 
-  Widget _buildHeaderRow() {
-    Text h(String t) => Text(t,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600));
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          SizedBox(width: 60, child: h('ID')),
-          SizedBox(width: 160, child: h('角色名称')),
-          SizedBox(width: 160, child: h('角色编码')),
-          SizedBox(width: 160, child: h('状态')),
-          SizedBox(width: 160, child: h('创建时间')),
-          SizedBox(width: 200, child: h('备注')),
-          const Expanded(
-              child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('操作',
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600))))
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusTag(bool active) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: active ? Colors.blue.shade50 : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-            color: active ? Colors.blue.shade200 : Colors.grey.shade400),
-      ),
-      child: Text(
-        active ? '正常' : '停用',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: active ? Colors.blue.shade700 : Colors.grey.shade600,
-        ),
-      ),
-    );
-  }
+  // 统一列宽与对齐配置
+  static const double _colId = 70;
+  static const double _colName = 160;
+  static const double _colCode = 160;
+  static const double _colStatus = 130;
+  static const double _colCreated = 170;
+  static const double _colDesc = 220;
+  // 旧表头、行渲染与状态标签已被 AdminTable + StatusTag 替换
 }
 
 class RoleManagementScope extends StatelessWidget {

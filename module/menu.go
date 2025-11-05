@@ -66,45 +66,10 @@ func (m *MenuModule) ListByParentID(parentID uint) ([]*model.Menu, error) {
 
 // Update 更新菜单（清除缓存）
 func (m *MenuModule) Update(id uint, req *model.UpdateMenuReq) error {
-	updates := make(map[string]interface{})
-
-	if req.ParentID != nil {
-		updates["parent_id"] = *req.ParentID
+	updates := utils.BuildUpdatesFromReq(req)
+	if len(updates) == 0 {
+		return nil
 	}
-	if req.Name != "" {
-		updates["name"] = req.Name
-	}
-	if req.Title != "" {
-		updates["title"] = req.Title
-	}
-	if req.Icon != "" {
-		updates["icon"] = req.Icon
-	}
-	if req.Path != "" {
-		updates["path"] = req.Path
-	}
-	if req.Component != "" {
-		updates["component"] = req.Component
-	}
-	if req.Type != nil {
-		updates["type"] = *req.Type
-	}
-	if req.Sort != nil {
-		updates["sort"] = *req.Sort
-	}
-	if req.Permission != "" {
-		updates["permission"] = req.Permission
-	}
-	if req.Visible != nil {
-		updates["visible"] = *req.Visible
-	}
-	if req.Status != nil {
-		updates["status"] = *req.Status
-	}
-	if req.Remark != "" {
-		updates["remark"] = req.Remark
-	}
-
 	err := m.db.Model(&model.Menu{}).Where("id = ?", id).Updates(updates).Error
 	if err == nil {
 		utils.InvalidateMenuCache()

@@ -103,3 +103,30 @@ func GenerateStoreCode(db *gorm.DB) (string, error) {
 	LogError("生成唯一门店编码失败")
 	return "", fmt.Errorf("生成唯一门店编码失败，已重试%d次", maxRetries)
 }
+
+// GenerateDishCategoryCode 生成唯一的菜品分类编码 格式：DC{storeID}-{YYYYMMDD}{随机3位}
+// 若需要更短，可改成 DC{storeID}{随机4位}
+func GenerateDishCategoryCode(db *gorm.DB, storeID uint) (string, error) {
+	if db == nil {
+		return "", fmt.Errorf("数据库连接未初始化")
+	}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	maxRetries := 20
+	datePart := time.Now().Format("20060102")
+	for i := 0; i < maxRetries; i++ {
+		suffix := r.Intn(1000) // 000-999
+		code := fmt.Sprintf("DC%d-%s%03d", storeID, datePart, suffix)
+		var count int64
+		err := db.Raw("SELECT COUNT(*) FROM dish_categories WHERE code = ?", code).Scan(&count).Error
+		if err != nil {
+			LogDatabaseError("检查分类编码唯一性失败", err)
+			return "", fmt.Errorf("检查分类编码唯一性失败: %v", err)
+		}
+		if count == 0 {
+			LogInfo("生成菜品分类编码")
+			return code, nil
+		}
+	}
+	LogError("生成唯一菜品分类编码失败")
+	return "", fmt.Errorf("生成唯一菜品分类编码失败，已重试%d次", maxRetries)
+}

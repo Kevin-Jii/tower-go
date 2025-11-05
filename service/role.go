@@ -11,7 +11,7 @@ func CreateRole(req *model.Role) (*model.Role, error) {
 }
 
 // UpdateRole 更新角色
-func UpdateRole(id uint, req *model.Role) (*model.Role, error) {
+func UpdateRole(id uint, req *model.UpdateRoleReq) (*model.Role, error) {
 	return module.UpdateRole(id, req)
 }
 
@@ -28,4 +28,9 @@ func GetRole(id uint) (*model.Role, error) {
 // ListRoles 获取角色列表
 func ListRoles() ([]model.Role, error) {
 	return module.ListRoles()
+}
+
+// ListRolesFiltered 过滤查询角色
+func ListRolesFiltered(keyword string, status *int8) ([]model.Role, error) {
+	return module.ListRolesFiltered(keyword, status)
 }

@@ -4,6 +4,8 @@ import 'features/auth/login_screen.dart';
 import 'features/auth/permission_provider.dart';
 import 'features/auth/session_manager.dart';
 import 'features/home/home_screen.dart' as home;
+import 'features/dish/dish_management_page.dart';
+import 'core/constants/app_constants.dart';
 import 'features/menu/menu_api.dart';
 import 'features/menu/menu_provider.dart';
 import 'features/user/user_api.dart';
@@ -49,6 +51,11 @@ class TowerApp extends StatelessWidget {
               home: snap.data == true
                   ? const _DeferredHome()
                   : const LoginScreen(),
+              routes: {
+                RouteNames.login: (_) => const LoginScreen(),
+                RouteNames.home: (_) => const _DeferredHome(),
+                RouteNames.dishes: (_) => const DishManagementScope(),
+              },
             );
           },
         ),

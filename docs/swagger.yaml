@@ -207,21 +207,19 @@ definitions:
   model.Dish:
     properties:
       category_id:
-        description: 分类ID
+        description: 分类ID (复合唯一的一部分)
         type: integer
       category_ref:
         allOf:
         - $ref: '#/definitions/model.DishCategory'
         description: 分类关联
-      created_at:
-        type: string
       id:
         type: integer
       image:
         description: 图片URL
         type: string
       name:
-        description: 菜品名称
+        description: 菜品名称（同门店同分类唯一）
         type: string
       price:
         description: 价格
@@ -237,17 +235,13 @@ definitions:
         - $ref: '#/definitions/model.Store'
         description: 门店关联
       store_id:
-        description: 所属门店 ID
+        description: 所属门店 ID (复合唯一的一部分)
         type: integer
-      updated_at:
-        type: string
     type: object
   model.DishCategory:
     properties:
       code:
-        description: 可选的编码
-        type: string
-      created_at:
+        description: 可选的编码（全局唯一）
         type: string
       dishes:
         description: 关联菜品
@@ -269,10 +263,8 @@ definitions:
         description: 1=启用 0=禁用
         type: integer
       store_id:
-        description: 所属门店
+        description: 所属门店（与 name 组成唯一）
         type: integer
-      updated_at:
-        type: string
     type: object
   model.Menu:
     properties:
@@ -399,6 +391,9 @@ definitions:
       name:
         description: 角色名称
         type: string
+      status:
+        description: 状态：1=启用 0=禁用
+        type: integer
       updated_at:
         type: string
     type: object
@@ -507,21 +502,43 @@ definitions:
         - 1
         type: integer
     type: object
+  model.UpdateRoleReq:
+    properties:
+      code:
+        description: 角色代码（可选）
+        type: string
+      description:
+        description: 允许清空描述
+        type: string
+      name:
+        description: 角色名称（可选）
+        type: string
+      status:
+        description: 允许更新为0（禁用）
+        type: integer
+    type: object
   model.UpdateStoreReq:
     properties:
       address:
+        description: 允许清空地址
         type: string
       business_hours:
+        description: 允许清空营业时间
         type: string
       contact_person:
+        description: 允许清空联系人
         type: string
       name:
+        description: 名称不允许置空，保持非指针
         type: string
       phone:
+        description: 允许清空电话
         type: string
       remark:
+        description: 允许清空备注
         type: string
       status:
+        description: 允许更新为0或2（指针已可）加 tag 标识意图
         type: integer
     type: object
   model.UpdateUserReq:
@@ -1526,23 +1543,38 @@ paths:
       - menus
   /roles:
     get:
-      description: 获取所有角色（不含admin）
+      description: 获取角色列表（排除admin），支持 keyword 模糊查询 name/code/description，status=0|1
+        过滤
+      parameters:
+      - description: 关键字(模糊匹配 name/code/description)
+        in: query
+        name: keyword
+        type: string
+      - description: 状态过滤 1=启用 0=禁用
+        in: query
+        name: status
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.Role'
-            type: array
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Role'
+                  type: array
+              type: object
       summary: 获取角色列表
       tags:
       - 角色管理
     post:
       consumes:
       - application/json
-      description: 新增一个角色
+      description: 新增一个角色，status：1=启用 0=禁用（默认为1）
       parameters:
       - description: 角色信息
         in: body
@@ -1556,7 +1588,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Role'
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Role'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1581,9 +1618,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/utils.Response'
         "400":
           description: Bad Request
           schema:
@@ -1607,7 +1642,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Role'
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Role'
+              type: object
         "404":
           description: Not Found
           schema:
@@ -1620,26 +1660,31 @@ paths:
     put:
       consumes:
       - application/json
-      description: 根据ID更新角色信息
+      description: 根据ID更新角色信息，可局部更新，仅传需要修改的字段；status=1启用 0禁用
       parameters:
       - description: 角色ID
         in: path
         name: id
         required: true
         type: integer
-      - description: 角色信息
+      - description: 仅传需要修改的字段 (name, code, description, status)，未传字段保持原值
         in: body
         name: data
         required: true
         schema:
-          $ref: '#/definitions/model.Role'
+          $ref: '#/definitions/model.UpdateRoleReq'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Role'
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Role'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -1772,6 +1817,304 @@ paths:
       security:
       - Bearer: []
       summary: 更新门店信息
+      tags:
+      - stores
+  /stores/{id}/dish-categories:
+    get:
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.DishCategory'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 指定门店分类列表
+      tags:
+      - dish-categories
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类数据
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateDishCategoryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DishCategory'
+              type: object
+      security:
+      - Bearer: []
+      summary: 指定门店创建菜品分类
+      tags:
+      - dish-categories
+  /stores/{id}/dish-categories/{cid}:
+    delete:
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类ID
+        in: path
+        name: cid
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 删除指定门店的菜品分类
+      tags:
+      - dish-categories
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类ID
+        in: path
+        name: cid
+        required: true
+        type: integer
+      - description: 分类更新数据
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateDishCategoryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 更新指定门店的菜品分类
+      tags:
+      - dish-categories
+  /stores/{id}/dish-categories/{cid}/dishes:
+    get:
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类ID
+        in: path
+        name: cid
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Dish'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 门店分类下菜品列表
+      tags:
+      - dish-categories
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类ID
+        in: path
+        name: cid
+        required: true
+        type: integer
+      - description: 菜品数据 (category_id 忽略, 以路径分类为准)
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateDishReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Dish'
+              type: object
+      security:
+      - Bearer: []
+      summary: 在门店指定分类下创建菜品
+      tags:
+      - dishes
+  /stores/{id}/dish-categories/{cid}/dishes/{did}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类ID
+        in: path
+        name: cid
+        required: true
+        type: integer
+      - description: 菜品ID
+        in: path
+        name: did
+        required: true
+        type: integer
+      - description: 菜品更新数据（忽略 category_id 防止跨分类）
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateDishReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 在门店指定分类下更新菜品
+      tags:
+      - dishes
+  /stores/{id}/dishes/{did}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 菜品ID
+        in: path
+        name: did
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 删除指定门店的菜品
+      tags:
+      - dishes
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 菜品ID
+        in: path
+        name: did
+        required: true
+        type: integer
+      - description: 菜品信息
+        in: body
+        name: dish
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateDishReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 更新指定门店的菜品
+      tags:
+      - dishes
+  /stores/all:
+    get:
+      description: 返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Store'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 全部门店（无分页）
       tags:
       - stores
   /users:

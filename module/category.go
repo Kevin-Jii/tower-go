@@ -2,6 +2,7 @@ package module
 
 import (
 	"tower-go/model"
+	"tower-go/utils"
 
 	"gorm.io/gorm"
 )
@@ -14,8 +15,18 @@ func NewDishCategoryModule(db *gorm.DB) *DishCategoryModule {
 	return &DishCategoryModule{db: db}
 }
 
+// GetDB 公开底层 DB 供编码生成使用
+func (m *DishCategoryModule) GetDB() *gorm.DB { return m.db }
+
 func (m *DishCategoryModule) Create(cat *model.DishCategory) error {
 	return m.db.Create(cat).Error
+}
+
+// ExistsByName 判断某门店下分类名是否已存在
+func (m *DishCategoryModule) ExistsByName(storeID uint, name string) (bool, error) {
+	var count int64
+	err := m.db.Model(&model.DishCategory{}).Where("store_id = ? AND name = ?", storeID, name).Count(&count).Error
+	return count > 0, err
 }
 
 func (m *DishCategoryModule) Update(cat *model.DishCategory) error {
@@ -55,12 +66,13 @@ func (m *DishCategoryModule) ListWithDishes(storeID uint) ([]*model.DishCategory
 
 // BatchUpdateSort 批量更新排序
 func (m *DishCategoryModule) BatchUpdateSort(storeID uint, items []model.ReorderDishCategoryItem) error {
-	return m.db.Transaction(func(tx *gorm.DB) error {
-		for _, it := range items {
-			if err := tx.Model(&model.DishCategory{}).Where("id = ? AND store_id = ?", it.ID, storeID).Update("sort", it.Sort).Error; err != nil {
-				return err
-			}
-		}
+	if len(items) == 0 {
 		return nil
-	})
+	}
+	// 转换为通用 SortItem
+	list := make([]utils.SortItem, 0, len(items))
+	for _, it := range items {
+		list = append(list, utils.SortItem{ID: it.ID, Sort: it.Sort})
+	}
+	return utils.BatchUpdateSort(m.db, &model.DishCategory{}, storeID, list)
 }

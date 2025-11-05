@@ -1,8 +1,10 @@
 package module
 
 import (
-	"gorm.io/gorm"
 	"tower-go/model"
+	"tower-go/utils"
+
+	"gorm.io/gorm"
 )
 
 var db *gorm.DB
@@ -20,15 +22,20 @@ func CreateRole(req *model.Role) (*model.Role, error) {
 }
 
 // UpdateRole 更新角色
-func UpdateRole(id uint, req *model.Role) (*model.Role, error) {
+func UpdateRole(id uint, req *model.UpdateRoleReq) (*model.Role, error) {
 	var role model.Role
 	if err := db.First(&role, id).Error; err != nil {
 		return nil, err
 	}
-	role.Name = req.Name
-	role.Code = req.Code
-	role.Description = req.Description
-	if err := db.Save(&role).Error; err != nil {
+	updates := utils.BuildUpdatesFromReq(req)
+	if len(updates) == 0 { // 无字段需要更新直接返回原对象
+		return &role, nil
+	}
+	if err := db.Model(&role).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	// 重新查询确保返回最新（处理可能的数据库触发器或默认值）
+	if err := db.First(&role, id).Error; err != nil {
 		return nil, err
 	}
 	return &role, nil
@@ -52,6 +59,31 @@ func GetRole(id uint) (*model.Role, error) {
 func ListRoles() ([]model.Role, error) {
 	var roles []model.Role
 	if err := db.Find(&roles).Error; err != nil {
+		return nil, err
+	}
+	return roles, nil
+}
+
+// ListRolesFiltered 带关键字与状态过滤（排除admin）
+// keyword 模糊匹配 name/code/description；status 为 0/1 可选
+func ListRolesFiltered(keyword string, status *int8) ([]model.Role, error) {
+	var roles []model.Role
+
+	qb := utils.NewQueryBuilder(db).
+		Where("code <> ?", model.RoleCodeAdmin).
+		WhereIf(status != nil, "status = ?", func() interface{} {
+			if status != nil {
+				return *status
+			}
+			return nil
+		}())
+
+	if keyword != "" {
+		utils.ApplyMultiTermFuzzy(qb, []string{"name", "code", "description"}, keyword, "id")
+	}
+
+	qb.OrderByDesc("id")
+	if err := qb.Find(&roles); err != nil {
 		return nil, err
 	}
 	return roles, nil

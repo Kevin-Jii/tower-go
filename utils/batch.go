@@ -9,6 +9,25 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// SortItem 通用排序更新条目
+type SortItem struct {
+	ID   uint
+	Sort int
+}
+
+// BatchUpdateSort 通用批量排序更新（按 store_id + id 条件）
+// modelParam: 传入 &ModelStruct{}，用于 gorm.Model 解析表
+func BatchUpdateSort(tx *gorm.DB, modelParam interface{}, storeID uint, items []SortItem) error {
+	return tx.Transaction(func(t *gorm.DB) error {
+		for _, it := range items {
+			if err := t.Model(modelParam).Where("id = ? AND store_id = ?", it.ID, storeID).Update("sort", it.Sort).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // BatchSize 默认批量操作大小
 const DefaultBatchSize = 100
 
@@ -121,7 +140,7 @@ func ChunkProcess(db *gorm.DB, model interface{}, chunkSize int, processor func(
 		if modelType.Kind() == reflect.Ptr {
 			modelType = modelType.Elem()
 		}
-		sliceType := reflect.SliceOf(reflect.PtrTo(modelType))
+		sliceType := reflect.SliceOf(reflect.PointerTo(modelType))
 		records := reflect.New(sliceType).Interface()
 
 		err := db.Offset(offset).Limit(chunkSize).Find(records).Error

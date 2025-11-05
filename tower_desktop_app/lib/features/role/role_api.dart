@@ -1,28 +1,48 @@
 import 'dart:convert';
 import '../../core/network/api_client.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/value_parsers.dart';
+import '../../core/utils/map_utils.dart';
+import '../../core/constants/error_texts.dart';
+import '../../core/network/crud_api.dart';
 import 'role_models.dart';
 
-class RoleApi {
-  final ApiClient _client;
-  RoleApi(this._client);
+/// 角色 API，继承通用 CrudApi 并保留自定义的健壮 list 解析逻辑。
+class RoleApi extends CrudApi<RoleItem> {
+  RoleApi(ApiClient client) : super(client);
 
-  /// 获取角色列表，兼容两种后端响应格式：
-  /// 1. 直接返回 List
-  /// 2. 包装为 { code, message, data: [] }
-  /// 如果是字符串响应则尝试 JSON 解析。
+  @override
+  String get basePath => ApiPaths.roles;
+
+  /// 将后端 JSON Map 转为 RoleItem，处理类型兼容与 remark -> description 迁移。
+  @override
+  RoleItem fromJson(Map<String, dynamic> map) {
+    if (!map.containsKey('description') && map.containsKey('remark')) {
+      map['description'] = map['remark'];
+    }
+    return RoleItem(
+      id: parseInt(map['id']),
+      name: map['name']?.toString() ?? '',
+      code: map['code']?.toString() ?? '',
+      description: map['description']?.toString(),
+      status: parseIntNullable(map['status']),
+      createdAt: parseStringNullable(map['created_at']),
+      updatedAt: parseStringNullable(map['updated_at']),
+    );
+  }
+
+  /// 自定义健壮列表获取：兼容字符串 JSON / Map 包裹 / 直接 List。
   Future<List<RoleItem>> getRoles({String? keyword}) async {
     try {
-      final resp = await _client.dio.get(ApiPaths.roles, queryParameters: {
+      final resp = await client.dio.get(basePath, queryParameters: {
         if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
       });
       dynamic body = resp.data;
-      // 字符串尝试转 JSON
       if (body is String) {
         try {
           body = body.trim().isEmpty ? [] : jsonDecode(body);
         } catch (_) {
-          throw ApiException('角色列表响应不是合法 JSON');
+          throw ApiException(ErrorTexts.loadRoles);
         }
       }
       List listData = [];
@@ -33,35 +53,40 @@ class RoleApi {
         if (data is List) {
           listData = data;
         } else if (data == null) {
-          // data 为空视为无数据
           listData = [];
         } else {
-          throw ApiException('角色列表 data 字段格式错误，期望 List');
+          throw ApiException(ErrorTexts.loadRoles);
         }
       } else {
-        throw ApiException('角色列表响应格式错误，期望 List 或包裹的 Map');
+        throw ApiException(ErrorTexts.loadRoles);
       }
-      return listData
-          .map((e) => RoleItem.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      return listData.map((raw) {
+        try {
+          final map = Map<String, dynamic>.from(raw as Map);
+          return fromJson(map);
+        } catch (e) {
+          throw ApiException('${ErrorTexts.parseRoleItem}: $e 原始条目: $raw');
+        }
+      }).toList();
     } on ApiException {
       rethrow;
     } catch (e) {
-      throw ApiException('获取角色列表失败: $e');
+      throw ApiException('${ErrorTexts.loadRoles}: $e');
     }
   }
 
+  /// 兼容旧调用：创建角色
   Future<void> createRole(CreateRoleRequest req) async {
-    await _client.post(ApiPaths.roles, data: req.toJson());
+    await create(req.toJson());
   }
 
+  /// 更新角色（过滤 null）
   Future<void> updateRole(int id, UpdateRoleRequest req) async {
-    final json = req.toJson();
-    json.removeWhere((k, v) => v == null);
-    await _client.request('${ApiPaths.roles}/$id', method: 'PUT', data: json);
+    await update(id, compact(req.toJson()));
   }
 
+  /// 删除角色
   Future<void> deleteRole(int id) async {
-    await _client.request('${ApiPaths.roles}/$id', method: 'DELETE');
+    await delete(id);
   }
 }

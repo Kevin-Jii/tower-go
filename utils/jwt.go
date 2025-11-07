@@ -2,13 +2,24 @@ package utils
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// NOTE: Ensure this secret is consistent across your application, or load it from config.
-var jwtSecret = []byte("32fdsfdsgfdsbvzxvasdfdsaf3qr2343@#@312r32/*-+dd2s3")
+// getJWTSecret 从环境变量获取JWT密钥，如果不存在则报错
+func getJWTSecret() ([]byte, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return nil, errors.New("JWT_SECRET environment variable is not set")
+	}
+	if len(secret) < 32 {
+		return nil, errors.New("JWT_SECRET must be at least 32 characters long")
+	}
+	return []byte(secret), nil
+}
 
 // Claims JWT载荷结构体，用于存储用户ID和门店ID
 type Claims struct {
@@ -36,8 +47,13 @@ func GenerateToken(userID uint, username string, storeID uint, roleCode string, 
 		},
 	}
 
+	secret, err := getJWTSecret()
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get JWT secret: %w", err)
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString(jwtSecret)
+	signed, err := token.SignedString(secret)
 	if err != nil {
 		return "", 0, err
 	}
@@ -48,14 +64,20 @@ func GenerateToken(userID uint, username string, storeID uint, roleCode string, 
 func ValidateToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
-	// 使用 jwtSecret 作为密钥进行解析
+	// 获取JWT密钥
+	secret, err := getJWTSecret()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get JWT secret: %w", err)
+	}
+
+	// 使用 secret 作为密钥进行解析
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		// 校验签名方法
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
 		// 返回密钥
-		return jwtSecret, nil
+		return secret, nil
 	})
 
 	if err != nil {

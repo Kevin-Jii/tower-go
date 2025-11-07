@@ -168,7 +168,14 @@ func InitSuperAdmin(db *gorm.DB) error {
 	}
 
 	// 3. 创建超级管理员用户
-	hashedPassword, err := HashPassword("admin123456") // 默认密码
+	// 生成强随机密码作为默认密码
+	defaultPassword, err := GenerateStrongPassword(16)
+	if err != nil {
+		LogError("生成默认密码失败", zap.Error(err))
+		return err
+	}
+
+	hashedPassword, err := HashPassword(defaultPassword)
 	if err != nil {
 		LogError("密码加密失败", zap.Error(err))
 		return err
@@ -189,8 +196,9 @@ func InitSuperAdmin(db *gorm.DB) error {
 		zap.String("username", "admin"),
 		zap.String("phone", "13082848180"),
 		zap.String("employee_no", "999999"),
-		zap.String("default_password", "admin123456"),
+		zap.String("default_password", defaultPassword),
 	)
+	LogWarn("⚠️  重要提示：请立即修改默认密码，首次登录后请修改为自定义密码！")
 
 	return nil
 } // InitRoleMenuSeeds 初始化角色菜单关联（默认权限）

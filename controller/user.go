@@ -241,12 +241,23 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.userService.ResetPassword(uint(id), "123456"); err != nil {
+	// 生成临时密码
+	tempPassword, err := utils.GenerateStrongPassword(12)
+	if err != nil {
+		utils.Error(ctx, http.StatusInternalServerError, "生成临时密码失败")
+		return
+	}
+
+	if err := c.userService.ResetPassword(uint(id), tempPassword); err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	utils.Success(ctx, gin.H{
+		"message":       "密码重置成功",
+		"temp_password": tempPassword,
+		"warning":       "请立即修改此临时密码",
+	})
 }
 
 // Register godoc

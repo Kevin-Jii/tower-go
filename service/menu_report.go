@@ -4,26 +4,39 @@ import (
 	"time"
 	"tower-go/model"
 	"tower-go/module"
+	"tower-go/utils"
 )
 
 type MenuReportService struct {
 	menuReportModule *module.MenuReportModule
 	dishModule       *module.DishModule
+	storeModule      *module.StoreModule
+	userModule       *module.UserModule
+	eventBus         *utils.EventBus
 }
 
-func NewMenuReportService(menuReportModule *module.MenuReportModule, dishModule *module.DishModule) *MenuReportService {
+func NewMenuReportService(
+	menuReportModule *module.MenuReportModule,
+	dishModule *module.DishModule,
+	storeModule *module.StoreModule,
+	userModule *module.UserModule,
+	eventBus *utils.EventBus,
+) *MenuReportService {
 	return &MenuReportService{
 		menuReportModule: menuReportModule,
 		dishModule:       dishModule,
+		storeModule:      storeModule,
+		userModule:       userModule,
+		eventBus:         eventBus,
 	}
 }
 
 // CreateMenuReport 创建报菜记录
-func (s *MenuReportService) CreateMenuReport(storeID uint, userID uint, req *model.CreateMenuReportReq) error {
+func (s *MenuReportService) CreateMenuReport(storeID uint, userID uint, req *model.CreateMenuReportReq) (*model.MenuReport, error) {
 	// 验证菜品是否存在且属于当前门店
-	_, err := s.dishModule.GetByID(req.DishID, storeID)
+	dish, err := s.dishModule.GetByID(req.DishID, storeID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	report := &model.MenuReport{
@@ -34,7 +47,35 @@ func (s *MenuReportService) CreateMenuReport(storeID uint, userID uint, req *mod
 		Remark:   req.Remark,
 	}
 
-	return s.menuReportModule.Create(report)
+	if err := s.menuReportModule.Create(report); err != nil {
+		return nil, err
+	}
+
+	// 发布报菜创建事件（异步）
+	if s.eventBus != nil {
+		// 获取门店和用户信息
+		storeName := ""
+		userName := ""
+
+		if store, err := s.storeModule.GetByID(storeID); err == nil && store != nil {
+			storeName = store.Name
+		}
+
+		if user, err := s.userModule.GetByID(userID); err == nil && user != nil {
+			userName = user.Username
+		}
+
+		event := MenuReportCreatedEvent{
+			Report:    report,
+			StoreName: storeName,
+			DishName:  dish.Name,
+			UserName:  userName,
+		}
+
+		s.eventBus.PublishAsync(event)
+	}
+
+	return report, nil
 }
 
 // GetMenuReport 获取报菜记录详情

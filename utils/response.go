@@ -2,11 +2,35 @@ package utils
 
 import (
 	"net/http"
+	"reflect"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+// StructToMap 将结构体转为 map[string]interface{}，用于自定义字段返回
+func StructToMap(obj interface{}) map[string]interface{} {
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	t := v.Type()
+	result := make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "-" || jsonTag == "" {
+			continue
+		}
+		tagName := jsonTag
+		if idx := findComma(jsonTag); idx >= 0 {
+			tagName = jsonTag[:idx]
+		}
+		result[tagName] = v.Field(i).Interface()
+	}
+	return result
+}
 
 const (
 	defaultPage     = 1

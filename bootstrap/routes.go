@@ -15,15 +15,18 @@ import (
 )
 
 type AppControllers struct {
-	User         *controller.UserController
-	Store        *controller.StoreController
-	Dish         *controller.DishController
-	DishCategory *controller.DishCategoryController
-	MenuReport   *controller.MenuReportController
-	Menu         *controller.MenuController
+	User              *controller.UserController
+	Store             *controller.StoreController
+	Dish              *controller.DishController
+	DishCategory      *controller.DishCategoryController
+	MenuReport        *controller.MenuReportController
+	Menu              *controller.MenuController
+	DingTalkBot       *controller.DingTalkBotController
+	DingTalkBotModule *userModulePkg.DingTalkBotModule // 用于 Stream 初始化
 }
 
 func BuildControllers() *AppControllers {
+	// 初始化模块层
 	userModule := userModulePkg.NewUserModule(utils.DB)
 	storeModule := userModulePkg.NewStoreModule(utils.DB)
 	dishModule := userModulePkg.NewDishModule(utils.DB)
@@ -32,24 +35,42 @@ func BuildControllers() *AppControllers {
 	menuModule := userModulePkg.NewMenuModule(utils.DB)
 	roleMenuModule := userModulePkg.NewRoleMenuModule(utils.DB)
 	storeRoleMenuModule := userModulePkg.NewStoreRoleMenuModule(utils.DB)
+	dingTalkBotModule := userModulePkg.NewDingTalkBotModule(utils.DB)
 
 	// 初始化角色模块全局 DB（旧实现依赖 SetDB）
 	userModulePkg.SetDB(utils.DB)
 
+	// 初始化事件总线
+	eventBus := utils.GetEventBus()
+
+	// 初始化服务层
 	userService := service.NewUserService(userModule)
 	storeService := service.NewStoreService(storeModule)
 	dishService := service.NewDishService(dishModule)
-	menuReportService := service.NewMenuReportService(menuReportModule, dishModule)
+	dingTalkService := service.NewDingTalkService(dingTalkBotModule)
+	menuReportService := service.NewMenuReportService(
+		menuReportModule,
+		dishModule,
+		storeModule,
+		userModule,
+		eventBus,
+	)
 	dishCategoryService := service.NewDishCategoryService(dishCategoryModule, dishModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 
+	// 注册事件监听器
+	menuReportListener := service.NewMenuReportEventListener(dingTalkService)
+	service.RegisterMenuReportEventListeners(eventBus, menuReportListener)
+
 	return &AppControllers{
-		User:         controller.NewUserController(userService),
-		Store:        controller.NewStoreController(storeService),
-		Dish:         controller.NewDishController(dishService),
-		DishCategory: controller.NewDishCategoryController(dishCategoryService),
-		MenuReport:   controller.NewMenuReportController(menuReportService),
-		Menu:         controller.NewMenuController(menuService),
+		User:              controller.NewUserController(userService),
+		Store:             controller.NewStoreController(storeService),
+		Dish:              controller.NewDishController(dishService),
+		DishCategory:      controller.NewDishCategoryController(dishCategoryService),
+		MenuReport:        controller.NewMenuReportController(menuReportService),
+		Menu:              controller.NewMenuController(menuService),
+		DingTalkBot:       controller.NewDingTalkBotController(dingTalkService),
+		DingTalkBotModule: dingTalkBotModule, // 暴露给 Stream 初始化使用
 	}
 }
 
@@ -117,6 +138,7 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 		stores.POST("/:id/dish-categories/:cid/dishes", c.DishCategory.CreateDishForStoreCategory)
 		stores.GET("/:id/dish-categories/:cid/dishes", c.DishCategory.ListDishesForStoreCategory)
 		stores.PUT("/:id/dish-categories/:cid/dishes/:did", c.DishCategory.UpdateDishForStoreCategory)
+		stores.DELETE("/:id/dish-categories/:cid/dishes/:did", c.DishCategory.DeleteDishForStoreCategory)
 		stores.PUT("/:id/dish-categories/:cid", c.DishCategory.UpdateCategoryForStore)
 		stores.DELETE("/:id/dish-categories/:cid", c.DishCategory.DeleteCategoryForStore)
 		stores.PUT("/:id/dishes/:did", c.Dish.UpdateDishForStore)
@@ -183,6 +205,22 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 		roles.GET("/:id", controller.GetRole)
 		roles.PUT("/:id", controller.UpdateRole)
 		roles.DELETE("/:id", controller.DeleteRole)
+	}
+
+	// 钉钉管理
+	dingtalk := v1.Group("/dingtalk")
+	dingtalk.Use(middleware.AuthMiddleware())
+	{
+		// 机器人配置
+		robots := dingtalk.Group("/robots")
+		{
+			robots.POST("", c.DingTalkBot.CreateBot)
+			robots.GET("", c.DingTalkBot.ListBots)
+			robots.GET("/:id", c.DingTalkBot.GetBot)
+			robots.PUT("/:id", c.DingTalkBot.UpdateBot)
+			robots.DELETE("/:id", c.DingTalkBot.DeleteBot)
+			robots.POST("/:id/test", c.DingTalkBot.TestBot)
+		}
 	}
 
 	r.GET("/ws", controller.WebSocketHandler)

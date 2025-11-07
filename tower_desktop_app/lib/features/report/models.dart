@@ -6,33 +6,39 @@ part 'models.g.dart';
 class MenuReport with _$MenuReport {
   const factory MenuReport({
     required int id,
-    required int storeId,
-    required int dishId,
-    required String date,
-    int? quantity,
-    String? status,
+    @JsonKey(name: 'store_id') required int storeId,
+    @JsonKey(name: 'store_name') String? storeName,
+    @JsonKey(name: 'dish_id') required int dishId,
+    @JsonKey(name: 'dish_name') required String dishName,
+    required int quantity,
+    String? remark,
+    @JsonKey(name: 'created_at') String? createdAt,
+    @JsonKey(name: 'updated_at') String? updatedAt,
   }) = _MenuReport;
 
-  factory MenuReport.fromJson(Map<String, dynamic> json) => _$MenuReportFromJson(json);
+  factory MenuReport.fromJson(Map<String, dynamic> json) =>
+      _$MenuReportFromJson(json);
 }
 
 @freezed
 class CreateMenuReportRequest with _$CreateMenuReportRequest {
   const factory CreateMenuReportRequest({
-    required int dishId,
-    required String date,
+    @JsonKey(name: 'dish_id') required int dishId,
     required int quantity,
+    String? remark,
   }) = _CreateMenuReportRequest;
 
-  factory CreateMenuReportRequest.fromJson(Map<String, dynamic> json) => _$CreateMenuReportRequestFromJson(json);
+  factory CreateMenuReportRequest.fromJson(Map<String, dynamic> json) =>
+      _$CreateMenuReportRequestFromJson(json);
 }
 
 @freezed
 class UpdateMenuReportRequest with _$UpdateMenuReportRequest {
   const factory UpdateMenuReportRequest({
     int? quantity,
-    String? status,
+    String? remark,
   }) = _UpdateMenuReportRequest;
 
-  factory UpdateMenuReportRequest.fromJson(Map<String, dynamic> json) => _$UpdateMenuReportRequestFromJson(json);
+  factory UpdateMenuReportRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateMenuReportRequestFromJson(json);
 }

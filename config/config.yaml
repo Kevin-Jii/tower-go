@@ -16,3 +16,11 @@ redis:
   password: cesp@001
   db: 0
   enabled: true
+
+# 钉钉 Stream 模式配置
+dingtalk:
+  stream:
+    client_id: dinglsqvmdgbj5xaidwz        # AppKey
+    client_secret: sMU4Tr0r4L37bkas0khmyTJ7fuNUYqSXXjH0K8VS7naHazhjAOKE7WCmvFedwMuH  # AppSecret
+    agent_id: "2974263828"                 # AgentId (用于推送消息)
+    mini_app_id: "5000000005048483"        # MiniAppId (可选,用于小程序相关功能)

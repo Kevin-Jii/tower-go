@@ -331,6 +331,48 @@ func (c *DishCategoryController) UpdateDishForStoreCategory(ctx *gin.Context) {
 	utils.Success(ctx, nil)
 }
 
+// DeleteDishForStoreCategory godoc
+// @Summary 删除门店指定分类下的菜品
+// @Tags dishes
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "门店ID"
+// @Param cid path int true "分类ID"
+// @Param did path int true "菜品ID"
+// @Success 200 {object} utils.StandardResponse
+// @Router /stores/{id}/dish-categories/{cid}/dishes/{did} [delete]
+func (c *DishCategoryController) DeleteDishForStoreCategory(ctx *gin.Context) {
+	storeID, ok := utils.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	catID, ok := utils.ParseUintParam(ctx, "cid")
+	if !ok {
+		return
+	}
+	dishID, ok := utils.ParseUintParam(ctx, "did")
+	if !ok {
+		return
+	}
+	currentStoreID := middleware.GetStoreID(ctx)
+	if currentStoreID != storeID && !middleware.IsAdmin(ctx) {
+		utils.Error(ctx, http.StatusForbidden, "forbidden: cross-store delete")
+		return
+	}
+	if err := c.svc.DeleteDishInCategory(storeID, catID, dishID); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "category not found" || err.Error() == "dish not found" {
+			status = http.StatusNotFound
+		} else if err.Error() == "dish does not belong to this category" {
+			status = http.StatusBadRequest
+		}
+		utils.Error(ctx, status, err.Error())
+		return
+	}
+	utils.Success(ctx, nil)
+}
+
 // ListCategories godoc
 // @Summary 分类列表
 // @Tags dish-categories

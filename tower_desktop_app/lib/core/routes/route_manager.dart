@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:tower_desktop_app/features/menu/menu_management_page.dart';
 import 'package:tower_desktop_app/features/role/role_management_page.dart';
 import 'package:tower_desktop_app/features/dish/dish_management_page.dart';
+import 'package:tower_desktop_app/features/dingtalk/dingtalk_management_page.dart';
+import 'package:tower_desktop_app/features/report/report_management_page.dart';
 import '../../features/menu/models.dart';
 import '../icons/td_icon_mapper.dart';
 import '../constants/menu_types.dart';
@@ -41,9 +43,13 @@ class RouteManager {
       case 'dish/list/index':
         return const DishManagementScope();
 
+      // 钉钉管理
+      case 'dingtalk/robot/index':
+        return const DingTalkManagementPage();
+
       // 报菜管理
       case 'report/list/index':
-        return _buildModulePage('报菜记录', menuItem);
+        return const ReportManagementPage();
       case 'report/statistics/index':
         return _buildModulePage('数据统计', menuItem);
 

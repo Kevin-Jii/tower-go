@@ -21,11 +21,20 @@ MenuReport _$MenuReportFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$MenuReport {
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'store_id')
   int get storeId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'store_name')
+  String? get storeName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'dish_id')
   int get dishId => throw _privateConstructorUsedError;
-  String get date => throw _privateConstructorUsedError;
-  int? get quantity => throw _privateConstructorUsedError;
-  String? get status => throw _privateConstructorUsedError;
+  @JsonKey(name: 'dish_name')
+  String get dishName => throw _privateConstructorUsedError;
+  int get quantity => throw _privateConstructorUsedError;
+  String? get remark => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at')
+  String? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this MenuReport to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -45,11 +54,14 @@ abstract class $MenuReportCopyWith<$Res> {
   @useResult
   $Res call(
       {int id,
-      int storeId,
-      int dishId,
-      String date,
-      int? quantity,
-      String? status});
+      @JsonKey(name: 'store_id') int storeId,
+      @JsonKey(name: 'store_name') String? storeName,
+      @JsonKey(name: 'dish_id') int dishId,
+      @JsonKey(name: 'dish_name') String dishName,
+      int quantity,
+      String? remark,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
 }
 
 /// @nodoc
@@ -69,10 +81,13 @@ class _$MenuReportCopyWithImpl<$Res, $Val extends MenuReport>
   $Res call({
     Object? id = null,
     Object? storeId = null,
+    Object? storeName = freezed,
     Object? dishId = null,
-    Object? date = null,
-    Object? quantity = freezed,
-    Object? status = freezed,
+    Object? dishName = null,
+    Object? quantity = null,
+    Object? remark = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -83,21 +98,33 @@ class _$MenuReportCopyWithImpl<$Res, $Val extends MenuReport>
           ? _value.storeId
           : storeId // ignore: cast_nullable_to_non_nullable
               as int,
+      storeName: freezed == storeName
+          ? _value.storeName
+          : storeName // ignore: cast_nullable_to_non_nullable
+              as String?,
       dishId: null == dishId
           ? _value.dishId
           : dishId // ignore: cast_nullable_to_non_nullable
               as int,
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
+      dishName: null == dishName
+          ? _value.dishName
+          : dishName // ignore: cast_nullable_to_non_nullable
               as String,
-      quantity: freezed == quantity
+      quantity: null == quantity
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as int?,
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
+              as int,
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -113,11 +140,14 @@ abstract class _$$MenuReportImplCopyWith<$Res>
   @useResult
   $Res call(
       {int id,
-      int storeId,
-      int dishId,
-      String date,
-      int? quantity,
-      String? status});
+      @JsonKey(name: 'store_id') int storeId,
+      @JsonKey(name: 'store_name') String? storeName,
+      @JsonKey(name: 'dish_id') int dishId,
+      @JsonKey(name: 'dish_name') String dishName,
+      int quantity,
+      String? remark,
+      @JsonKey(name: 'created_at') String? createdAt,
+      @JsonKey(name: 'updated_at') String? updatedAt});
 }
 
 /// @nodoc
@@ -135,10 +165,13 @@ class __$$MenuReportImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? storeId = null,
+    Object? storeName = freezed,
     Object? dishId = null,
-    Object? date = null,
-    Object? quantity = freezed,
-    Object? status = freezed,
+    Object? dishName = null,
+    Object? quantity = null,
+    Object? remark = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
   }) {
     return _then(_$MenuReportImpl(
       id: null == id
@@ -149,21 +182,33 @@ class __$$MenuReportImplCopyWithImpl<$Res>
           ? _value.storeId
           : storeId // ignore: cast_nullable_to_non_nullable
               as int,
+      storeName: freezed == storeName
+          ? _value.storeName
+          : storeName // ignore: cast_nullable_to_non_nullable
+              as String?,
       dishId: null == dishId
           ? _value.dishId
           : dishId // ignore: cast_nullable_to_non_nullable
               as int,
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
+      dishName: null == dishName
+          ? _value.dishName
+          : dishName // ignore: cast_nullable_to_non_nullable
               as String,
-      quantity: freezed == quantity
+      quantity: null == quantity
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
-              as int?,
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
+              as int,
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as String?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
@@ -174,11 +219,14 @@ class __$$MenuReportImplCopyWithImpl<$Res>
 class _$MenuReportImpl implements _MenuReport {
   const _$MenuReportImpl(
       {required this.id,
-      required this.storeId,
-      required this.dishId,
-      required this.date,
-      this.quantity,
-      this.status});
+      @JsonKey(name: 'store_id') required this.storeId,
+      @JsonKey(name: 'store_name') this.storeName,
+      @JsonKey(name: 'dish_id') required this.dishId,
+      @JsonKey(name: 'dish_name') required this.dishName,
+      required this.quantity,
+      this.remark,
+      @JsonKey(name: 'created_at') this.createdAt,
+      @JsonKey(name: 'updated_at') this.updatedAt});
 
   factory _$MenuReportImpl.fromJson(Map<String, dynamic> json) =>
       _$$MenuReportImplFromJson(json);
@@ -186,19 +234,31 @@ class _$MenuReportImpl implements _MenuReport {
   @override
   final int id;
   @override
+  @JsonKey(name: 'store_id')
   final int storeId;
   @override
+  @JsonKey(name: 'store_name')
+  final String? storeName;
+  @override
+  @JsonKey(name: 'dish_id')
   final int dishId;
   @override
-  final String date;
+  @JsonKey(name: 'dish_name')
+  final String dishName;
   @override
-  final int? quantity;
+  final int quantity;
   @override
-  final String? status;
+  final String? remark;
+  @override
+  @JsonKey(name: 'created_at')
+  final String? createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  final String? updatedAt;
 
   @override
   String toString() {
-    return 'MenuReport(id: $id, storeId: $storeId, dishId: $dishId, date: $date, quantity: $quantity, status: $status)';
+    return 'MenuReport(id: $id, storeId: $storeId, storeName: $storeName, dishId: $dishId, dishName: $dishName, quantity: $quantity, remark: $remark, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -208,17 +268,24 @@ class _$MenuReportImpl implements _MenuReport {
             other is _$MenuReportImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.storeId, storeId) || other.storeId == storeId) &&
+            (identical(other.storeName, storeName) ||
+                other.storeName == storeName) &&
             (identical(other.dishId, dishId) || other.dishId == dishId) &&
-            (identical(other.date, date) || other.date == date) &&
+            (identical(other.dishName, dishName) ||
+                other.dishName == dishName) &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.remark, remark) || other.remark == remark) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, storeId, dishId, date, quantity, status);
+  int get hashCode => Object.hash(runtimeType, id, storeId, storeName, dishId,
+      dishName, quantity, remark, createdAt, updatedAt);
 
   /// Create a copy of MenuReport
   /// with the given fields replaced by the non-null parameter values.
@@ -239,11 +306,14 @@ class _$MenuReportImpl implements _MenuReport {
 abstract class _MenuReport implements MenuReport {
   const factory _MenuReport(
       {required final int id,
-      required final int storeId,
-      required final int dishId,
-      required final String date,
-      final int? quantity,
-      final String? status}) = _$MenuReportImpl;
+      @JsonKey(name: 'store_id') required final int storeId,
+      @JsonKey(name: 'store_name') final String? storeName,
+      @JsonKey(name: 'dish_id') required final int dishId,
+      @JsonKey(name: 'dish_name') required final String dishName,
+      required final int quantity,
+      final String? remark,
+      @JsonKey(name: 'created_at') final String? createdAt,
+      @JsonKey(name: 'updated_at') final String? updatedAt}) = _$MenuReportImpl;
 
   factory _MenuReport.fromJson(Map<String, dynamic> json) =
       _$MenuReportImpl.fromJson;
@@ -251,15 +321,27 @@ abstract class _MenuReport implements MenuReport {
   @override
   int get id;
   @override
+  @JsonKey(name: 'store_id')
   int get storeId;
   @override
+  @JsonKey(name: 'store_name')
+  String? get storeName;
+  @override
+  @JsonKey(name: 'dish_id')
   int get dishId;
   @override
-  String get date;
+  @JsonKey(name: 'dish_name')
+  String get dishName;
   @override
-  int? get quantity;
+  int get quantity;
   @override
-  String? get status;
+  String? get remark;
+  @override
+  @JsonKey(name: 'created_at')
+  String? get createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  String? get updatedAt;
 
   /// Create a copy of MenuReport
   /// with the given fields replaced by the non-null parameter values.
@@ -276,9 +358,10 @@ CreateMenuReportRequest _$CreateMenuReportRequestFromJson(
 
 /// @nodoc
 mixin _$CreateMenuReportRequest {
+  @JsonKey(name: 'dish_id')
   int get dishId => throw _privateConstructorUsedError;
-  String get date => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
+  String? get remark => throw _privateConstructorUsedError;
 
   /// Serializes this CreateMenuReportRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -296,7 +379,8 @@ abstract class $CreateMenuReportRequestCopyWith<$Res> {
           $Res Function(CreateMenuReportRequest) then) =
       _$CreateMenuReportRequestCopyWithImpl<$Res, CreateMenuReportRequest>;
   @useResult
-  $Res call({int dishId, String date, int quantity});
+  $Res call(
+      {@JsonKey(name: 'dish_id') int dishId, int quantity, String? remark});
 }
 
 /// @nodoc
@@ -316,22 +400,22 @@ class _$CreateMenuReportRequestCopyWithImpl<$Res,
   @override
   $Res call({
     Object? dishId = null,
-    Object? date = null,
     Object? quantity = null,
+    Object? remark = freezed,
   }) {
     return _then(_value.copyWith(
       dishId: null == dishId
           ? _value.dishId
           : dishId // ignore: cast_nullable_to_non_nullable
               as int,
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
-              as String,
       quantity: null == quantity
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -345,7 +429,8 @@ abstract class _$$CreateMenuReportRequestImplCopyWith<$Res>
       __$$CreateMenuReportRequestImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int dishId, String date, int quantity});
+  $Res call(
+      {@JsonKey(name: 'dish_id') int dishId, int quantity, String? remark});
 }
 
 /// @nodoc
@@ -364,22 +449,22 @@ class __$$CreateMenuReportRequestImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? dishId = null,
-    Object? date = null,
     Object? quantity = null,
+    Object? remark = freezed,
   }) {
     return _then(_$CreateMenuReportRequestImpl(
       dishId: null == dishId
           ? _value.dishId
           : dishId // ignore: cast_nullable_to_non_nullable
               as int,
-      date: null == date
-          ? _value.date
-          : date // ignore: cast_nullable_to_non_nullable
-              as String,
       quantity: null == quantity
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -388,21 +473,24 @@ class __$$CreateMenuReportRequestImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CreateMenuReportRequestImpl implements _CreateMenuReportRequest {
   const _$CreateMenuReportRequestImpl(
-      {required this.dishId, required this.date, required this.quantity});
+      {@JsonKey(name: 'dish_id') required this.dishId,
+      required this.quantity,
+      this.remark});
 
   factory _$CreateMenuReportRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$$CreateMenuReportRequestImplFromJson(json);
 
   @override
+  @JsonKey(name: 'dish_id')
   final int dishId;
   @override
-  final String date;
-  @override
   final int quantity;
+  @override
+  final String? remark;
 
   @override
   String toString() {
-    return 'CreateMenuReportRequest(dishId: $dishId, date: $date, quantity: $quantity)';
+    return 'CreateMenuReportRequest(dishId: $dishId, quantity: $quantity, remark: $remark)';
   }
 
   @override
@@ -411,14 +499,14 @@ class _$CreateMenuReportRequestImpl implements _CreateMenuReportRequest {
         (other.runtimeType == runtimeType &&
             other is _$CreateMenuReportRequestImpl &&
             (identical(other.dishId, dishId) || other.dishId == dishId) &&
-            (identical(other.date, date) || other.date == date) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            (identical(other.remark, remark) || other.remark == remark));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, dishId, date, quantity);
+  int get hashCode => Object.hash(runtimeType, dishId, quantity, remark);
 
   /// Create a copy of CreateMenuReportRequest
   /// with the given fields replaced by the non-null parameter values.
@@ -439,19 +527,20 @@ class _$CreateMenuReportRequestImpl implements _CreateMenuReportRequest {
 
 abstract class _CreateMenuReportRequest implements CreateMenuReportRequest {
   const factory _CreateMenuReportRequest(
-      {required final int dishId,
-      required final String date,
-      required final int quantity}) = _$CreateMenuReportRequestImpl;
+      {@JsonKey(name: 'dish_id') required final int dishId,
+      required final int quantity,
+      final String? remark}) = _$CreateMenuReportRequestImpl;
 
   factory _CreateMenuReportRequest.fromJson(Map<String, dynamic> json) =
       _$CreateMenuReportRequestImpl.fromJson;
 
   @override
+  @JsonKey(name: 'dish_id')
   int get dishId;
   @override
-  String get date;
-  @override
   int get quantity;
+  @override
+  String? get remark;
 
   /// Create a copy of CreateMenuReportRequest
   /// with the given fields replaced by the non-null parameter values.
@@ -469,7 +558,7 @@ UpdateMenuReportRequest _$UpdateMenuReportRequestFromJson(
 /// @nodoc
 mixin _$UpdateMenuReportRequest {
   int? get quantity => throw _privateConstructorUsedError;
-  String? get status => throw _privateConstructorUsedError;
+  String? get remark => throw _privateConstructorUsedError;
 
   /// Serializes this UpdateMenuReportRequest to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -487,7 +576,7 @@ abstract class $UpdateMenuReportRequestCopyWith<$Res> {
           $Res Function(UpdateMenuReportRequest) then) =
       _$UpdateMenuReportRequestCopyWithImpl<$Res, UpdateMenuReportRequest>;
   @useResult
-  $Res call({int? quantity, String? status});
+  $Res call({int? quantity, String? remark});
 }
 
 /// @nodoc
@@ -507,16 +596,16 @@ class _$UpdateMenuReportRequestCopyWithImpl<$Res,
   @override
   $Res call({
     Object? quantity = freezed,
-    Object? status = freezed,
+    Object? remark = freezed,
   }) {
     return _then(_value.copyWith(
       quantity: freezed == quantity
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int?,
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -531,7 +620,7 @@ abstract class _$$UpdateMenuReportRequestImplCopyWith<$Res>
       __$$UpdateMenuReportRequestImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int? quantity, String? status});
+  $Res call({int? quantity, String? remark});
 }
 
 /// @nodoc
@@ -550,16 +639,16 @@ class __$$UpdateMenuReportRequestImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? quantity = freezed,
-    Object? status = freezed,
+    Object? remark = freezed,
   }) {
     return _then(_$UpdateMenuReportRequestImpl(
       quantity: freezed == quantity
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int?,
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
+      remark: freezed == remark
+          ? _value.remark
+          : remark // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
@@ -568,7 +657,7 @@ class __$$UpdateMenuReportRequestImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$UpdateMenuReportRequestImpl implements _UpdateMenuReportRequest {
-  const _$UpdateMenuReportRequestImpl({this.quantity, this.status});
+  const _$UpdateMenuReportRequestImpl({this.quantity, this.remark});
 
   factory _$UpdateMenuReportRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$$UpdateMenuReportRequestImplFromJson(json);
@@ -576,11 +665,11 @@ class _$UpdateMenuReportRequestImpl implements _UpdateMenuReportRequest {
   @override
   final int? quantity;
   @override
-  final String? status;
+  final String? remark;
 
   @override
   String toString() {
-    return 'UpdateMenuReportRequest(quantity: $quantity, status: $status)';
+    return 'UpdateMenuReportRequest(quantity: $quantity, remark: $remark)';
   }
 
   @override
@@ -590,12 +679,12 @@ class _$UpdateMenuReportRequestImpl implements _UpdateMenuReportRequest {
             other is _$UpdateMenuReportRequestImpl &&
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.remark, remark) || other.remark == remark));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, quantity, status);
+  int get hashCode => Object.hash(runtimeType, quantity, remark);
 
   /// Create a copy of UpdateMenuReportRequest
   /// with the given fields replaced by the non-null parameter values.
@@ -617,7 +706,7 @@ class _$UpdateMenuReportRequestImpl implements _UpdateMenuReportRequest {
 abstract class _UpdateMenuReportRequest implements UpdateMenuReportRequest {
   const factory _UpdateMenuReportRequest(
       {final int? quantity,
-      final String? status}) = _$UpdateMenuReportRequestImpl;
+      final String? remark}) = _$UpdateMenuReportRequestImpl;
 
   factory _UpdateMenuReportRequest.fromJson(Map<String, dynamic> json) =
       _$UpdateMenuReportRequestImpl.fromJson;
@@ -625,7 +714,7 @@ abstract class _UpdateMenuReportRequest implements UpdateMenuReportRequest {
   @override
   int? get quantity;
   @override
-  String? get status;
+  String? get remark;
 
   /// Create a copy of UpdateMenuReportRequest
   /// with the given fields replaced by the non-null parameter values.

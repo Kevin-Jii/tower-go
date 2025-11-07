@@ -78,6 +78,8 @@ class RouteNames {
   static const String login = '/login';
   static const String home = '/home';
   static const String dishes = '/dishes';
+  static const String dingtalk = '/dingtalk';
+  static const String reports = '/reports';
   // static const String userList = '/user/list';
 }
 

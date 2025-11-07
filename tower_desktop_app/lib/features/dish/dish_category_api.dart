@@ -51,12 +51,16 @@ class DishCategoryApi {
     }
   }
 
-  Future<ApiResult<DishCategory>> create(int storeId, String name) async {
+  Future<ApiResult<DishCategory?>> create(int storeId, String name) async {
     try {
       final Response raw = await _client.dio.post(_basePath(storeId), data: {
         'name': name,
       });
       final payload = ResponseUtils.extractData(raw.data);
+      // Backend may return null for success-only response or actual category data
+      if (payload == null) {
+        return ApiResult.success(null);
+      }
       final item = DishCategory.fromJson(Map<String, dynamic>.from(payload),
           storeId: storeId);
       return ApiResult.success(item);
@@ -65,7 +69,7 @@ class DishCategoryApi {
     }
   }
 
-  Future<ApiResult<DishCategory>> update(
+  Future<ApiResult<DishCategory?>> update(
       int storeId, int categoryId, String name) async {
     try {
       final Response raw =
@@ -73,6 +77,10 @@ class DishCategoryApi {
         'name': name,
       });
       final payload = ResponseUtils.extractData(raw.data);
+      // Backend may return null for success-only response or actual category data
+      if (payload == null) {
+        return ApiResult.success(null);
+      }
       final item = DishCategory.fromJson(Map<String, dynamic>.from(payload),
           storeId: storeId);
       return ApiResult.success(item);

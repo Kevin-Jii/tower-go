@@ -40,12 +40,13 @@ func (c *MenuReportController) CreateMenuReport(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.menuReportService.CreateMenuReport(storeID, userID, &req); err != nil {
+	report, err := c.menuReportService.CreateMenuReport(storeID, userID, &req)
+	if err != nil {
 		utils.Error(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	utils.Success(ctx, report)
 } // GetMenuReport godoc
 // @Summary 获取报菜记录详情
 // @Description 获取报菜记录详细信息

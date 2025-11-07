@@ -34,6 +34,10 @@ func Run() {
 	controllers := BuildControllers()
 	RegisterRoutes(r, controllers)
 
+	// 初始化 Stream 客户端
+	InitStreamClients(controllers.DingTalkBotModule)
+	defer CloseStreamClients()
+
 	addr := fmt.Sprintf(":%d", config.GetConfig().App.Port)
 	if err := r.Run(addr); err != nil {
 		utils.LogFatal("服务启动失败", zap.Error(err))

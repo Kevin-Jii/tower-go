@@ -69,6 +69,45 @@ definitions:
     - role_id
     - to_store_id
     type: object
+  model.CreateDingTalkBotReq:
+    properties:
+      agent_id:
+        description: stream 模式推送消息用
+        type: string
+      bot_type:
+        description: webhook 或 stream (默认 webhook)
+        enum:
+        - webhook
+        - stream
+        type: string
+      client_id:
+        description: stream 模式必填
+        type: string
+      client_secret:
+        description: stream 模式必填
+        type: string
+      is_enabled:
+        type: boolean
+      msg_type:
+        type: string
+      name:
+        type: string
+      remark:
+        type: string
+      robot_code:
+        description: 钉钉机器人编码(robotCode)
+        type: string
+      secret:
+        description: webhook 模式可选
+        type: string
+      store_id:
+        type: integer
+      webhook:
+        description: webhook 模式必填
+        type: string
+    required:
+    - name
+    type: object
   model.CreateDishCategoryReq:
     properties:
       code:
@@ -203,6 +242,55 @@ definitions:
     - password
     - phone
     - username
+    type: object
+  model.DingTalkBot:
+    properties:
+      agent_id:
+        description: 应用 AgentId (stream 模式推送消息用)
+        type: string
+      bot_type:
+        description: '机器人类型: webhook, stream'
+        type: string
+      client_id:
+        description: AppKey/SuiteKey (stream 模式)
+        type: string
+      client_secret:
+        description: AppSecret/SuiteSecret (stream 模式)
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_enabled:
+        description: 是否启用
+        type: boolean
+      msg_type:
+        description: '消息类型: text, markdown'
+        type: string
+      name:
+        description: 机器人名称
+        type: string
+      remark:
+        description: 备注
+        type: string
+      robot_code:
+        description: 钉钉机器人编码(robotCode)
+        type: string
+      secret:
+        description: 签名密钥（webhook 模式）
+        type: string
+      store:
+        allOf:
+        - $ref: '#/definitions/model.Store'
+        description: 门店关联
+      store_id:
+        description: 所属门店（null 表示全局）
+        type: integer
+      updated_at:
+        type: string
+      webhook:
+        description: Webhook 地址（webhook 模式）
+        type: string
     type: object
   model.Dish:
     properties:
@@ -428,6 +516,33 @@ definitions:
         description: 门店编码 JWXXXX
         type: string
       updated_at:
+        type: string
+    type: object
+  model.UpdateDingTalkBotReq:
+    properties:
+      agent_id:
+        type: string
+      bot_type:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      is_enabled:
+        type: boolean
+      msg_type:
+        type: string
+      name:
+        type: string
+      remark:
+        type: string
+      robot_code:
+        type: string
+      secret:
+        type: string
+      store_id:
+        type: integer
+      webhook:
         type: string
     type: object
   model.UpdateDishCategoryReq:
@@ -701,6 +816,162 @@ paths:
       summary: 用户注册
       tags:
       - auth
+  /dingtalk-bots:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.DingTalkBot'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取钉钉机器人列表
+      tags:
+      - dingtalk-bots
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 机器人配置
+        in: body
+        name: bot
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateDingTalkBotReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DingTalkBot'
+              type: object
+      security:
+      - Bearer: []
+      summary: 创建钉钉机器人配置
+      tags:
+      - dingtalk-bots
+  /dingtalk-bots/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 机器人ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 删除钉钉机器人配置
+      tags:
+      - dingtalk-bots
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 机器人ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DingTalkBot'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取钉钉机器人详情
+      tags:
+      - dingtalk-bots
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 机器人ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 机器人配置
+        in: body
+        name: bot
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateDingTalkBotReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 更新钉钉机器人配置
+      tags:
+      - dingtalk-bots
+  /dingtalk-bots/{id}/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 机器人ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 测试钉钉机器人连接
+      tags:
+      - dingtalk-bots
   /dish-categories:
     get:
       responses:
@@ -1999,6 +2270,37 @@ paths:
       tags:
       - dishes
   /stores/{id}/dish-categories/{cid}/dishes/{did}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 门店ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类ID
+        in: path
+        name: cid
+        required: true
+        type: integer
+      - description: 菜品ID
+        in: path
+        name: did
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.StandardResponse'
+      security:
+      - Bearer: []
+      summary: 删除门店指定分类下的菜品
+      tags:
+      - dishes
     put:
       consumes:
       - application/json

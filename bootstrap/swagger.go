@@ -30,5 +30,5 @@ func GenerateSwaggerDocs() {
 		utils.LogWarn("自动生成 swagger 失败", zap.Error(err))
 		return
 	}
-	utils.LogInfo("swagger 文档已自动生成", zap.String("output", out.String()))
+	utils.LogInfo("swagger 文档已自动生成")
 }

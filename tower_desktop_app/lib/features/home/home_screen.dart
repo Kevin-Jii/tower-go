@@ -66,7 +66,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopBar(BuildContext context, UserInfo? user) {
-    final tc = Theme.of(context).extension<TowerColors>()!;
+    final tc = Theme.of(context).extension<TowerColors>() ??
+        const TowerColors(
+          navBarBackground: Colors.white,
+          navBarForeground: Color(0xFF1A1F29),
+          navBarBorder: Color(0xFFE3E8EF),
+          sideBarBackground: Color(0xFFF8FAFC),
+          sideBarBorder: Color(0xFFE2E8F0),
+          contentBackground: Color(0xFFF5F7FA),
+          subtleFill: Color(0xFFF1F5F9),
+          accentGradientStart: Color(0xFF3B82F6),
+          accentGradientEnd: Color(0xFF6366F1),
+        );
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 20),

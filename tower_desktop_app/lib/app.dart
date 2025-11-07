@@ -5,6 +5,11 @@ import 'features/auth/permission_provider.dart';
 import 'features/auth/session_manager.dart';
 import 'features/home/home_screen.dart' as home;
 import 'features/dish/dish_management_page.dart';
+import 'features/dingtalk/dingtalk_api.dart';
+import 'features/dingtalk/dingtalk_management_page.dart';
+import 'features/dingtalk/dingtalk_provider.dart';
+import 'features/report/report_management_page.dart';
+import 'features/report/report_provider.dart';
 import 'core/constants/app_constants.dart';
 import 'features/menu/menu_api.dart';
 import 'features/menu/menu_provider.dart';
@@ -33,6 +38,9 @@ class TowerApp extends StatelessWidget {
           ChangeNotifierProvider(
               create: (_) => UserProvider(userApi, storeApi)),
           ChangeNotifierProvider(create: (_) => StoreProvider(storeApi)),
+          ChangeNotifierProvider(
+              create: (_) => DingTalkProvider(DingTalkApi(apiClient))),
+          ChangeNotifierProvider(create: (_) => ReportProvider()),
         ],
         child: FutureBuilder(
           future: _bootstrap(context),
@@ -55,6 +63,8 @@ class TowerApp extends StatelessWidget {
                 RouteNames.login: (_) => const LoginScreen(),
                 RouteNames.home: (_) => const _DeferredHome(),
                 RouteNames.dishes: (_) => const DishManagementScope(),
+                RouteNames.dingtalk: (_) => const DingTalkManagementPage(),
+                RouteNames.reports: (_) => const ReportManagementPage(),
               },
             );
           },

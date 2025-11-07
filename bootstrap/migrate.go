@@ -16,7 +16,18 @@ func AutoMigrateAndSeeds() {
 		utils.LogWarn("发现无效用户记录", zap.Int64("count", invalidUserCount))
 	}
 
-	migrateModels := []interface{}{&model.Store{}, &model.Role{}, &model.Menu{}, &model.User{}, &model.DishCategory{}, &model.Dish{}, &model.MenuReport{}, &model.RoleMenu{}, &model.StoreRoleMenu{}}
+	migrateModels := []interface{}{
+		&model.Store{},
+		&model.Role{},
+		&model.Menu{},
+		&model.User{},
+		&model.DishCategory{},
+		&model.Dish{},
+		&model.MenuReport{},
+		&model.RoleMenu{},
+		&model.StoreRoleMenu{},
+		&model.DingTalkBot{},
+	}
 	for _, m := range migrateModels {
 		if err := utils.DB.AutoMigrate(m); err != nil {
 			utils.LogError("数据表迁移失败", zap.String("model", fmt.Sprintf("%T", m)), zap.Error(err))
@@ -50,5 +61,10 @@ func AutoMigrateAndSeeds() {
 	}
 	if err := utils.EnsureStoreCodes(utils.DB); err != nil {
 		utils.LogError("门店编码补全失败", zap.Error(err))
+	}
+
+	// 初始化钉钉管理菜单
+	if err := utils.InitDingTalkMenuSeeds(utils.DB); err != nil {
+		utils.LogError("钉钉管理菜单初始化失败", zap.Error(err))
 	}
 }

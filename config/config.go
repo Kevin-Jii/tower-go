@@ -10,6 +10,7 @@ type Config struct {
 	App      AppConfig      `yaml:"app"`
 	Database DatabaseConfig `yaml:"database"`
 	Redis    RedisConfig    `yaml:"redis"`
+	DingTalk DingTalkConfig `yaml:"dingtalk"`
 }
 
 type AppConfig struct {
@@ -32,6 +33,17 @@ type RedisConfig struct {
 	Password string `yaml:"password"`
 	DB       int    `yaml:"db"`
 	Enabled  bool   `yaml:"enabled"`
+}
+
+type DingTalkConfig struct {
+	Stream DingTalkStreamConfig `yaml:"stream"`
+}
+
+type DingTalkStreamConfig struct {
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
+	AgentID      string `yaml:"agent_id"`
+	MiniAppID    string `yaml:"mini_app_id"`
 }
 
 var cfg Config
@@ -60,4 +72,12 @@ func GetDatabaseConfig() DatabaseConfig {
 
 func GetRedisConfig() RedisConfig {
 	return cfg.Redis
+}
+
+func GetDingTalkConfig() DingTalkConfig {
+	return cfg.DingTalk
+}
+
+func GetDingTalkStreamConfig() DingTalkStreamConfig {
+	return cfg.DingTalk.Stream
 }

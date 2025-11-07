@@ -66,6 +66,7 @@ class DishCategoryProvider extends ChangeNotifier {
 
   void selectCategory(DishCategory c) {
     _selected = c;
+    _error = null; // Clear any previous errors when selecting a category
     notifyListeners();
   }
 
@@ -97,16 +98,15 @@ class DishCategoryProvider extends ChangeNotifier {
     bool ok = false;
     result.when(
       success: (item) {
-        _error = null; // Clear error on success
+        _error = null;
         ok = true;
-        // Reload the entire category list to get fresh data from backend
         loadCategories();
       },
       error: (msg, code) {
         _error = msg;
       },
     );
-    // Don't call notifyListeners here, loadCategories will do it
+    if (!ok) notifyListeners();
     return ok;
   }
 
@@ -129,20 +129,17 @@ class DishCategoryProvider extends ChangeNotifier {
         _categories.removeWhere((e) => e.id == c.id);
         if (_selected?.id == c.id) {
           _selected = null;
-          // 自动选中剩余第一项（如果有）提升连续操作体验
           if (_categories.isNotEmpty) {
             _selected = _categories.first;
           }
         }
-        _error = null; // 成功后清理之前的错误状态，避免残留
+        _error = null;
         ok = true;
       },
       error: (msg, code) {
         _error = msg;
       },
     );
-    // 如果仍有选中分类（可能自动切换了），触发一次外部菜品刷新由监听器完成；否则让监听器在 selectCategory 被调用时刷新
-    // 这里不直接调用 loadCategories(); 已经本地更新列表，无需额外请求。
     notifyListeners();
     return ok;
   }

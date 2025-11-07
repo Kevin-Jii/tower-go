@@ -102,6 +102,271 @@
                 }
             }
         },
+        "/dingtalk-bots": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dingtalk-bots"
+                ],
+                "summary": "获取钉钉机器人列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.DingTalkBot"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dingtalk-bots"
+                ],
+                "summary": "创建钉钉机器人配置",
+                "parameters": [
+                    {
+                        "description": "机器人配置",
+                        "name": "bot",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateDingTalkBotReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.DingTalkBot"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/dingtalk-bots/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dingtalk-bots"
+                ],
+                "summary": "获取钉钉机器人详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "机器人ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.DingTalkBot"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dingtalk-bots"
+                ],
+                "summary": "更新钉钉机器人配置",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "机器人ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "机器人配置",
+                        "name": "bot",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateDingTalkBotReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dingtalk-bots"
+                ],
+                "summary": "删除钉钉机器人配置",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "机器人ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dingtalk-bots/{id}/test": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dingtalk-bots"
+                ],
+                "summary": "测试钉钉机器人连接",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "机器人ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/dish-categories": {
             "get": {
                 "security": [
@@ -2369,6 +2634,54 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dishes"
+                ],
+                "summary": "删除门店指定分类下的菜品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "cid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "菜品ID",
+                        "name": "did",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.StandardResponse"
+                        }
+                    }
+                }
             }
         },
         "/stores/{id}/dishes/{did}": {
@@ -2908,6 +3221,61 @@
                 }
             }
         },
+        "model.CreateDingTalkBotReq": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "agent_id": {
+                    "description": "stream 模式推送消息用",
+                    "type": "string"
+                },
+                "bot_type": {
+                    "description": "webhook 或 stream (默认 webhook)",
+                    "type": "string",
+                    "enum": [
+                        "webhook",
+                        "stream"
+                    ]
+                },
+                "client_id": {
+                    "description": "stream 模式必填",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "description": "stream 模式必填",
+                    "type": "string"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "msg_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "robot_code": {
+                    "description": "钉钉机器人编码(robotCode)",
+                    "type": "string"
+                },
+                "secret": {
+                    "description": "webhook 模式可选",
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "webhook": {
+                    "description": "webhook 模式必填",
+                    "type": "string"
+                }
+            }
+        },
         "model.CreateDishCategoryReq": {
             "type": "object",
             "required": [
@@ -3101,6 +3469,76 @@
                 },
                 "username": {
                     "description": "强制要求非空",
+                    "type": "string"
+                }
+            }
+        },
+        "model.DingTalkBot": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "应用 AgentId (stream 模式推送消息用)",
+                    "type": "string"
+                },
+                "bot_type": {
+                    "description": "机器人类型: webhook, stream",
+                    "type": "string"
+                },
+                "client_id": {
+                    "description": "AppKey/SuiteKey (stream 模式)",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "description": "AppSecret/SuiteSecret (stream 模式)",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_enabled": {
+                    "description": "是否启用",
+                    "type": "boolean"
+                },
+                "msg_type": {
+                    "description": "消息类型: text, markdown",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "机器人名称",
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "备注",
+                    "type": "string"
+                },
+                "robot_code": {
+                    "description": "钉钉机器人编码(robotCode)",
+                    "type": "string"
+                },
+                "secret": {
+                    "description": "签名密钥（webhook 模式）",
+                    "type": "string"
+                },
+                "store": {
+                    "description": "门店关联",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Store"
+                        }
+                    ]
+                },
+                "store_id": {
+                    "description": "所属门店（null 表示全局）",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "webhook": {
+                    "description": "Webhook 地址（webhook 模式）",
                     "type": "string"
                 }
             }
@@ -3437,6 +3875,47 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UpdateDingTalkBotReq": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string"
+                },
+                "bot_type": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "client_secret": {
+                    "type": "string"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "msg_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "robot_code": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "webhook": {
                     "type": "string"
                 }
             }

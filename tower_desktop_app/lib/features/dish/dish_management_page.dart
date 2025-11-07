@@ -9,6 +9,7 @@ import '../../core/widgets/status_tag.dart';
 import '../../core/widgets/admin_table.dart';
 import '../store/store_api.dart';
 import '../auth/permission_gate.dart';
+import '../auth/permission_provider.dart';
 import 'dish_api.dart';
 import 'models.dart';
 import '../../core/network/api_client.dart';
@@ -28,7 +29,7 @@ class _DishManagementPageState extends State<DishManagementPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StoreSelectorProvider>().loadStores();
+      context.read<StoreSelectorProvider>().initializeStore();
     });
   }
 
@@ -354,47 +355,73 @@ class _DishManagementPageState extends State<DishManagementPage> {
                     style: DesignTokens.heading2
                         .copyWith(color: theme.textTheme.bodyLarge?.color)),
                 const SizedBox(width: DesignTokens.spaceLg),
-                SizedBox(
-                  width: 220,
-                  child: storeSelector.loading
-                      ? const Align(
-                          alignment: Alignment.centerLeft,
-                          child: SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2)))
-                      : storeSelector.error != null
-                          ? Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    ErrorTexts.loadStores,
-                                    style: TextStyle(
-                                        color: Colors.red.shade600,
-                                        fontSize: 12),
+                // 只有 admin 角色才显示门店选择器
+                if (storeSelector.isAdmin)
+                  SizedBox(
+                    width: 220,
+                    child: storeSelector.loading
+                        ? const Align(
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                                height: 18,
+                                width: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)))
+                        : storeSelector.error != null
+                            ? Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      ErrorTexts.loadStores,
+                                      style: TextStyle(
+                                          color: Colors.red.shade600,
+                                          fontSize: 12),
+                                    ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.refresh, size: 18),
-                                  tooltip: '重试加载门店', // 可后续常量化
-                                  onPressed: () => storeSelector.loadStores(),
-                                )
-                              ],
-                            )
-                          : DropdownButton<int>(
-                              isExpanded: true,
-                              value: storeSelector.selectedStoreId,
-                              hint: const Text(UITexts.dishStoreSelectLabel),
-                              items: storeSelector.stores
-                                  .map((s) => DropdownMenuItem<int>(
-                                      value: s.id, child: Text(s.name)))
-                                  .toList(),
-                              onChanged: (v) {
-                                if (v != null) storeSelector.selectStore(v);
-                              },
-                            ),
-                ),
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh, size: 18),
+                                    tooltip: '重试加载门店', // 可后续常量化
+                                    onPressed: () => storeSelector.loadStores(),
+                                  )
+                                ],
+                              )
+                            : DropdownButton<int>(
+                                isExpanded: true,
+                                value: storeSelector.selectedStoreId,
+                                hint: const Text(UITexts.dishStoreSelectLabel),
+                                items: storeSelector.stores
+                                    .map((s) => DropdownMenuItem<int>(
+                                        value: s.id, child: Text(s.name)))
+                                    .toList(),
+                                onChanged: (v) {
+                                  if (v != null) storeSelector.selectStore(v);
+                                },
+                              ),
+                  ),
                 const Spacer(),
+                // 临时调试:显示当前权限
+                Consumer<PermissionProvider>(
+                  builder: (context, permProvider, _) {
+                    final hasAdd = permProvider.has(PermissionCodes.dishAdd);
+                    final hasEdit = permProvider.has(PermissionCodes.dishEdit);
+                    final hasDelete =
+                        permProvider.has(PermissionCodes.dishDelete);
+                    return Tooltip(
+                      message:
+                          'Add:$hasAdd Edit:$hasEdit Delete:$hasDelete\nAll permissions: ${permProvider.all.join(", ")}',
+                      child: Icon(
+                        hasAdd && hasEdit && hasDelete
+                            ? Icons.check_circle
+                            : Icons.warning,
+                        color: hasAdd && hasEdit && hasDelete
+                            ? Colors.green
+                            : Colors.orange,
+                        size: 16,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: DesignTokens.spaceMd),
                 PermissionGate(
                   required: PermissionCodes.dishAdd,
                   child: ElevatedButton.icon(

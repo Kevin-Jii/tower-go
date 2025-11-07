@@ -202,3 +202,28 @@ func (s *DishCategoryService) UpdateDishInCategory(storeID, categoryID, dishID u
 	utils.InvalidateDishCache(dishID, storeID)
 	return nil
 }
+
+// DeleteDishInCategory 在指定门店与分类下删除菜品
+// 校验菜品归属后执行删除
+func (s *DishCategoryService) DeleteDishInCategory(storeID, categoryID, dishID uint) error {
+	// 1. 校验分类存在
+	if _, err := s.module.GetByID(categoryID, storeID); err != nil {
+		return errors.New("category not found")
+	}
+	// 2. 校验菜品存在且属于该分类
+	dish, err := s.dishModule.GetByID(dishID, storeID)
+	if err != nil {
+		return errors.New("dish not found")
+	}
+	if dish.CategoryID == nil || *dish.CategoryID != categoryID {
+		return errors.New("dish does not belong to this category")
+	}
+	// 3. 执行删除
+	if err := s.dishModule.Delete(dishID, storeID); err != nil {
+		return err
+	}
+	// 4. 缓存失效
+	utils.InvalidateDishCategoryCache(storeID)
+	utils.InvalidateDishCache(dishID, storeID)
+	return nil
+}

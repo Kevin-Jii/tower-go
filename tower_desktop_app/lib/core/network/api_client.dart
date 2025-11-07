@@ -420,7 +420,7 @@ class ApiResult<T> {
   R when<R>(
       {required R Function(T data) success,
       required R Function(String msg, int? code) error}) {
-    if (isSuccess && data != null) return success(data as T);
+    if (isSuccess) return success(data as T);
     return error(this.error ?? '未知错误', statusCode);
   }
 }

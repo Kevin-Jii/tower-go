@@ -3,7 +3,8 @@ package module
 import (
 	"log"
 	"tower-go/model"
-	"tower-go/utils"
+	searchPkg "tower-go/utils/search"
+	updatesPkg "tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )
@@ -110,9 +111,9 @@ func (m *UserModule) ListByStoreIDWithKeyword(storeID uint, keyword string, page
 
 	if keyword != "" {
 		// 使用优化的搜索条件
-		conditions := utils.OptimizeSearchKeyword(keyword)
+		conditions := searchPkg.OptimizeSearchKeyword(keyword)
 		if len(conditions) > 0 {
-			sql, args := utils.BuildSearchSQL(conditions)
+			sql, args := searchPkg.BuildSearchSQL(conditions)
 			query = query.Where(sql, args...)
 		}
 	}
@@ -136,9 +137,9 @@ func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.
 
 	if keyword != "" {
 		// 使用优化的搜索条件
-		conditions := utils.OptimizeSearchKeyword(keyword)
+		conditions := searchPkg.OptimizeSearchKeyword(keyword)
 		if len(conditions) > 0 {
-			sql, args := utils.BuildSearchSQL(conditions)
+			sql, args := searchPkg.BuildSearchSQL(conditions)
 			query = query.Where(sql, args...)
 		}
 	}
@@ -155,13 +156,13 @@ func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.
 
 // UpdateByID 根据ID更新用户信息
 func (m *UserModule) UpdateByID(id uint, req *model.UpdateUserReq) error {
-	updates := utils.BuildUpdatesFromReq(req)
-	if len(updates) == 0 {
+	updateMap := updatesPkg.BuildUpdatesFromReq(req)
+	if len(updateMap) == 0 {
 		log.Printf("[UserModule.UpdateByID] id=%d no fields to update", id)
 		return nil
 	}
-	log.Printf("[UserModule.UpdateByID] id=%d updates=%v", id, updates)
-	return m.db.Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
+	log.Printf("[UserModule.UpdateByID] id=%d updates=%v", id, updateMap)
+	return m.db.Model(&model.User{}).Where("id = ?", id).Updates(updateMap).Error
 }
 
 // DeleteByUserIDAndStoreID 根据用户ID和门店ID删除用户

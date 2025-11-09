@@ -3,7 +3,8 @@ package service
 import (
 	"fmt"
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/events"
+	"tower-go/utils/logging"
 )
 
 // MenuReportCreatedEvent 报菜记录创建事件
@@ -31,7 +32,7 @@ func NewMenuReportEventListener(dingTalkSvc *DingTalkService) *MenuReportEventLi
 }
 
 // OnMenuReportCreated 处理报菜创建事件
-func (l *MenuReportEventListener) OnMenuReportCreated(event utils.Event) error {
+func (l *MenuReportEventListener) OnMenuReportCreated(event events.Event) error {
 	e, ok := event.(MenuReportCreatedEvent)
 	if !ok {
 		return fmt.Errorf("invalid event type")
@@ -43,8 +44,8 @@ func (l *MenuReportEventListener) OnMenuReportCreated(event utils.Event) error {
 
 	// 广播到门店的所有机器人
 	if err := l.dingTalkSvc.BroadcastToStore(e.Report.StoreID, "markdown", title, content); err != nil {
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Errorw("Failed to broadcast menu report",
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to broadcast menu report",
 				"reportID", e.Report.ID,
 				"storeID", e.Report.StoreID,
 				"error", err)
@@ -79,6 +80,6 @@ func (l *MenuReportEventListener) buildNotificationContent(e MenuReportCreatedEv
 }
 
 // RegisterMenuReportEventListeners 注册报菜事件监听器
-func RegisterMenuReportEventListeners(eventBus *utils.EventBus, listener *MenuReportEventListener) {
+func RegisterMenuReportEventListeners(eventBus *events.EventBus, listener *MenuReportEventListener) {
 	eventBus.Subscribe("menu_report.created", listener.OnMenuReportCreated)
 }

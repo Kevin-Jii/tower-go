@@ -3,9 +3,9 @@ package bootstrap
 import (
 	"fmt"
 	"tower-go/config"
-	_ "tower-go/docs"
 	"tower-go/middleware"
-	"tower-go/utils"
+	"tower-go/utils/logging"
+	"tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -25,8 +25,8 @@ func Run() {
 
 	AutoMigrateAndSeeds()
 
-	utils.InitSessionManager("single", 3)
-	utils.LogInfo("会话管理初始化完成")
+	session.InitSessionManager("single", 3)
+	logging.LogInfo("会话管理初始化完成")
 
 	r := gin.Default()
 	r.Use(middleware.RequestLoggerMiddleware(4096))
@@ -40,6 +40,6 @@ func Run() {
 
 	addr := fmt.Sprintf(":%d", config.GetConfig().App.Port)
 	if err := r.Run(addr); err != nil {
-		utils.LogFatal("服务启动失败", zap.Error(err))
+		logging.LogFatal("服务启动失败", zap.Error(err))
 	}
 }

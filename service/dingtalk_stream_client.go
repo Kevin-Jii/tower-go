@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/logging"
 
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
@@ -70,8 +70,8 @@ func (sc *DingTalkStreamClient) StartBot(bot *model.DingTalkBot) error {
 	// 启动客户端
 	go func() {
 		if err := streamClient.Start(context.Background()); err != nil {
-			if utils.SugaredLogger != nil {
-				utils.SugaredLogger.Errorw("Stream client start failed",
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Errorw("Stream client start failed",
 					"botID", bot.ID,
 					"botName", bot.Name,
 					"error", err,
@@ -83,8 +83,8 @@ func (sc *DingTalkStreamClient) StartBot(bot *model.DingTalkBot) error {
 	sc.clients[bot.ID] = streamClient
 	sc.running = true
 
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Infow("Stream bot started successfully",
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Stream bot started successfully",
 			"botID", bot.ID,
 			"botName", bot.Name,
 		)
@@ -102,8 +102,8 @@ func (sc *DingTalkStreamClient) StopBot(botID uint) error {
 		streamClient.Close()
 		delete(sc.clients, botID)
 
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Infow("Stream bot stopped", "botID", botID)
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Stream bot stopped", "botID", botID)
 		}
 		return nil
 	}
@@ -118,8 +118,8 @@ func (sc *DingTalkStreamClient) StopAll() {
 
 	for botID, streamClient := range sc.clients {
 		streamClient.Close()
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Infow("Stream bot stopped", "botID", botID)
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Stream bot stopped", "botID", botID)
 		}
 	}
 
@@ -152,8 +152,8 @@ func (sc *DingTalkStreamClient) GetBotCount() int {
 // handleBotMessage 处理机器人收到的消息回调
 func (sc *DingTalkStreamClient) handleBotMessage(ctx context.Context, data *chatbot.BotCallbackDataModel) ([]byte, error) {
 	// 记录收到的消息
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Infow("Received bot message",
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Received bot message",
 			"conversationId", data.ConversationId,
 			"senderStaffId", data.SenderStaffId,
 			"text", data.Text.Content,

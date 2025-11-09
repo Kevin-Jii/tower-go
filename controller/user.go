@@ -2,12 +2,13 @@ package controller
 
 import (
 	"log"
-	"net/http"
 	"strconv"
 	"tower-go/middleware"
 	"tower-go/model"
 	"tower-go/service"
-	"tower-go/utils"
+	"tower-go/utils/auth"
+	"tower-go/utils/http"
+	"tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +47,7 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Produce json
 // @Security Bearer
 // @Param user body model.CreateUserReq true "用户信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -54,7 +55,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
@@ -64,11 +65,11 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 	}
 
 	if err := c.userService.CreateUser(targetStoreID, roleCode, &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // GetUser godoc
@@ -79,22 +80,22 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.StandardResponse{data=model.User}
+// @Success 200 {object} utils.Response{data=model.User}
 // @Router /users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid user ID")
+		http.Error(ctx, 400, "Invalid user ID")
 		return
 	}
 
 	user, err := c.userService.GetUser(uint(id))
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, user)
+	http.Success(ctx, user)
 }
 
 // ListUsers godoc
@@ -106,14 +107,14 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Param keyword query string false "模糊关键字(匹配用户名或手机号任意部分，如手机号后4位)"
-// @Success 200 {object} utils.StandardResponse{data=[]model.User} "支持 keyword 模糊匹配用户名或手机号；总部管理员查看全部用户，门店管理员仅查看本门店用户"
+// @Param keyword query string false "模糊关键字匹配用户名或手机号任意部分，如手机号135"
+// @Success 200 {object} utils.Response{data=[]model.User} "支持 keyword 模糊匹配用户名或手机号；总部管理员查看全部用户，门店管理员仅查看本门店用户"
 // @Router /users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	roleCode := middleware.GetRoleCode(ctx)
 	keyword := ctx.Query("keyword")
-	page := utils.GetPage(ctx)
-	pageSize := utils.GetPageSize(ctx)
+	page := http.GetPage(ctx)
+	pageSize := http.GetPageSize(ctx)
 
 	var (
 		users []*model.User
@@ -125,10 +126,10 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 	if roleCode == model.RoleCodeAdmin {
 		users, total, err = c.userService.ListAllUsers(keyword, page, pageSize)
 		if err != nil {
-			utils.Error(ctx, http.StatusInternalServerError, err.Error())
+			http.Error(ctx, 500, err.Error())
 			return
 		}
-		utils.SuccessWithPagination(ctx, users, total, page, pageSize)
+		http.SuccessWithPagination(ctx, users, total, page, pageSize)
 		return
 	}
 
@@ -141,11 +142,11 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		users, total, err = c.userService.ListUsersByStoreID(storeID, page, pageSize)
 	}
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.SuccessWithPagination(ctx, users, total, page, pageSize)
+	http.SuccessWithPagination(ctx, users, total, page, pageSize)
 }
 
 // UpdateUser godoc
@@ -157,27 +158,27 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "用户ID"
 // @Param user body model.UpdateUserReq true "用户信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid user ID")
+		http.Error(ctx, 400, "Invalid user ID")
 		return
 	}
 
 	var req model.UpdateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
 	if err := c.userService.UpdateUser(uint(id), &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // DeleteUser godoc
@@ -188,7 +189,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -197,16 +198,16 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid user ID")
+		http.Error(ctx, 400, "Invalid user ID")
 		return
 	}
 
 	if err := c.userService.DeleteUserByStoreID(uint(id), storeID); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // ResetUserPassword godoc
@@ -217,7 +218,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /users/{id}/reset-password [post]
 func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 	// 仅总部管理员或同门店管理员才能重置（此处：若为 admin 放行；否则必须该用户同门店）
@@ -226,34 +227,34 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid user ID")
+		http.Error(ctx, 400, "Invalid user ID")
 		return
 	}
 
 	targetUser, err := c.userService.GetUser(uint(id))
 	if err != nil {
-		utils.Error(ctx, http.StatusNotFound, "user not found")
+		http.Error(ctx, 404, "user not found")
 		return
 	}
 
 	if requesterRoleCode != model.RoleCodeAdmin && targetUser.StoreID != requesterStoreID {
-		utils.Error(ctx, http.StatusForbidden, "无权重置其他门店用户密码")
+		http.Error(ctx, 403, "无权重置其他门店用户密码")
 		return
 	}
 
 	// 生成临时密码
-	tempPassword, err := utils.GenerateStrongPassword(12)
+	tempPassword, err := auth.GenerateStrongPassword(12)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, "生成临时密码失败")
+		http.Error(ctx, 500, "生成临时密码失败")
 		return
 	}
 
 	if err := c.userService.ResetPassword(uint(id), tempPassword); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, gin.H{
+	http.Success(ctx, gin.H{
 		"message":       "密码重置成功",
 		"temp_password": tempPassword,
 		"warning":       "请立即修改此临时密码",
@@ -262,27 +263,27 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 
 // Register godoc
 // @Summary 用户注册
-// @Description 创建新用户账号
+// @Description 创建新用户账户
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param user body model.CreateUserReq true "用户信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /auth/register [post]
 func (c *UserController) Register(ctx *gin.Context) {
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
 	// 注册时默认不分配门店（由管理员后续分配）
 	if err := c.userService.CreateUser(0, "", &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // Login godoc
@@ -292,18 +293,18 @@ func (c *UserController) Register(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param login body LoginRequest true "登录信息"
-// @Success 200 {object} utils.StandardResponse{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
+// @Success 200 {object} utils.Response{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
 // @Router /auth/login [post]
 func (c *UserController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
 	user, err := c.userService.ValidateUser(req.Phone, req.Password)
 	if err != nil {
-		utils.Error(ctx, http.StatusUnauthorized, "Invalid phone number or password")
+		http.Error(ctx, 401, "Invalid phone number or password")
 		return
 	}
 
@@ -315,16 +316,16 @@ func (c *UserController) Login(ctx *gin.Context) {
 		roleID = user.RoleID
 	}
 
-	// 生成token（包含 StoreID、RoleCode 和 RoleID）
-	token, expiresIn, err := utils.GenerateToken(user.ID, user.Username, user.StoreID, roleCode, roleID)
+	// 生成token（包含StoreID、RoleCode 和 RoleID）
+	token, expiresIn, err := auth.GenerateToken(user.ID, user.Username, user.StoreID, roleCode, roleID)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, "Failed to generate token")
+		http.Error(ctx, 500, "Failed to generate token")
 		return
 	}
 
 	// 如果会话管理器策略为 single，则登录时踢出旧会话（可选增强）
 	strategy := ""
-	if sm := utils.GetSessionManager(); sm != nil {
+	if sm := session.GetSessionManager(); sm != nil {
 		strategy = "single"
 		if smSessions := sm.ListUserSessions(user.ID); len(smSessions) > 0 && smSessions[0] != nil {
 			// 踢出全部旧会话
@@ -332,7 +333,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 		}
 	}
 
-	utils.Success(ctx, LoginResponse{
+	http.Success(ctx, LoginResponse{
 		Token:     token,
 		TokenType: "Bearer",
 		ExpiresIn: expiresIn,
@@ -348,17 +349,17 @@ func (c *UserController) Login(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.StandardResponse{data=model.User}
+// @Success 200 {object} utils.Response{data=model.User}
 // @Router /users/profile [get]
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
 	user, err := c.userService.GetUser(userID.(uint))
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, user)
+	http.Success(ctx, user)
 }
 
 // UpdateProfile godoc
@@ -369,21 +370,21 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param user body model.UpdateUserReq true "用户信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /users/profile [put]
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
 
 	var req model.UpdateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
 	if err := c.userService.UpdateUser(userID.(uint), &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }

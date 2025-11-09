@@ -1,12 +1,11 @@
 package controller
 
 import (
-	"net/http"
 	"strconv"
 
 	"tower-go/model"
 	"tower-go/service"
-	"tower-go/utils"
+	"tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,15 +23,15 @@ import (
 func CreateRole(c *gin.Context) {
 	var req model.Role
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Error(c, http.StatusBadRequest, err.Error())
+		http.Error(c, 400, err.Error())
 		return
 	}
 	role, err := service.CreateRole(&req)
 	if err != nil {
-		utils.Error(c, http.StatusInternalServerError, err.Error())
+		http.Error(c, 500, err.Error())
 		return
 	}
-	utils.Success(c, role)
+	http.Success(c, role)
 }
 
 // UpdateRole 局部更新角色
@@ -50,20 +49,20 @@ func UpdateRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		utils.Error(c, http.StatusBadRequest, "invalid id")
+		http.Error(c, 400, "invalid id")
 		return
 	}
 	var req model.UpdateRoleReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Error(c, http.StatusBadRequest, err.Error())
+		http.Error(c, 400, err.Error())
 		return
 	}
 	role, err := service.UpdateRole(uint(id), &req)
 	if err != nil {
-		utils.Error(c, http.StatusInternalServerError, err.Error())
+		http.Error(c, 500, err.Error())
 		return
 	}
-	utils.Success(c, role)
+	http.Success(c, role)
 }
 
 // DeleteRole 删除角色
@@ -79,14 +78,14 @@ func DeleteRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		utils.Error(c, http.StatusBadRequest, "invalid id")
+		http.Error(c, 400, "invalid id")
 		return
 	}
 	if err := service.DeleteRole(uint(id)); err != nil {
-		utils.Error(c, http.StatusInternalServerError, err.Error())
+		http.Error(c, 500, err.Error())
 		return
 	}
-	utils.Success(c, nil)
+	http.Success(c, nil)
 }
 
 // GetRole 获取单个角色
@@ -102,15 +101,15 @@ func GetRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		utils.Error(c, http.StatusBadRequest, "invalid id")
+		http.Error(c, 400, "invalid id")
 		return
 	}
 	role, err := service.GetRole(uint(id))
 	if err != nil {
-		utils.Error(c, http.StatusNotFound, err.Error())
+		http.Error(c, 404, err.Error())
 		return
 	}
-	utils.Success(c, role)
+	http.Success(c, role)
 }
 
 // ListRoles 获取角色列表
@@ -136,14 +135,14 @@ func ListRoles(c *gin.Context) {
 			}
 			statusPtr = &v
 		} else {
-			utils.Error(c, http.StatusBadRequest, "invalid status, must be 0 or 1")
+			http.Error(c, 400, "invalid status, must be 0 or 1")
 			return
 		}
 	}
 	roles, err := service.ListRolesFiltered(keyword, statusPtr)
 	if err != nil {
-		utils.Error(c, http.StatusInternalServerError, err.Error())
+		http.Error(c, 500, err.Error())
 		return
 	}
-	utils.Success(c, roles)
+	http.Success(c, roles)
 }

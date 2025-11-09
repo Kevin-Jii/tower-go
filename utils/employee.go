@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"tower-go/utils/logging"
 )
 
 // GenerateEmployeeNo 生成唯一的6位数工号
@@ -16,7 +17,7 @@ func GenerateEmployeeNo(db *gorm.DB) (string, error) {
 	// 查询当前最大工号
 	err := db.Raw("SELECT employee_no FROM users WHERE employee_no IS NOT NULL AND employee_no != '' ORDER BY employee_no DESC LIMIT 1").Scan(&maxEmployeeNo).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
-		LogDatabaseError("查询最大工号失败", err)
+		logging.LogDatabaseError("查询最大工号失败", err)
 		return "", fmt.Errorf("查询最大工号失败: %v", err)
 	}
 
@@ -28,7 +29,7 @@ func GenerateEmployeeNo(db *gorm.DB) (string, error) {
 		// 解析最大工号并+1
 		_, err := fmt.Sscanf(maxEmployeeNo, "%d", &nextNo)
 		if err != nil {
-			LogError("解析工号失败")
+			logging.LogError("解析工号失败")
 			return "", fmt.Errorf("解析工号失败: %v", err)
 		}
 		nextNo++
@@ -36,13 +37,13 @@ func GenerateEmployeeNo(db *gorm.DB) (string, error) {
 
 	// 检查是否超过6位数的最大值
 	if nextNo > 999999 {
-		LogError("工号已达到最大值")
+		logging.LogError("工号已达到最大值")
 		return "", fmt.Errorf("工号已达到最大值999999")
 	}
 
 	employeeNo := fmt.Sprintf("%06d", nextNo)
 
-	LogInfo("生成新工号")
+	logging.LogInfo("生成新工号")
 	return employeeNo, nil
 }
 
@@ -61,17 +62,17 @@ func GenerateEmployeeNoRandom(db *gorm.DB) (string, error) {
 		var count int64
 		err := db.Raw("SELECT COUNT(*) FROM users WHERE employee_no = ?", employeeNo).Scan(&count).Error
 		if err != nil {
-			LogDatabaseError("检查工号唯一性失败", err)
+			logging.LogDatabaseError("检查工号唯一性失败", err)
 			continue
 		}
 
 		if count == 0 {
-			LogInfo("随机生成新工号")
+			logging.LogInfo("随机生成新工号")
 			return employeeNo, nil
 		}
 	}
 
-	LogError("生成唯一工号失败")
+	logging.LogError("生成唯一工号失败")
 	return "", fmt.Errorf("生成唯一工号失败，已重试%d次", maxRetries)
 }
 
@@ -90,17 +91,17 @@ func GenerateStoreCode(db *gorm.DB) (string, error) {
 		var count int64
 		err := db.Raw("SELECT COUNT(*) FROM stores WHERE store_code = ?", code).Scan(&count).Error
 		if err != nil {
-			LogDatabaseError("检查门店编码唯一性失败", err)
+			logging.LogDatabaseError("检查门店编码唯一性失败", err)
 			return "", fmt.Errorf("检查门店编码唯一性失败: %v", err)
 		}
 
 		if count == 0 {
-			LogInfo("生成门店编码")
+			logging.LogInfo("生成门店编码")
 			return code, nil
 		}
 	}
 
-	LogError("生成唯一门店编码失败")
+	logging.LogError("生成唯一门店编码失败")
 	return "", fmt.Errorf("生成唯一门店编码失败，已重试%d次", maxRetries)
 }
 
@@ -119,14 +120,14 @@ func GenerateDishCategoryCode(db *gorm.DB, storeID uint) (string, error) {
 		var count int64
 		err := db.Raw("SELECT COUNT(*) FROM dish_categories WHERE code = ?", code).Scan(&count).Error
 		if err != nil {
-			LogDatabaseError("检查分类编码唯一性失败", err)
+			logging.LogDatabaseError("检查分类编码唯一性失败", err)
 			return "", fmt.Errorf("检查分类编码唯一性失败: %v", err)
 		}
 		if count == 0 {
-			LogInfo("生成菜品分类编码")
+			logging.LogInfo("生成菜品分类编码")
 			return code, nil
 		}
 	}
-	LogError("生成唯一菜品分类编码失败")
+	logging.LogError("生成唯一菜品分类编码失败")
 	return "", fmt.Errorf("生成唯一菜品分类编码失败，已重试%d次", maxRetries)
 }

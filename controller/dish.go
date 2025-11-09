@@ -1,12 +1,11 @@
 package controller
 
 import (
-	"net/http"
 	"strconv"
 	"tower-go/middleware"
 	"tower-go/model"
 	"tower-go/service"
-	"tower-go/utils"
+	"tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,27 +26,27 @@ func NewDishController(dishService *service.DishService) *DishController {
 // @Produce json
 // @Security Bearer
 // @Param dish body model.CreateDishReq true "菜品信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /dishes [post]
 func (c *DishController) CreateDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	var req model.CreateDishReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
 	if err := c.dishService.CreateDish(storeID, &req); err != nil {
-		status := http.StatusInternalServerError
+		status := 500
 		if err.Error() == "dish name already exists in this category" {
-			status = http.StatusConflict
+			status = 409
 		}
-		utils.Error(ctx, status, err.Error())
+		http.Error(ctx, status, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // GetDish godoc
@@ -58,24 +57,24 @@ func (c *DishController) CreateDish(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "菜品ID"
-// @Success 200 {object} utils.StandardResponse{data=model.Dish}
+// @Success 200 {object} utils.Response{data=model.Dish}
 // @Router /dishes/{id} [get]
 func (c *DishController) GetDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid dish ID")
+		http.Error(ctx, 400, "Invalid dish ID")
 		return
 	}
 
 	dish, err := c.dishService.GetDish(uint(id), storeID)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, dish)
+	http.Success(ctx, dish)
 }
 
 // ListDishes godoc
@@ -88,7 +87,7 @@ func (c *DishController) GetDish(ctx *gin.Context) {
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Param category_id query int false "分类ID"
-// @Success 200 {object} utils.StandardResponse{data=[]model.Dish} "分页 meta: total,page,page_size,page_count,has_more"
+// @Success 200 {object} utils.Response{data=[]model.Dish} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /dishes [get]
 func (c *DishController) ListDishes(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -96,29 +95,29 @@ func (c *DishController) ListDishes(ctx *gin.Context) {
 	if categoryIDStr != "" {
 		cid, err := strconv.ParseUint(categoryIDStr, 10, 32)
 		if err != nil {
-			utils.Error(ctx, http.StatusBadRequest, "invalid category_id")
+			http.Error(ctx, 400, "invalid category_id")
 			return
 		}
 		dishes, err := c.dishService.ListDishesByCategory(storeID, uint(cid))
 		if err != nil {
-			utils.Error(ctx, http.StatusInternalServerError, err.Error())
+			http.Error(ctx, 500, err.Error())
 			return
 		}
-		utils.Success(ctx, dishes)
+		http.Success(ctx, dishes)
 		return
 	}
 
 	// 否则返回分页列表
-	page := utils.GetPage(ctx)
-	pageSize := utils.GetPageSize(ctx)
+	page := http.GetPage(ctx)
+	pageSize := http.GetPageSize(ctx)
 
 	dishes, total, err := c.dishService.ListDishes(storeID, page, pageSize)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.SuccessWithPagination(ctx, dishes, total, page, pageSize)
+	http.SuccessWithPagination(ctx, dishes, total, page, pageSize)
 }
 
 // UpdateDish godoc
@@ -130,29 +129,29 @@ func (c *DishController) ListDishes(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "菜品ID"
 // @Param dish body model.UpdateDishReq true "菜品信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /dishes/{id} [put]
 func (c *DishController) UpdateDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid dish ID")
+		http.Error(ctx, 400, "Invalid dish ID")
 		return
 	}
 
 	var req model.UpdateDishReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.Error(ctx, http.StatusBadRequest, err.Error())
+		http.Error(ctx, 400, err.Error())
 		return
 	}
 
 	if err := c.dishService.UpdateDish(uint(id), storeID, &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // DeleteDish godoc
@@ -163,23 +162,23 @@ func (c *DishController) UpdateDish(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "菜品ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /dishes/{id} [delete]
 func (c *DishController) DeleteDish(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		utils.Error(ctx, http.StatusBadRequest, "Invalid dish ID")
+		http.Error(ctx, 400, "Invalid dish ID")
 		return
 	}
 
 	if err := c.dishService.DeleteDish(uint(id), storeID); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // DeleteDishForStore godoc
@@ -190,31 +189,31 @@ func (c *DishController) DeleteDish(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param did path int true "菜品ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /stores/{id}/dishes/{did} [delete]
 func (c *DishController) DeleteDishForStore(ctx *gin.Context) {
-	storeID, ok := utils.ParseUintParam(ctx, "id")
+	storeID, ok := http.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
-	dishID, ok := utils.ParseUintParam(ctx, "did")
+	dishID, ok := http.ParseUintParam(ctx, "did")
 	if !ok {
 		return
 	}
 	currentStoreID := middleware.GetStoreID(ctx)
 	if currentStoreID != storeID && !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "forbidden: cross-store delete")
+		http.Error(ctx, 403, "forbidden: cross-store delete")
 		return
 	}
 	if err := c.dishService.DeleteDish(dishID, storeID); err != nil {
-		status := http.StatusInternalServerError
+		status := 500
 		if err.Error() == "dish not found" {
-			status = http.StatusNotFound
+			status = 404
 		}
-		utils.Error(ctx, status, err.Error())
+		http.Error(ctx, status, err.Error())
 		return
 	}
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // UpdateDishForStore godoc
@@ -226,35 +225,35 @@ func (c *DishController) DeleteDishForStore(ctx *gin.Context) {
 // @Param id path int true "门店ID"
 // @Param did path int true "菜品ID"
 // @Param dish body model.UpdateDishReq true "菜品信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /stores/{id}/dishes/{did} [put]
 func (c *DishController) UpdateDishForStore(ctx *gin.Context) {
-	storeID, ok := utils.ParseUintParam(ctx, "id")
+	storeID, ok := http.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
-	dishID, ok := utils.ParseUintParam(ctx, "did")
+	dishID, ok := http.ParseUintParam(ctx, "did")
 	if !ok {
 		return
 	}
 	currentStoreID := middleware.GetStoreID(ctx)
 	if currentStoreID != storeID && !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "forbidden: cross-store update")
+		http.Error(ctx, 403, "forbidden: cross-store update")
 		return
 	}
 	var req model.UpdateDishReq
-	if !utils.BindJSON(ctx, &req) {
+	if !http.BindJSON(ctx, &req) {
 		return
 	}
 	if err := c.dishService.UpdateDish(dishID, storeID, &req); err != nil {
-		status := http.StatusInternalServerError
+		status := 500
 		if err.Error() == "dish not found" {
-			status = http.StatusNotFound
+			status = 404
 		} else if err.Error() == "dish name already exists in this category" {
-			status = http.StatusConflict
+			status = 409
 		}
-		utils.Error(ctx, status, err.Error())
+		http.Error(ctx, status, err.Error())
 		return
 	}
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }

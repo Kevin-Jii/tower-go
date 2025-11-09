@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"tower-go/utils"
+	"tower-go/utils/logging"
 
 	"go.uber.org/zap"
 )
@@ -27,8 +27,8 @@ func GenerateSwaggerDocs() {
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {
-		utils.LogWarn("自动生成 swagger 失败", zap.Error(err))
+		logging.LogWarn("自动生成 swagger 失败", zap.Error(err))
 		return
 	}
-	utils.LogInfo("swagger 文档已自动生成")
+	logging.LogInfo("swagger 文档已自动生成")
 }

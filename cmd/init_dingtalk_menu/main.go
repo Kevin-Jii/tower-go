@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"tower-go/bootstrap"
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/database"
 )
 
 func main() {
@@ -21,8 +21,8 @@ func main() {
 
 	// 1. 删除旧的钉钉菜单 (如果存在)
 	fmt.Println("1. 清理旧数据...")
-	utils.DB.Exec("DELETE FROM role_menus WHERE menu_id BETWEEN 50 AND 56")
-	utils.DB.Exec("DELETE FROM menus WHERE id BETWEEN 50 AND 56")
+	database.DB.Exec("DELETE FROM role_menus WHERE menu_id BETWEEN 50 AND 56")
+	database.DB.Exec("DELETE FROM menus WHERE id BETWEEN 50 AND 56")
 	fmt.Println("✅ 旧数据清理完成")
 
 	// 2. 创建钉钉菜单
@@ -114,7 +114,7 @@ func main() {
 		},
 	}
 
-	if err := utils.DB.Create(&dingTalkMenus).Error; err != nil {
+	if err := database.DB.Create(&dingTalkMenus).Error; err != nil {
 		fmt.Printf("❌ 创建菜单失败: %v\n", err)
 		return
 	}
@@ -123,7 +123,7 @@ func main() {
 	// 3. 分配权限给 admin 角色
 	fmt.Println("3. 分配权限...")
 	var adminRole model.Role
-	if err := utils.DB.Where("code = ?", "admin").First(&adminRole).Error; err != nil {
+	if err := database.DB.Where("code = ?", "admin").First(&adminRole).Error; err != nil {
 		fmt.Printf("❌ 查找 admin 角色失败: %v\n", err)
 		return
 	}
@@ -134,7 +134,7 @@ func main() {
 			RoleID: adminRole.ID,
 			MenuID: menuID,
 		}
-		if err := utils.DB.Create(&roleMenu).Error; err != nil {
+		if err := database.DB.Create(&roleMenu).Error; err != nil {
 			fmt.Printf("⚠️ 分配权限失败 (menu_id=%d): %v\n", menuID, err)
 		}
 	}
@@ -142,13 +142,13 @@ func main() {
 
 	// 4. 分配权限给超级管理员 (ID: 999)
 	var superAdmin model.Role
-	if err := utils.DB.Where("id = ?", 999).First(&superAdmin).Error; err == nil {
+	if err := database.DB.Where("id = ?", 999).First(&superAdmin).Error; err == nil {
 		for _, menuID := range menuIDs {
 			roleMenu := model.RoleMenu{
 				RoleID: 999,
 				MenuID: menuID,
 			}
-			utils.DB.Create(&roleMenu)
+			database.DB.Create(&roleMenu)
 		}
 		fmt.Printf("✅ 为超级管理员分配了 %d 个权限\n", len(menuIDs))
 	}
@@ -156,10 +156,10 @@ func main() {
 	// 5. 验证
 	fmt.Println("\n4. 验证结果...")
 	var count int64
-	utils.DB.Model(&model.Menu{}).Where("id BETWEEN ? AND ?", 50, 56).Count(&count)
+	database.DB.Model(&model.Menu{}).Where("id BETWEEN ? AND ?", 50, 56).Count(&count)
 	fmt.Printf("✅ 菜单数量: %d\n", count)
 
-	utils.DB.Model(&model.RoleMenu{}).
+	database.DB.Model(&model.RoleMenu{}).
 		Where("role_id = ? AND menu_id BETWEEN ? AND ?", adminRole.ID, 50, 56).
 		Count(&count)
 	fmt.Printf("✅ admin 权限数量: %d\n", count)

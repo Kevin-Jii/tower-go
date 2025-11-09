@@ -5,7 +5,7 @@ import (
 	"tower-go/model"
 	"tower-go/module"
 	"tower-go/service"
-	"tower-go/utils"
+	"tower-go/utils/logging"
 )
 
 // InitStreamClients 初始化所有 Stream 模式的机器人连接
@@ -23,15 +23,15 @@ func InitStreamClients(botModule *module.DingTalkBotModule) {
 	// 查询所有启用的 Stream 类型机器人
 	bots, err := botModule.ListEnabledStreamBots()
 	if err != nil {
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Errorw("Failed to query stream bots", "error", err)
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to query stream bots", "error", err)
 		}
 		return
 	}
 
 	if len(bots) == 0 {
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Info("No stream bots to initialize")
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Info("No stream bots to initialize")
 		}
 		return
 	}
@@ -40,8 +40,8 @@ func InitStreamClients(botModule *module.DingTalkBotModule) {
 	successCount := 0
 	for _, bot := range bots {
 		if err := streamClient.StartBot(bot); err != nil {
-			if utils.SugaredLogger != nil {
-				utils.SugaredLogger.Errorw("Failed to start stream bot",
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Errorw("Failed to start stream bot",
 					"botID", bot.ID,
 					"botName", bot.Name,
 					"error", err,
@@ -52,8 +52,8 @@ func InitStreamClients(botModule *module.DingTalkBotModule) {
 		}
 	}
 
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Infow("Stream clients initialized",
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Stream clients initialized",
 			"total", len(bots),
 			"success", successCount,
 		)
@@ -65,8 +65,8 @@ func CloseStreamClients() {
 	streamClient := service.GetStreamClient()
 	streamClient.StopAll()
 
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Info("All stream clients stopped")
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Info("All stream clients stopped")
 	}
 }
 
@@ -77,8 +77,8 @@ func ensureStreamBotExists(botModule *module.DingTalkBotModule, streamConfig con
 
 	// 如果找到了机器人,直接返回
 	if err == nil && existingBot != nil {
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Infow("Stream bot already exists",
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Stream bot already exists",
 				"botID", existingBot.ID,
 				"botName", existingBot.Name,
 			)
@@ -103,16 +103,16 @@ func ensureStreamBotExists(botModule *module.DingTalkBotModule, streamConfig con
 	}
 
 	if err := botModule.Create(bot); err != nil {
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Errorw("Failed to create stream bot from config",
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to create stream bot from config",
 				"error", err,
 			)
 		}
 		return
 	}
 
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Infow("✅ Stream bot created from config",
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("✅ Stream bot created from config",
 			"botID", bot.ID,
 			"botName", bot.Name,
 			"clientID", bot.ClientID,

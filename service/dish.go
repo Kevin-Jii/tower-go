@@ -4,7 +4,7 @@ import (
 	"errors"
 	"tower-go/model"
 	"tower-go/module"
-	"tower-go/utils"
+	"tower-go/utils/cache"
 )
 
 type DishService struct {
@@ -39,7 +39,7 @@ func (s *DishService) CreateDish(storeID uint, req *model.CreateDishReq) error {
 	if err := s.dishModule.Create(dish); err != nil {
 		return err
 	}
-	utils.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCategoryCache(storeID)
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (s *DishService) UpdateDish(id, storeID uint, req *model.UpdateDishReq) err
 	if err := s.dishModule.UpdateByIDAndStoreID(id, storeID, req); err != nil {
 		return err
 	}
-	utils.InvalidateDishCache(id, storeID)
+	cache.InvalidateDishCache(id, storeID)
 	return nil
 }
 
@@ -76,7 +76,7 @@ func (s *DishService) DeleteDish(id, storeID uint) error {
 	if err := s.dishModule.Delete(id, storeID); err != nil {
 		return err
 	}
-	utils.InvalidateDishCache(id, storeID)
-	utils.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCache(id, storeID)
+	cache.InvalidateDishCategoryCache(storeID)
 	return nil
 }

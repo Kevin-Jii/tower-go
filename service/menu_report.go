@@ -4,7 +4,7 @@ import (
 	"time"
 	"tower-go/model"
 	"tower-go/module"
-	"tower-go/utils"
+	"tower-go/utils/events"
 )
 
 type MenuReportService struct {
@@ -12,7 +12,7 @@ type MenuReportService struct {
 	dishModule       *module.DishModule
 	storeModule      *module.StoreModule
 	userModule       *module.UserModule
-	eventBus         *utils.EventBus
+	eventBus         *events.EventBus
 }
 
 func NewMenuReportService(
@@ -20,7 +20,7 @@ func NewMenuReportService(
 	dishModule *module.DishModule,
 	storeModule *module.StoreModule,
 	userModule *module.UserModule,
-	eventBus *utils.EventBus,
+	eventBus *events.EventBus,
 ) *MenuReportService {
 	return &MenuReportService{
 		menuReportModule: menuReportModule,

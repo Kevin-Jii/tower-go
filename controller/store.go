@@ -1,11 +1,10 @@
 package controller
 
 import (
-	"net/http"
 	"tower-go/middleware"
 	"tower-go/model"
 	"tower-go/service"
-	"tower-go/utils"
+	"tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,25 +25,25 @@ func NewStoreController(storeService *service.StoreService) *StoreController {
 // @Produce json
 // @Security Bearer
 // @Param store body model.CreateStoreReq true "门店信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /stores [post]
 func (c *StoreController) CreateStore(ctx *gin.Context) {
 	// 管理员校验
-	if !utils.RequireAdmin(ctx) {
+	if !http.RequireAdmin(ctx) {
 		return
 	}
 
 	var req model.CreateStoreReq
-	if !utils.BindJSON(ctx, &req) {
+	if !http.BindJSON(ctx, &req) {
 		return
 	}
 
 	if err := c.storeService.CreateStore(&req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // GetStore godoc
@@ -55,20 +54,20 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.StandardResponse{data=model.Store}
+// @Success 200 {object} utils.Response{data=model.Store}
 // @Router /stores/{id} [get]
 func (c *StoreController) GetStore(ctx *gin.Context) {
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
 	store, err := c.storeService.GetStore(id)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, store)
+	http.Success(ctx, store)
 }
 
 // ListStores godoc
@@ -78,39 +77,39 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.StandardResponse{data=[]model.Store} "返回全部门店数据，meta 包含 total"
+// @Success 200 {object} utils.Response{data=[]model.Store} "返回全部门店数据，meta 包含 total"
 // @Router /stores [get]
 func (c *StoreController) ListStores(ctx *gin.Context) {
 	stores, total, err := c.storeService.ListStores()
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
 	// 使用分页格式返回，但不实际分页（page=1, pageSize=total）
-	utils.SuccessWithPagination(ctx, stores, total, 1, int(total))
+	http.SuccessWithPagination(ctx, stores, total, 1, int(total))
 }
 
 // ListAllStores godoc
 // @Summary 全部门店（无分页）
-// @Description 返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断。
+// @Description 返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断
 // @Tags stores
 // @Security Bearer
 // @Produce json
-// @Success 200 {object} utils.StandardResponse{data=[]model.Store}
+// @Success 200 {object} utils.Response{data=[]model.Store}
 // @Router /stores/all [get]
 func (c *StoreController) ListAllStores(ctx *gin.Context) {
 	// 权限限制：仅 admin，避免普通门店账号看到其他门店
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "Only admin can list all stores")
+		http.Error(ctx, 403, "Only admin can list all stores")
 		return
 	}
 	stores, _, err := c.storeService.ListStores()
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
-	utils.Success(ctx, stores)
+	http.Success(ctx, stores)
 }
 
 // UpdateStore godoc
@@ -122,26 +121,26 @@ func (c *StoreController) ListAllStores(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param store body model.UpdateStoreReq true "门店信息"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /stores/{id} [put]
 func (c *StoreController) UpdateStore(ctx *gin.Context) {
-	if !utils.RequireAdmin(ctx) {
+	if !http.RequireAdmin(ctx) {
 		return
 	}
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
 	var req model.UpdateStoreReq
-	if !utils.BindJSON(ctx, &req) {
+	if !http.BindJSON(ctx, &req) {
 		return
 	}
 	if err := c.storeService.UpdateStore(id, &req); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }
 
 // DeleteStore godoc
@@ -152,20 +151,20 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /stores/{id} [delete]
 func (c *StoreController) DeleteStore(ctx *gin.Context) {
-	if !utils.RequireAdmin(ctx) {
+	if !http.RequireAdmin(ctx) {
 		return
 	}
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
 	if err := c.storeService.DeleteStore(id); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	utils.Success(ctx, nil)
+	http.Success(ctx, nil)
 }

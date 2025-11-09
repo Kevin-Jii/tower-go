@@ -16,7 +16,8 @@ import (
 	"time"
 	"tower-go/model"
 	"tower-go/module"
-	"tower-go/utils"
+	"tower-go/utils/logging"
+	updatesPkg "tower-go/utils/updates"
 )
 
 type DingTalkService struct {
@@ -98,8 +99,8 @@ func (s *DingTalkService) BroadcastToStore(storeID uint, msgType, title, content
 	}
 
 	if len(bots) == 0 {
-		if utils.SugaredLogger != nil {
-			utils.SugaredLogger.Infow("No enabled bots for store", "storeID", storeID)
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("No enabled bots for store", "storeID", storeID)
 		}
 		return nil
 	}
@@ -126,8 +127,8 @@ func (s *DingTalkService) BroadcastToStore(storeID uint, msgType, title, content
 		}
 
 		if err != nil {
-			if utils.SugaredLogger != nil {
-				utils.SugaredLogger.Errorw("Failed to send to bot",
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Errorw("Failed to send to bot",
 					"botID", bot.ID,
 					"botType", bot.BotType,
 					"error", err,
@@ -245,8 +246,8 @@ func (s *DingTalkService) getStreamAccessToken(clientID, clientSecret string) (s
 	}
 
 	// Log DingTalk response for debugging (do not log clientSecret)
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Errorw("Failed to get access token from DingTalk",
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Errorw("Failed to get access token from DingTalk",
 			"clientID", clientID,
 			"response", result,
 		)
@@ -314,8 +315,8 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 		return fmt.Errorf("dingtalk api error: code=%v, msg=%v", errCode, result["message"])
 	}
 
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Infow("Stream message sent successfully",
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Stream message sent successfully",
 			"robotCode", robotCode,
 			"processQueryKey", result["processQueryKey"],
 		)
@@ -360,8 +361,8 @@ func (s *DingTalkService) sendMessage(bot *model.DingTalkBot, message interface{
 		return fmt.Errorf("dingtalk api error: code=%v, msg=%v", errCode, result["errmsg"])
 	}
 
-	if utils.SugaredLogger != nil {
-		utils.SugaredLogger.Infow("DingTalk message sent successfully", "botID", bot.ID)
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("DingTalk message sent successfully", "botID", bot.ID)
 	}
 	return nil
 }
@@ -430,8 +431,8 @@ func (s *DingTalkService) CreateBot(req *model.CreateDingTalkBotReq) (*model.Din
 	// 如果是 Stream 类型且启用,自动启动连接
 	if bot.BotType == "stream" && bot.IsEnabled {
 		if err := s.streamClient.StartBot(bot); err != nil {
-			if utils.SugaredLogger != nil {
-				utils.SugaredLogger.Errorw("Failed to start stream bot after creation",
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Errorw("Failed to start stream bot after creation",
 					"botID", bot.ID,
 					"error", err,
 				)
@@ -471,7 +472,7 @@ func (s *DingTalkService) UpdateBot(id uint, req *model.UpdateDingTalkBotReq) er
 		}
 	}
 
-	updates := utils.BuildUpdatesFromReq(req)
+	updates := updatesPkg.BuildUpdatesFromReq(req)
 	if len(updates) == 0 {
 		return errors.New("no fields to update")
 	}
@@ -495,8 +496,8 @@ func (s *DingTalkService) UpdateBot(id uint, req *model.UpdateDingTalkBotReq) er
 		// 如果从禁用变为启用,启动连接
 		if !wasEnabled && updatedBot.IsEnabled {
 			if err := s.streamClient.StartBot(updatedBot); err != nil {
-				if utils.SugaredLogger != nil {
-					utils.SugaredLogger.Errorw("Failed to start stream bot",
+				if logging.SugaredLogger != nil {
+					logging.SugaredLogger.Errorw("Failed to start stream bot",
 						"botID", id,
 						"error", err,
 					)
@@ -506,8 +507,8 @@ func (s *DingTalkService) UpdateBot(id uint, req *model.UpdateDingTalkBotReq) er
 		// 如果从启用变为禁用,停止连接
 		if wasEnabled && !updatedBot.IsEnabled {
 			if err := s.streamClient.StopBot(id); err != nil {
-				if utils.SugaredLogger != nil {
-					utils.SugaredLogger.Warnw("Failed to stop stream bot",
+				if logging.SugaredLogger != nil {
+					logging.SugaredLogger.Warnw("Failed to stop stream bot",
 						"botID", id,
 						"error", err,
 					)
@@ -518,8 +519,8 @@ func (s *DingTalkService) UpdateBot(id uint, req *model.UpdateDingTalkBotReq) er
 		if oldBotType == "stream" && updatedBot.IsEnabled {
 			s.streamClient.StopBot(id) // 忽略错误
 			if err := s.streamClient.StartBot(updatedBot); err != nil {
-				if utils.SugaredLogger != nil {
-					utils.SugaredLogger.Errorw("Failed to restart stream bot",
+				if logging.SugaredLogger != nil {
+					logging.SugaredLogger.Errorw("Failed to restart stream bot",
 						"botID", id,
 						"error", err,
 					)

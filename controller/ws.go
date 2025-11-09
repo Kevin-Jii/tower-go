@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"tower-go/utils"
+	authPkg "tower-go/utils/auth"
+	"tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -18,15 +19,15 @@ var upgrader = websocket.Upgrader{
 // 客户端应在 Header: Authorization: Bearer <token>
 // 可选查询参数 device_id 指定设备ID
 func WebSocketHandler(c *gin.Context) {
-	auth := c.GetHeader("Authorization")
-	if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		c.JSON(401, gin.H{"error": "missing bearer token"})
 		return
 	}
-	token := strings.TrimPrefix(auth, "Bearer ")
-	claims, err := utils.ValidateToken(token)
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	claims, err := authPkg.ValidateToken(token)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		c.JSON(401, gin.H{"error": "invalid token"})
 		return
 	}
 
@@ -40,20 +41,35 @@ func WebSocketHandler(c *gin.Context) {
 		deviceID = "unknown"
 	}
 
-	sm := utils.GetSessionManager()
+	sm := session.GetSessionManager()
 	if sm == nil { // 未初始化
-		conn.WriteJSON(utils.WebSocketMessage{Type: "error", Payload: gin.H{"message": "session manager not ready"}, Ts: time.Now().Unix()})
+		msg := session.WebSocketMessage{
+			Type:    "error",
+			Payload: gin.H{"message": "session manager not ready"},
+			Ts:      time.Now().Unix(),
+		}
+		conn.WriteJSON(msg)
 		conn.Close()
 		return
 	}
 
 	// 创建 session，可能返回被挤下线的旧会话
-	session, kicked := sm.CreateSession(claims.UserID, deviceID, token, claims.ExpiresAt.Time, conn)
+	newSession, kicked := sm.CreateSession(claims.UserID, deviceID, token, claims.ExpiresAt.Time, conn)
 	for _, ks := range kicked {
-		_ = ks.Conn.WriteJSON(utils.WebSocketMessage{Type: "kick", Payload: gin.H{"reason": "replaced"}, Ts: time.Now().Unix()})
+		kickMsg := session.WebSocketMessage{
+			Type:    "kick",
+			Payload: gin.H{"reason": "replaced"},
+			Ts:      time.Now().Unix(),
+		}
+		_ = ks.Conn.WriteJSON(kickMsg)
 		ks.Conn.Close()
 	}
-	conn.WriteJSON(utils.WebSocketMessage{Type: "connected", Payload: gin.H{"session_id": session.ID}, Ts: time.Now().Unix()})
+	connMsg := session.WebSocketMessage{
+		Type:    "connected",
+		Payload: gin.H{"session_id": newSession.ID},
+		Ts:      time.Now().Unix(),
+	}
+	conn.WriteJSON(connMsg)
 
 	// 读取循环，支持 ping/pong
 	for {
@@ -64,10 +80,19 @@ func WebSocketHandler(c *gin.Context) {
 		msgType, _ := incoming["type"].(string)
 		switch msgType {
 		case "ping":
-			conn.WriteJSON(utils.WebSocketMessage{Type: "pong", Ts: time.Now().Unix()})
+			pongMsg := session.WebSocketMessage{
+				Type: "pong",
+				Ts:   time.Now().Unix(),
+			}
+			conn.WriteJSON(pongMsg)
 		default:
-			conn.WriteJSON(utils.WebSocketMessage{Type: "echo", Payload: incoming, Ts: time.Now().Unix()})
+			echoMsg := session.WebSocketMessage{
+				Type:    "echo",
+				Payload: incoming,
+				Ts:      time.Now().Unix(),
+			}
+			conn.WriteJSON(echoMsg)
 		}
 	}
-	sm.RemoveSession(session.ID)
+	sm.RemoveSession(newSession.ID)
 }

@@ -23,7 +23,6 @@ package main
 
 import (
 	"tower-go/bootstrap"
-	_ "tower-go/docs"
 )
 
 func main() { bootstrap.Run() }

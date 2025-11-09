@@ -2,7 +2,9 @@ package module
 
 import (
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/database"
+	updatesPkg "tower-go/utils/updates"
+	"tower-go/utils/search"
 
 	"gorm.io/gorm"
 )
@@ -27,11 +29,11 @@ func UpdateRole(id uint, req *model.UpdateRoleReq) (*model.Role, error) {
 	if err := db.First(&role, id).Error; err != nil {
 		return nil, err
 	}
-	updates := utils.BuildUpdatesFromReq(req)
-	if len(updates) == 0 { // 无字段需要更新直接返回原对象
+	updateMap := updatesPkg.BuildUpdatesFromReq(req)
+	if len(updateMap) == 0 { // 无字段需要更新直接返回原对象
 		return &role, nil
 	}
-	if err := db.Model(&role).Updates(updates).Error; err != nil {
+	if err := db.Model(&role).Updates(updateMap).Error; err != nil {
 		return nil, err
 	}
 	// 重新查询确保返回最新（处理可能的数据库触发器或默认值）
@@ -69,7 +71,7 @@ func ListRoles() ([]model.Role, error) {
 func ListRolesFiltered(keyword string, status *int8) ([]model.Role, error) {
 	var roles []model.Role
 
-	qb := utils.NewQueryBuilder(db).
+	qb := database.NewQueryBuilder(db).
 		Where("code <> ?", model.RoleCodeAdmin).
 		WhereIf(status != nil, "status = ?", func() interface{} {
 			if status != nil {
@@ -79,7 +81,7 @@ func ListRolesFiltered(keyword string, status *int8) ([]model.Role, error) {
 		}())
 
 	if keyword != "" {
-		utils.ApplyMultiTermFuzzy(qb, []string{"name", "code", "description"}, keyword, "id")
+		search.ApplyMultiTermFuzzy(qb, []string{"name", "code", "description"}, keyword, "id")
 	}
 
 	qb.OrderByDesc("id")

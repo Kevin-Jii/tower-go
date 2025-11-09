@@ -106,3 +106,117 @@
 {"level":"info","timestamp":"2025-11-08 04:00:19.080","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
 {"level":"info","timestamp":"2025-11-08 04:00:19.080","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":3,"success":2}
 {"level":"error","timestamp":"2025-11-08 04:00:19.254","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":3,"botName":"全局Stream机器人(自动创建)","error":"{\"requestid\":\"DF7F8F22-7A0C-74ED-B14F-3DA9D6DC5522\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-09 21:09:15.651","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"warn","timestamp":"2025-11-09 21:09:15.754","caller":"bootstrap/swagger.go:30","msg":"自动生成 swagger 失败","error":"exit status 1"}
+{"level":"info","timestamp":"2025-11-09 21:09:15.754","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-09 21:09:15.754","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-09 21:09:15.767","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-09 21:09:15.772","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-09 21:09:15.772","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-09 21:09:32.227","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:09:32.277","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:09:33.065","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-09 21:09:33.106","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-09 21:09:33.108","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-09 21:09:33.108","caller":"bootstrap/app.go:30","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-09 21:09:33.152","caller":"bootstrap/stream.go:20","msg":"Stream bot already exists","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"error","timestamp":"2025-11-09 21:09:33.202","caller":"bootstrap/app.go:39","msg":"Failed to start stream bot","botID":1,"botName":"全局Stream机器人(自动创建)","error":"clientID or clientSecret is empty","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:39\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-09 21:09:33.203","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":2,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:09:33.203","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:09:33.203","caller":"bootstrap/app.go:39","msg":"Stream clients initialized","total":3,"success":2}
+{"level":"error","timestamp":"2025-11-09 21:09:33.360","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":3,"botName":"全局Stream机器人(自动创建)","error":"{\"requestid\":\"69109328-3CF9-7B85-BC62-6A9AC8E5A319\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-09 21:11:06.750","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"warn","timestamp":"2025-11-09 21:11:06.811","caller":"bootstrap/swagger.go:30","msg":"自动生成 swagger 失败","error":"exit status 1"}
+{"level":"info","timestamp":"2025-11-09 21:11:06.811","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-09 21:11:06.811","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-09 21:11:06.820","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-09 21:11:06.825","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-09 21:11:06.825","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-09 21:11:23.368","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:11:23.413","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:11:24.183","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-09 21:11:24.227","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-09 21:11:24.230","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-09 21:11:24.230","caller":"bootstrap/app.go:30","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-09 21:11:24.274","caller":"bootstrap/stream.go:20","msg":"Stream bot already exists","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"error","timestamp":"2025-11-09 21:11:24.322","caller":"bootstrap/app.go:39","msg":"Failed to start stream bot","botID":1,"botName":"全局Stream机器人(自动创建)","error":"clientID or clientSecret is empty","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:39\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-09 21:11:24.322","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":2,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:11:24.322","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:11:24.322","caller":"bootstrap/app.go:39","msg":"Stream clients initialized","total":3,"success":2}
+{"level":"error","timestamp":"2025-11-09 21:11:24.475","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":3,"botName":"全局Stream机器人(自动创建)","error":"{\"requestid\":\"ADBABD2A-FB59-7A43-AAFC-9854F066F055\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-09 21:11:59.620","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"warn","timestamp":"2025-11-09 21:11:59.679","caller":"bootstrap/swagger.go:30","msg":"自动生成 swagger 失败","error":"exit status 1"}
+{"level":"info","timestamp":"2025-11-09 21:11:59.679","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-09 21:11:59.679","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-09 21:11:59.686","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-09 21:11:59.692","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-09 21:11:59.692","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-09 21:12:16.110","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:12:16.154","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:12:16.978","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-09 21:12:17.025","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-09 21:12:17.032","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-09 21:12:17.032","caller":"bootstrap/app.go:30","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-09 21:12:17.080","caller":"bootstrap/stream.go:20","msg":"Stream bot already exists","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"error","timestamp":"2025-11-09 21:12:17.127","caller":"bootstrap/app.go:39","msg":"Failed to start stream bot","botID":1,"botName":"全局Stream机器人(自动创建)","error":"clientID or clientSecret is empty","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:39\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-09 21:12:17.127","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":2,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:12:17.128","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:12:17.128","caller":"bootstrap/app.go:39","msg":"Stream clients initialized","total":3,"success":2}
+{"level":"error","timestamp":"2025-11-09 21:12:17.261","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":3,"botName":"全局Stream机器人(自动创建)","error":"{\"requestid\":\"3C0E33C5-A6D9-7289-BA37-967F30F11F15\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-09 21:17:47.072","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"warn","timestamp":"2025-11-09 21:17:47.125","caller":"bootstrap/swagger.go:30","msg":"自动生成 swagger 失败","error":"exit status 1"}
+{"level":"info","timestamp":"2025-11-09 21:17:47.125","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-09 21:17:47.125","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-09 21:17:47.135","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-09 21:17:47.144","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-09 21:17:47.144","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-09 21:18:03.217","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:18:03.260","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:18:04.045","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-09 21:18:04.087","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-09 21:18:04.089","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-09 21:18:04.089","caller":"bootstrap/app.go:30","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-09 21:18:04.136","caller":"bootstrap/stream.go:20","msg":"Stream bot already exists","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"error","timestamp":"2025-11-09 21:18:04.185","caller":"bootstrap/app.go:39","msg":"Failed to start stream bot","botID":1,"botName":"全局Stream机器人(自动创建)","error":"clientID or clientSecret is empty","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:39\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-09 21:18:04.185","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":2,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:18:04.185","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:18:04.185","caller":"bootstrap/app.go:39","msg":"Stream clients initialized","total":3,"success":2}
+{"level":"error","timestamp":"2025-11-09 21:18:04.353","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":3,"botName":"全局Stream机器人(自动创建)","error":"{\"requestid\":\"D7B4279B-DF54-799C-8F41-E49AC3D653A6\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-09 21:20:09.226","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"warn","timestamp":"2025-11-09 21:20:09.286","caller":"bootstrap/swagger.go:30","msg":"自动生成 swagger 失败","error":"exit status 1"}
+{"level":"info","timestamp":"2025-11-09 21:20:09.286","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-09 21:20:09.286","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-09 21:20:09.295","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-09 21:20:09.301","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-09 21:20:09.301","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-09 21:20:25.299","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:20:25.341","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:20:26.113","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-09 21:20:26.156","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-09 21:20:26.157","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-09 21:20:26.157","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-09 21:20:26.201","caller":"bootstrap/stream.go:20","msg":"Stream bot already exists","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"error","timestamp":"2025-11-09 21:20:26.245","caller":"bootstrap/app.go:38","msg":"Failed to start stream bot","botID":1,"botName":"全局Stream机器人(自动创建)","error":"clientID or clientSecret is empty","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:38\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:28\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-09 21:20:26.245","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":2,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:20:26.245","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:20:26.245","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":3,"success":2}
+{"level":"error","timestamp":"2025-11-09 21:20:26.386","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":3,"botName":"全局Stream机器人(自动创建)","error":"{\"requestid\":\"1A90A7DD-5FAE-70D1-8A02-56BDF0A0B7F8\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-09 21:20:49.961","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"warn","timestamp":"2025-11-09 21:20:50.014","caller":"bootstrap/swagger.go:30","msg":"自动生成 swagger 失败","error":"exit status 1"}
+{"level":"info","timestamp":"2025-11-09 21:20:50.015","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-09 21:20:50.015","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-09 21:20:50.023","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-09 21:20:50.028","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-09 21:20:50.028","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-09 21:21:06.596","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:21:06.639","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-09 21:21:07.448","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-09 21:21:07.494","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-09 21:21:07.500","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-09 21:21:07.500","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-09 21:21:07.549","caller":"bootstrap/stream.go:20","msg":"Stream bot already exists","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"error","timestamp":"2025-11-09 21:21:07.594","caller":"bootstrap/app.go:38","msg":"Failed to start stream bot","botID":1,"botName":"全局Stream机器人(自动创建)","error":"clientID or clientSecret is empty","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:38\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:28\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-09 21:21:07.594","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":2,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:21:07.594","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":3,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-09 21:21:07.594","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":3,"success":2}
+{"level":"fatal","timestamp":"2025-11-09 21:21:07.596","caller":"bootstrap/app.go:43","msg":"服务启动失败","error":"listen tcp :10024: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.","stacktrace":"tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:43\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:28\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}

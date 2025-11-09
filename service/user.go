@@ -7,6 +7,7 @@ import (
 	"tower-go/model"
 	"tower-go/module"
 	"tower-go/utils"
+	"tower-go/utils/auth"
 )
 
 type UserService struct {
@@ -41,7 +42,7 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 	}
 
 	// 3. 密码加密
-	hashedPassword, err := utils.HashPassword(req.Password)
+	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func (s *UserService) UpdateUserByStoreID(userID uint, storeID uint, req *model.
 
 	// 2. 更新字段
 	if req.Password != "" {
-		hashedPassword, err := utils.HashPassword(req.Password)
+		hashedPassword, err := auth.HashPassword(req.Password)
 		if err != nil {
 			return err
 		}
@@ -172,7 +173,7 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 	}
 
 	// 验证密码
-	if !utils.CheckPasswordHash(password, user.Password) {
+	if !auth.CheckPasswordHash(password, user.Password) {
 		return nil, errors.New("invalid password")
 	}
 
@@ -193,7 +194,7 @@ func (s *UserService) ResetPassword(userID uint, newPlain string) error {
 	if _, err := s.userModule.GetByID(userID); err != nil {
 		return errors.New("user not found")
 	}
-	hashed, err := utils.HashPassword(newPlain)
+	hashed, err := auth.HashPassword(newPlain)
 	if err != nil {
 		return err
 	}

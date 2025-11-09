@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"net/http"
 	"strings"
 
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/auth"
+	"tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +14,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			utils.Error(c, http.StatusUnauthorized, "Authorization header is required")
+			http.Error(c, 401, "Authorization header is required")
 			c.Abort()
 			return
 		}
@@ -22,15 +22,15 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Bearer token
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			utils.Error(c, http.StatusUnauthorized, "Invalid authorization header format")
+			http.Error(c, 401, "Invalid authorization header format")
 			c.Abort()
 			return
 		}
 
 		// 解析token
-		claims, err := utils.ParseToken(parts[1])
+		claims, err := auth.ParseToken(parts[1])
 		if err != nil {
-			utils.Error(c, http.StatusUnauthorized, "Invalid token")
+			http.Error(c, 401, "Invalid token")
 			c.Abort()
 			return
 		}

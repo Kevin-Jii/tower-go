@@ -5,6 +5,7 @@ import (
 	"tower-go/model"
 	"tower-go/module"
 	"tower-go/utils"
+	"tower-go/utils/cache"
 )
 
 type DishCategoryService struct {
@@ -37,7 +38,7 @@ func (s *DishCategoryService) Create(storeID uint, req *model.CreateDishCategory
 	if err := s.module.Create(cat); err != nil {
 		return nil, err
 	}
-	utils.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCategoryCache(storeID)
 	return cat, nil
 }
 
@@ -74,7 +75,7 @@ func (s *DishCategoryService) Update(id, storeID uint, req *model.UpdateDishCate
 	if err := s.module.Update(cat); err != nil {
 		return err
 	}
-	utils.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCategoryCache(storeID)
 	return nil
 }
 
@@ -90,13 +91,13 @@ func (s *DishCategoryService) Delete(id, storeID uint) error {
 	if err := s.module.Delete(id, storeID); err != nil {
 		return err
 	}
-	utils.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCategoryCache(storeID)
 	return nil
 }
 
 func (s *DishCategoryService) List(storeID uint) ([]*model.DishCategory, error) {
 	var cached []*model.DishCategory
-	err := utils.DishCategoriesDomain.GetOrSet(&cached, func() (interface{}, error) {
+	err := cache.DishCategoriesDomain.GetOrSet(&cached, func() (interface{}, error) {
 		return s.module.List(storeID)
 	}, storeID)
 	return cached, err
@@ -104,7 +105,7 @@ func (s *DishCategoryService) List(storeID uint) ([]*model.DishCategory, error) 
 
 func (s *DishCategoryService) ListWithDishes(storeID uint) ([]*model.DishCategory, error) {
 	var cached []*model.DishCategory
-	err := utils.DishCategoriesWithDishesDomain.GetOrSet(&cached, func() (interface{}, error) {
+	err := cache.DishCategoriesWithDishesDomain.GetOrSet(&cached, func() (interface{}, error) {
 		return s.module.ListWithDishes(storeID)
 	}, storeID)
 	return cached, err
@@ -114,8 +115,8 @@ func (s *DishCategoryService) Reorder(storeID uint, items []model.ReorderDishCat
 	if err := s.module.BatchUpdateSort(storeID, items); err != nil {
 		return err
 	}
-	utils.DishCategoriesDomain.Invalidate(storeID)
-	utils.DishCategoriesWithDishesDomain.Invalidate(storeID)
+	cache.DishCategoriesDomain.Invalidate(storeID)
+	cache.DishCategoriesWithDishesDomain.Invalidate(storeID)
 	return nil
 }
 
@@ -161,8 +162,8 @@ func (s *DishCategoryService) CreateDishInCategory(storeID, categoryID uint, req
 		return nil, err
 	}
 	// 缓存失效：分类相关与单菜品（若后续有单菜品缓存）
-	utils.InvalidateDishCategoryCache(storeID)
-	utils.InvalidateDishCache(dish.ID, storeID)
+	cache.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCache(dish.ID, storeID)
 	return dish, nil
 }
 
@@ -198,8 +199,8 @@ func (s *DishCategoryService) UpdateDishInCategory(storeID, categoryID, dishID u
 		return err
 	}
 	// 6. 缓存失效
-	utils.InvalidateDishCategoryCache(storeID)
-	utils.InvalidateDishCache(dishID, storeID)
+	cache.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCache(dishID, storeID)
 	return nil
 }
 
@@ -223,7 +224,7 @@ func (s *DishCategoryService) DeleteDishInCategory(storeID, categoryID, dishID u
 		return err
 	}
 	// 4. 缓存失效
-	utils.InvalidateDishCategoryCache(storeID)
-	utils.InvalidateDishCache(dishID, storeID)
+	cache.InvalidateDishCategoryCache(storeID)
+	cache.InvalidateDishCache(dishID, storeID)
 	return nil
 }

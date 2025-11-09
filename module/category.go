@@ -2,7 +2,7 @@ package module
 
 import (
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/batch"
 
 	"gorm.io/gorm"
 )
@@ -70,9 +70,9 @@ func (m *DishCategoryModule) BatchUpdateSort(storeID uint, items []model.Reorder
 		return nil
 	}
 	// 转换为通用 SortItem
-	list := make([]utils.SortItem, 0, len(items))
+	list := make([]batch.SortItem, 0, len(items))
 	for _, it := range items {
-		list = append(list, utils.SortItem{ID: it.ID, Sort: it.Sort})
+		list = append(list, batch.SortItem{ID: it.ID, Sort: it.Sort})
 	}
-	return utils.BatchUpdateSort(m.db, &model.DishCategory{}, storeID, list)
+	return batch.BatchUpdateSort(m.db, &model.DishCategory{}, storeID, list)
 }

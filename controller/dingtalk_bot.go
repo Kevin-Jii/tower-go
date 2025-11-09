@@ -1,14 +1,13 @@
 package controller
 
 import (
-	"net/http"
 	"tower-go/middleware"
 	"tower-go/model"
 	"tower-go/service"
 
 	"github.com/gin-gonic/gin"
 
-	"tower-go/utils"
+	httpPkg "tower-go/utils/http"
 )
 
 type DingTalkBotController struct {
@@ -26,33 +25,33 @@ func NewDingTalkBotController(svc *service.DingTalkService) *DingTalkBotControll
 // @Produce json
 // @Security Bearer
 // @Param bot body model.CreateDingTalkBotReq true "机器人配置"
-// @Success 200 {object} utils.StandardResponse{data=model.DingTalkBot}
+// @Success 200 {object} utils.Response{data=model.DingTalkBot}
 // @Router /dingtalk-bots [post]
 func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "only admin can create bot")
+		httpPkg.Error(ctx, 403, "only admin can create bot")
 		return
 	}
 
 	var req model.CreateDingTalkBotReq
-	if !utils.BindJSON(ctx, &req) {
+	if !httpPkg.BindJSON(ctx, &req) {
 		return
 	}
 
 	bot, err := c.svc.CreateBot(&req)
 	if err != nil {
-		status := http.StatusInternalServerError
+		status := 500
 		if err.Error() == "webhook already exists" {
-			status = http.StatusConflict
+			status = 409
 		} else if err.Error() == "webhook is required for webhook type" ||
 			err.Error() == "clientID and clientSecret are required for stream type" {
-			status = http.StatusBadRequest
+			status = 400
 		}
-		utils.Error(ctx, status, err.Error())
+		httpPkg.Error(ctx, status, err.Error())
 		return
 	}
 
-	utils.Success(ctx, bot)
+	httpPkg.Success(ctx, bot)
 }
 
 // GetBot godoc
@@ -62,26 +61,26 @@ func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "机器人ID"
-// @Success 200 {object} utils.StandardResponse{data=model.DingTalkBot}
+// @Success 200 {object} utils.Response{data=model.DingTalkBot}
 // @Router /dingtalk-bots/{id} [get]
 func (c *DingTalkBotController) GetBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "only admin can view bots")
+		httpPkg.Error(ctx, 403, "only admin can view bots")
 		return
 	}
 
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := httpPkg.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
 
 	bot, err := c.svc.GetBot(id)
 	if err != nil {
-		utils.Error(ctx, http.StatusNotFound, "bot not found")
+		httpPkg.Error(ctx, 404, "bot not found")
 		return
 	}
 
-	utils.Success(ctx, bot)
+	httpPkg.Success(ctx, bot)
 }
 
 // ListBots godoc
@@ -92,27 +91,27 @@ func (c *DingTalkBotController) GetBot(ctx *gin.Context) {
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.StandardResponse{data=[]model.DingTalkBot}
+// @Success 200 {object} utils.Response{data=[]model.DingTalkBot}
 // @Router /dingtalk-bots [get]
 func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "only admin can view bots")
+		httpPkg.Error(ctx, 403, "only admin can view bots")
 		return
 	}
 
-	page := utils.GetPage(ctx)
-	pageSize := utils.GetPageSize(ctx)
+	page := httpPkg.GetPage(ctx)
+	pageSize := httpPkg.GetPageSize(ctx)
 
 	bots, _, err := c.svc.ListBots(page, pageSize)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		httpPkg.Error(ctx, 500, err.Error())
 		return
 	}
 
 	// 自定义返回结构，去掉嵌套 store，直接返回 store_code 和 store_name
 	var result []map[string]interface{}
 	for _, bot := range bots {
-		m := utils.StructToMap(bot)
+		m := httpPkg.StructToMap(bot)
 		if bot.Store != nil {
 			m["store_code"] = bot.Store.StoreCode
 			m["store_name"] = bot.Store.Name
@@ -124,7 +123,7 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 		delete(m, "store")
 		result = append(result, m)
 	}
-	utils.Success(ctx, result)
+	httpPkg.Success(ctx, result)
 }
 
 // UpdateBot godoc
@@ -135,42 +134,42 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "机器人ID"
 // @Param bot body model.UpdateDingTalkBotReq true "机器人配置"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /dingtalk-bots/{id} [put]
 func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "only admin can update bot")
+		httpPkg.Error(ctx, 403, "only admin can update bot")
 		return
 	}
 
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := httpPkg.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
 
 	var req model.UpdateDingTalkBotReq
-	if !utils.BindJSON(ctx, &req) {
+	if !httpPkg.BindJSON(ctx, &req) {
 		return
 	}
 
 	if err := c.svc.UpdateBot(id, &req); err != nil {
-		status := http.StatusInternalServerError
+		status := 500
 		if err.Error() == "webhook already exists" {
-			status = http.StatusConflict
+			status = 409
 		} else if err.Error() == "no fields to update" {
-			status = http.StatusBadRequest
+			status = 400
 		}
-		utils.Error(ctx, status, err.Error())
+		httpPkg.Error(ctx, status, err.Error())
 		return
 	}
 
 	// 返回最新机器人详情，保证 robot_code 字段
 	updatedBot, err := c.svc.GetBot(id)
 	if err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, "failed to fetch updated bot")
+		httpPkg.Error(ctx, 500, "failed to fetch updated bot")
 		return
 	}
-	utils.Success(ctx, updatedBot)
+	httpPkg.Success(ctx, updatedBot)
 }
 
 // DeleteBot godoc
@@ -180,26 +179,26 @@ func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "机器人ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /dingtalk-bots/{id} [delete]
 func (c *DingTalkBotController) DeleteBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "only admin can delete bot")
+		httpPkg.Error(ctx, 403, "only admin can delete bot")
 		return
 	}
 
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := httpPkg.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
 
 	if err := c.svc.DeleteBot(id); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		httpPkg.Error(ctx, 500, err.Error())
 		return
 	}
 
 	// 删除后返回空对象，结构一致
-	utils.Success(ctx, gin.H{})
+	httpPkg.Success(ctx, gin.H{})
 }
 
 // TestBot godoc
@@ -209,15 +208,15 @@ func (c *DingTalkBotController) DeleteBot(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "机器人ID"
-// @Success 200 {object} utils.StandardResponse
+// @Success 200 {object} utils.Response
 // @Router /dingtalk-bots/{id}/test [post]
 func (c *DingTalkBotController) TestBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		utils.Error(ctx, http.StatusForbidden, "only admin can test bot")
+		httpPkg.Error(ctx, 403, "only admin can test bot")
 		return
 	}
 
-	id, ok := utils.ParseUintParam(ctx, "id")
+	id, ok := httpPkg.ParseUintParam(ctx, "id")
 	if !ok {
 		return
 	}
@@ -225,20 +224,20 @@ func (c *DingTalkBotController) TestBot(ctx *gin.Context) {
 	// 先获取机器人配置并做基础校验（避免把错误请求发送到钉钉）
 	bot, err := c.svc.GetBot(id)
 	if err != nil {
-		utils.Error(ctx, http.StatusNotFound, "bot not found")
+		httpPkg.Error(ctx, 404, "bot not found")
 		return
 	}
 
 	if bot.BotType == "stream" && bot.RobotCode == "" {
-		utils.Error(ctx, http.StatusBadRequest, "robot_code is empty for stream bot: please set the correct robot_code (钉钉分配的机器人编码) in bot configuration before testing")
+		httpPkg.Error(ctx, 400, "robot_code is empty for stream bot: please set the correct robot_code (钉钉分配的机器人编码) in bot configuration before testing")
 		return
 	}
 
 	if err := c.svc.TestBot(id); err != nil {
-		utils.Error(ctx, http.StatusInternalServerError, err.Error())
+		httpPkg.Error(ctx, 500, err.Error())
 		return
 	}
 
 	// 返回机器人详情，保证 robot_code 字段
-	utils.Success(ctx, gin.H{"message": "test message sent successfully", "robot_code": bot.RobotCode})
+	httpPkg.Success(ctx, gin.H{"message": "test message sent successfully", "robot_code": bot.RobotCode})
 }

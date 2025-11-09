@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"os"
 	"tower-go/config"
-	"tower-go/utils"
+	"tower-go/utils/logging"
 
 	"go.uber.org/zap"
 )
@@ -19,8 +19,8 @@ func LoadAppConfig() {
 	if portEnv := os.Getenv("APP_PORT"); portEnv != "" {
 		cfg := config.GetConfig()
 		if cfg.App.Port > 0 {
-			utils.LogInfo("使用环境变量端口", zap.Int("port", cfg.App.Port))
+			logging.LogInfo("使用环境变量端口", zap.Int("port", cfg.App.Port))
 		}
 	}
-	utils.LogInfo("配置加载完成")
+	logging.LogInfo("配置加载完成")
 }

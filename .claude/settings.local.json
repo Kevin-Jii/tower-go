@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go run test_security.go)",
+      "Bash(findstr :3306)",
+      "Bash(sc query mysql80)",
+      "Bash(sc query mysql)",
+      "Bash(sc query:*)",
+      "Bash(mysql:*)",
+      "Bash(findstr:*)",
+      "Bash(docker exec:*)",
+      "Bash(telnet:*)",
+      "Bash(nc:*)",
+      "Bash(docker inspect:*)",
+      "Bash(curl:*)",
+      "Bash(ren:*)",
+      "Bash(move:*)",
+      "Bash(go build:*)",
+      "Bash(tower-go.exe:*)",
+      "Bash(.tower-go.exe)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(for:*)",
+      "Bash(do sed:*)",
+      "Bash(done)",
+      "Bash(dir:*)",
+      "Bash(go run:*)",
+      "Bash(go mod:*)",
+      "Bash(go clean:*)",
+      "Bash(del:*)",
+      "Bash(swag version:*)",
+      "Bash(swag:*)",
+      "Bash(do powershell -Command \"(Get-Content -Path \"\"$file\"\") -replace ''utils\\.StandardResponse'', ''utils.Response'' | Set-Content -Path \"\"$file\"\"\")",
+      "Bash(powershell:*)",
+      "Bash(rd:*)",
+      "Bash(./tower-go.exe:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -2,7 +2,7 @@ package module
 
 import (
 	"tower-go/model"
-	"tower-go/utils"
+	updatesPkg "tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )
@@ -57,11 +57,11 @@ func (m *StoreModule) Update(store *model.Store) error {
 
 // UpdateByID 根据ID更新门店信息（动态更新，避免整行覆盖）
 func (m *StoreModule) UpdateByID(id uint, req *model.UpdateStoreReq) error {
-	updates := utils.BuildUpdatesFromReq(req)
-	if len(updates) == 0 {
+	updateMap := updatesPkg.BuildUpdatesFromReq(req)
+	if len(updateMap) == 0 {
 		return nil
 	}
-	return m.db.Model(&model.Store{}).Where("id = ?", id).Updates(updates).Error
+	return m.db.Model(&model.Store{}).Where("id = ?", id).Updates(updateMap).Error
 }
 
 // Delete 删除门店

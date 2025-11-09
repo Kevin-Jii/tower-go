@@ -3,7 +3,8 @@ package module
 import (
 	"fmt"
 	"tower-go/model"
-	"tower-go/utils"
+	"tower-go/utils/cache"
+	updatesPkg "tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )
@@ -20,7 +21,7 @@ func NewMenuModule(db *gorm.DB) *MenuModule {
 func (m *MenuModule) Create(menu *model.Menu) error {
 	err := m.db.Create(menu).Error
 	if err == nil {
-		utils.InvalidateMenuCache()
+		cache.InvalidateMenuCache()
 	}
 	return err
 }
@@ -39,8 +40,8 @@ func (m *MenuModule) List() ([]*model.Menu, error) {
 	var menus []*model.Menu
 
 	// 尝试从缓存获取
-	cacheKey := utils.CacheKeyMenuTree
-	err := utils.CacheGet(cacheKey, &menus)
+	cacheKey := cache.CacheKeyMenuTree
+	err := cache.CacheGet(cacheKey, &menus)
 	if err == nil && len(menus) > 0 {
 		return menus, nil
 	}
@@ -51,7 +52,7 @@ func (m *MenuModule) List() ([]*model.Menu, error) {
 	}
 
 	// 保存到缓存
-	utils.CacheSet(cacheKey, menus, utils.MenuTreeTTL)
+	cache.CacheSet(cacheKey, menus, cache.MenuTreeTTL)
 	return menus, nil
 }
 
@@ -66,13 +67,13 @@ func (m *MenuModule) ListByParentID(parentID uint) ([]*model.Menu, error) {
 
 // Update 更新菜单（清除缓存）
 func (m *MenuModule) Update(id uint, req *model.UpdateMenuReq) error {
-	updates := utils.BuildUpdatesFromReq(req)
-	if len(updates) == 0 {
+	updateMap := updatesPkg.BuildUpdatesFromReq(req)
+	if len(updateMap) == 0 {
 		return nil
 	}
-	err := m.db.Model(&model.Menu{}).Where("id = ?", id).Updates(updates).Error
+	err := m.db.Model(&model.Menu{}).Where("id = ?", id).Updates(updateMap).Error
 	if err == nil {
-		utils.InvalidateMenuCache()
+		cache.InvalidateMenuCache()
 	}
 	return err
 }
@@ -81,7 +82,7 @@ func (m *MenuModule) Update(id uint, req *model.UpdateMenuReq) error {
 func (m *MenuModule) Delete(id uint) error {
 	err := m.db.Delete(&model.Menu{}, id).Error
 	if err == nil {
-		utils.InvalidateMenuCache()
+		cache.InvalidateMenuCache()
 	}
 	return err
 }
@@ -91,8 +92,8 @@ func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 	var menus []*model.Menu
 
 	// 尝试从缓存获取
-	cacheKey := fmt.Sprintf(utils.CacheKeyRoleMenus, roleID)
-	err := utils.CacheGet(cacheKey, &menus)
+	cacheKey := fmt.Sprintf(cache.CacheKeyRoleMenus, roleID)
+	err := cache.CacheGet(cacheKey, &menus)
 	if err == nil && len(menus) > 0 {
 		return menus, nil
 	}
@@ -109,7 +110,7 @@ func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 	}
 
 	// 保存到缓存
-	utils.CacheSet(cacheKey, menus, utils.PermissionsTTL)
+	cache.CacheSet(cacheKey, menus, cache.PermissionsTTL)
 	return menus, err
 }
 
@@ -118,8 +119,8 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 	var menus []*model.Menu
 
 	// 尝试从缓存获取
-	cacheKey := fmt.Sprintf(utils.CacheKeyStoreRoleMenus, storeID, roleID)
-	err := utils.CacheGet(cacheKey, &menus)
+	cacheKey := fmt.Sprintf(cache.CacheKeyStoreRoleMenus, storeID, roleID)
+	err := cache.CacheGet(cacheKey, &menus)
 	if err == nil && len(menus) > 0 {
 		return menus, nil
 	}
@@ -141,6 +142,6 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 	}
 
 	// 保存到缓存
-	utils.CacheSet(cacheKey, menus, utils.PermissionsTTL)
+	cache.CacheSet(cacheKey, menus, cache.PermissionsTTL)
 	return menus, err
 }

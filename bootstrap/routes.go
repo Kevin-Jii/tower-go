@@ -7,7 +7,8 @@ import (
 	"tower-go/middleware"
 	userModulePkg "tower-go/module"
 	"tower-go/service"
-	"tower-go/utils"
+	"tower-go/utils/database"
+	"tower-go/utils/events"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -27,21 +28,21 @@ type AppControllers struct {
 
 func BuildControllers() *AppControllers {
 	// 初始化模块层
-	userModule := userModulePkg.NewUserModule(utils.DB)
-	storeModule := userModulePkg.NewStoreModule(utils.DB)
-	dishModule := userModulePkg.NewDishModule(utils.DB)
-	menuReportModule := userModulePkg.NewMenuReportModule(utils.DB)
-	dishCategoryModule := userModulePkg.NewDishCategoryModule(utils.DB)
-	menuModule := userModulePkg.NewMenuModule(utils.DB)
-	roleMenuModule := userModulePkg.NewRoleMenuModule(utils.DB)
-	storeRoleMenuModule := userModulePkg.NewStoreRoleMenuModule(utils.DB)
-	dingTalkBotModule := userModulePkg.NewDingTalkBotModule(utils.DB)
+	userModule := userModulePkg.NewUserModule(database.DB)
+	storeModule := userModulePkg.NewStoreModule(database.DB)
+	dishModule := userModulePkg.NewDishModule(database.DB)
+	menuReportModule := userModulePkg.NewMenuReportModule(database.DB)
+	dishCategoryModule := userModulePkg.NewDishCategoryModule(database.DB)
+	menuModule := userModulePkg.NewMenuModule(database.DB)
+	roleMenuModule := userModulePkg.NewRoleMenuModule(database.DB)
+	storeRoleMenuModule := userModulePkg.NewStoreRoleMenuModule(database.DB)
+	dingTalkBotModule := userModulePkg.NewDingTalkBotModule(database.DB)
 
 	// 初始化角色模块全局 DB（旧实现依赖 SetDB）
-	userModulePkg.SetDB(utils.DB)
+	userModulePkg.SetDB(database.DB)
 
 	// 初始化事件总线
-	eventBus := utils.GetEventBus()
+	eventBus := events.GetEventBus()
 
 	// 初始化服务层
 	userService := service.NewUserService(userModule)

@@ -2,7 +2,7 @@ package module
 
 import (
 	"tower-go/model"
-	"tower-go/utils"
+	updatesPkg "tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )
@@ -79,11 +79,11 @@ func (m *DishModule) Update(dish *model.Dish) error {
 
 // UpdateByIDAndStoreID 使用动态更新构造器按需更新菜品字段
 func (m *DishModule) UpdateByIDAndStoreID(id, storeID uint, req *model.UpdateDishReq) error {
-	updates := utils.BuildUpdatesFromReq(req)
-	if len(updates) == 0 {
+	updateMap := updatesPkg.BuildUpdatesFromReq(req)
+	if len(updateMap) == 0 {
 		return nil
 	}
-	return m.db.Model(&model.Dish{}).Where("id = ? AND store_id = ?", id, storeID).Updates(updates).Error
+	return m.db.Model(&model.Dish{}).Where("id = ? AND store_id = ?", id, storeID).Updates(updateMap).Error
 }
 
 // Delete 删除菜品

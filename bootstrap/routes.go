@@ -2,13 +2,13 @@ package bootstrap
 
 import (
 	"fmt"
-	"tower-go/config"
-	"tower-go/controller"
-	"tower-go/middleware"
-	userModulePkg "tower-go/module"
-	"tower-go/service"
-	"tower-go/utils/database"
-	"tower-go/utils/events"
+	"github.com/Kevin-Jii/tower-go/config"
+	"github.com/Kevin-Jii/tower-go/controller"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	userModulePkg "github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/database"
+	"github.com/Kevin-Jii/tower-go/utils/events"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"

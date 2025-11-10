@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"tower-go/model"
-	"tower-go/module"
-	"tower-go/utils/logging"
-	updatesPkg "tower-go/utils/updates"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 )
 
 type DingTalkService struct {

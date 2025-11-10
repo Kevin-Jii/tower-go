@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"os"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 func InitLogger() func() {

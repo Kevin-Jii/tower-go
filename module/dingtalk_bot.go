@@ -1,7 +1,7 @@
 package module
 
 import (
-	"tower-go/model"
+	"github.com/Kevin-Jii/tower-go/model"
 
 	"gorm.io/gorm"
 )

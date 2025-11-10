@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"tower-go/bootstrap"
-	"tower-go/model"
-	"tower-go/utils/database"
+	"github.com/Kevin-Jii/tower-go/bootstrap"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/database"
 )
 
 func main() {

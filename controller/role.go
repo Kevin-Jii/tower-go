@@ -3,9 +3,9 @@ package controller
 import (
 	"strconv"
 
-	"tower-go/model"
-	"tower-go/service"
-	"tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +17,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param data body model.Role true "角色信息"
-// @Success 200 {object} utils.Response{data=model.Role}
+// @Success 200 {object} http.Response{data=model.Role}
 // @Failure 400 {object} map[string]string
 // @Router /roles [post]
 func CreateRole(c *gin.Context) {
@@ -42,7 +42,7 @@ func CreateRole(c *gin.Context) {
 // @Produce json
 // @Param id path int true "角色ID"
 // @Param data body model.UpdateRoleReq true "仅传需要修改的字段 (name, code, description, status)，未传字段保持原值"
-// @Success 200 {object} utils.Response{data=model.Role}
+// @Success 200 {object} http.Response{data=model.Role}
 // @Failure 400 {object} map[string]string
 // @Router /roles/{id} [put]
 func UpdateRole(c *gin.Context) {
@@ -71,7 +71,7 @@ func UpdateRole(c *gin.Context) {
 // @Tags 角色管理
 // @Produce json
 // @Param id path int true "角色ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Failure 400 {object} map[string]string
 // @Router /roles/{id} [delete]
 func DeleteRole(c *gin.Context) {
@@ -94,7 +94,7 @@ func DeleteRole(c *gin.Context) {
 // @Tags 角色管理
 // @Produce json
 // @Param id path int true "角色ID"
-// @Success 200 {object} utils.Response{data=model.Role}
+// @Success 200 {object} http.Response{data=model.Role}
 // @Failure 404 {object} map[string]string
 // @Router /roles/{id} [get]
 func GetRole(c *gin.Context) {
@@ -119,7 +119,7 @@ func GetRole(c *gin.Context) {
 // @Produce json
 // @Param keyword query string false "关键字(模糊匹配 name/code/description)"
 // @Param status query int false "状态过滤 1=启用 0=禁用"
-// @Success 200 {object} utils.Response{data=[]model.Role}
+// @Success 200 {object} http.Response{data=[]model.Role}
 // @Router /roles [get]
 func ListRoles(c *gin.Context) {
 	keyword := c.Query("keyword")

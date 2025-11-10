@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"tower-go/middleware"
-	"tower-go/model"
-	"tower-go/service"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
 
 	"github.com/gin-gonic/gin"
 
-	httpPkg "tower-go/utils/http"
+	httpPkg "github.com/Kevin-Jii/tower-go/utils/http"
 )
 
 type DingTalkBotController struct {
@@ -25,7 +25,7 @@ func NewDingTalkBotController(svc *service.DingTalkService) *DingTalkBotControll
 // @Produce json
 // @Security Bearer
 // @Param bot body model.CreateDingTalkBotReq true "机器人配置"
-// @Success 200 {object} utils.Response{data=model.DingTalkBot}
+// @Success 200 {object} http.Response{data=model.DingTalkBot}
 // @Router /dingtalk-bots [post]
 func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -61,7 +61,7 @@ func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "机器人ID"
-// @Success 200 {object} utils.Response{data=model.DingTalkBot}
+// @Success 200 {object} http.Response{data=model.DingTalkBot}
 // @Router /dingtalk-bots/{id} [get]
 func (c *DingTalkBotController) GetBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -91,7 +91,7 @@ func (c *DingTalkBotController) GetBot(ctx *gin.Context) {
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.Response{data=[]model.DingTalkBot}
+// @Success 200 {object} http.Response{data=[]model.DingTalkBot}
 // @Router /dingtalk-bots [get]
 func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -134,7 +134,7 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "机器人ID"
 // @Param bot body model.UpdateDingTalkBotReq true "机器人配置"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dingtalk-bots/{id} [put]
 func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -179,7 +179,7 @@ func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "机器人ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dingtalk-bots/{id} [delete]
 func (c *DingTalkBotController) DeleteBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -208,7 +208,7 @@ func (c *DingTalkBotController) DeleteBot(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "机器人ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dingtalk-bots/{id}/test [post]
 func (c *DingTalkBotController) TestBot(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {

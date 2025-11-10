@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"tower-go/middleware"
-	"tower-go/model"
-	"tower-go/service"
-	"tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +28,7 @@ func NewMenuController(menuService *service.MenuService) *MenuController {
 // @Produce json
 // @Security Bearer
 // @Param menu body model.CreateMenuReq true "菜单信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menus [post]
 func (c *MenuController) CreateMenu(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -58,7 +58,7 @@ func (c *MenuController) CreateMenu(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "菜单ID"
-// @Success 200 {object} utils.Response{data=model.Menu}
+// @Success 200 {object} http.Response{data=model.Menu}
 // @Router /menus/{id} [get]
 func (c *MenuController) GetMenu(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
@@ -85,7 +85,7 @@ func (c *MenuController) GetMenu(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]model.Menu}
+// @Success 200 {object} http.Response{data=[]model.Menu}
 // @Router /menus [get]
 func (c *MenuController) ListMenus(ctx *gin.Context) {
 	menus, err := c.menuService.ListMenus()
@@ -106,7 +106,7 @@ func (c *MenuController) ListMenus(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]model.Menu}
+// @Success 200 {object} http.Response{data=[]model.Menu}
 // @Router /menus/tree [get]
 func (c *MenuController) GetMenuTree(ctx *gin.Context) {
 	tree, err := c.menuService.GetMenuTree()
@@ -129,7 +129,7 @@ func (c *MenuController) GetMenuTree(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "菜单ID"
 // @Param menu body model.UpdateMenuReq true "菜单信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menus/{id} [put]
 func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -165,7 +165,7 @@ func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "菜单ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menus/{id} [delete]
 func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -195,7 +195,7 @@ func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param assignment body model.AssignMenusToRoleReq true "分配信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menus/assign-role [post]
 func (c *MenuController) AssignMenusToRole(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -225,7 +225,7 @@ func (c *MenuController) AssignMenusToRole(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param role_id query int true "角色ID"
-// @Success 200 {object} utils.Response{data=[]model.Menu}
+// @Success 200 {object} http.Response{data=[]model.Menu}
 // @Router /menus/role [get]
 func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
@@ -253,7 +253,7 @@ func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param role_id query int true "角色ID"
-// @Success 200 {object} utils.Response{data=[]uint}
+// @Success 200 {object} http.Response{data=[]uint}
 // @Router /menus/role-ids [get]
 func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
@@ -281,7 +281,7 @@ func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param assignment body model.AssignStoreMenusReq true "分配信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menus/assign-store-role [post]
 func (c *MenuController) AssignMenusToStoreRole(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -316,7 +316,7 @@ func (c *MenuController) AssignMenusToStoreRole(ctx *gin.Context) {
 // @Security Bearer
 // @Param store_id query int true "门店ID"
 // @Param role_id query int true "角色ID"
-// @Success 200 {object} utils.Response{data=[]model.Menu}
+// @Success 200 {object} http.Response{data=[]model.Menu}
 // @Router /menus/store-role [get]
 func (c *MenuController) GetStoreRoleMenus(ctx *gin.Context) {
 	storeID, err := strconv.ParseUint(ctx.Query("store_id"), 10, 32)
@@ -351,7 +351,7 @@ func (c *MenuController) GetStoreRoleMenus(ctx *gin.Context) {
 // @Security Bearer
 // @Param store_id query int true "门店ID"
 // @Param role_id query int true "角色ID"
-// @Success 200 {object} utils.Response{data=[]uint}
+// @Success 200 {object} http.Response{data=[]uint}
 // @Router /menus/store-role-ids [get]
 func (c *MenuController) GetStoreRoleMenuIDs(ctx *gin.Context) {
 	storeID, err := strconv.ParseUint(ctx.Query("store_id"), 10, 32)
@@ -385,7 +385,7 @@ func (c *MenuController) GetStoreRoleMenuIDs(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param copy body model.CopyStoreMenusReq true "复制信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menus/copy-store [post]
 func (c *MenuController) CopyStoreMenus(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
@@ -414,7 +414,7 @@ func (c *MenuController) CopyStoreMenus(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]model.Menu}
+// @Success 200 {object} http.Response{data=[]model.Menu}
 // @Router /menus/user-menus [get]
 func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -455,7 +455,7 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]string}
+// @Success 200 {object} http.Response{data=[]string}
 // @Router /menus/user-permissions [get]
 func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)

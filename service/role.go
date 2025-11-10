@@ -1,8 +1,8 @@
 package service
 
 import (
-	"tower-go/model"
-	"tower-go/module"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/module"
 )
 
 // CreateRole 创建角色

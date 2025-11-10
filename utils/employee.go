@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 // GenerateEmployeeNo 生成唯一的6位数工号

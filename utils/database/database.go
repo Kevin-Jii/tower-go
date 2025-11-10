@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"tower-go/config"
+	"github.com/Kevin-Jii/tower-go/config"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

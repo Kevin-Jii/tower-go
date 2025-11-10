@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"tower-go/utils/logging"
-	"tower-go/utils/redis"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/redis"
 
 	"go.uber.org/zap"
 )

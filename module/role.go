@@ -1,10 +1,10 @@
 package module
 
 import (
-	"tower-go/model"
-	"tower-go/utils/database"
-	updatesPkg "tower-go/utils/updates"
-	"tower-go/utils/search"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/database"
+	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
+	"github.com/Kevin-Jii/tower-go/utils/search"
 
 	"gorm.io/gorm"
 )

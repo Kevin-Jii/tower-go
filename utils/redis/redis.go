@@ -3,8 +3,8 @@ package redis
 import (
 	"context"
 	"fmt"
-	"tower-go/config"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/config"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"

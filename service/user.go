@@ -4,10 +4,10 @@ import (
 	"errors"
 	"log"
 	"time"
-	"tower-go/model"
-	"tower-go/module"
-	"tower-go/utils"
-	"tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils"
+	"github.com/Kevin-Jii/tower-go/utils/auth"
 )
 
 type UserService struct {

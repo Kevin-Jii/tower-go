@@ -3,12 +3,12 @@ package controller
 import (
 	"log"
 	"strconv"
-	"tower-go/middleware"
-	"tower-go/model"
-	"tower-go/service"
-	"tower-go/utils/auth"
-	"tower-go/utils/http"
-	"tower-go/utils/session"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -47,7 +47,7 @@ func NewUserController(userService *service.UserService) *UserController {
 // @Produce json
 // @Security Bearer
 // @Param user body model.CreateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /users [post]
 func (c *UserController) CreateUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -80,7 +80,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.Response{data=model.User}
+// @Success 200 {object} http.Response{data=model.User}
 // @Router /users/{id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
@@ -108,7 +108,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Param keyword query string false "模糊关键字匹配用户名或手机号任意部分，如手机号135"
-// @Success 200 {object} utils.Response{data=[]model.User} "支持 keyword 模糊匹配用户名或手机号；总部管理员查看全部用户，门店管理员仅查看本门店用户"
+// @Success 200 {object} http.Response{data=[]model.User} "支持 keyword 模糊匹配用户名或手机号；总部管理员查看全部用户，门店管理员仅查看本门店用户"
 // @Router /users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
 	roleCode := middleware.GetRoleCode(ctx)
@@ -158,7 +158,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "用户ID"
 // @Param user body model.UpdateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /users/{id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
@@ -189,7 +189,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -218,7 +218,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "用户ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /users/{id}/reset-password [post]
 func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 	// 仅总部管理员或同门店管理员才能重置（此处：若为 admin 放行；否则必须该用户同门店）
@@ -268,7 +268,7 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user body model.CreateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /auth/register [post]
 func (c *UserController) Register(ctx *gin.Context) {
 	var req model.CreateUserReq
@@ -293,7 +293,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param login body LoginRequest true "登录信息"
-// @Success 200 {object} utils.Response{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
+// @Success 200 {object} http.Response{data=LoginResponse} "登录成功返回 token、token_type=Bearer、expires_in(秒)"
 // @Router /auth/login [post]
 func (c *UserController) Login(ctx *gin.Context) {
 	var req LoginRequest
@@ -349,7 +349,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=model.User}
+// @Success 200 {object} http.Response{data=model.User}
 // @Router /users/profile [get]
 func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
@@ -370,7 +370,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param user body model.UpdateUserReq true "用户信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /users/profile [put]
 func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")

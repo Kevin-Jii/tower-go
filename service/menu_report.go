@@ -2,9 +2,9 @@ package service
 
 import (
 	"time"
-	"tower-go/model"
-	"tower-go/module"
-	"tower-go/utils/events"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/events"
 )
 
 type MenuReportService struct {

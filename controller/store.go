@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"tower-go/middleware"
-	"tower-go/model"
-	"tower-go/service"
-	"tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +25,7 @@ func NewStoreController(storeService *service.StoreService) *StoreController {
 // @Produce json
 // @Security Bearer
 // @Param store body model.CreateStoreReq true "门店信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores [post]
 func (c *StoreController) CreateStore(ctx *gin.Context) {
 	// 管理员校验
@@ -54,7 +54,7 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.Response{data=model.Store}
+// @Success 200 {object} http.Response{data=model.Store}
 // @Router /stores/{id} [get]
 func (c *StoreController) GetStore(ctx *gin.Context) {
 	id, ok := http.ParseUintParam(ctx, "id")
@@ -77,7 +77,7 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]model.Store} "返回全部门店数据，meta 包含 total"
+// @Success 200 {object} http.Response{data=[]model.Store} "返回全部门店数据，meta 包含 total"
 // @Router /stores [get]
 func (c *StoreController) ListStores(ctx *gin.Context) {
 	stores, total, err := c.storeService.ListStores()
@@ -96,7 +96,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 // @Tags stores
 // @Security Bearer
 // @Produce json
-// @Success 200 {object} utils.Response{data=[]model.Store}
+// @Success 200 {object} http.Response{data=[]model.Store}
 // @Router /stores/all [get]
 func (c *StoreController) ListAllStores(ctx *gin.Context) {
 	// 权限限制：仅 admin，避免普通门店账号看到其他门店
@@ -121,7 +121,7 @@ func (c *StoreController) ListAllStores(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param store body model.UpdateStoreReq true "门店信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores/{id} [put]
 func (c *StoreController) UpdateStore(ctx *gin.Context) {
 	if !http.RequireAdmin(ctx) {
@@ -151,7 +151,7 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores/{id} [delete]
 func (c *StoreController) DeleteStore(ctx *gin.Context) {
 	if !http.RequireAdmin(ctx) {

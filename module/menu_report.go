@@ -2,7 +2,7 @@ package module
 
 import (
 	"time"
-	"tower-go/model"
+	"github.com/Kevin-Jii/tower-go/model"
 
 	"gorm.io/gorm"
 )

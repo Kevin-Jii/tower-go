@@ -2,7 +2,7 @@ package http
 
 import (
 	"net/http"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

@@ -2,9 +2,9 @@ package module
 
 import (
 	"log"
-	"tower-go/model"
-	searchPkg "tower-go/utils/search"
-	updatesPkg "tower-go/utils/updates"
+	"github.com/Kevin-Jii/tower-go/model"
+	searchPkg "github.com/Kevin-Jii/tower-go/utils/search"
+	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )

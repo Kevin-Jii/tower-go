@@ -2,9 +2,9 @@ package service
 
 import (
 	"errors"
-	"tower-go/model"
-	"tower-go/module"
-	"tower-go/utils"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils"
 )
 
 type StoreService struct {

@@ -2,10 +2,10 @@ package bootstrap
 
 import (
 	"fmt"
-	"tower-go/config"
-	"tower-go/middleware"
-	"tower-go/utils/logging"
-	"tower-go/utils/session"
+	"github.com/Kevin-Jii/tower-go/config"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

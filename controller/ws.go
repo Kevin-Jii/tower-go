@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	authPkg "tower-go/utils/auth"
-	"tower-go/utils/session"
+	authPkg "github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

@@ -2,10 +2,10 @@ package bootstrap
 
 import (
 	"fmt"
-	"tower-go/model"
-	"tower-go/utils/database"
-	"tower-go/utils/logging"
-	"tower-go/utils/seeding"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/database"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/seeding"
 
 	"go.uber.org/zap"
 )

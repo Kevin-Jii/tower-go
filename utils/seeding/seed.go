@@ -1,10 +1,10 @@
 package seeding
 
 import (
-	"tower-go/model"
-	"tower-go/utils"
-	"tower-go/utils/auth"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils"
+	"github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"

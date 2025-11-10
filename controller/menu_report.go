@@ -3,10 +3,10 @@ package controller
 import (
 	"strconv"
 	"time"
-	"tower-go/middleware"
-	"tower-go/model"
-	"tower-go/service"
-	"tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +27,7 @@ func NewMenuReportController(menuReportService *service.MenuReportService) *Menu
 // @Produce json
 // @Security Bearer
 // @Param report body model.CreateMenuReportReq true "报菜信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menu-reports [post]
 func (c *MenuReportController) CreateMenuReport(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -54,7 +54,7 @@ func (c *MenuReportController) CreateMenuReport(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "报菜记录ID"
-// @Success 200 {object} utils.Response{data=model.MenuReport}
+// @Success 200 {object} http.Response{data=model.MenuReport}
 // @Router /menu-reports/{id} [get]
 func (c *MenuReportController) GetMenuReport(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -85,7 +85,7 @@ func (c *MenuReportController) GetMenuReport(ctx *gin.Context) {
 // @Param page_size query int false "每页数量"
 // @Param start_date query string false "开始日?(YYYY-MM-DD)"
 // @Param end_date query string false "结束日期 (YYYY-MM-DD)"
-// @Success 200 {object} utils.Response{data=[]model.MenuReport} "分页 meta: total,page,page_size,page_count,has_more"
+// @Success 200 {object} http.Response{data=[]model.MenuReport} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /menu-reports [get]
 func (c *MenuReportController) ListMenuReports(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -138,7 +138,7 @@ func (c *MenuReportController) ListMenuReports(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "报菜记录ID"
 // @Param report body model.UpdateMenuReportReq true "报菜信息"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menu-reports/{id} [put]
 func (c *MenuReportController) UpdateMenuReport(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -171,7 +171,7 @@ func (c *MenuReportController) UpdateMenuReport(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path int true "报菜记录ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /menu-reports/{id} [delete]
 func (c *MenuReportController) DeleteMenuReport(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -198,7 +198,7 @@ func (c *MenuReportController) DeleteMenuReport(ctx *gin.Context) {
 // @Security Bearer
 // @Param start_date query string true "开始日?(YYYY-MM-DD)"
 // @Param end_date query string true "结束日期 (YYYY-MM-DD)"
-// @Success 200 {object} utils.Response{data=model.MenuReportStats}
+// @Success 200 {object} http.Response{data=model.MenuReportStats}
 // @Router /menu-reports/statistics [get]
 func (c *MenuReportController) GetStatistics(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)

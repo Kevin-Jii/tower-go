@@ -1,8 +1,8 @@
 package module
 
 import (
-	"tower-go/model"
-	"tower-go/utils/batch"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/batch"
 
 	"gorm.io/gorm"
 )

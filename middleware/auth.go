@@ -3,9 +3,9 @@ package middleware
 import (
 	"strings"
 
-	"tower-go/model"
-	"tower-go/utils/auth"
-	"tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )

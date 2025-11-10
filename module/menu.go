@@ -2,9 +2,9 @@ package module
 
 import (
 	"fmt"
-	"tower-go/model"
-	"tower-go/utils/cache"
-	updatesPkg "tower-go/utils/updates"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/cache"
+	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )

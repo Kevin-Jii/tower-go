@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"go.uber.org/zap"
 )

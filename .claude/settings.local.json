@@ -34,7 +34,10 @@
       "Bash(powershell:*)",
       "Bash(rd:*)",
       "Bash(./tower-go.exe:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(./main.exe:*)"
     ],
     "deny": [],
     "ask": []

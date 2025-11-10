@@ -22,7 +22,8 @@
 package main
 
 import (
-	"tower-go/bootstrap"
+	_ "github.com/Kevin-Jii/tower-go/docs"
+	"github.com/Kevin-Jii/tower-go/bootstrap"
 )
 
 func main() { bootstrap.Run() }

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"tower-go/model"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"

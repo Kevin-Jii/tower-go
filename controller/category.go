@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"tower-go/middleware"
-	"tower-go/model"
-	"tower-go/service"
-	httpPkg "tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/service"
+	httpPkg "github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +24,7 @@ func NewDishCategoryController(s *service.DishCategoryService) *DishCategoryCont
 // @Produce json
 // @Security Bearer
 // @Param data body model.CreateDishCategoryReq true "分类数据"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dish-categories [post]
 func (c *DishCategoryController) CreateCategory(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -48,7 +48,7 @@ func (c *DishCategoryController) CreateCategory(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param data body model.CreateDishCategoryReq true "分类数据"
-// @Success 200 {object} utils.Response{data=model.DishCategory}
+// @Success 200 {object} http.Response{data=model.DishCategory}
 // @Router /stores/{id}/dish-categories [post]
 func (c *DishCategoryController) CreateCategoryForStore(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -80,7 +80,7 @@ func (c *DishCategoryController) CreateCategoryForStore(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "分类ID"
 // @Param data body model.UpdateDishCategoryReq true "分类数据"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dish-categories/{id} [put]
 func (c *DishCategoryController) UpdateCategory(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -114,7 +114,7 @@ func (c *DishCategoryController) UpdateCategory(ctx *gin.Context) {
 // @Param id path int true "门店ID"
 // @Param cid path int true "分类ID"
 // @Param data body model.UpdateDishCategoryReq true "分类更新数据"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores/{id}/dish-categories/{cid} [put]
 func (c *DishCategoryController) UpdateCategoryForStore(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -152,7 +152,7 @@ func (c *DishCategoryController) UpdateCategoryForStore(ctx *gin.Context) {
 // @Tags dish-categories
 // @Security Bearer
 // @Param id path int true "分类ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dish-categories/{id} [delete]
 func (c *DishCategoryController) DeleteCategory(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -179,7 +179,7 @@ func (c *DishCategoryController) DeleteCategory(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param cid path int true "分类ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores/{id}/dish-categories/{cid} [delete]
 func (c *DishCategoryController) DeleteCategoryForStore(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -214,7 +214,7 @@ func (c *DishCategoryController) DeleteCategoryForStore(ctx *gin.Context) {
 // @Security Bearer
 // @Param id path int true "门店ID"
 // @Param cid path int true "分类ID"
-// @Success 200 {object} utils.Response{data=[]model.Dish}
+// @Success 200 {object} http.Response{data=[]model.Dish}
 // @Router /stores/{id}/dish-categories/{cid}/dishes [get]
 func (c *DishCategoryController) ListDishesForStoreCategory(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -247,7 +247,7 @@ func (c *DishCategoryController) ListDishesForStoreCategory(ctx *gin.Context) {
 // @Param id path int true "门店ID"
 // @Param cid path int true "分类ID"
 // @Param data body model.CreateDishReq true "菜品数据 (category_id 忽略, 以路径分类为准)"
-// @Success 200 {object} utils.Response{data=model.Dish}
+// @Success 200 {object} http.Response{data=model.Dish}
 // @Router /stores/{id}/dish-categories/{cid}/dishes [post]
 func (c *DishCategoryController) CreateDishForStoreCategory(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -291,7 +291,7 @@ func (c *DishCategoryController) CreateDishForStoreCategory(ctx *gin.Context) {
 // @Param cid path int true "分类ID"
 // @Param did path int true "菜品ID"
 // @Param data body model.UpdateDishReq true "菜品更新数据（忽略 category_id 防止跨分类）"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores/{id}/dish-categories/{cid}/dishes/{did} [put]
 func (c *DishCategoryController) UpdateDishForStoreCategory(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -339,7 +339,7 @@ func (c *DishCategoryController) UpdateDishForStoreCategory(ctx *gin.Context) {
 // @Param id path int true "门店ID"
 // @Param cid path int true "分类ID"
 // @Param did path int true "菜品ID"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /stores/{id}/dish-categories/{cid}/dishes/{did} [delete]
 func (c *DishCategoryController) DeleteDishForStoreCategory(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -376,7 +376,7 @@ func (c *DishCategoryController) DeleteDishForStoreCategory(ctx *gin.Context) {
 // @Summary 分类列表
 // @Tags dish-categories
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]model.DishCategory}
+// @Success 200 {object} http.Response{data=[]model.DishCategory}
 // @Router /dish-categories [get]
 func (c *DishCategoryController) ListCategories(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -393,7 +393,7 @@ func (c *DishCategoryController) ListCategories(ctx *gin.Context) {
 // @Tags dish-categories
 // @Security Bearer
 // @Param id path int true "门店ID"
-// @Success 200 {object} utils.Response{data=[]model.DishCategory}
+// @Success 200 {object} http.Response{data=[]model.DishCategory}
 // @Router /stores/{id}/dish-categories [get]
 func (c *DishCategoryController) ListCategoriesForStore(ctx *gin.Context) {
 	storeID, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -420,7 +420,7 @@ func (c *DishCategoryController) ListCategoriesForStore(ctx *gin.Context) {
 // @Summary 分类及菜品列表
 // @Tags dish-categories
 // @Security Bearer
-// @Success 200 {object} utils.Response{data=[]model.DishCategory}
+// @Success 200 {object} http.Response{data=[]model.DishCategory}
 // @Router /dishes/by-category [get]
 func (c *DishCategoryController) ListCategoriesWithDishes(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
@@ -439,7 +439,7 @@ func (c *DishCategoryController) ListCategoriesWithDishes(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param data body model.ReorderDishCategoriesReq true "排序数据"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} http.Response
 // @Router /dish-categories/reorder [post]
 func (c *DishCategoryController) ReorderCategories(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)

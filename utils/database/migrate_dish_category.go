@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"tower-go/model"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"go.uber.org/zap"
 )

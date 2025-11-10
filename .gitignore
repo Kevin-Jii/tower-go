@@ -1,0 +1,95 @@
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# 日志文件
+*.log
+logs/
+app.log*
+
+# 临时文件
+*.tmp
+*.temp
+temp/
+tmp/
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Go 编译产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+tower-go.exe
+/tower-go
+
+# Go 测试文件
+*.test
+*.out
+coverage.txt
+
+# Go 依赖管理
+vendor/
+
+# 构建目录
+build/
+dist/
+bin/
+
+# Swagger 生成的文件
+docs/swagger/
+
+# 配置文件（可能包含敏感信息）
+config.json
+config.yaml
+config.yml
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 缓存文件
+.cache/
+
+# Node.js (如果有前端构建工具)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 备份文件
+*.bak
+*.backup
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+
+# 证书和密钥文件
+*.pem
+*.key
+*.crt
+*.p12
+
+# 文档草稿
+*.md.bak
+docs/*.md.bak
+
+# PowerShell 脚本输出
+ transcripts/

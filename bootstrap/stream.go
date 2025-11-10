@@ -1,11 +1,11 @@
 package bootstrap
 
 import (
-	"tower-go/config"
-	"tower-go/model"
-	"tower-go/module"
-	"tower-go/service"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/config"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 // InitStreamClients 初始化所有 Stream 模式的机器人连接
@@ -72,22 +72,38 @@ func CloseStreamClients() {
 
 // ensureStreamBotExists 确保配置文件中的 Stream 机器人在数据库中存在
 func ensureStreamBotExists(botModule *module.DingTalkBotModule, streamConfig config.DingTalkStreamConfig) {
+	// 先检查是否已存在任意 Stream 类型的机器人
+	bots, err := botModule.ListEnabledStreamBots()
+	if err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to query stream bots", "error", err)
+		}
+		return
+	}
+
+	// 如果已经存在 Stream 类型机器人,跳过创建
+	if len(bots) > 0 {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("⏭️ Stream bot already exists, skipping creation",
+				"count", len(bots),
+			)
+		}
+		return
+	}
+
 	// 检查是否已存在使用相同 ClientID 的机器人
 	existingBot, err := botModule.FindByClientID(streamConfig.ClientID)
 
 	// 如果找到了机器人,直接返回
 	if err == nil && existingBot != nil {
 		if logging.SugaredLogger != nil {
-			logging.SugaredLogger.Infow("Stream bot already exists",
+			logging.SugaredLogger.Infow("Stream bot already exists with same clientID",
 				"botID", existingBot.ID,
 				"botName", existingBot.Name,
 			)
 		}
 		return
 	}
-
-	// 如果是其他错误(不是 record not found),记录错误但继续尝试创建
-	// 因为可能是第一次运行,数据库中确实没有记录
 
 	// 创建新的 Stream 机器人
 	bot := &model.DingTalkBot{

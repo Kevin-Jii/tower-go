@@ -2,9 +2,9 @@ package service
 
 import (
 	"fmt"
-	"tower-go/model"
-	"tower-go/utils/events"
-	"tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/events"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 // MenuReportCreatedEvent 报菜记录创建事件

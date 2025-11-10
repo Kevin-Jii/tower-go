@@ -241,3 +241,58 @@ func (c *DingTalkBotController) TestBot(ctx *gin.Context) {
 	// 返回机器人详情，保证 robot_code 字段
 	httpPkg.Success(ctx, gin.H{"message": "test message sent successfully", "robot_code": bot.RobotCode})
 }
+
+// TestStreamBotCallback godoc
+// @Summary 测试 Stream 机器人接收回调
+// @Tags dingtalk-bots
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "机器人ID"
+// @Success 200 {object} http.Response
+// @Router /dingtalk-bots/{id}/test-callback [post]
+func (c *DingTalkBotController) TestStreamBotCallback(ctx *gin.Context) {
+	if !middleware.IsAdmin(ctx) {
+		httpPkg.Error(ctx, 403, "only admin can test bot callback")
+		return
+	}
+
+	id, ok := httpPkg.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	// 获取机器人配置
+	bot, err := c.svc.GetBot(id)
+	if err != nil {
+		httpPkg.Error(ctx, 404, "bot not found")
+		return
+	}
+
+	if bot.BotType != "stream" {
+		httpPkg.Error(ctx, 400, "only stream bots support callback test")
+		return
+	}
+
+	// 检查 Stream 客户端是否运行
+	streamClient := c.svc.GetStreamClient()
+	if !streamClient.IsRunning() {
+		httpPkg.Error(ctx, 500, "stream client is not running")
+		return
+	}
+
+	_, exists := streamClient.GetClient(id)
+	if !exists {
+		httpPkg.Error(ctx, 500, "stream bot client not found, may not be started")
+		return
+	}
+
+	httpPkg.Success(ctx, gin.H{
+		"message":     "stream bot callback handler is active",
+		"bot_id":      id,
+		"bot_name":    bot.Name,
+		"client_type": "stream",
+		"status":      "connected",
+		"note":        "you can now send a message to this bot in DingTalk to test the callback",
+	})
+}

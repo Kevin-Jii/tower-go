@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"sync"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"sync"
+	"time"
 
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
@@ -65,7 +65,7 @@ func (sc *DingTalkStreamClient) StartBot(bot *model.DingTalkBot) error {
 	)
 
 	// 注册机器人消息回调(必须注册,否则连接会失败)
-	streamClient.RegisterChatBotCallbackRouter(sc.handleBotMessage)
+	streamClient.RegisterChatBotCallbackRouter(sc.OnChatBotMessageReceived)
 
 	// 启动客户端
 	go func() {
@@ -149,32 +149,59 @@ func (sc *DingTalkStreamClient) GetBotCount() int {
 	return len(sc.clients)
 }
 
-// handleBotMessage 处理机器人收到的消息回调
-func (sc *DingTalkStreamClient) handleBotMessage(ctx context.Context, data *chatbot.BotCallbackDataModel) ([]byte, error) {
+// OnChatBotMessageReceived 处理机器人收到的消息回调
+// 符合 chatbot.IChatBotMessageHandler 接口：func(context.Context, *BotCallbackDataModel) ([]byte, error)
+func (sc *DingTalkStreamClient) OnChatBotMessageReceived(ctx context.Context, data *chatbot.BotCallbackDataModel) ([]byte, error) {
 	// 记录收到的消息
 	if logging.SugaredLogger != nil {
-		logging.SugaredLogger.Infow("Received bot message",
+		logging.SugaredLogger.Infow("📨 Received bot message",
 			"conversationId", data.ConversationId,
 			"senderStaffId", data.SenderStaffId,
+			"senderNick", data.SenderNick,
 			"text", data.Text.Content,
+			"sessionWebhook", data.SessionWebhook != "",
 		)
 	}
 
-	// 这里可以添加自动回复逻辑
-	// 例如:当用户@机器人时,自动回复一些信息
+	// TODO: 在这里添加你的业务逻辑
+	// 例如：
+	// 1. 解析用户消息
+	// 2. 调用 AI 接口获取回复
+	// 3. 处理业务逻辑
 
-	// 构造回复消息(可选,如果不回复就返回空)
-	reply := map[string]interface{}{
-		"msgtype": "text",
-		"text": map[string]interface{}{
-			"content": "收到消息,谢谢!",
-		},
+	// 使用 SessionWebhook 回复消息（如果需要）
+	if data.SessionWebhook != "" {
+		replier := chatbot.NewChatbotReplier()
+
+		// 回复文本消息
+		replyMsg := fmt.Sprintf("✅ 消息已收到\n你发送的内容是：%s\n\n时间：%s",
+			data.Text.Content,
+			time.Now().Format("2006-01-02 15:04:05"))
+
+		if err := replier.SimpleReplyText(ctx, data.SessionWebhook, []byte(replyMsg)); err != nil {
+			logging.SugaredLogger.Errorw("Failed to reply text message",
+				"error", err,
+			)
+		}
+
+		// 回复 Markdown 消息
+		markdownContent := fmt.Sprintf("### 📨 消息处理完成\n\n**发送者：**@%s\n\n**内容：**\n%s\n\n**处理时间：** %s",
+			data.SenderNick,
+			data.Text.Content,
+			time.Now().Format("2006-01-02 15:04:05"))
+
+		if err := replier.SimpleReplyMarkdown(ctx, data.SessionWebhook,
+			[]byte("消息处理结果"), []byte(markdownContent)); err != nil {
+			logging.SugaredLogger.Errorw("Failed to reply markdown message",
+				"error", err,
+			)
+		}
 	}
 
-	replyBytes, err := json.Marshal(reply)
-	if err != nil {
-		return nil, err
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("✅ Message processed successfully")
 	}
 
-	return replyBytes, nil
+	// 返回空字节数组（SDK 要求）
+	return []byte(""), nil
 }

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
@@ -30,6 +31,11 @@ func NewDingTalkService(botModule *module.DingTalkBotModule) *DingTalkService {
 		botModule:    botModule,
 		streamClient: GetStreamClient(),
 	}
+}
+
+// GetStreamClient 获取 Stream 客户端
+func (s *DingTalkService) GetStreamClient() *DingTalkStreamClient {
+	return s.streamClient
 }
 
 // SendTextMessage 发送文本消息到指定机器人
@@ -211,7 +217,6 @@ func (s *DingTalkService) sendStreamMarkdown(bot *model.DingTalkBot, title, text
 func (s *DingTalkService) getStreamAccessToken(clientID, clientSecret string) (string, error) {
 	apiURL := "https://api.dingtalk.com/v1.0/oauth2/accessToken"
 
-	// Trim any accidental whitespace from config values
 	clientID = strings.TrimSpace(clientID)
 	clientSecret = strings.TrimSpace(clientSecret)
 
@@ -259,11 +264,12 @@ func (s *DingTalkService) getStreamAccessToken(clientID, clientSecret string) (s
 var defaultStreamUserIds = []string{"010903622624-181076934"}
 
 // sendStreamMessage 通过钉钉服务端 API 发送消息到群聊
-// 使用机器人批量发送消息 API: https://open.dingtalk.com/document/orgapp/robot-send-group-messages
+// 使用机器人发送群消息 API: https://open.dingtalk.com/document/orgapp/robot-group-message-verification
 func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBody map[string]interface{}) error {
-	apiURL := "https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend"
+	// 使用群消息 API（batchSend 是单聊,改为群消息）
+	apiURL := "https://api.dingtalk.com/v1.0/robot/groupMessages/send"
 
-	// 构造完整请求体
+	// 构造完整请求体 - 群消息格式
 	reqBody := map[string]interface{}{
 		"msgKey": msgBody["msgtype"].(string),
 		"msgParam": func() string {
@@ -273,7 +279,8 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 			return string(jsonStr)
 		}(),
 		"robotCode": robotCode,
-		"userIds":   defaultStreamUserIds,
+		// 设置为 null 或空数组表示发送到所有群聊（广播）
+		"openConversationIds": []string{},
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -290,6 +297,18 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 	// 设置请求头
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-acs-dingtalk-access-token", accessToken)
+
+	// 记录请求详情（调试用）
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Sending stream message to DingTalk API",
+			"url", apiURL,
+			"robotCode", robotCode,
+			"msgKey", msgBody["msgtype"],
+			"openConversationIds", "[] (broadcast to all groups)",
+			"accessTokenPreview", accessToken[:10]+"...",
+			"requestBody", string(jsonData),
+		)
+	}
 
 	// 发送请求
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -310,15 +329,26 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
+	// 记录完整响应（调试用）
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Received response from DingTalk API",
+			"statusCode", resp.StatusCode,
+			"responseBody", string(body),
+			"responseMap", result,
+		)
+	}
+
 	// 检查是否有错误
 	if errCode, ok := result["code"].(string); ok && errCode != "0" {
 		return fmt.Errorf("dingtalk api error: code=%v, msg=%v", errCode, result["message"])
 	}
 
+	// 如果 code 不存在，但是 response 是其他格式，视为成功
+	// 实际 DingTalk API 可能返回成功但不包含 code 字段
 	if logging.SugaredLogger != nil {
 		logging.SugaredLogger.Infow("Stream message sent successfully",
 			"robotCode", robotCode,
-			"processQueryKey", result["processQueryKey"],
+			"response", result,
 		)
 	}
 

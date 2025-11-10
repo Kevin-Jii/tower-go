@@ -1,8 +1,8 @@
 package http
 
 import (
-	"net/http"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -94,26 +94,26 @@ func Custom(c *gin.Context, code int, message string, data interface{}) {
 
 // Paginated 分页响应
 type PaginatedResponse struct {
-	Items      interface{} `json:"items"`
-	Total      int64      `json:"total"`
-	Page       int        `json:"page"`
-	PageSize   int        `json:"page_size"`
-	TotalPages int        `json:"total_pages"`
+	List     interface{} `json:"list"`
+	Total    int64       `json:"total"`
+	Page     int         `json:"page"`
+	PageSize int         `json:"page_size"`
+	PageNum  int         `json:"page_num"`
 }
 
 // SuccessWithPagination 分页成功响应
 func SuccessWithPagination(c *gin.Context, items interface{}, total int64, page, pageSize int) {
-	totalPages := int(total / int64(pageSize))
+	pageNum := int(total / int64(pageSize))
 	if total%int64(pageSize) != 0 {
-		totalPages++
+		pageNum++
 	}
 
 	Custom(c, 200, "success", PaginatedResponse{
-		Items:      items,
-		Total:      total,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: totalPages,
+		List:     items,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+		PageNum:  pageNum,
 	})
 }
 

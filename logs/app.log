@@ -639,3 +639,364 @@
 {"level":"info","timestamp":"2025-11-10 20:23:15.845","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
 {"level":"info","timestamp":"2025-11-10 20:23:15.845","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
 {"level":"fatal","timestamp":"2025-11-10 20:23:15.845","caller":"bootstrap/app.go:43","msg":"服务启动失败","error":"listen tcp :10024: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.","stacktrace":"github.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:43\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-10 20:25:40.308","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 20:25:40.395","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 20:25:40.395","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 20:25:40.395","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 20:25:40.405","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 20:25:40.411","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 20:25:40.411","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 20:25:57.050","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 20:25:57.098","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 20:25:57.923","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 20:25:57.967","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 20:25:57.970","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 20:25:57.970","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 20:25:58.019","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 20:25:58.066","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 20:25:58.066","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 21:21:14.436","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 21:21:14.573","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 21:21:14.573","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 21:21:14.573","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 21:21:14.584","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 21:21:14.590","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 21:21:14.590","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 21:21:31.329","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 21:21:31.376","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 21:21:32.227","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 21:21:32.271","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 21:21:32.273","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 21:21:32.273","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 21:21:32.321","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 21:21:32.370","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 21:21:32.371","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 21:26:46.323","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 21:26:46.414","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 21:26:46.414","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 21:26:46.414","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 21:26:46.423","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 21:26:46.430","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 21:26:46.430","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 21:27:03.985","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 21:27:04.026","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 21:27:04.798","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 21:27:04.845","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 21:27:04.850","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 21:27:04.850","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 21:27:04.901","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 21:27:04.953","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 21:27:04.953","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 21:56:10.776","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 21:56:10.911","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 21:56:10.911","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 21:56:10.911","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 21:56:10.923","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 21:56:10.932","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 21:56:10.932","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 21:56:28.214","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 21:56:28.263","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 21:56:29.111","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 21:56:29.154","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 21:56:29.156","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 21:56:29.156","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 21:56:29.204","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 21:56:29.253","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 21:56:29.253","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 22:07:56.292","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:07:56.383","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 22:07:56.383","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 22:07:56.383","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 22:07:56.393","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 22:07:56.400","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 22:07:56.400","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 22:08:14.509","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:08:14.556","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:08:15.391","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 22:08:15.438","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 22:08:15.445","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 22:08:15.445","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:08:15.493","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 22:08:15.540","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 22:08:15.541","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 22:33:41.274","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:33:41.365","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 22:33:41.365","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 22:33:41.365","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 22:33:41.375","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 22:33:41.382","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 22:33:41.382","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 22:33:59.157","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:33:59.205","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:34:00.024","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 22:34:00.071","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 22:34:00.078","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 22:34:00.078","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:34:00.121","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 22:34:00.171","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 22:34:00.172","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 22:34:19.582","caller":"service/dingtalk.go:212","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"userIds":["010903622624-181076934"],"accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:34:19\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"robotCode\":\"dinglsqvmdgbj5xaidwz\",\"userIds\":[\"010903622624-181076934\"]}"}
+{"level":"info","timestamp":"2025-11-10 22:34:19.645","caller":"service/dingtalk.go:212","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"F9A37D6E-3E05-7E57-842D-18A4A52D31E2\",\"code\":\"invalidParameter.robotCode.notExsit\",\"message\":\"错误描述: robot 不存在；解决方案:请确认 robotCode 是否正确；\"}","responseMap":{"code":"invalidParameter.robotCode.notExsit","message":"错误描述: robot 不存在；解决方案:请确认 robotCode 是否正确；","requestid":"F9A37D6E-3E05-7E57-842D-18A4A52D31E2"}}
+{"level":"info","timestamp":"2025-11-10 22:43:38.829","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:43:38.921","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 22:43:38.921","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 22:43:38.921","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 22:43:38.931","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 22:43:38.938","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 22:43:38.938","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 22:43:55.684","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:43:55.728","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:43:56.514","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 22:43:56.557","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 22:43:56.557","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 22:43:56.557","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:43:56.601","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 22:43:56.647","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 22:43:56.647","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 22:44:04.899","caller":"service/dingtalk.go:212","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:44:04\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 22:44:04.958","caller":"service/dingtalk.go:212","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"7EB200EF-3A21-7A84-9D88-D8418CAE1E04\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"7EB200EF-3A21-7A84-9D88-D8418CAE1E04"}}
+{"level":"info","timestamp":"2025-11-10 22:51:49.508","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:51:49.596","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 22:51:49.596","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 22:51:49.596","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 22:51:49.606","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 22:51:49.613","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 22:51:49.613","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 22:52:05.793","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:05.842","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:06.692","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 22:52:06.733","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 22:52:06.735","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 22:52:06.735","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:06.781","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 22:52:06.826","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 22:52:06.826","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 22:52:10.560","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:52:10\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 22:52:10.622","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"7628BDDF-981F-7EE5-A18F-2760B3996C24\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"7628BDDF-981F-7EE5-A18F-2760B3996C24"}}
+{"level":"info","timestamp":"2025-11-10 22:52:37.488","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:37.577","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 22:52:37.577","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 22:52:37.577","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:37.587","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 22:52:37.594","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 22:52:37.594","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 22:52:54.694","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:54.740","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:55.544","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 22:52:55.589","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 22:52:55.593","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 22:52:55.593","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 22:52:55.638","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 22:52:55.686","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 22:52:55.686","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 22:53:03.442","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:53:03\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 22:53:03.496","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"280465B5-C7C8-7F0D-B913-DF854F9B6A5D\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"280465B5-C7C8-7F0D-B913-DF854F9B6A5D"}}
+{"level":"info","timestamp":"2025-11-10 22:56:41.503","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:56:41\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 22:56:41.556","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"D8758395-1017-7844-9266-0CC4B4607A77\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"D8758395-1017-7844-9266-0CC4B4607A77"}}
+{"level":"info","timestamp":"2025-11-10 22:57:32.237","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:57:32\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 22:57:32.288","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"3C722B86-FD79-708E-8BEE-DAA080F7B119\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"3C722B86-FD79-708E-8BEE-DAA080F7B119"}}
+{"level":"info","timestamp":"2025-11-10 22:57:38.183","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 22:57:38\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 22:57:38.235","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"BF5EC148-CDA9-7CBB-8420-B5E34E8B4A94\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"BF5EC148-CDA9-7CBB-8420-B5E34E8B4A94"}}
+{"level":"info","timestamp":"2025-11-10 23:04:55.974","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 23:04:56.066","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 23:04:56.066","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 23:04:56.066","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 23:04:56.076","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 23:04:56.083","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 23:04:56.083","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 23:05:11.948","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 23:05:11.991","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 23:05:12.786","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 23:05:12.830","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 23:05:12.832","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 23:05:12.832","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 23:05:12.879","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 23:05:12.924","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 23:05:12.924","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 23:10:02.837","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 23:10:02.927","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 23:10:02.927","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 23:10:02.927","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 23:10:02.937","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 23:10:02.943","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 23:10:02.943","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 23:10:19.403","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 23:10:19.447","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 23:10:20.233","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 23:10:20.276","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 23:10:20.283","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 23:10:20.284","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 23:10:20.330","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 23:10:20.375","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 23:10:20.375","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-10 23:13:39.666","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-10 23:13:39.761","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-10 23:13:39.761","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-10 23:13:39.761","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-10 23:13:39.773","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-10 23:13:39.781","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-10 23:13:39.781","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-10 23:13:55.643","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-10 23:13:55.687","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-10 23:13:56.467","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-10 23:13:56.514","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-10 23:13:56.516","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-10 23:13:56.516","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-10 23:13:56.558","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-10 23:13:56.601","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-10 23:13:56.602","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"fatal","timestamp":"2025-11-10 23:13:56.602","caller":"bootstrap/app.go:43","msg":"服务启动失败","error":"listen tcp :10024: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.","stacktrace":"github.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:43\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-10 23:14:01.180","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 23:14:01\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 23:14:01.232","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"6090A2FE-4DC5-71BA-A0F9-FE32C61D3E2C\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"6090A2FE-4DC5-71BA-A0F9-FE32C61D3E2C"}}
+{"level":"info","timestamp":"2025-11-10 23:16:16.714","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 23:16:14\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 23:16:16.772","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"2B218F97-41AE-7D10-B1E2-701D98DDD4D3\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"2B218F97-41AE-7D10-B1E2-701D98DDD4D3"}}
+{"level":"info","timestamp":"2025-11-10 23:20:54.664","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 23:20:54\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 23:20:54.723","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"49A6E97C-CA82-70F1-B7F4-A1D4FB93B636\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"49A6E97C-CA82-70F1-B7F4-A1D4FB93B636"}}
+{"level":"info","timestamp":"2025-11-10 23:23:10.903","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:23:23.249","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:23:52.658","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:24:33.401","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:24:37.440","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:25:53.814","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:25:55.053","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:25:56.220","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:26:00.432","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:37:01.285","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"eafd4e9a6e...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-10 23:37:01\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-10 23:37:01.341","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"5CE185DD-0517-7AD3-843A-ADF3BB7170A3\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"5CE185DD-0517-7AD3-843A-ADF3BB7170A3"}}
+{"level":"info","timestamp":"2025-11-10 23:37:03.339","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:37:04.241","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:37:12.977","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-10 23:53:32.686","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 00:06:25.248","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 00:06:47.121","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 00:07:09.771","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 00:30:34.743","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 00:30:34.837","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 00:30:34.837","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 00:30:34.837","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"fatal","timestamp":"2025-11-11 00:30:34.842","caller":"bootstrap/database.go:14","msg":"数据库连接失败","error":"dial tcp [::1]:3306: connectex: No connection could be made because the target machine actively refused it.","stacktrace":"github.com/Kevin-Jii/tower-go/bootstrap.InitDatabase\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/database.go:14\ngithub.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:22\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-11 00:30:45.279","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 00:30:45.368","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 00:30:45.368","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 00:30:45.368","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"fatal","timestamp":"2025-11-11 00:30:45.374","caller":"bootstrap/database.go:14","msg":"数据库连接失败","error":"dial tcp [::1]:3306: connectex: No connection could be made because the target machine actively refused it.","stacktrace":"github.com/Kevin-Jii/tower-go/bootstrap.InitDatabase\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/database.go:14\ngithub.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:22\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-11 00:31:07.181","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 00:31:07.274","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 00:31:07.274","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 00:31:07.274","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 00:31:07.286","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 00:31:07.292","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 00:31:07.292","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 00:31:23.566","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 00:31:23.610","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 00:31:24.406","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 00:31:24.452","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 00:31:24.461","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 00:31:24.461","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 00:31:24.506","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 00:31:24.550","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 00:31:24.550","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 01:49:54.479","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:49:54.569","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 01:49:54.570","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 01:49:54.570","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 01:49:54.592","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 01:49:54.604","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 01:49:54.604","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 01:50:12.103","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:50:12.145","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:50:12.979","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 01:50:13.024","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 01:50:13.030","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 01:50:13.031","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:50:13.078","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 01:50:13.127","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 01:50:13.127","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 01:51:49.423","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:51:49.514","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 01:51:49.515","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 01:51:49.515","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 01:51:49.523","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 01:51:49.529","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 01:51:49.529","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 01:52:06.161","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:06.205","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:06.988","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 01:52:07.032","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 01:52:07.039","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 01:52:07.039","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:07.088","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 01:52:07.136","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 01:52:07.137","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 01:52:10.763","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:10.853","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 01:52:10.853","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 01:52:10.853","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:10.862","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 01:52:10.868","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 01:52:10.868","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 01:52:28.180","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:28.229","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:29.068","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 01:52:29.111","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 01:52:29.113","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 01:52:29.113","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:52:29.157","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 01:52:29.206","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 01:52:29.206","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 01:56:57.503","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:56:57.599","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 01:56:57.599","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 01:56:57.599","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 01:56:57.607","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 01:56:57.613","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 01:56:57.613","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 01:57:14.252","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:57:14.301","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 01:57:15.085","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 01:57:15.129","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 01:57:15.134","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 01:57:15.134","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 01:57:15.178","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 01:57:15.223","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 01:57:15.223","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 02:03:09.060","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 02:03:09.149","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 02:03:09.149","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 02:03:09.149","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 02:03:09.158","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 02:03:09.164","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 02:03:09.164","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 02:03:25.566","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 02:03:25.614","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 02:03:26.407","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 02:03:26.454","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 02:03:26.457","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 02:03:26.457","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 02:03:26.505","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 02:03:26.549","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 02:03:26.549","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 02:29:57.115","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-11 02:29:57.209","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-11-11 02:29:57.210","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-11 02:29:57.210","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-11 02:29:57.220","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-11 02:29:57.226","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-11 02:29:57.226","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-11 02:30:12.948","caller":"bootstrap/migrate.go:40","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-11-11 02:30:12.995","caller":"bootstrap/migrate.go:45","msg":"菜品分类数据迁移完成"}
+{"level":"info","timestamp":"2025-11-11 02:30:13.772","caller":"seeding/seed.go:117","msg":"超级管理员已存在，跳过创建","user_id":999}
+{"level":"info","timestamp":"2025-11-11 02:30:13.815","caller":"seeding/seed.go:269","msg":"所有门店均已具备编码"}
+{"level":"info","timestamp":"2025-11-11 02:30:13.817","caller":"seeding/seed_dingtalk_menus.go:20","msg":"钉钉管理菜单已存在，跳过初始化","count":1}
+{"level":"info","timestamp":"2025-11-11 02:30:13.817","caller":"bootstrap/app.go:29","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-11 02:30:13.859","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-11 02:30:13.903","caller":"bootstrap/stream.go:42","msg":"Stream bot started successfully","botID":1,"botName":"全局Stream机器人(自动创建)"}
+{"level":"info","timestamp":"2025-11-11 02:30:13.904","caller":"bootstrap/app.go:38","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-11 03:56:43.891","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 03:56:46.507","caller":"service/dingtalk.go:213","msg":"Sending stream message to DingTalk API","url":"https://api.dingtalk.com/v1.0/robot/groupMessages/send","robotCode":"dinglsqvmdgbj5xaidwz","msgKey":null,"openConversationIds":"[] (broadcast to all groups)","accessTokenPreview":"96a1cdd6ac...","requestBody":"{\"msgKey\":\"sampleMarkdown\",\"msgParam\":\"{\\\"markdown\\\":{\\\"text\\\":\\\"🔔 机器人测试消息\\\\n\\\\n发送时间: 2025-11-11 03:56:46\\\",\\\"title\\\":\\\"机器人测试\\\"}}\",\"openConversationIds\":[],\"robotCode\":\"dinglsqvmdgbj5xaidwz\"}"}
+{"level":"info","timestamp":"2025-11-11 03:56:46.565","caller":"service/dingtalk.go:213","msg":"Received response from DingTalk API","statusCode":400,"responseBody":"{\"requestid\":\"32A310EB-EB67-7CF7-9ED6-20937CF04ACE\",\"code\":\"invalidParameter.param.invalid\",\"message\":\"参数不合法\"}","responseMap":{"code":"invalidParameter.param.invalid","message":"参数不合法","requestid":"32A310EB-EB67-7CF7-9ED6-20937CF04ACE"}}
+{"level":"info","timestamp":"2025-11-11 04:22:29.252","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 04:22:30.279","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 04:22:32.218","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 04:22:33.280","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}
+{"level":"info","timestamp":"2025-11-11 04:22:34.284","caller":"service/dingtalk.go:166","msg":"DingTalk message sent successfully","botID":6}

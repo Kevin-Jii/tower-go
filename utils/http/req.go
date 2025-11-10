@@ -2,8 +2,8 @@ package http
 
 import (
 	"net/http"
-	"strconv"
 	"reflect"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -84,10 +84,20 @@ func StructToMap(obj interface{}) map[string]interface{} {
 		field := t.Field(i)
 		value := v.Field(i)
 
+		// 只处理可访问的字段
+		if !value.CanInterface() {
+			continue
+		}
+
 		// 获取 json 标签
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "-" || jsonTag == "" {
 			jsonTag = field.Name
+		}
+
+		// 跳过忽略的字段
+		if jsonTag == "-" {
+			continue
 		}
 
 		// 处理嵌套结构体

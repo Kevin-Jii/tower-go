@@ -949,6 +949,28 @@ paths:
       summary: 测试钉钉机器人连接
       tags:
       - dingtalk-bots
+  /dingtalk-bots/{id}/test-callback:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 机器人ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 测试 Stream 机器人接收回调
+      tags:
+      - dingtalk-bots
   /dish-categories:
     get:
       responses:
@@ -1787,6 +1809,143 @@ paths:
       summary: 获取当前用户权限标识列表
       tags:
       - menus
+  /report/robots:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - description: 开始日期 (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期 (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.MenuReport'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取报菜记录列表
+      tags:
+      - report-bots
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 报菜信息
+        in: body
+        name: bot
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateMenuReportReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建报菜机器人（创建报菜记录）
+      tags:
+      - report-bots
+  /report/robots/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 报菜记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除报菜记录
+      tags:
+      - report-bots
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: 报菜记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.MenuReport'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取报菜记录详情
+      tags:
+      - report-bots
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 报菜记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 报菜信息
+        in: body
+        name: bot
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateMenuReportReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新报菜记录
+      tags:
+      - report-bots
   /roles:
     get:
       description: 获取角色列表（排除admin），支持 keyword 模糊查询 name/code/description，status=0|1

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/controller"
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -23,6 +24,7 @@ type AppControllers struct {
 	MenuReport        *controller.MenuReportController
 	Menu              *controller.MenuController
 	DingTalkBot       *controller.DingTalkBotController
+	ReportBot         *controller.ReportBotController  // 报菜控制器
 	DingTalkBotModule *userModulePkg.DingTalkBotModule // 用于 Stream 初始化
 }
 
@@ -71,6 +73,7 @@ func BuildControllers() *AppControllers {
 		MenuReport:        controller.NewMenuReportController(menuReportService),
 		Menu:              controller.NewMenuController(menuService),
 		DingTalkBot:       controller.NewDingTalkBotController(dingTalkService),
+		ReportBot:         controller.NewReportBotController(menuReportModule),
 		DingTalkBotModule: dingTalkBotModule, // 暴露给 Stream 初始化使用
 	}
 }
@@ -221,7 +224,18 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 			robots.PUT("/:id", c.DingTalkBot.UpdateBot)
 			robots.DELETE("/:id", c.DingTalkBot.DeleteBot)
 			robots.POST("/:id/test", c.DingTalkBot.TestBot)
+			robots.POST("/:id/test-callback", c.DingTalkBot.TestStreamBotCallback)
 		}
+	}
+	report := v1.Group("/report")
+	report.Use(middleware.AuthMiddleware())
+	{
+		// 报菜机器人路由
+		report.POST("", c.ReportBot.CreateBot)
+		report.GET("", c.ReportBot.ListBots)
+		report.GET("/:id", c.ReportBot.GetBot)
+		report.PUT("/:id", c.ReportBot.UpdateBot)
+		report.DELETE("/:id", c.ReportBot.DeleteBot)
 	}
 
 	r.GET("/ws", controller.WebSocketHandler)

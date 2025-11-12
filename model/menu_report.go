@@ -2,32 +2,48 @@ package model
 
 import "time"
 
-// MenuReport 报菜单表
-type MenuReport struct {
-	ID        uint      `json:"id" gorm:"primarykey"`
-	StoreID   uint      `json:"store_id" gorm:"not null;index"`            // 所属门店 ID
-	Store     *Store    `json:"store,omitempty" gorm:"foreignKey:StoreID"` // 门店关联
-	DishID    uint      `json:"dish_id" gorm:"not null;index"`             // 菜品 ID
-	Dish      *Dish     `json:"dish,omitempty" gorm:"foreignKey:DishID"`   // 菜品关联
-	UserID    uint      `json:"user_id" gorm:"not null;index"`             // 操作员 ID
-	User      *User     `json:"user,omitempty" gorm:"foreignKey:UserID"`   // 操作员关联
-	Quantity  int       `json:"quantity" gorm:"not null"`                  // 报菜数量
-	Remark    string    `json:"remark" gorm:"type:text"`                   // 备注
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+// MenuReportOrder 报菜记录单（主表）
+type MenuReportOrder struct {
+	ID        uint              `json:"id" gorm:"primarykey"`
+	StoreID   uint              `json:"store_id" gorm:"not null;index"`            // 所属门店 ID
+	Store     *Store            `json:"store,omitempty" gorm:"foreignKey:StoreID"` // 门店关联
+	UserID    uint              `json:"user_id" gorm:"not null;index"`             // 操作员 ID
+	User      *User             `json:"user,omitempty" gorm:"foreignKey:UserID"`   // 操作员关联
+	Remark    string            `json:"remark" gorm:"type:text"`                   // 备注
+	Items     []*MenuReportItem `json:"items" gorm:"foreignKey:ReportOrderID"`     // 报菜详情列表
+	CreatedAt time.Time         `json:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at"`
 }
 
-// CreateMenuReportReq 创建报菜单请求
-type CreateMenuReportReq struct {
+// MenuReportItem 报菜详情（从表）
+type MenuReportItem struct {
+	ID            uint           `json:"id" gorm:"primarykey"`
+	ReportOrderID uint           `json:"report_order_id" gorm:"not null;index"`                 // 报菜记录单 ID
+	ReportOrder   *MenuReportOrder `json:"report_order,omitempty" gorm:"foreignKey:ReportOrderID"` // 报菜记录单关联
+	DishID        uint           `json:"dish_id" gorm:"not null;index"`                         // 菜品 ID
+	Dish          *Dish          `json:"dish,omitempty" gorm:"foreignKey:DishID"`               // 菜品关联
+	Quantity      int            `json:"quantity" gorm:"not null"`                              // 报菜数量
+	Remark        string         `json:"remark" gorm:"type:text"`                               // 备注
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+}
+
+// MenuReportItemReq 创建报菜详情项请求
+type MenuReportItemReq struct {
 	DishID   uint   `json:"dish_id" binding:"required"`
 	Quantity int    `json:"quantity" binding:"required,gt=0"`
 	Remark   string `json:"remark"`
 }
 
-// UpdateMenuReportReq 更新报菜单请求
-type UpdateMenuReportReq struct {
-	Quantity *int   `json:"quantity,omitempty" binding:"omitempty,gt=0"`
-	Remark   string `json:"remark,omitempty"`
+// CreateMenuReportOrderReq 创建报菜记录单请求
+type CreateMenuReportOrderReq struct {
+	Remark string                `json:"remark"`
+	Items  []*MenuReportItemReq `json:"items" binding:"required,min=1"`
+}
+
+// UpdateMenuReportOrderReq 更新报菜记录单请求
+type UpdateMenuReportOrderReq struct {
+	Remark *string `json:"remark,omitempty"`
 }
 
 // MenuReportStats 报菜单统计

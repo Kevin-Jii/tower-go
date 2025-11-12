@@ -19,75 +19,77 @@ func NewMenuReportController(menuReportService *service.MenuReportService) *Menu
 	return &MenuReportController{menuReportService: menuReportService}
 }
 
-// CreateMenuReport godoc
-// @Summary 创建报菜记录
-// @Description 创建新的报菜记录（自动关联当前门店和操作员）
+// CreateMenuReportOrder godoc
+// @Summary 创建报菜记录单
+// @Description 创建新的报菜记录单（包含报菜详情列表，自动关联当前门店和操作员）
 // @Tags menu-reports
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param report body model.CreateMenuReportReq true "报菜信息"
-// @Success 200 {object} http.Response
+// @Param order body model.CreateMenuReportOrderReq true "报菜记录单信息"
+// @Success 200 {object} http.Response{data=model.MenuReportOrder}
 // @Router /menu-reports [post]
-func (c *MenuReportController) CreateMenuReport(ctx *gin.Context) {
+func (c *MenuReportController) CreateMenuReportOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	userID := middleware.GetUserID(ctx)
 
-	var req model.CreateMenuReportReq
+	var req model.CreateMenuReportOrderReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
 
-	report, err := c.menuReportService.CreateMenuReport(storeID, userID, &req)
+	order, err := c.menuReportService.CreateMenuReportOrder(storeID, userID, &req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	http.Success(ctx, report)
-} // GetMenuReport godoc
-// @Summary 获取报菜记录详情
-// @Description 获取报菜记录详细信息
+	http.Success(ctx, order)
+}
+
+// GetMenuReportOrder godoc
+// @Summary 获取报菜记录单详情
+// @Description 获取报菜记录单详细信息（包含报菜详情列表）
 // @Tags menu-reports
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "报菜记录ID"
-// @Success 200 {object} http.Response{data=model.MenuReport}
+// @Param id path int true "报菜记录单ID"
+// @Success 200 {object} http.Response{data=model.MenuReportOrder}
 // @Router /menu-reports/{id} [get]
-func (c *MenuReportController) GetMenuReport(ctx *gin.Context) {
+func (c *MenuReportController) GetMenuReportOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid menu report ID")
+		http.Error(ctx, 400, "Invalid menu report order ID")
 		return
 	}
 
-	report, err := c.menuReportService.GetMenuReport(uint(id), storeID)
+	order, err := c.menuReportService.GetMenuReportOrder(uint(id), storeID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	http.Success(ctx, report)
+	http.Success(ctx, order)
 }
 
-// ListMenuReports godoc
-// @Summary 报菜记录列表
-// @Description 获取当前门店的报菜记录列表，支持分页和日期范围筛选
+// ListMenuReportOrders godoc
+// @Summary 报菜记录单列表
+// @Description 获取当前门店的报菜记录单列表，支持分页和日期范围筛选
 // @Tags menu-reports
 // @Accept json
 // @Produce json
 // @Security Bearer
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Param start_date query string false "开始日?(YYYY-MM-DD)"
+// @Param start_date query string false "开始日期 (YYYY-MM-DD)"
 // @Param end_date query string false "结束日期 (YYYY-MM-DD)"
-// @Success 200 {object} http.Response{data=[]model.MenuReport} "分页 meta: total,page,page_size,page_count,has_more"
+// @Success 200 {object} http.Response{data=[]model.MenuReportOrder} "分页 meta: total,page,page_size,page_count,has_more"
 // @Router /menu-reports [get]
-func (c *MenuReportController) ListMenuReports(ctx *gin.Context) {
+func (c *MenuReportController) ListMenuReportOrders(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	// 如果提供了日期范围，则按日期查询
@@ -107,12 +109,12 @@ func (c *MenuReportController) ListMenuReports(ctx *gin.Context) {
 			return
 		}
 
-		reports, err := c.menuReportService.ListMenuReportsByDateRange(storeID, startDate, endDate)
+		orders, err := c.menuReportService.ListMenuReportOrdersByDateRange(storeID, startDate, endDate)
 		if err != nil {
 			http.Error(ctx, 500, err.Error())
 			return
 		}
-		http.Success(ctx, reports)
+		http.Success(ctx, orders)
 		return
 	}
 
@@ -120,42 +122,42 @@ func (c *MenuReportController) ListMenuReports(ctx *gin.Context) {
 	page := http.GetPage(ctx)
 	pageSize := http.GetPageSize(ctx)
 
-	reports, total, err := c.menuReportService.ListMenuReports(storeID, page, pageSize)
+	orders, total, err := c.menuReportService.ListMenuReportOrders(storeID, page, pageSize)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	http.SuccessWithPagination(ctx, reports, total, page, pageSize)
+	http.SuccessWithPagination(ctx, orders, total, page, pageSize)
 }
 
-// UpdateMenuReport godoc
-// @Summary 更新报菜记录
-// @Description 更新报菜记录信息
+// UpdateMenuReportOrder godoc
+// @Summary 更新报菜记录单
+// @Description 更新报菜记录单信息
 // @Tags menu-reports
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "报菜记录ID"
-// @Param report body model.UpdateMenuReportReq true "报菜信息"
+// @Param id path int true "报菜记录单ID"
+// @Param order body model.UpdateMenuReportOrderReq true "报菜记录单信息"
 // @Success 200 {object} http.Response
 // @Router /menu-reports/{id} [put]
-func (c *MenuReportController) UpdateMenuReport(ctx *gin.Context) {
+func (c *MenuReportController) UpdateMenuReportOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid menu report ID")
+		http.Error(ctx, 400, "Invalid menu report order ID")
 		return
 	}
 
-	var req model.UpdateMenuReportReq
+	var req model.UpdateMenuReportOrderReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
 
-	if err := c.menuReportService.UpdateMenuReport(uint(id), storeID, &req); err != nil {
+	if err := c.menuReportService.UpdateMenuReportOrder(uint(id), storeID, &req); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
@@ -163,26 +165,26 @@ func (c *MenuReportController) UpdateMenuReport(ctx *gin.Context) {
 	http.Success(ctx, nil)
 }
 
-// DeleteMenuReport godoc
-// @Summary 删除报菜记录
-// @Description 删除报菜记录
+// DeleteMenuReportOrder godoc
+// @Summary 删除报菜记录单
+// @Description 删除报菜记录单（会同时删除关联的报菜详情）
 // @Tags menu-reports
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path int true "报菜记录ID"
+// @Param id path int true "报菜记录单ID"
 // @Success 200 {object} http.Response
 // @Router /menu-reports/{id} [delete]
-func (c *MenuReportController) DeleteMenuReport(ctx *gin.Context) {
+func (c *MenuReportController) DeleteMenuReportOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid menu report ID")
+		http.Error(ctx, 400, "Invalid menu report order ID")
 		return
 	}
 
-	if err := c.menuReportService.DeleteMenuReport(uint(id), storeID); err != nil {
+	if err := c.menuReportService.DeleteMenuReportOrder(uint(id), storeID); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
@@ -192,11 +194,12 @@ func (c *MenuReportController) DeleteMenuReport(ctx *gin.Context) {
 
 // GetStatistics godoc
 // @Summary 获取统计数据
-// @Description 获取指定日期范围的报菜统计数?// @Tags menu-reports
+// @Description 获取指定日期范围的报菜统计数量
+// @Tags menu-reports
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param start_date query string true "开始日?(YYYY-MM-DD)"
+// @Param start_date query string true "开始日期 (YYYY-MM-DD)"
 // @Param end_date query string true "结束日期 (YYYY-MM-DD)"
 // @Success 200 {object} http.Response{data=model.MenuReportStats}
 // @Router /menu-reports/statistics [get]

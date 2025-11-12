@@ -7,17 +7,16 @@ import (
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
-// MenuReportCreatedEvent 报菜记录创建事件
-type MenuReportCreatedEvent struct {
-	Report    *model.MenuReport
+// MenuReportOrderCreatedEvent 报菜记录单创建事件
+type MenuReportOrderCreatedEvent struct {
+	Order     *model.MenuReportOrder
 	StoreName string
-	DishName  string
 	UserName  string
 }
 
 // Name 实现 Event 接口
-func (e MenuReportCreatedEvent) Name() string {
-	return "menu_report.created"
+func (e MenuReportOrderCreatedEvent) Name() string {
+	return "menu_report_order.created"
 }
 
 // MenuReportEventListener 报菜事件监听器
@@ -31,9 +30,9 @@ func NewMenuReportEventListener(dingTalkSvc *DingTalkService) *MenuReportEventLi
 	}
 }
 
-// OnMenuReportCreated 处理报菜创建事件
-func (l *MenuReportEventListener) OnMenuReportCreated(event events.Event) error {
-	e, ok := event.(MenuReportCreatedEvent)
+// OnMenuReportOrderCreated 处理报菜记录单创建事件
+func (l *MenuReportEventListener) OnMenuReportOrderCreated(event events.Event) error {
+	e, ok := event.(MenuReportOrderCreatedEvent)
 	if !ok {
 		return fmt.Errorf("invalid event type")
 	}
@@ -43,11 +42,11 @@ func (l *MenuReportEventListener) OnMenuReportCreated(event events.Event) error 
 	content := l.buildNotificationContent(e)
 
 	// 广播到门店的所有机器人
-	if err := l.dingTalkSvc.BroadcastToStore(e.Report.StoreID, "markdown", title, content); err != nil {
+	if err := l.dingTalkSvc.BroadcastToStore(e.Order.StoreID, "markdown", title, content); err != nil {
 		if logging.SugaredLogger != nil {
-			logging.SugaredLogger.Errorw("Failed to broadcast menu report",
-				"reportID", e.Report.ID,
-				"storeID", e.Report.StoreID,
+			logging.SugaredLogger.Errorw("Failed to broadcast menu report order",
+				"orderID", e.Order.ID,
+				"storeID", e.Order.StoreID,
 				"error", err)
 		}
 		return err
@@ -57,29 +56,39 @@ func (l *MenuReportEventListener) OnMenuReportCreated(event events.Event) error 
 }
 
 // buildNotificationContent 构建通知内容
-func (l *MenuReportEventListener) buildNotificationContent(e MenuReportCreatedEvent) string {
-	createdAt := e.Report.CreatedAt.Format("2006-01-02 15:04:05")
+func (l *MenuReportEventListener) buildNotificationContent(e MenuReportOrderCreatedEvent) string {
+	createdAt := e.Order.CreatedAt.Format("2006-01-02 15:04:05")
 
 	content := fmt.Sprintf(`## 📋 新报菜通知
 
-**菜品名称:** %s  
-**报菜数量:** %d  
-**门店名称:** %s  
-**操作人员:** %s  
-**报菜时间:** %s  
-`, e.DishName, e.Report.Quantity, e.StoreName, e.UserName, createdAt)
+**门店名称:** %s
+**操作人员:** %s
+**报菜时间:** %s
 
-	if e.Report.Remark != "" {
-		content += fmt.Sprintf("**备注:** %s  \n", e.Report.Remark)
+**报菜明细:**
+`, e.StoreName, e.UserName, createdAt)
+
+	for _, item := range e.Order.Items {
+		if item.Dish != nil {
+			content += fmt.Sprintf("- **%s**: 数量 %d", item.Dish.Name, item.Quantity)
+			if item.Remark != "" {
+				content += fmt.Sprintf(" (%s)", item.Remark)
+			}
+			content += "\n"
+		}
+	}
+
+	if e.Order.Remark != "" {
+		content += fmt.Sprintf("\n**备注:** %s\n", e.Order.Remark)
 	}
 
 	content += "\n---\n"
-	content += fmt.Sprintf("*报菜记录ID: %d*", e.Report.ID)
+	content += fmt.Sprintf("*报菜记录单ID: %d*", e.Order.ID)
 
 	return content
 }
 
 // RegisterMenuReportEventListeners 注册报菜事件监听器
 func RegisterMenuReportEventListeners(eventBus *events.EventBus, listener *MenuReportEventListener) {
-	eventBus.Subscribe("menu_report.created", listener.OnMenuReportCreated)
+	eventBus.Subscribe("menu_report_order.created", listener.OnMenuReportOrderCreated)
 }

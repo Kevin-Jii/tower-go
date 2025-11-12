@@ -31,23 +31,34 @@ func NewMenuReportService(
 	}
 }
 
-// CreateMenuReport 创建报菜记录
-func (s *MenuReportService) CreateMenuReport(storeID uint, userID uint, req *model.CreateMenuReportReq) (*model.MenuReport, error) {
-	// 验证菜品是否存在且属于当前门店
-	dish, err := s.dishModule.GetByID(req.DishID, storeID)
-	if err != nil {
-		return nil, err
+// CreateMenuReportOrder 创建报菜记录单（包含详情）
+func (s *MenuReportService) CreateMenuReportOrder(storeID uint, userID uint, req *model.CreateMenuReportOrderReq) (*model.MenuReportOrder, error) {
+	// 验证所有菜品是否存在且属于当前门店
+	for _, item := range req.Items {
+		if _, err := s.dishModule.GetByID(item.DishID, storeID); err != nil {
+			return nil, err
+		}
 	}
 
-	report := &model.MenuReport{
-		StoreID:  storeID,
-		DishID:   req.DishID,
-		UserID:   userID,
-		Quantity: req.Quantity,
-		Remark:   req.Remark,
+	// 创建报菜记录单和详情
+	order := &model.MenuReportOrder{
+		StoreID: storeID,
+		UserID:  userID,
+		Remark:  req.Remark,
 	}
 
-	if err := s.menuReportModule.Create(report); err != nil {
+	// 创建详情列表
+	items := make([]*model.MenuReportItem, len(req.Items))
+	for i, reqItem := range req.Items {
+		items[i] = &model.MenuReportItem{
+			DishID:   reqItem.DishID,
+			Quantity: reqItem.Quantity,
+			Remark:   reqItem.Remark,
+		}
+	}
+	order.Items = items
+
+	if err := s.menuReportModule.CreateOrder(order); err != nil {
 		return nil, err
 	}
 
@@ -65,48 +76,114 @@ func (s *MenuReportService) CreateMenuReport(storeID uint, userID uint, req *mod
 			userName = user.Username
 		}
 
-		event := MenuReportCreatedEvent{
-			Report:    report,
+		event := MenuReportOrderCreatedEvent{
+			Order:     order,
 			StoreName: storeName,
-			DishName:  dish.Name,
 			UserName:  userName,
 		}
 
 		s.eventBus.PublishAsync(event)
 	}
 
-	return report, nil
+	return order, nil
 }
 
-// GetMenuReport 获取报菜记录详情
-func (s *MenuReportService) GetMenuReport(id uint, storeID uint) (*model.MenuReport, error) {
-	return s.menuReportModule.GetByID(id, storeID)
+// GetMenuReportOrder 获取报菜记录单详情
+func (s *MenuReportService) GetMenuReportOrder(id uint, storeID uint) (*model.MenuReportOrder, error) {
+	return s.menuReportModule.GetOrderByID(id, storeID)
 }
 
-// ListMenuReports 获取报菜记录列表
-func (s *MenuReportService) ListMenuReports(storeID uint, page, pageSize int) ([]*model.MenuReport, int64, error) {
-	return s.menuReportModule.List(storeID, page, pageSize)
+// ListMenuReportOrders 获取报菜记录单列表
+func (s *MenuReportService) ListMenuReportOrders(storeID uint, page, pageSize int) ([]*model.MenuReportOrder, int64, error) {
+	return s.menuReportModule.ListOrders(storeID, page, pageSize)
 }
 
-// ListMenuReportsByDateRange 根据日期范围查询
-func (s *MenuReportService) ListMenuReportsByDateRange(storeID uint, startDate, endDate time.Time) ([]*model.MenuReport, error) {
-	return s.menuReportModule.ListByDateRange(storeID, startDate, endDate)
+// ListMenuReportOrdersByDateRange 根据日期范围查询
+func (s *MenuReportService) ListMenuReportOrdersByDateRange(storeID uint, startDate, endDate time.Time) ([]*model.MenuReportOrder, error) {
+	return s.menuReportModule.ListOrdersByDateRange(storeID, startDate, endDate)
 }
 
-// UpdateMenuReport 更新报菜记录
-func (s *MenuReportService) UpdateMenuReport(id uint, storeID uint, req *model.UpdateMenuReportReq) error {
+// UpdateMenuReportOrder 更新报菜记录单
+func (s *MenuReportService) UpdateMenuReportOrder(id uint, storeID uint, req *model.UpdateMenuReportOrderReq) error {
 	// 验证记录是否存在
-	_, err := s.menuReportModule.GetByID(id, storeID)
+	_, err := s.menuReportModule.GetOrderByID(id, storeID)
 	if err != nil {
 		return err
 	}
 
-	return s.menuReportModule.Update(id, storeID, req)
+	return s.menuReportModule.UpdateOrder(id, storeID, req.Remark)
 }
 
-// DeleteMenuReport 删除报菜记录
-func (s *MenuReportService) DeleteMenuReport(id uint, storeID uint) error {
-	return s.menuReportModule.Delete(id, storeID)
+// DeleteMenuReportOrder 删除报菜记录单
+func (s *MenuReportService) DeleteMenuReportOrder(id uint, storeID uint) error {
+	return s.menuReportModule.DeleteOrder(id, storeID)
+}
+
+// AddMenuReportItem 添加报菜详情项
+func (s *MenuReportService) AddMenuReportItem(orderID uint, storeID uint, req *model.MenuReportItemReq) (*model.MenuReportItem, error) {
+	// 验证订单存在且属于当前门店
+	_, err := s.menuReportModule.GetOrderByID(orderID, storeID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 验证菜品是否存在且属于当前门店
+	if _, err := s.dishModule.GetByID(req.DishID, storeID); err != nil {
+		return nil, err
+	}
+
+	item := &model.MenuReportItem{
+		ReportOrderID: orderID,
+		DishID:        req.DishID,
+		Quantity:      req.Quantity,
+		Remark:        req.Remark,
+	}
+
+	if err := s.menuReportModule.AddItem(item); err != nil {
+		return nil, err
+	}
+
+	return item, nil
+}
+
+// UpdateMenuReportItem 更新报菜详情项
+func (s *MenuReportService) UpdateMenuReportItem(id uint, orderID uint, storeID uint, dishID *uint, quantity *int, remark *string) error {
+	// 验证订单存在且属于当前门店
+	_, err := s.menuReportModule.GetOrderByID(orderID, storeID)
+	if err != nil {
+		return err
+	}
+
+	// 如果更新了菜品，验证新菜品是否存在
+	if dishID != nil {
+		if _, err := s.dishModule.GetByID(*dishID, storeID); err != nil {
+			return err
+		}
+	}
+
+	updates := make(map[string]interface{})
+	if dishID != nil {
+		updates["dish_id"] = *dishID
+	}
+	if quantity != nil {
+		updates["quantity"] = *quantity
+	}
+	if remark != nil {
+		updates["remark"] = *remark
+	}
+
+	return s.menuReportModule.UpdateItem(id, updates)
+}
+
+// DeleteMenuReportItem 删除报菜详情项
+func (s *MenuReportService) DeleteMenuReportItem(id uint, orderID uint, storeID uint) error {
+	// 验证订单存在且属于当前门店
+	_, err := s.menuReportModule.GetOrderByID(orderID, storeID)
+	if err != nil {
+		return err
+	}
+
+	return s.menuReportModule.DeleteItem(id)
 }
 
 // GetStatsByDateRange 获取统计数据

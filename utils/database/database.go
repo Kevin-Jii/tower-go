@@ -145,18 +145,32 @@ func CreateOptimizedIndexes(db *gorm.DB) error {
 			desc:      "菜品-门店-状态复合索引",
 		},
 
-		// 报菜表索引
+		// 报菜记录单表索引
 		{
-			table:     "menu_reports",
-			indexName: "idx_menu_reports_store_created",
-			sql:       "CREATE INDEX idx_menu_reports_store_created ON menu_reports(store_id, created_at)",
-			desc:      "报菜-门店-创建时间复合索引",
+			table:     "menu_report_orders",
+			indexName: "idx_menu_report_orders_store_created",
+			sql:       "CREATE INDEX idx_menu_report_orders_store_created ON menu_report_orders(store_id, created_at)",
+			desc:      "报菜记录单-门店-创建时间复合索引",
+		},
+
+		// 报菜详情表索引
+		{
+			table:     "menu_report_items",
+			indexName: "idx_menu_report_items_order",
+			sql:       "CREATE INDEX idx_menu_report_items_order ON menu_report_items(report_order_id)",
+			desc:      "报菜详情-记录单索引",
 		},
 		{
-			table:     "menu_reports",
-			indexName: "idx_menu_reports_dish",
-			sql:       "CREATE INDEX idx_menu_reports_dish ON menu_reports(dish_id)",
-			desc:      "报菜-菜品索引",
+			table:     "menu_report_items",
+			indexName: "idx_menu_report_items_dish",
+			sql:       "CREATE INDEX idx_menu_report_items_dish ON menu_report_items(dish_id)",
+			desc:      "报菜详情-菜品索引",
+		},
+		{
+			table:     "menu_report_items",
+			indexName: "idx_menu_report_items_created",
+			sql:       "CREATE INDEX idx_menu_report_items_created ON menu_report_items(created_at)",
+			desc:      "报菜详情-创建时间索引",
 		},
 	}
 

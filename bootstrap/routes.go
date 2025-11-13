@@ -61,6 +61,10 @@ func BuildControllers() *AppControllers {
 	dishCategoryService := service.NewDishCategoryService(dishCategoryModule, dishModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 
+	// 注册报菜记录钉钉通知器
+	menuReportNotifier := service.NewMenuReportNotifier(dingTalkService)
+	menuReportNotifier.Register()
+
 	// 注册事件监听器
 	menuReportListener := service.NewMenuReportEventListener(dingTalkService)
 	service.RegisterMenuReportEventListeners(eventBus, menuReportListener)
@@ -173,12 +177,12 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 	reports := v1.Group("/menu-reports")
 	reports.Use(middleware.StoreAuthMiddleware())
 	{
-		reports.POST("", c.MenuReport.CreateMenuReport)
-		reports.GET("", c.MenuReport.ListMenuReports)
+		reports.POST("", c.MenuReport.CreateMenuReportOrder)
+		reports.GET("", c.MenuReport.ListMenuReportOrders)
 		reports.GET("/statistics", c.MenuReport.GetStatistics)
-		reports.GET("/:id", c.MenuReport.GetMenuReport)
-		reports.PUT("/:id", c.MenuReport.UpdateMenuReport)
-		reports.DELETE("/:id", c.MenuReport.DeleteMenuReport)
+		reports.GET("/:id", c.MenuReport.GetMenuReportOrder)
+		reports.PUT("/:id", c.MenuReport.UpdateMenuReportOrder)
+		reports.DELETE("/:id", c.MenuReport.DeleteMenuReportOrder)
 	}
 
 	menus := v1.Group("/menus")

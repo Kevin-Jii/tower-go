@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
@@ -27,6 +28,7 @@ func AutoMigrateAndSeeds() {
 		&model.Dish{},
 		&model.MenuReportOrder{},
 		&model.MenuReportItem{},
+		&model.MenuReport{},
 		&model.RoleMenu{},
 		&model.StoreRoleMenu{},
 		&model.DingTalkBot{},

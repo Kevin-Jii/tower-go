@@ -41,9 +41,15 @@ type RedisConfig struct {
 	Enabled  bool
 }
 
+// DingTalkWebhookConfig 钉钉Webhook配置
+type DingTalkWebhookConfig struct {
+	MenuReportURL string // 报菜记录通知地址
+}
+
 // DingTalkConfig 钉钉配置
 type DingTalkConfig struct {
-	Stream DingTalkStreamConfig
+	Webhook DingTalkWebhookConfig
+	Stream  DingTalkStreamConfig
 }
 
 // DingTalkStreamConfig 钉钉Stream配置
@@ -149,6 +155,11 @@ func GetDingTalkStreamConfig() DingTalkStreamConfig {
 	return GetConfig().DingTalk.Stream
 }
 
+// GetDingTalkMenuReportURL 获取钉钉报菜记录通知地址
+func GetDingTalkMenuReportURL() string {
+	return GetConfig().DingTalk.Webhook.MenuReportURL
+}
+
 // loadAppConfig 加载应用配置
 func loadAppConfig() AppConfig {
 	return AppConfig{
@@ -204,6 +215,9 @@ func loadRedisConfig() RedisConfig {
 // loadDingTalkConfig 加载钉钉配置
 func loadDingTalkConfig() DingTalkConfig {
 	return DingTalkConfig{
+		Webhook: DingTalkWebhookConfig{
+			MenuReportURL: getAppString("DINGTALK_MENU_REPORT_WEBHOOK_URL", ""),
+		},
 		Stream: DingTalkStreamConfig{
 			ClientID:     getAppString("DINGTALK_CLIENT_ID", ""),
 			ClientSecret: getAppString("DINGTALK_CLIENT_SECRET", ""),

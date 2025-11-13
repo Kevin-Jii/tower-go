@@ -2,7 +2,9 @@ package module
 
 import (
 	"time"
+
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils"
 
 	"gorm.io/gorm"
 )
@@ -17,18 +19,32 @@ func NewMenuReportModule(db *gorm.DB) *MenuReportModule {
 
 // CreateOrder 创建报菜记录单（包含详情）
 func (m *MenuReportModule) CreateOrder(order *model.MenuReportOrder) error {
-	return m.db.Transaction(func(tx *gorm.DB) error {
+	err := m.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(order).Error; err != nil {
 			return err
 		}
 		for _, item := range order.Items {
 			item.ReportOrderID = order.ID
+			item.ID = 0 // 重置 ID，让数据库自动生成
 			if err := tx.Create(item).Error; err != nil {
 				return err
 			}
 		}
+
+		// 加载关联信息（用于通知）
+		tx.Preload("Items.Dish").Preload("Store").Preload("User").First(order, order.ID)
+
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
+
+	// 发送通知（在事务成功后异步执行，不影响主流程）
+	utils.GlobalEventBus.NotifyAsync(utils.EventMenuReportCreated, order)
+
+	return nil
 }
 
 // GetOrderByID 根据ID获取报菜记录单（带门店隔离）
@@ -144,4 +160,73 @@ func (m *MenuReportModule) GetStatsByDateRangeAllStores(startDate, endDate time.
 	}
 
 	return &stats, nil
+}
+
+// Create 创建报菜记录
+func (m *MenuReportModule) Create(report *model.MenuReport) error {
+	return m.db.Create(report).Error
+}
+
+// List 获取报菜记录列表（带门店隔离）
+func (m *MenuReportModule) List(storeID uint, page, pageSize int) ([]*model.MenuReport, int64, error) {
+	var reports []*model.MenuReport
+	var total int64
+
+	query := m.db.Model(&model.MenuReport{}).Where("store_id = ?", storeID)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Order("created_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&reports).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return reports, total, nil
+}
+
+// ListByDateRange 根据日期范围查询报菜记录（带门店隔离）
+func (m *MenuReportModule) ListByDateRange(storeID uint, startDate, endDate time.Time) ([]*model.MenuReport, error) {
+	var reports []*model.MenuReport
+	if err := m.db.Where("store_id = ? AND created_at BETWEEN ? AND ?", storeID, startDate, endDate).
+		Order("created_at DESC").
+		Find(&reports).Error; err != nil {
+		return nil, err
+	}
+	return reports, nil
+}
+
+// GetByID 根据ID获取报菜记录（带门店隔离）
+func (m *MenuReportModule) GetByID(id uint, storeID uint) (*model.MenuReport, error) {
+	var report model.MenuReport
+	if err := m.db.Where("id = ? AND store_id = ?", id, storeID).First(&report).Error; err != nil {
+		return nil, err
+	}
+	return &report, nil
+}
+
+// Update 更新报菜记录（带门店隔离）
+func (m *MenuReportModule) Update(id uint, storeID uint, req *model.UpdateMenuReportReq) error {
+	updates := make(map[string]interface{})
+	if req.DishID != nil {
+		updates["dish_id"] = *req.DishID
+	}
+	if req.Quantity != nil {
+		updates["quantity"] = *req.Quantity
+	}
+	if req.Remark != nil {
+		updates["remark"] = *req.Remark
+	}
+
+	return m.db.Model(&model.MenuReport{}).
+		Where("id = ? AND store_id = ?", id, storeID).
+		Updates(updates).Error
+}
+
+// Delete 删除报菜记录（带门店隔离）
+func (m *MenuReportModule) Delete(id uint, storeID uint) error {
+	return m.db.Where("id = ? AND store_id = ?", id, storeID).Delete(&model.MenuReport{}).Error
 }

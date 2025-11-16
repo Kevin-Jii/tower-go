@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils"
 	"github.com/Kevin-Jii/tower-go/utils/events"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
@@ -41,8 +42,26 @@ func (l *MenuReportEventListener) OnMenuReportOrderCreated(event events.Event) e
 	title := "📋 新报菜通知"
 	content := l.buildNotificationContent(e)
 
-	// 广播到门店的所有机器人
-	if err := l.dingTalkSvc.BroadcastToStore(e.Order.StoreID, "markdown", title, content); err != nil {
+	// 生成PNG图片
+	imageData, err := utils.GenerateMenuReportImage(e.Order, e.StoreName, e.UserName)
+	if err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to generate menu report image, sending text only",
+				"orderID", e.Order.ID,
+				"error", err)
+		}
+		// 图片生成失败,仍然发送文本消息
+		imageData = nil
+	} else {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Menu report image generated successfully",
+				"orderID", e.Order.ID,
+				"imageSize", len(imageData))
+		}
+	}
+
+	// 广播到门店的所有机器人（带图片）
+	if err := l.dingTalkSvc.BroadcastToStoreWithImage(e.Order.StoreID, "markdown", title, content, imageData); err != nil {
 		if logging.SugaredLogger != nil {
 			logging.SugaredLogger.Errorw("Failed to broadcast menu report order",
 				"orderID", e.Order.ID,

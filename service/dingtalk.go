@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 )
@@ -99,6 +101,11 @@ func (s *DingTalkService) SendMarkdownMessage(botID uint, title, text string, at
 
 // BroadcastToStore 广播消息到门店的所有机器人（支持 webhook 和 stream 双模式）
 func (s *DingTalkService) BroadcastToStore(storeID uint, msgType, title, content string) error {
+	return s.BroadcastToStoreWithImage(storeID, msgType, title, content, nil)
+}
+
+// BroadcastToStoreWithImage 广播消息到门店的所有机器人,支持附带图片
+func (s *DingTalkService) BroadcastToStoreWithImage(storeID uint, msgType, title, content string, imageData []byte) error {
 	bots, err := s.botModule.ListEnabledByStoreID(storeID)
 	if err != nil {
 		return fmt.Errorf("failed to list bots: %w", err)
@@ -118,13 +125,21 @@ func (s *DingTalkService) BroadcastToStore(storeID uint, msgType, title, content
 		// 根据机器人类型选择发送方式
 		if bot.BotType == "stream" {
 			// Stream 模式：通过钉钉服务端 API 发送
-			if msgType == "markdown" {
+			if imageData != nil {
+				// 发送图文消息
+				err = s.sendStreamImageText(bot, title, content, imageData)
+			} else if msgType == "markdown" {
 				err = s.sendStreamMarkdown(bot, title, content)
 			} else {
 				err = s.sendStreamText(bot, content)
 			}
 		} else {
-			// Webhook 模式：直接 HTTP POST
+			// Webhook 模式：直接 HTTP POST（不支持图片）
+			if imageData != nil && logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Webhook mode does not support image, sending text only",
+					"botID", bot.ID,
+					"botName", bot.Name)
+			}
 			if msgType == "markdown" {
 				err = s.sendMarkdownToBot(bot, title, content)
 			} else {
@@ -190,6 +205,7 @@ func (s *DingTalkService) sendStreamText(bot *model.DingTalkBot, content string)
 }
 
 // sendStreamMarkdown Stream 模式发送 Markdown 消息
+// 注意：群消息不支持 Markdown，改用 Text 格式
 func (s *DingTalkService) sendStreamMarkdown(bot *model.DingTalkBot, title, text string) error {
 	if bot.RobotCode == "" {
 		return errors.New("robotCode is required for stream mode")
@@ -201,16 +217,310 @@ func (s *DingTalkService) sendStreamMarkdown(bot *model.DingTalkBot, title, text
 		return fmt.Errorf("failed to get access token: %w", err)
 	}
 
-	// 构造消息体 - 使用 sampleMarkdown 模板
+	// 将 Markdown 格式转换为纯文本（移除 Markdown 标记）
+	plainText := title + "\n\n" + convertMarkdownToPlainText(text)
+
+	// 构造消息体 - 使用 sampleText 模板（群消息不支持 Markdown）
 	msgBody := map[string]interface{}{
-		"msgtype": "sampleMarkdown",
-		"markdown": map[string]string{
-			"title": title,
-			"text":  text,
+		"msgtype": "sampleText",
+		"text": map[string]string{
+			"content": plainText,
 		},
 	}
 
 	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
+}
+
+// convertMarkdownToPlainText 将 Markdown 格式转换为纯文本
+func convertMarkdownToPlainText(markdown string) string {
+	// 移除 Markdown 标记
+	text := strings.ReplaceAll(markdown, "## ", "")
+	text = strings.ReplaceAll(text, "**", "")
+	text = strings.ReplaceAll(text, "- ", "• ")
+	text = strings.ReplaceAll(text, "*", "")
+	return text
+}
+
+// saveImageToNginx 保存图片到 nginx 托管目录，返回图片访问 URL
+func (s *DingTalkService) saveImageToNginx(imageData []byte, filename string) (string, error) {
+	imageURL, err := utils.SaveImageFile(filename, imageData)
+	if err != nil {
+		return "", fmt.Errorf("failed to save image: %w", err)
+	}
+	return imageURL, nil
+}
+
+// sendStreamMarkdownWithText 发送 Markdown 消息（Stream 模式，使用已有的 accessToken）
+// 注意：钉钉群消息 API 限制较多，直接发送纯文本格式
+func (s *DingTalkService) sendStreamMarkdownWithText(bot *model.DingTalkBot, title, markdownText, accessToken string) error {
+	// Stream 模式群消息不支持 Markdown，直接发送纯文本
+	// 保留图片链接，用户可以点击访问
+	plainText := fmt.Sprintf("%s\n\n%s", title, convertMarkdownToPlainText(markdownText))
+
+	// 使用 text 消息类型
+	msgBody := map[string]interface{}{
+		"msgtype": "text",
+		"text": map[string]interface{}{
+			"content": plainText,
+		},
+	}
+
+	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
+}
+
+// sendStreamImageText Stream 模式发送图文消息
+// 新方案：将图片保存到 nginx 托管目录，通过 Markdown 引用图片 URL
+func (s *DingTalkService) sendStreamImageText(bot *model.DingTalkBot, title, text string, imageData []byte) error {
+	if bot.RobotCode == "" {
+		return errors.New("robotCode is required for stream mode")
+	}
+
+	// 获取 access_token
+	accessToken, err := s.getStreamAccessToken(bot.ClientID, bot.ClientSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	// 保存图片到 nginx 托管目录并获取 URL
+	imageURL, err := s.saveImageToNginx(imageData, "menu_report.png")
+	if err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to save image to nginx, sending text only",
+				"botID", bot.ID,
+				"error", err)
+		}
+		// 图片保存失败，降级为纯文本消息
+		return s.sendStreamMarkdown(bot, title, text)
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Image saved successfully",
+			"botID", bot.ID,
+			"imageURL", imageURL,
+			"imageSize", len(imageData))
+	}
+
+	// 在 Markdown 文本中添加图片
+	markdownWithImage := fmt.Sprintf("%s\n\n![报菜明细](%s)", text, imageURL)
+
+	// 发送 Markdown 消息（包含图片）
+	return s.sendStreamMarkdownWithText(bot, title, markdownWithImage, accessToken)
+}
+
+// uploadImage 上传图片到钉钉,返回 mediaId (旧版API，保留向后兼容)
+func (s *DingTalkService) uploadImage(accessToken string, imageData []byte) (string, error) {
+	apiURL := "https://oapi.dingtalk.com/media/upload?access_token=" + accessToken + "&type=image"
+
+	// 创建 multipart form
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// 创建文件字段
+	part, err := writer.CreateFormFile("media", "image.png")
+	if err != nil {
+		return "", fmt.Errorf("failed to create form file: %w", err)
+	}
+
+	// 写入图片数据
+	if _, err := part.Write(imageData); err != nil {
+		return "", fmt.Errorf("failed to write image data: %w", err)
+	}
+
+	// 关闭 writer
+	if err := writer.Close(); err != nil {
+		return "", fmt.Errorf("failed to close writer: %w", err)
+	}
+
+	// 发送请求
+	resp, err := http.Post(apiURL, writer.FormDataContentType(), body)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return "", fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if errCode, ok := result["errcode"].(float64); ok && errCode != 0 {
+		return "", fmt.Errorf("dingtalk upload error: code=%v, msg=%v", errCode, result["errmsg"])
+	}
+
+	if mediaID, ok := result["media_id"].(string); ok {
+		return mediaID, nil
+	}
+
+	return "", fmt.Errorf("failed to get media_id from response: %v", result)
+}
+
+// uploadImageMedia 上传图片到钉钉媒体库(新版API)，返回 mediaId
+func (s *DingTalkService) uploadImageMedia(accessToken string, imageData []byte) (string, error) {
+	apiURL := "https://oapi.dingtalk.com/media/upload?access_token=" + accessToken + "&type=image"
+
+	// 创建 multipart form
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// 创建文件字段
+	part, err := writer.CreateFormFile("media", "menu_report.png")
+	if err != nil {
+		return "", fmt.Errorf("failed to create form file: %w", err)
+	}
+
+	// 写入图片数据
+	if _, err := part.Write(imageData); err != nil {
+		return "", fmt.Errorf("failed to write image data: %w", err)
+	}
+
+	// 关闭 writer
+	if err := writer.Close(); err != nil {
+		return "", fmt.Errorf("failed to close writer: %w", err)
+	}
+
+	// 发送请求
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Post(apiURL, writer.FormDataContentType(), body)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return "", fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Upload image response",
+			"statusCode", resp.StatusCode,
+			"response", result)
+	}
+
+	if errCode, ok := result["errcode"].(float64); ok && errCode != 0 {
+		return "", fmt.Errorf("dingtalk upload error: code=%v, msg=%v", errCode, result["errmsg"])
+	}
+
+	if mediaID, ok := result["media_id"].(string); ok {
+		return mediaID, nil
+	}
+
+	return "", fmt.Errorf("failed to get media_id from response: %v", result)
+}
+
+// sendAnnouncement 发送钉钉企业公告
+// 参考文档: https://open.dingtalk.com/document/orgapp/create-a-dingtalk-notification
+func (s *DingTalkService) sendAnnouncement(accessToken string, agentIDStr, title, content, mediaID string) error {
+	apiURL := "https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2?access_token=" + accessToken
+
+	// 将 agentID 从字符串转换为数字
+	var agentID int64
+	if agentIDStr != "" {
+		var err error
+		agentID, err = strconv.ParseInt(agentIDStr, 10, 64)
+		if err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Invalid agentID, using default 0",
+					"agentIDStr", agentIDStr,
+					"error", err)
+			}
+			agentID = 0
+		}
+	}
+
+	// 构建公告消息体
+	msgContent := map[string]interface{}{
+		"msgtype": "oa",
+		"oa": map[string]interface{}{
+			"message_url": "dingtalk://dingtalkclient/page/link?url=https://www.dingtalk.com",
+			"head": map[string]string{
+				"bgcolor": "FFBBBBBB",
+				"text":    title,
+			},
+			"body": map[string]interface{}{
+				"title":   title,
+				"content": convertMarkdownToPlainText(content),
+				"image":   "@lALPDfJ6V_FPDmvNAfTNAfQ", // 这是固定的图片占位符，实际图片通过下面的 form 字段传递
+				"form": []map[string]string{
+					{
+						"key":   "详细信息",
+						"value": convertMarkdownToPlainText(content),
+					},
+				},
+			},
+		},
+	}
+
+	// 如果有图片，添加图片字段
+	if mediaID != "" {
+		msgContent["oa"].(map[string]interface{})["body"].(map[string]interface{})["image"] = mediaID
+	}
+
+	msgJSON, _ := json.Marshal(msgContent)
+
+	reqBody := map[string]interface{}{
+		"agent_id":    agentID, // 企业内部应用的AgentId
+		"msg":         string(msgJSON),
+		"to_all_user": true, // 发送给所有人
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Sending announcement to DingTalk",
+			"url", apiURL,
+			"agentID", agentID,
+			"title", title,
+			"mediaID", mediaID,
+			"requestBody", string(jsonData))
+	}
+
+	resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to send announcement: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Announcement response from DingTalk",
+			"statusCode", resp.StatusCode,
+			"response", result)
+	}
+
+	if errCode, ok := result["errcode"].(float64); ok && errCode != 0 {
+		return fmt.Errorf("dingtalk announcement error: code=%v, msg=%v", errCode, result["errmsg"])
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Announcement sent successfully",
+			"title", title,
+			"taskId", result["task_id"])
+	}
+
+	return nil
 }
 
 // getStreamAccessToken 获取 Stream 模式的 access_token
@@ -266,21 +576,20 @@ var defaultStreamUserIds = []string{"010903622624-181076934"}
 // sendStreamMessage 通过钉钉服务端 API 发送消息到群聊
 // 使用机器人发送群消息 API: https://open.dingtalk.com/document/orgapp/robot-group-message-verification
 func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBody map[string]interface{}) error {
-	// 使用群消息 API（batchSend 是单聊,改为群消息）
+	// 使用群消息 API
 	apiURL := "https://api.dingtalk.com/v1.0/robot/groupMessages/send"
 
-	// 构造完整请求体 - 群消息格式
+	// 构造完整请求体
+	msgType := msgBody["msgtype"].(string)
+	delete(msgBody, "msgtype")
+
+	msgParamJSON, _ := json.Marshal(msgBody)
+
 	reqBody := map[string]interface{}{
-		"msgKey": msgBody["msgtype"].(string),
-		"msgParam": func() string {
-			content := msgBody
-			delete(content, "msgtype")
-			jsonStr, _ := json.Marshal(content)
-			return string(jsonStr)
-		}(),
-		"robotCode": robotCode,
-		// 设置为 null 或空数组表示发送到所有群聊（广播）
-		"openConversationIds": []string{},
+		"msgKey":              msgType,
+		"msgParam":            string(msgParamJSON),
+		"robotCode":           robotCode,
+		"openConversationIds": []string{}, // 空数组表示发送到所有群
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -303,8 +612,7 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 		logging.SugaredLogger.Infow("Sending stream message to DingTalk API",
 			"url", apiURL,
 			"robotCode", robotCode,
-			"msgKey", msgBody["msgtype"],
-			"openConversationIds", "[] (broadcast to all groups)",
+			"msgKey", msgType,
 			"accessTokenPreview", accessToken[:10]+"...",
 			"requestBody", string(jsonData),
 		)
@@ -339,7 +647,7 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 	}
 
 	// 检查是否有错误
-	if errCode, ok := result["code"].(string); ok && errCode != "0" {
+	if errCode, ok := result["code"].(string); ok && errCode != "" {
 		return fmt.Errorf("dingtalk api error: code=%v, msg=%v", errCode, result["message"])
 	}
 

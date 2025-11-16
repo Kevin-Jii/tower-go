@@ -18,8 +18,10 @@ type Config struct {
 
 // AppConfig 应用配置
 type AppConfig struct {
-	Name string
-	Port int
+	Name            string
+	Port            int
+	ImageUploadPath string // 图片上传目录（绝对路径）
+	ImageBaseURL    string // 图片访问基础URL
 }
 
 // DatabaseConfig 数据库配置
@@ -163,8 +165,10 @@ func GetDingTalkMenuReportURL() string {
 // loadAppConfig 加载应用配置
 func loadAppConfig() AppConfig {
 	return AppConfig{
-		Name: getAppString("APP_NAME", "tower-go"),
-		Port: getAppInt("APP_PORT", 10024),
+		Name:            getAppString("APP_NAME", "tower-go"),
+		Port:            getAppInt("APP_PORT", 10024),
+		ImageUploadPath: getAppString("IMAGE_UPLOAD_PATH", "./uploads/images"),
+		ImageBaseURL:    getAppString("IMAGE_BASE_URL", "http://localhost/images"),
 	}
 }
 

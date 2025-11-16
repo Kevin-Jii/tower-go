@@ -20,15 +20,9 @@ func NewMenuReportModule(db *gorm.DB) *MenuReportModule {
 // CreateOrder 创建报菜记录单（包含详情）
 func (m *MenuReportModule) CreateOrder(order *model.MenuReportOrder) error {
 	err := m.db.Transaction(func(tx *gorm.DB) error {
+		// GORM 会自动保存关联的 Items，无需手动循环插入
 		if err := tx.Create(order).Error; err != nil {
 			return err
-		}
-		for _, item := range order.Items {
-			item.ReportOrderID = order.ID
-			item.ID = 0 // 重置 ID，让数据库自动生成
-			if err := tx.Create(item).Error; err != nil {
-				return err
-			}
 		}
 
 		// 加载关联信息（用于通知）

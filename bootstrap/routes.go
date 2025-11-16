@@ -61,10 +61,6 @@ func BuildControllers() *AppControllers {
 	dishCategoryService := service.NewDishCategoryService(dishCategoryModule, dishModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 
-	// 注册报菜记录钉钉通知器
-	menuReportNotifier := service.NewMenuReportNotifier(dingTalkService)
-	menuReportNotifier.Register()
-
 	// 注册事件监听器
 	menuReportListener := service.NewMenuReportEventListener(dingTalkService)
 	service.RegisterMenuReportEventListeners(eventBus, menuReportListener)

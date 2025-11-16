@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
-	"github.com/Kevin-Jii/tower-go/utils"
+	_ "github.com/Kevin-Jii/tower-go/utils"
 
 	"gorm.io/gorm"
 )
@@ -36,7 +36,8 @@ func (m *MenuReportModule) CreateOrder(order *model.MenuReportOrder) error {
 	}
 
 	// 发送通知（在事务成功后异步执行，不影响主流程）
-	utils.GlobalEventBus.NotifyAsync(utils.EventMenuReportCreated, order)
+	// 已迁移到 service/menu_report.go 使用新的 EventBus
+	// utils.GlobalEventBus.NotifyAsync(utils.EventMenuReportCreated, order)
 
 	return nil
 }

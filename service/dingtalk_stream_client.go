@@ -82,14 +82,6 @@ func (sc *DingTalkStreamClient) StartBot(bot *model.DingTalkBot) error {
 
 	sc.clients[bot.ID] = streamClient
 	sc.running = true
-
-	if logging.SugaredLogger != nil {
-		logging.SugaredLogger.Infow("Stream bot started successfully",
-			"botID", bot.ID,
-			"botName", bot.Name,
-		)
-	}
-
 	return nil
 }
 

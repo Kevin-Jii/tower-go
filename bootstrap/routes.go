@@ -56,6 +56,7 @@ func BuildControllers() *AppControllers {
 		dishModule,
 		storeModule,
 		userModule,
+		dingTalkBotModule,
 		eventBus,
 	)
 	dishCategoryService := service.NewDishCategoryService(dishCategoryModule, dishModule)
@@ -177,6 +178,7 @@ func RegisterRoutes(r *gin.Engine, c *AppControllers) {
 		reports.GET("", c.MenuReport.ListMenuReportOrders)
 		reports.GET("/statistics", c.MenuReport.GetStatistics)
 		reports.GET("/:id", c.MenuReport.GetMenuReportOrder)
+		reports.GET("/:id/download", c.MenuReport.DownloadExcel)
 		reports.PUT("/:id", c.MenuReport.UpdateMenuReportOrder)
 		reports.DELETE("/:id", c.MenuReport.DeleteMenuReportOrder)
 	}

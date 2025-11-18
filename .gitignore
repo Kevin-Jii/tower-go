@@ -93,3 +93,6 @@ docs/*.md.bak
 
 # PowerShell 脚本输出
  transcripts/
+
+# Windows 特殊文件
+nul

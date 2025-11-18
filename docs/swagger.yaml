@@ -101,6 +101,7 @@ definitions:
       msg_type:
         type: string
       name:
+        description: 可选，如果不提供则自动生成（门店名称_机器人ID）
         type: string
       remark:
         type: string
@@ -115,8 +116,6 @@ definitions:
       webhook:
         description: webhook 模式必填
         type: string
-    required:
-    - name
     type: object
   model.CreateDishCategoryReq:
     properties:
@@ -436,13 +435,14 @@ definitions:
   model.MenuReportItem:
     properties:
       created_at:
+        description: 添加时间索引用于统计查询
         type: string
       dish:
         allOf:
         - $ref: '#/definitions/model.Dish'
         description: 菜品关联
       dish_id:
-        description: 菜品 ID
+        description: 菜品 ID（复合索引+单独索引）
         type: integer
       id:
         type: integer
@@ -457,7 +457,7 @@ definitions:
         - $ref: '#/definitions/model.MenuReportOrder'
         description: 报菜记录单关联
       report_order_id:
-        description: 报菜记录单 ID
+        description: 报菜记录单 ID（复合索引）
         type: integer
       updated_at:
         type: string
@@ -1456,6 +1456,29 @@ paths:
       security:
       - Bearer: []
       summary: 更新报菜记录单
+      tags:
+      - menu-reports
+  /menu-reports/{id}/download:
+    get:
+      consumes:
+      - application/json
+      description: 下载指定报菜记录单的Excel文件
+      parameters:
+      - description: 报菜记录单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: Excel文件
+          schema:
+            type: file
+      security:
+      - Bearer: []
+      summary: 下载报菜记录单Excel
       tags:
       - menu-reports
   /menu-reports/statistics:

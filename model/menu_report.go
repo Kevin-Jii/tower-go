@@ -18,13 +18,13 @@ type MenuReportOrder struct {
 // MenuReportItem 报菜详情（从表）
 type MenuReportItem struct {
 	ID            uint             `json:"id" gorm:"primaryKey;autoIncrement"`
-	ReportOrderID uint             `json:"report_order_id" gorm:"not null;index"`                  // 报菜记录单 ID
-	ReportOrder   *MenuReportOrder `json:"report_order,omitempty" gorm:"foreignKey:ReportOrderID"` // 报菜记录单关联
-	DishID        uint             `json:"dish_id" gorm:"not null;index"`                          // 菜品 ID
-	Dish          *Dish            `json:"dish,omitempty" gorm:"foreignKey:DishID"`                // 菜品关联
-	Quantity      int              `json:"quantity" gorm:"not null"`                               // 报菜数量
-	Remark        string           `json:"remark" gorm:"type:text"`                                // 备注
-	CreatedAt     time.Time        `json:"created_at"`
+	ReportOrderID uint             `json:"report_order_id" gorm:"not null;index:idx_report_order_dish"`  // 报菜记录单 ID（复合索引）
+	ReportOrder   *MenuReportOrder `json:"report_order,omitempty" gorm:"foreignKey:ReportOrderID"`       // 报菜记录单关联
+	DishID        uint             `json:"dish_id" gorm:"not null;index:idx_report_order_dish;index"`    // 菜品 ID（复合索引+单独索引）
+	Dish          *Dish            `json:"dish,omitempty" gorm:"foreignKey:DishID"`                      // 菜品关联
+	Quantity      int              `json:"quantity" gorm:"not null"`                                     // 报菜数量
+	Remark        string           `json:"remark" gorm:"type:text"`                                      // 备注
+	CreatedAt     time.Time        `json:"created_at" gorm:"index"`                                      // 添加时间索引用于统计查询
 	UpdatedAt     time.Time        `json:"updated_at"`
 }
 

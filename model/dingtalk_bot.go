@@ -15,16 +15,16 @@ type DingTalkBot struct {
 	StoreID      *uint     `json:"store_id" gorm:"index"`                      // 所属门店（null 表示全局）
 	Store        *Store    `json:"store,omitempty" gorm:"foreignKey:StoreID"`  // 门店关联
 	IsEnabled    bool      `json:"is_enabled" gorm:"default:true;index"`       // 是否启用
-	MsgType      string    `json:"msg_type" gorm:"size:20;default:'markdown'"` // 消息类型: text, markdown
-	Remark       string    `json:"remark" gorm:"type:text"`                    // 备注
-	RobotCode    string    `json:"robot_code" gorm:"size:100"`                 // 钉钉机器人编码(robotCode)
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	MsgType   string    `json:"msg_type" gorm:"size:20;default:'markdown'"` // 消息类型: text, markdown
+	Remark    string    `json:"remark" gorm:"type:text"`                    // 备注
+	RobotCode string    `json:"robot_code" gorm:"size:100"`                 // 钉钉机器人编码(robotCode)
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // CreateDingTalkBotReq 创建钉钉机器人请求
 type CreateDingTalkBotReq struct {
-	Name         string `json:"name" binding:"required"`
+	Name         string `json:"name"` // 可选，如果不提供则自动生成（门店名称_机器人ID）
 	BotType      string `json:"bot_type" binding:"omitempty,oneof=webhook stream"` // webhook 或 stream (默认 webhook)
 	Webhook      string `json:"webhook"`                                           // webhook 模式必填
 	Secret       string `json:"secret"`                                            // webhook 模式可选
@@ -32,10 +32,10 @@ type CreateDingTalkBotReq struct {
 	ClientSecret string `json:"client_secret"`                                     // stream 模式必填
 	AgentID      string `json:"agent_id"`                                          // stream 模式推送消息用
 	StoreID      *uint  `json:"store_id"`
-	IsEnabled    *bool  `json:"is_enabled"`
-	MsgType      string `json:"msg_type"`
-	Remark       string `json:"remark"`
-	RobotCode    string `json:"robot_code"` // 钉钉机器人编码(robotCode)
+	IsEnabled *bool  `json:"is_enabled"`
+	MsgType   string `json:"msg_type"`
+	Remark    string `json:"remark"`
+	RobotCode string `json:"robot_code"` // 钉钉机器人编码(robotCode)
 }
 
 // UpdateDingTalkBotReq 更新钉钉机器人请求
@@ -48,10 +48,10 @@ type UpdateDingTalkBotReq struct {
 	ClientSecret *string `json:"client_secret" patch:"always"`
 	AgentID      *string `json:"agent_id" patch:"always"`
 	StoreID      *uint   `json:"store_id" patch:"always"`
-	IsEnabled    *bool   `json:"is_enabled" patch:"always"`
-	MsgType      *string `json:"msg_type" patch:"allowZero"`
-	Remark       *string `json:"remark" patch:"always"`
-	RobotCode    *string `json:"robot_code" patch:"always"`
+	IsEnabled *bool   `json:"is_enabled" patch:"always"`
+	MsgType   *string `json:"msg_type" patch:"allowZero"`
+	Remark    *string `json:"remark" patch:"always"`
+	RobotCode *string `json:"robot_code" patch:"always"`
 }
 
 // DingTalkTextMessage 钉钉文本消息

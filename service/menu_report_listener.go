@@ -10,9 +10,12 @@ import (
 
 // MenuReportOrderCreatedEvent 报菜记录单创建事件
 type MenuReportOrderCreatedEvent struct {
-	Order     *model.MenuReportOrder
-	StoreName string
-	UserName  string
+	Order        *model.MenuReportOrder
+	StoreName    string
+	UserName     string
+	StorePhone   string
+	StoreAddress string
+	BotID        uint // 指定发送的机器人ID
 }
 
 // Name 实现 Event 接口
@@ -43,7 +46,7 @@ func (l *MenuReportEventListener) OnMenuReportOrderCreated(event events.Event) e
 	content := l.buildNotificationContent(e)
 
 	// 生成PNG图片
-	imageData, err := utils.GenerateMenuReportImage(e.Order, e.StoreName, e.UserName)
+	imageData, err := utils.GenerateMenuReportImage(e.Order, e.StoreName, e.UserName, e.StorePhone, e.StoreAddress)
 	if err != nil {
 		if logging.SugaredLogger != nil {
 			logging.SugaredLogger.Warnw("Failed to generate menu report image, sending text only",
@@ -60,15 +63,90 @@ func (l *MenuReportEventListener) OnMenuReportOrderCreated(event events.Event) e
 		}
 	}
 
-	// 广播到门店的所有机器人（带图片）
-	if err := l.dingTalkSvc.BroadcastToStoreWithImage(e.Order.StoreID, "markdown", title, content, imageData); err != nil {
+	// 如果生成了图片，保存到文件系统（即使没有机器人也保存）
+	if imageData != nil {
+		imageURL, err := utils.SaveImageFile("menu_report.png", imageData)
+		if err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Failed to save image to file system",
+					"orderID", e.Order.ID,
+					"error", err)
+			}
+		} else {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Infow("Image saved to file system",
+					"orderID", e.Order.ID,
+					"imageURL", imageURL,
+					"imageSize", len(imageData))
+			}
+		}
+	}
+
+	// 如果没有指定机器人ID，跳过发送通知
+	if e.BotID == 0 {
 		if logging.SugaredLogger != nil {
-			logging.SugaredLogger.Errorw("Failed to broadcast menu report order",
+			logging.SugaredLogger.Infow("No bot specified, skipping notification",
 				"orderID", e.Order.ID,
-				"storeID", e.Order.StoreID,
+				"storeID", e.Order.StoreID)
+		}
+		return nil
+	}
+
+	// 获取指定的机器人
+	bot, err := l.dingTalkSvc.GetBot(e.BotID)
+	if err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to get bot",
+				"orderID", e.Order.ID,
+				"botID", e.BotID,
 				"error", err)
 		}
 		return err
+	}
+
+	// 发送到指定机器人
+	if bot.BotType == "stream" {
+		// Stream 模式：通过钉钉服务端 API 发送
+		if imageData != nil {
+			err = l.dingTalkSvc.SendStreamImageText(bot, title, content, imageData)
+		} else {
+			err = l.dingTalkSvc.SendStreamMarkdown(bot, title, content)
+		}
+	} else {
+		// Webhook 模式：直接 HTTP POST（不支持直接显示图片，但可以发送图片链接）
+		contentWithImage := content
+		if imageData != nil {
+			// 获取图片 URL（已经在前面保存过了）
+			imageURL, err := utils.SaveImageFile("menu_report.png", imageData)
+			if err == nil {
+				// 在内容末尾添加图片链接
+				contentWithImage = fmt.Sprintf("%s\n\n**📷 查看报菜图片:**\n[点击查看](%s)", content, imageURL)
+				if logging.SugaredLogger != nil {
+					logging.SugaredLogger.Infow("Added image link to webhook message",
+						"botID", bot.ID,
+						"imageURL", imageURL)
+				}
+			}
+		}
+		err = l.dingTalkSvc.SendMarkdownToBot(bot, title, contentWithImage)
+	}
+
+	if err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to send menu report notification",
+				"orderID", e.Order.ID,
+				"botID", bot.ID,
+				"botType", bot.BotType,
+				"error", err)
+		}
+		return err
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Menu report notification sent successfully",
+			"orderID", e.Order.ID,
+			"botID", bot.ID,
+			"botName", bot.Name)
 	}
 
 	return nil

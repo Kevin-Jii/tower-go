@@ -1154,6 +1154,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/menu-reports/{id}/download": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "下载指定报菜记录单的Excel文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ],
+                "tags": [
+                    "menu-reports"
+                ],
+                "summary": "下载报菜记录单Excel",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "报菜记录单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Excel文件",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/menus": {
             "get": {
                 "security": [
@@ -3517,9 +3554,6 @@ const docTemplate = `{
         },
         "model.CreateDingTalkBotReq": {
             "type": "object",
-            "required": [
-                "name"
-            ],
             "properties": {
                 "agent_id": {
                     "description": "stream 模式推送消息用",
@@ -3548,6 +3582,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "description": "可选，如果不提供则自动生成（门店名称_机器人ID）",
                     "type": "string"
                 },
                 "remark": {
@@ -4036,6 +4071,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
+                    "description": "添加时间索引用于统计查询",
                     "type": "string"
                 },
                 "dish": {
@@ -4047,7 +4083,7 @@ const docTemplate = `{
                     ]
                 },
                 "dish_id": {
-                    "description": "菜品 ID",
+                    "description": "菜品 ID（复合索引+单独索引）",
                     "type": "integer"
                 },
                 "id": {
@@ -4070,7 +4106,7 @@ const docTemplate = `{
                     ]
                 },
                 "report_order_id": {
-                    "description": "报菜记录单 ID",
+                    "description": "报菜记录单 ID（复合索引）",
                     "type": "integer"
                 },
                 "updated_at": {

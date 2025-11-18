@@ -15,10 +15,12 @@ func Run() {
 	closeLogger := InitLogger()
 	defer closeLogger()
 
-	// 自动生成 swagger 文档（开发模式）
-	GenerateSwaggerDocs()
-
 	LoadAppConfig()
+	
+	// 自动生成 swagger 文档（开发模式）- 移到配置加载之后
+	// 可通过环境变量 SWAG_AUTO=0 禁用以加快启动速度
+	GenerateSwaggerDocs()
+	
 	InitDatabase()
 	closeRedis := InitRedisCache()
 	defer closeRedis()

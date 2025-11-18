@@ -296,3 +296,5 @@ func (c *DingTalkBotController) TestStreamBotCallback(ctx *gin.Context) {
 		"note":        "you can now send a message to this bot in DingTalk to test the callback",
 	})
 }
+
+

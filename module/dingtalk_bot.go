@@ -110,3 +110,17 @@ func (m *DingTalkBotModule) FindByClientID(clientID string) (*model.DingTalkBot,
 	}
 	return &bot, nil
 }
+
+// UpdateName 更新机器人名称
+func (m *DingTalkBotModule) UpdateName(id uint, name string) error {
+	return m.db.Model(&model.DingTalkBot{}).Where("id = ?", id).Update("name", name).Error
+}
+
+// GetStoreByID 获取门店信息
+func (m *DingTalkBotModule) GetStoreByID(storeID uint) (*model.Store, error) {
+	var store model.Store
+	if err := m.db.First(&store, storeID).Error; err != nil {
+		return nil, err
+	}
+	return &store, nil
+}

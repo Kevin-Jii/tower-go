@@ -243,3 +243,46 @@ func (c *MenuReportController) GetStatistics(ctx *gin.Context) {
 
 	http.Success(ctx, stats)
 }
+
+// DownloadExcel godoc
+// @Summary 下载报菜记录单Excel
+// @Description 下载指定报菜记录单的Excel文件
+// @Tags menu-reports
+// @Accept json
+// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Security Bearer
+// @Param id path int true "报菜记录单ID"
+// @Success 200 {file} file "Excel文件"
+// @Router /menu-reports/{id}/download [get]
+func (c *MenuReportController) DownloadExcel(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		http.Error(ctx, 400, "Invalid menu report order ID")
+		return
+	}
+
+	// 获取报菜记录单数据
+	order, err := c.menuReportService.GetMenuReportOrder(uint(id), storeID)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	// 生成Excel
+	excelReader, err := c.menuReportService.GenerateExcel(order)
+	if err != nil {
+		http.Error(ctx, 500, "生成Excel失败: "+err.Error())
+		return
+	}
+
+	// 设置响应头
+	filename := "报菜明细_" + order.CreatedAt.Format("20060102150405") + ".xlsx"
+	ctx.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	ctx.Header("Content-Disposition", "attachment; filename="+filename)
+	ctx.Header("Content-Transfer-Encoding", "binary")
+
+	// 返回文件流
+	ctx.DataFromReader(200, -1, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelReader, nil)
+}

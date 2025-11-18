@@ -99,71 +99,8 @@ func (s *DingTalkService) SendMarkdownMessage(botID uint, title, text string, at
 	return s.sendMessage(bot, msg)
 }
 
-// BroadcastToStore 广播消息到门店的所有机器人（支持 webhook 和 stream 双模式）
-func (s *DingTalkService) BroadcastToStore(storeID uint, msgType, title, content string) error {
-	return s.BroadcastToStoreWithImage(storeID, msgType, title, content, nil)
-}
-
-// BroadcastToStoreWithImage 广播消息到门店的所有机器人,支持附带图片
-func (s *DingTalkService) BroadcastToStoreWithImage(storeID uint, msgType, title, content string, imageData []byte) error {
-	bots, err := s.botModule.ListEnabledByStoreID(storeID)
-	if err != nil {
-		return fmt.Errorf("failed to list bots: %w", err)
-	}
-
-	if len(bots) == 0 {
-		if logging.SugaredLogger != nil {
-			logging.SugaredLogger.Infow("No enabled bots for store", "storeID", storeID)
-		}
-		return nil
-	}
-
-	var lastErr error
-	for _, bot := range bots {
-		var err error
-
-		// 根据机器人类型选择发送方式
-		if bot.BotType == "stream" {
-			// Stream 模式：通过钉钉服务端 API 发送
-			if imageData != nil {
-				// 发送图文消息
-				err = s.sendStreamImageText(bot, title, content, imageData)
-			} else if msgType == "markdown" {
-				err = s.sendStreamMarkdown(bot, title, content)
-			} else {
-				err = s.sendStreamText(bot, content)
-			}
-		} else {
-			// Webhook 模式：直接 HTTP POST（不支持图片）
-			if imageData != nil && logging.SugaredLogger != nil {
-				logging.SugaredLogger.Warnw("Webhook mode does not support image, sending text only",
-					"botID", bot.ID,
-					"botName", bot.Name)
-			}
-			if msgType == "markdown" {
-				err = s.sendMarkdownToBot(bot, title, content)
-			} else {
-				err = s.sendTextToBot(bot, content)
-			}
-		}
-
-		if err != nil {
-			if logging.SugaredLogger != nil {
-				logging.SugaredLogger.Errorw("Failed to send to bot",
-					"botID", bot.ID,
-					"botType", bot.BotType,
-					"error", err,
-				)
-			}
-			lastErr = err
-		}
-	}
-
-	return lastErr
-}
-
-// sendTextToBot 发送文本消息到指定机器人配置
-func (s *DingTalkService) sendTextToBot(bot *model.DingTalkBot, content string) error {
+// SendTextToBot 发送文本消息到指定机器人配置
+func (s *DingTalkService) SendTextToBot(bot *model.DingTalkBot, content string) error {
 	msg := model.DingTalkTextMessage{
 		MsgType: "text",
 	}
@@ -171,8 +108,8 @@ func (s *DingTalkService) sendTextToBot(bot *model.DingTalkBot, content string) 
 	return s.sendMessage(bot, msg)
 }
 
-// sendMarkdownToBot 发送 Markdown 消息到指定机器人配置
-func (s *DingTalkService) sendMarkdownToBot(bot *model.DingTalkBot, title, text string) error {
+// SendMarkdownToBot 发送 Markdown 消息到指定机器人配置
+func (s *DingTalkService) SendMarkdownToBot(bot *model.DingTalkBot, title, text string) error {
 	msg := model.DingTalkMarkdownMessage{
 		MsgType: "markdown",
 	}
@@ -181,8 +118,8 @@ func (s *DingTalkService) sendMarkdownToBot(bot *model.DingTalkBot, title, text 
 	return s.sendMessage(bot, msg)
 }
 
-// sendStreamText Stream 模式发送文本消息
-func (s *DingTalkService) sendStreamText(bot *model.DingTalkBot, content string) error {
+// SendStreamText Stream 模式发送文本消息
+func (s *DingTalkService) SendStreamText(bot *model.DingTalkBot, content string) error {
 	if bot.RobotCode == "" {
 		return errors.New("robotCode is required for stream mode")
 	}
@@ -194,19 +131,18 @@ func (s *DingTalkService) sendStreamText(bot *model.DingTalkBot, content string)
 	}
 
 	// 构造消息体 - 使用 sampleText 模板
+	// 注意：msgParam 的格式应该直接是 {"content": "文本"}，而不是嵌套 text 对象
 	msgBody := map[string]interface{}{
 		"msgtype": "sampleText",
-		"text": map[string]string{
-			"content": content,
-		},
+		"content": content,
 	}
 
 	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
 }
 
-// sendStreamMarkdown Stream 模式发送 Markdown 消息
+// SendStreamMarkdown Stream 模式发送 Markdown 消息
 // 注意：群消息不支持 Markdown，改用 Text 格式
-func (s *DingTalkService) sendStreamMarkdown(bot *model.DingTalkBot, title, text string) error {
+func (s *DingTalkService) SendStreamMarkdown(bot *model.DingTalkBot, title, text string) error {
 	if bot.RobotCode == "" {
 		return errors.New("robotCode is required for stream mode")
 	}
@@ -221,11 +157,10 @@ func (s *DingTalkService) sendStreamMarkdown(bot *model.DingTalkBot, title, text
 	plainText := title + "\n\n" + convertMarkdownToPlainText(text)
 
 	// 构造消息体 - 使用 sampleText 模板（群消息不支持 Markdown）
+	// 注意：msgParam 的格式应该直接是 {"content": "文本"}，而不是嵌套 text 对象
 	msgBody := map[string]interface{}{
 		"msgtype": "sampleText",
-		"text": map[string]string{
-			"content": plainText,
-		},
+		"content": plainText,
 	}
 
 	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
@@ -233,11 +168,53 @@ func (s *DingTalkService) sendStreamMarkdown(bot *model.DingTalkBot, title, text
 
 // convertMarkdownToPlainText 将 Markdown 格式转换为纯文本
 func convertMarkdownToPlainText(markdown string) string {
-	// 移除 Markdown 标记
-	text := strings.ReplaceAll(markdown, "## ", "")
+	text := markdown
+	
+	// 先移除 Markdown 标记（在处理图片之前）
+	text = strings.ReplaceAll(text, "## ", "")
 	text = strings.ReplaceAll(text, "**", "")
 	text = strings.ReplaceAll(text, "- ", "• ")
+	
+	// 处理图片链接：![alt](url) -> 📷 查看报菜图片: url
+	// 使用正则表达式或简单字符串替换
+	for strings.Contains(text, "![") {
+		start := strings.Index(text, "![")
+		if start == -1 {
+			break
+		}
+		
+		// 找到对应的 ](
+		bracketStart := strings.Index(text[start:], "](")
+		if bracketStart == -1 {
+			break
+		}
+		bracketStart += start
+		
+		// 找到最后的 )
+		urlEnd := strings.Index(text[bracketStart+2:], ")")
+		if urlEnd == -1 {
+			break
+		}
+		urlEnd += bracketStart + 2
+		
+		// 提取 URL
+		url := text[bracketStart+2 : urlEnd]
+		
+		// 替换整个图片 Markdown 为纯文本链接
+		replacement := "\n\n📷 查看报菜图片:\n" + url + "\n"
+		text = text[:start] + replacement + text[urlEnd+1:]
+		
+		// 调试日志
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Converted image markdown to plain text",
+				"url", url,
+				"replacement", replacement)
+		}
+	}
+	
+	// 移除剩余的星号
 	text = strings.ReplaceAll(text, "*", "")
+	
 	return text
 }
 
@@ -257,20 +234,19 @@ func (s *DingTalkService) sendStreamMarkdownWithText(bot *model.DingTalkBot, tit
 	// 保留图片链接，用户可以点击访问
 	plainText := fmt.Sprintf("%s\n\n%s", title, convertMarkdownToPlainText(markdownText))
 
-	// 使用 text 消息类型
+	// 使用 sampleText 消息类型（钉钉群消息API要求）
+	// 注意：msgParam 的格式应该直接是 {"content": "文本"}，而不是嵌套 text 对象
 	msgBody := map[string]interface{}{
-		"msgtype": "text",
-		"text": map[string]interface{}{
-			"content": plainText,
-		},
+		"msgtype": "sampleText",
+		"content": plainText,
 	}
 
 	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
 }
 
-// sendStreamImageText Stream 模式发送图文消息
+// SendStreamImageText Stream 模式发送图文消息
 // 新方案：将图片保存到 nginx 托管目录，通过 Markdown 引用图片 URL
-func (s *DingTalkService) sendStreamImageText(bot *model.DingTalkBot, title, text string, imageData []byte) error {
+func (s *DingTalkService) SendStreamImageText(bot *model.DingTalkBot, title, text string, imageData []byte) error {
 	if bot.RobotCode == "" {
 		return errors.New("robotCode is required for stream mode")
 	}
@@ -290,7 +266,7 @@ func (s *DingTalkService) sendStreamImageText(bot *model.DingTalkBot, title, tex
 				"error", err)
 		}
 		// 图片保存失败，降级为纯文本消息
-		return s.sendStreamMarkdown(bot, title, text)
+		return s.SendStreamMarkdown(bot, title, text)
 	}
 
 	if logging.SugaredLogger != nil {
@@ -575,6 +551,7 @@ var defaultStreamUserIds = []string{"010903622624-181076934"}
 
 // sendStreamMessage 通过钉钉服务端 API 发送消息到群聊
 // 使用机器人发送群消息 API: https://open.dingtalk.com/document/orgapp/robot-group-message-verification
+// 注意：群消息需要指定 openConversationId，可以通过 Stream 事件获取或在机器人配置中设置
 func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBody map[string]interface{}) error {
 	// 使用群消息 API
 	apiURL := "https://api.dingtalk.com/v1.0/robot/groupMessages/send"
@@ -586,10 +563,9 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 	msgParamJSON, _ := json.Marshal(msgBody)
 
 	reqBody := map[string]interface{}{
-		"msgKey":              msgType,
-		"msgParam":            string(msgParamJSON),
-		"robotCode":           robotCode,
-		"openConversationIds": []string{}, // 空数组表示发送到所有群
+		"msgKey":    msgType,
+		"msgParam":  string(msgParamJSON),
+		"robotCode": robotCode,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -740,8 +716,9 @@ func (s *DingTalkService) CreateBot(req *model.CreateDingTalkBotReq) (*model.Din
 		}
 	}
 
+	// 创建机器人（暂时使用临时名称）
 	bot := &model.DingTalkBot{
-		Name:         req.Name,
+		Name:         "临时名称", // 先用临时名称，创建后再更新
 		BotType:      req.BotType,
 		Webhook:      req.Webhook,
 		Secret:       req.Secret,
@@ -762,9 +739,39 @@ func (s *DingTalkService) CreateBot(req *model.CreateDingTalkBotReq) (*model.Din
 		bot.MsgType = req.MsgType
 	}
 
+	// 创建机器人
 	if err := s.botModule.Create(bot); err != nil {
 		return nil, err
 	}
+
+	// 生成机器人名称：门店名称_机器人ID
+	botName := ""
+	if req.Name != "" {
+		// 如果前端提供了名称，使用前端提供的
+		botName = req.Name
+	} else {
+		// 否则自动生成：门店名称_机器人ID
+		if bot.StoreID != nil {
+			store, err := s.botModule.GetStoreByID(*bot.StoreID)
+			if err == nil && store != nil {
+				botName = fmt.Sprintf("%s_机器人%d", store.Name, bot.ID)
+			} else {
+				botName = fmt.Sprintf("机器人%d", bot.ID)
+			}
+		} else {
+			botName = fmt.Sprintf("全局机器人%d", bot.ID)
+		}
+	}
+
+	// 更新机器人名称
+	if err := s.botModule.UpdateName(bot.ID, botName); err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to update bot name",
+				"botID", bot.ID,
+				"error", err)
+		}
+	}
+	bot.Name = botName
 
 	// 如果是 Stream 类型且启用,自动启动连接
 	if bot.BotType == "stream" && bot.IsEnabled {
@@ -889,6 +896,196 @@ func (s *DingTalkService) DeleteBot(id uint) error {
 	return s.botModule.Delete(id)
 }
 
+// GetOpenConversationIdByBotId 通过机器人ID和群号获取群会话ID
+// 这个方法会尝试多种方式获取 openConversationId
+func (s *DingTalkService) GetOpenConversationIdByBotId(botID uint, chatId string) (map[string]interface{}, error) {
+	// 获取机器人配置
+	bot, err := s.botModule.GetByID(botID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bot: %w", err)
+	}
+
+	if bot.BotType != "stream" {
+		return nil, errors.New("only stream bots support this operation")
+	}
+
+	// 获取 access_token
+	accessToken, err := s.getStreamAccessToken(bot.ClientID, bot.ClientSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	// 方法1: 尝试使用新版API (v1.0)
+	apiURL := fmt.Sprintf("https://api.dingtalk.com/v1.0/im/conversations/%s", chatId)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("x-acs-dingtalk-access-token", accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Requesting group conversation info",
+			"botID", botID,
+			"chatId", chatId,
+			"apiURL", apiURL,
+			"accessTokenPreview", accessToken[:10]+"...")
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get group info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Get group info response",
+			"botID", botID,
+			"chatId", chatId,
+			"statusCode", resp.StatusCode,
+			"response", result)
+	}
+
+	// 检查新版API的错误格式
+	if code, ok := result["code"].(string); ok && code != "" {
+		errMsg := "unknown error"
+		if msg, ok := result["message"].(string); ok {
+			errMsg = msg
+		}
+
+		// 如果新版API失败，尝试旧版API
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("New API failed, trying old API",
+				"code", code,
+				"message", errMsg)
+		}
+
+		return s.getOpenConversationIdByOldAPI(bot, chatId, accessToken, botID)
+	}
+
+	// 尝试提取 openConversationId
+	var openConversationId string
+	if id, ok := result["openConversationId"].(string); ok {
+		openConversationId = id
+	}
+
+	// 返回结果
+	response := map[string]interface{}{
+		"success":              openConversationId != "",
+		"chat_id":              chatId,
+		"bot_id":               botID,
+		"open_conversation_id": openConversationId,
+		"api_version":          "v1.0",
+		"raw_response":         result,
+	}
+
+	if openConversationId == "" {
+		response["suggestion"] = "API返回成功但未包含openConversationId，请通过Stream事件回调获取：\n" +
+			"1. 在群聊中@机器人发送消息\n" +
+			"2. 查看应用日志找到conversationId\n" +
+			"3. 使用该ID更新机器人配置"
+	} else {
+		response["message"] = "成功获取openConversationId，可以使用此ID更新机器人配置"
+	}
+
+	return response, nil
+}
+
+// getOpenConversationIdByOldAPI 使用旧版API获取群会话ID
+func (s *DingTalkService) getOpenConversationIdByOldAPI(bot *model.DingTalkBot, chatId, accessToken string, botID uint) (map[string]interface{}, error) {
+	// 使用旧版API
+	apiURL := fmt.Sprintf("https://oapi.dingtalk.com/chat/get?access_token=%s&chatid=%s", accessToken, chatId)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get group info (old API): %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("Get group info response (old API)",
+			"botID", botID,
+			"chatId", chatId,
+			"response", result)
+	}
+
+	// 检查错误码
+	if errCode, ok := result["errcode"].(float64); ok && errCode != 0 {
+		errMsg := "unknown error"
+		if msg, ok := result["errmsg"].(string); ok {
+			errMsg = msg
+		}
+
+		// 返回详细的错误信息和建议
+		return map[string]interface{}{
+			"success": false,
+			"error":   fmt.Sprintf("钉钉API错误: code=%v, msg=%v", errCode, errMsg),
+			"suggestion": "无法通过API直接获取openConversationId，请使用以下方法：\n" +
+				"1. 在群聊中@机器人发送消息\n" +
+				"2. 查看应用日志中的Stream事件回调\n" +
+				"3. 从事件中提取conversationId字段\n" +
+				"4. 使用该conversationId更新机器人配置",
+			"chat_id":     chatId,
+			"bot_id":      botID,
+			"api_version": "oapi (old)",
+		}, nil
+	}
+
+	// 尝试提取 openConversationId
+	var openConversationId string
+	if chatInfo, ok := result["chat_info"].(map[string]interface{}); ok {
+		if id, ok := chatInfo["openConversationId"].(string); ok {
+			openConversationId = id
+		}
+	}
+
+	// 返回结果
+	response := map[string]interface{}{
+		"success":              openConversationId != "",
+		"chat_id":              chatId,
+		"bot_id":               botID,
+		"open_conversation_id": openConversationId,
+		"api_version":          "oapi (old)",
+		"raw_response":         result,
+	}
+
+	if openConversationId == "" {
+		response["suggestion"] = "API返回成功但未包含openConversationId，请通过Stream事件回调获取：\n" +
+			"1. 在群聊中@机器人发送消息\n" +
+			"2. 查看应用日志找到conversationId\n" +
+			"3. 使用该ID更新机器人配置"
+	} else {
+		response["message"] = "成功获取openConversationId，可以使用此ID更新机器人配置"
+	}
+
+	return response, nil
+}
+
 // TestBot 测试机器人连接
 func (s *DingTalkService) TestBot(id uint) error {
 	bot, err := s.botModule.GetByID(id)
@@ -900,14 +1097,14 @@ func (s *DingTalkService) TestBot(id uint) error {
 
 	if bot.BotType == "stream" {
 		if bot.MsgType == "markdown" {
-			return s.sendStreamMarkdown(bot, "机器人测试", testMsg)
+			return s.SendStreamMarkdown(bot, "机器人测试", testMsg)
 		}
-		return s.sendStreamText(bot, testMsg)
+		return s.SendStreamText(bot, testMsg)
 	}
 
 	// webhook 模式
 	if bot.MsgType == "markdown" {
-		return s.sendMarkdownToBot(bot, "机器人测试", testMsg)
+		return s.SendMarkdownToBot(bot, "机器人测试", testMsg)
 	}
-	return s.sendTextToBot(bot, testMsg)
+	return s.SendTextToBot(bot, testMsg)
 }

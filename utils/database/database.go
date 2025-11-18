@@ -51,11 +51,39 @@ func indexExists(db *gorm.DB, tableName, indexName string) bool {
 	return count > 0
 }
 
+// getAllExistingIndexes 一次性获取所有已存在的索引（性能优化）
+func getAllExistingIndexes(db *gorm.DB) map[string]map[string]bool {
+	type IndexInfo struct {
+		TableName string
+		IndexName string
+	}
+	
+	var indexes []IndexInfo
+	query := `SELECT table_name as TableName, index_name as IndexName 
+	          FROM information_schema.statistics 
+	          WHERE table_schema = DATABASE()`
+	db.Raw(query).Scan(&indexes)
+	
+	// 构建 map[tableName]map[indexName]bool 结构
+	result := make(map[string]map[string]bool)
+	for _, idx := range indexes {
+		if result[idx.TableName] == nil {
+			result[idx.TableName] = make(map[string]bool)
+		}
+		result[idx.TableName][idx.IndexName] = true
+	}
+	
+	return result
+}
+
 // CreateOptimizedIndexes 创建优化索引（兼容 MySQL 5.x）
 func CreateOptimizedIndexes(db *gorm.DB) error {
 	log.Println("开始创建/检查优化索引...")
 
-	indexes := []struct {
+	// 一次性获取所有已存在的索引（性能优化：避免多次查询）
+	existingIndexes := getAllExistingIndexes(db)
+
+	indexes := []struct{
 		table     string
 		indexName string
 		sql       string
@@ -174,10 +202,13 @@ func CreateOptimizedIndexes(db *gorm.DB) error {
 		},
 	}
 
+	createdCount := 0
+	skippedCount := 0
+	
 	for _, idx := range indexes {
-		// 先检查索引是否存在
-		if indexExists(db, idx.table, idx.indexName) {
-			log.Printf("⏭️  索引已存在，跳过 [%s]", idx.desc)
+		// 使用预加载的索引信息检查（避免多次查询数据库）
+		if existingIndexes[idx.table] != nil && existingIndexes[idx.table][idx.indexName] {
+			skippedCount++
 			continue
 		}
 
@@ -187,9 +218,10 @@ func CreateOptimizedIndexes(db *gorm.DB) error {
 			// 继续创建其他索引，不中断
 		} else {
 			log.Printf("✅ 索引创建成功 [%s]", idx.desc)
+			createdCount++
 		}
 	}
 
-	log.Println("索引创建/检查完成")
+	log.Printf("索引创建/检查完成 (新建: %d, 跳过: %d)", createdCount, skippedCount)
 	return nil
 }

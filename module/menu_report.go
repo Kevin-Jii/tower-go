@@ -25,8 +25,17 @@ func (m *MenuReportModule) CreateOrder(order *model.MenuReportOrder) error {
 			return err
 		}
 
-		// 加载关联信息（用于通知）
-		tx.Preload("Items.Dish").Preload("Store").Preload("User").First(order, order.ID)
+		// 优化：使用 Joins 代替 Preload，减少查询次数
+		// 使用单次查询加载所有关联数据
+		if err := tx.
+			Preload("Items", func(db *gorm.DB) *gorm.DB {
+				return db.Joins("Dish") // 使用 Joins 代替嵌套 Preload
+			}).
+			Preload("Store").
+			Preload("User").
+			First(order, order.ID).Error; err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -45,8 +54,15 @@ func (m *MenuReportModule) CreateOrder(order *model.MenuReportOrder) error {
 // GetOrderByID 根据ID获取报菜记录单（带门店隔离）
 func (m *MenuReportModule) GetOrderByID(id uint, storeID uint) (*model.MenuReportOrder, error) {
 	var order model.MenuReportOrder
-	if err := m.db.Preload("Items.Dish").Preload("Store").Preload("User").
-		Where("id = ? AND store_id = ?", id, storeID).First(&order).Error; err != nil {
+	// 优化：使用 Joins 预加载，减少查询次数
+	if err := m.db.
+		Preload("Items", func(db *gorm.DB) *gorm.DB {
+			return db.Joins("Dish").Order("menu_report_items.id ASC")
+		}).
+		Preload("Store").
+		Preload("User").
+		Where("id = ? AND store_id = ?", id, storeID).
+		First(&order).Error; err != nil {
 		return nil, err
 	}
 	return &order, nil
@@ -59,11 +75,19 @@ func (m *MenuReportModule) ListOrders(storeID uint, page, pageSize int) ([]*mode
 
 	query := m.db.Model(&model.MenuReportOrder{}).Where("store_id = ?", storeID)
 
+	// 先统计总数（不加载关联数据）
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := query.Preload("Items.Dish").Preload("Store").Preload("User").
+	// 优化：使用 Joins 预加载，减少查询次数
+	if err := m.db.
+		Preload("Items", func(db *gorm.DB) *gorm.DB {
+			return db.Joins("Dish").Order("menu_report_items.id ASC")
+		}).
+		Preload("Store").
+		Preload("User").
+		Where("store_id = ?", storeID).
 		Order("created_at DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
@@ -77,7 +101,13 @@ func (m *MenuReportModule) ListOrders(storeID uint, page, pageSize int) ([]*mode
 // ListOrdersByDateRange 根据日期范围查询（带门店隔离）
 func (m *MenuReportModule) ListOrdersByDateRange(storeID uint, startDate, endDate time.Time) ([]*model.MenuReportOrder, error) {
 	var orders []*model.MenuReportOrder
-	if err := m.db.Preload("Items.Dish").Preload("Store").Preload("User").
+	// 优化：使用 Joins 预加载，减少查询次数
+	if err := m.db.
+		Preload("Items", func(db *gorm.DB) *gorm.DB {
+			return db.Joins("Dish").Order("menu_report_items.id ASC")
+		}).
+		Preload("Store").
+		Preload("User").
 		Where("store_id = ? AND created_at BETWEEN ? AND ?", storeID, startDate, endDate).
 		Order("created_at DESC").
 		Find(&orders).Error; err != nil {

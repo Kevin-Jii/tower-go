@@ -29,18 +29,22 @@ func (n *MenuReportNotifier) Update(event utils.EventType, data interface{}) {
 }
 
 // sendMenuReportNotification 发送报菜记录通知
+// 注意：广播功能已移除，此方法不再发送通知
 func (n *MenuReportNotifier) sendMenuReportNotification(order *model.MenuReportOrder) {
+	// 广播功能已移除，不再自动发送通知
+	// 如需发送通知，请手动调用 DingTalkService 的发送方法
+	
 	// 异步发送，不影响主流程
-	go func() {
-		// 构建消息内容
-		title, content := n.buildMenuReportMessage(order)
-
-		// 使用 DingTalkService 的 BroadcastToStore 方法推送到门店机器人
-		err := n.dingTalkService.BroadcastToStore(order.StoreID, "markdown", title, content)
-		if err != nil {
-			fmt.Printf("钉钉通知发送失败: %v\n", err)
-		}
-	}()
+	// go func() {
+	// 	// 构建消息内容
+	// 	title, content := n.buildMenuReportMessage(order)
+	//
+	// 	// 广播功能已移除
+	// 	// err := n.dingTalkService.BroadcastToStore(order.StoreID, "markdown", title, content)
+	// 	// if err != nil {
+	// 	// 	fmt.Printf("钉钉通知发送失败: %v\n", err)
+	// 	// }
+	// }()
 }
 
 // buildMenuReportMessage 构造报菜消息

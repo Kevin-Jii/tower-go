@@ -1,9 +1,11 @@
 package service
 
 import (
+	"io"
 	"time"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils"
 	"github.com/Kevin-Jii/tower-go/utils/events"
 )
 
@@ -12,6 +14,7 @@ type MenuReportService struct {
 	dishModule       *module.DishModule
 	storeModule      *module.StoreModule
 	userModule       *module.UserModule
+	botModule        *module.DingTalkBotModule
 	eventBus         *events.EventBus
 }
 
@@ -20,6 +23,7 @@ func NewMenuReportService(
 	dishModule *module.DishModule,
 	storeModule *module.StoreModule,
 	userModule *module.UserModule,
+	botModule *module.DingTalkBotModule,
 	eventBus *events.EventBus,
 ) *MenuReportService {
 	return &MenuReportService{
@@ -27,6 +31,7 @@ func NewMenuReportService(
 		dishModule:       dishModule,
 		storeModule:      storeModule,
 		userModule:       userModule,
+		botModule:        botModule,
 		eventBus:         eventBus,
 	}
 }
@@ -67,19 +72,32 @@ func (s *MenuReportService) CreateMenuReportOrder(storeID uint, userID uint, req
 		// 获取门店和用户信息
 		storeName := ""
 		userName := ""
+		storePhone := ""
+		storeAddress := ""
 
 		if store, err := s.storeModule.GetByID(storeID); err == nil && store != nil {
 			storeName = store.Name
+			storePhone = store.Phone
+			storeAddress = store.Address
 		}
 
 		if user, err := s.userModule.GetByID(userID); err == nil && user != nil {
 			userName = user.Username
 		}
 
+		// 获取门店的第一个启用的机器人
+		var botID uint = 0
+		if bots, err := s.botModule.ListEnabledByStoreID(storeID); err == nil && len(bots) > 0 {
+			botID = bots[0].ID
+		}
+
 		event := MenuReportOrderCreatedEvent{
-			Order:     order,
-			StoreName: storeName,
-			UserName:  userName,
+			Order:        order,
+			StoreName:    storeName,
+			UserName:     userName,
+			StorePhone:   storePhone,
+			StoreAddress: storeAddress,
+			BotID:        botID, // 使用门店的第一个启用的机器人
 		}
 
 		s.eventBus.PublishAsync(event)
@@ -194,4 +212,38 @@ func (s *MenuReportService) GetStatsByDateRange(storeID uint, startDate, endDate
 // GetStatsByDateRangeAllStores 获取所有门店统计数据（仅总部）
 func (s *MenuReportService) GetStatsByDateRangeAllStores(startDate, endDate time.Time) (*model.MenuReportStats, error) {
 	return s.menuReportModule.GetStatsByDateRangeAllStores(startDate, endDate)
+}
+
+// GenerateExcel 生成报菜记录单Excel文件
+func (s *MenuReportService) GenerateExcel(order *model.MenuReportOrder) (io.Reader, error) {
+	// 获取门店和用户信息
+	storeName := ""
+	userName := ""
+	storePhone := ""
+	storeAddress := ""
+
+	// 优先使用预加载的数据，避免额外查询
+	if order.Store != nil {
+		storeName = order.Store.Name
+		storePhone = order.Store.Phone
+		storeAddress = order.Store.Address
+	} else if order.StoreID > 0 {
+		// 如果没有预加载，则查询
+		if store, err := s.storeModule.GetByID(order.StoreID); err == nil && store != nil {
+			storeName = store.Name
+			storePhone = store.Phone
+			storeAddress = store.Address
+		}
+	}
+
+	if order.User != nil {
+		userName = order.User.Username
+	} else if order.UserID > 0 {
+		if user, err := s.userModule.GetByID(order.UserID); err == nil && user != nil {
+			userName = user.Username
+		}
+	}
+
+	// 调用工具函数生成Excel
+	return utils.GenerateMenuReportExcel(order, storeName, userName, storePhone, storeAddress)
 }

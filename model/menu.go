@@ -21,7 +21,8 @@ type Menu struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 
 	// 关联
-	Children []*Menu `json:"children,omitempty" gorm:"-"` // 子菜单（不存数据库）
+	Children    []*Menu `json:"children,omitempty" gorm:"-"`    // 子菜单（不存数据库）
+	Permissions uint8   `json:"permissions,omitempty" gorm:"-"` // 用户对该菜单的权限（运行时填充）
 }
 
 // CreateMenuReq 创建菜单请求

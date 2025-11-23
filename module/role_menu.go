@@ -14,21 +14,29 @@ func NewRoleMenuModule(db *gorm.DB) *RoleMenuModule {
 	return &RoleMenuModule{db: db}
 }
 
-// AssignMenusToRole 为角色分配菜单（覆盖式）
-func (m *RoleMenuModule) AssignMenusToRole(roleID uint, menuIDs []uint) error {
+// AssignMenusToRole 为角色分配菜单（覆盖式，支持权限位）
+func (m *RoleMenuModule) AssignMenusToRole(roleID uint, menuIDs []uint, perms map[uint]uint8) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 删除该角色的所有菜单关联
 		if err := tx.Where("role_id = ?", roleID).Delete(&model.RoleMenu{}).Error; err != nil {
 			return err
 		}
 
-		// 2. 批量插入新的菜单关联
+		// 2. 批量插入新的菜单关联（带权限位）
 		if len(menuIDs) > 0 {
 			roleMenus := make([]model.RoleMenu, len(menuIDs))
 			for i, menuID := range menuIDs {
+				// 获取该菜单的权限位，默认为全部权限
+				perm := model.PermAll
+				if perms != nil {
+					if p, ok := perms[menuID]; ok {
+						perm = p
+					}
+				}
 				roleMenus[i] = model.RoleMenu{
-					RoleID: roleID,
-					MenuID: menuID,
+					RoleID:      roleID,
+					MenuID:      menuID,
+					Permissions: perm,
 				}
 			}
 			if err := tx.Create(&roleMenus).Error; err != nil {
@@ -47,6 +55,21 @@ func (m *RoleMenuModule) GetMenuIDsByRoleID(roleID uint) ([]uint, error) {
 		Where("role_id = ?", roleID).
 		Pluck("menu_id", &menuIDs).Error
 	return menuIDs, err
+}
+
+// GetMenuPermissionsByRoleID 获取角色的菜单权限映射
+func (m *RoleMenuModule) GetMenuPermissionsByRoleID(roleID uint) (map[uint]uint8, error) {
+	var roleMenus []model.RoleMenu
+	err := m.db.Where("role_id = ?", roleID).Find(&roleMenus).Error
+	if err != nil {
+		return nil, err
+	}
+
+	perms := make(map[uint]uint8)
+	for _, rm := range roleMenus {
+		perms[rm.MenuID] = rm.Permissions
+	}
+	return perms, nil
 }
 
 // DeleteByRoleID 删除角色的所有菜单关联

@@ -140,9 +140,9 @@ func (s *MenuService) DeleteMenu(id uint) error {
 	return s.menuModule.Delete(id)
 }
 
-// AssignMenusToRole 为角色分配菜单
+// AssignMenusToRole 为角色分配菜单（支持权限位）
 func (s *MenuService) AssignMenusToRole(req *model.AssignMenusToRoleReq) error {
-	return s.roleMenuModule.AssignMenusToRole(req.RoleID, req.MenuIDs)
+	return s.roleMenuModule.AssignMenusToRole(req.RoleID, req.MenuIDs, req.Perms)
 }
 
 // GetRoleMenus 获取角色的菜单列表
@@ -166,9 +166,9 @@ func (s *MenuService) GetRoleMenuIDs(roleID uint) ([]uint, error) {
 	return s.roleMenuModule.GetMenuIDsByRoleID(roleID)
 }
 
-// AssignMenusToStoreRole 为门店角色分配菜单
+// AssignMenusToStoreRole 为门店角色分配菜单（支持权限位）
 func (s *MenuService) AssignMenusToStoreRole(req *model.AssignStoreMenusReq) error {
-	return s.storeRoleMenuModule.AssignMenusToStoreRole(req.StoreID, req.RoleID, req.MenuIDs)
+	return s.storeRoleMenuModule.AssignMenusToStoreRole(req.StoreID, req.RoleID, req.MenuIDs, req.Perms)
 }
 
 // GetStoreRoleMenus 获取门店角色的菜单列表
@@ -241,4 +241,14 @@ func (s *MenuService) GetAllPermissions() ([]string, error) {
 	}
 
 	return permissions, nil
+}
+
+// GetRoleMenuPermissions 获取角色的菜单权限映射
+func (s *MenuService) GetRoleMenuPermissions(roleID uint) (map[uint]uint8, error) {
+	return s.roleMenuModule.GetMenuPermissionsByRoleID(roleID)
+}
+
+// GetStoreRoleMenuPermissions 获取门店角色的菜单权限映射
+func (s *MenuService) GetStoreRoleMenuPermissions(storeID uint, roleID uint) (map[uint]uint8, error) {
+	return s.storeRoleMenuModule.GetMenuPermissionsByStoreAndRole(storeID, roleID)
 }

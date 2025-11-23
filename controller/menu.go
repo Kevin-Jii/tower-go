@@ -273,6 +273,34 @@ func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 	http.Success(ctx, menuIDs)
 }
 
+// GetRoleMenuPermissions godoc
+// @Summary 获取角色菜单权限映射
+// @Description 获取角色的所有菜单及其权限位（用于权限编辑回显）
+// @Tags menus
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param role_id query int true "角色ID"
+// @Success 200 {object} http.Response{data=map[uint]uint8}
+// @Router /menus/role-permissions [get]
+func (c *MenuController) GetRoleMenuPermissions(ctx *gin.Context) {
+	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
+	if err != nil {
+		http.Error(ctx, 400, "Invalid role ID")
+		return
+	}
+
+	perms, err := c.menuService.GetRoleMenuPermissions(uint(roleID))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	jsonData, _ := json.MarshalIndent(perms, "", "  ")
+	fmt.Printf("[GetRoleMenuPermissions] 查询结果:\n%s\n", string(jsonData))
+	http.Success(ctx, perms)
+}
+
 // AssignMenusToStoreRole godoc
 // @Summary 为门店角色分配菜单
 // @Description 为特定门店的角色定制菜单权限（总部管理员或门店管理员）
@@ -375,6 +403,41 @@ func (c *MenuController) GetStoreRoleMenuIDs(ctx *gin.Context) {
 	jsonData, _ := json.MarshalIndent(menuIDs, "", "  ")
 	fmt.Printf("[GetStoreRoleMenuIDs] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, menuIDs)
+}
+
+// GetStoreRoleMenuPermissions godoc
+// @Summary 获取门店角色菜单权限映射
+// @Description 获取门店角色的所有菜单及其权限位（用于权限编辑回显）
+// @Tags menus
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param store_id query int true "门店ID"
+// @Param role_id query int true "角色ID"
+// @Success 200 {object} http.Response{data=map[uint]uint8}
+// @Router /menus/store-role-permissions [get]
+func (c *MenuController) GetStoreRoleMenuPermissions(ctx *gin.Context) {
+	storeID, err := strconv.ParseUint(ctx.Query("store_id"), 10, 32)
+	if err != nil {
+		http.Error(ctx, 400, "Invalid store ID")
+		return
+	}
+
+	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
+	if err != nil {
+		http.Error(ctx, 400, "Invalid role ID")
+		return
+	}
+
+	perms, err := c.menuService.GetStoreRoleMenuPermissions(uint(storeID), uint(roleID))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	jsonData, _ := json.MarshalIndent(perms, "", "  ")
+	fmt.Printf("[GetStoreRoleMenuPermissions] 查询结果:\n%s\n", string(jsonData))
+	http.Success(ctx, perms)
 }
 
 // CopyStoreMenus godoc

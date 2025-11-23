@@ -87,7 +87,7 @@ func (m *MenuModule) Delete(id uint) error {
 	return err
 }
 
-// GetMenusByRoleID 根据角色ID获取菜单列表（带缓存）
+// GetMenusByRoleID 根据角色ID获取菜单列表（带权限位，带缓存）
 func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 	var menus []*model.Menu
 
@@ -98,8 +98,9 @@ func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 		return menus, nil
 	}
 
-	// 缓存未命中，从数据库查询
+	// 缓存未命中，从数据库查询（包含权限位）
 	err = m.db.Table("menus").
+		Select("menus.*, role_menus.permissions").
 		Joins("INNER JOIN role_menus ON menus.id = role_menus.menu_id").
 		Where("role_menus.role_id = ? AND menus.status = 1", roleID).
 		Order("menus.sort ASC").
@@ -114,7 +115,7 @@ func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 	return menus, err
 }
 
-// GetMenusByStoreAndRole 根据门店ID和角色ID获取菜单（门店定制权限，带缓存）
+// GetMenusByStoreAndRole 根据门店ID和角色ID获取菜单（门店定制权限，带权限位，带缓存）
 func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model.Menu, error) {
 	var menus []*model.Menu
 
@@ -125,8 +126,9 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 		return menus, nil
 	}
 
-	// 缓存未命中，优先查询门店定制权限
+	// 缓存未命中，优先查询门店定制权限（包含权限位）
 	err = m.db.Table("menus").
+		Select("menus.*, store_role_menus.permissions").
 		Joins("INNER JOIN store_role_menus ON menus.id = store_role_menus.menu_id").
 		Where("store_role_menus.store_id = ? AND store_role_menus.role_id = ? AND menus.status = 1", storeID, roleID).
 		Order("menus.sort ASC").

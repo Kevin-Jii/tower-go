@@ -70,30 +70,41 @@ INSERT INTO users (id, employee_no, username, phone, password, nickname, email, 
 (999, '999999', 'admin', '13082848180', '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqQb9tTmMYgDKwANaIJ/Ld9Ld9Ld9', '超级管理员', 'admin@tower.com', 999, 999, 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE username=VALUES(username), updated_at=NOW();
 
--- 5. 角色菜单权限
+-- 5. 添加权限字段（如果不存在）
+-- permissions: bit0=查看, bit1=新增, bit2=修改, bit3=删除, 15=全部权限
+ALTER TABLE `role_menus` ADD COLUMN IF NOT EXISTS `permissions` TINYINT UNSIGNED NOT NULL DEFAULT 15 COMMENT '权限位：bit0=查看,bit1=新增,bit2=修改,bit3=删除' AFTER `menu_id`;
+ALTER TABLE `store_role_menus` ADD COLUMN IF NOT EXISTS `permissions` TINYINT UNSIGNED NOT NULL DEFAULT 15 COMMENT '权限位：bit0=查看,bit1=新增,bit2=修改,bit3=删除' AFTER `menu_id`;
+
+-- 6. 角色菜单权限（带权限位，15=全部权限）
 -- 总部管理员(ID:1): 所有权限
-INSERT INTO role_menus (role_id, menu_id) 
-SELECT 1, id FROM menus WHERE id <= 56
-ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_menus (role_id, menu_id, permissions) 
+SELECT 1, id, 15 FROM menus WHERE id <= 56
+ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 超级管理员(ID:999): 所有权限
-INSERT INTO role_menus (role_id, menu_id) 
-SELECT 999, id FROM menus WHERE id <= 56
-ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_menus (role_id, menu_id, permissions) 
+SELECT 999, id, 15 FROM menus WHERE id <= 56
+ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员(ID:2): 门店、菜品、报菜权限
-INSERT INTO role_menus (role_id, menu_id) 
-SELECT 2, id FROM menus WHERE id >= 20 AND id <= 56
-ON DUPLICATE KEY UPDATE role_id=role_id;
+INSERT INTO role_menus (role_id, menu_id, permissions) 
+SELECT 2, id, 15 FROM menus WHERE id >= 20 AND id <= 56
+ON DUPLICATE KEY UPDATE permissions=15;
 
--- 普通员工(ID:3): 菜品和报菜权限（不含删除）
-INSERT INTO role_menus (role_id, menu_id) VALUES
-(3, 30), (3, 31), (3, 32), (3, 33), (3, 35),
-(3, 40), (3, 41), (3, 42), (3, 43), (3, 45)
-ON DUPLICATE KEY UPDATE role_id=role_id;
+-- 普通员工(ID:3): 菜品和报菜权限（不含删除，permissions=7: 查看+新增+修改）
+INSERT INTO role_menus (role_id, menu_id, permissions) VALUES
+(3, 30, 15), (3, 31, 7), (3, 32, 7), (3, 33, 7), (3, 35, 7),
+(3, 40, 15), (3, 41, 7), (3, 42, 7), (3, 43, 7), (3, 45, 7)
+ON DUPLICATE KEY UPDATE permissions=VALUES(permissions);
 
 -- ============================================
 -- 初始化完成
 -- 默认超级管理员账号: 13082848180
 -- 默认密码: Admin@123456 (请立即修改!)
+-- 
+-- 权限位说明:
+-- 1  = 0001 = 仅查看
+-- 3  = 0011 = 查看+新增
+-- 7  = 0111 = 查看+新增+修改
+-- 15 = 1111 = 全部权限
 -- ============================================

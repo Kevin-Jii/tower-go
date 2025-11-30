@@ -33,11 +33,9 @@ type CreateUserReq struct {
 	Username string `json:"username" binding:"required"`          // 强制要求非空
 	Email    string `json:"email" binding:"omitempty,email"`      // 可选，但如果提供则必须是有效的邮箱
 	Gender   int    `json:"gender" binding:"omitempty,oneof=1 2"` // 1男 2女，未传使用默认1
-	StoreID  uint   `json:"store_id,omitempty"`
-	RoleID   uint   `json:"role_id,omitempty"`
-	Status   *int   `json:"status,omitempty"`
+	RoleID   uint   `json:"role_id,omitempty"`                    // 角色ID，不传默认普通员工
 	Nickname string `json:"nickname,omitempty"`
-	Remark   string `json:"remark,omitempty"`
+	// StoreID 和 Status 由后端自动设置，不需要前端传递
 }
 
 type UpdateUserReq struct {

@@ -59,12 +59,8 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	targetStoreID := storeID
-	if roleCode == model.RoleCodeAdmin && req.StoreID > 0 {
-		targetStoreID = req.StoreID
-	}
-
-	if err := c.userService.CreateUser(targetStoreID, roleCode, &req); err != nil {
+	// 使用当前登录用户的门店ID（从Token获取）
+	if err := c.userService.CreateUser(storeID, roleCode, &req); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
@@ -183,7 +179,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 
 // DeleteUser godoc
 // @Summary 删除用户
-// @Description 删除用户
+// @Description 删除用户（管理员可删除任意用户，门店管理员只能删除本门店用户）
 // @Tags users
 // @Accept json
 // @Produce json
@@ -193,6 +189,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
+	roleCode := middleware.GetRoleCode(ctx)
 	idStr := ctx.Param("id")
 	log.Printf("Attempting to delete user with ID string: %s", idStr)
 
@@ -202,6 +199,17 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
+	// 管理员可以删除任意用户
+	if roleCode == model.RoleCodeAdmin {
+		if err := c.userService.DeleteUser(uint(id)); err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+		http.Success(ctx, nil)
+		return
+	}
+
+	// 非管理员只能删除本门店用户
 	if err := c.userService.DeleteUserByStoreID(uint(id), storeID); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return

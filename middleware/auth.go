@@ -35,12 +35,17 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 将用户信息存储到上下文
+		// 将用户信息存储到上下文（优先使用 Token 中的值，安全可靠）
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("storeID", claims.StoreID)
 		c.Set("roleCode", claims.RoleCode)
 		c.Set("roleID", claims.RoleID)
+
+		// 同时保存请求头中的值（供日志或特殊场景使用）
+		c.Set("headerUserID", c.GetHeader("X-User-Id"))
+		c.Set("headerStoreID", c.GetHeader("X-Store-Id"))
+
 		c.Next()
 	}
 }

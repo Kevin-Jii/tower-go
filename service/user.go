@@ -53,24 +53,19 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 		Username:   req.Username,
 		Email:      req.Email,
 		EmployeeNo: employeeNo,
-		Status:     1,
-		Gender:     1,
+		Status:     1, // 默认启用
+		Gender:     1, // 默认男
 		StoreID:    storeID,
 		Nickname:   req.Nickname,
+		RoleID:     3, // 默认普通员工
 	}
 
 	if req.Gender == 2 {
 		user.Gender = 2
 	}
 
-	if req.Status != nil {
-		user.Status = *req.Status
-	}
-
 	if req.RoleID > 0 {
 		user.RoleID = req.RoleID
-	} else if roleCode == model.RoleCodeAdmin && req.RoleID == 0 {
-		// 保持默认
 	}
 
 	return s.userModule.Create(user)
@@ -138,6 +133,11 @@ func (s *UserService) UpdateUserByStoreID(userID uint, storeID uint, req *model.
 func (s *UserService) DeleteUserByStoreID(userID uint, storeID uint) error {
 	// Module 层将负责在删除前，复合校验 userID 和 storeID
 	return s.userModule.DeleteByUserIDAndStoreID(userID, storeID)
+}
+
+// DeleteUser 删除用户（管理员使用，不限制门店）
+func (s *UserService) DeleteUser(userID uint) error {
+	return s.userModule.Delete(userID)
 }
 
 // --- 个人档案 / 认证接口 (无需 StoreID 作为查询参数) ---

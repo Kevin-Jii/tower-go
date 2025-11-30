@@ -7,7 +7,6 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
-	"github.com/Kevin-Jii/tower-go/utils/seeding"
 
 	"go.uber.org/zap"
 )
@@ -63,24 +62,7 @@ func AutoMigrateAndSeeds() {
 		logging.LogError("创建优化索引失败", zap.Error(err))
 	}
 
-	if err := seeding.InitRoleSeeds(database.DB); err != nil {
-		logging.LogError("角色基础数据初始化失败", zap.Error(err))
-	}
-	if err := seeding.InitMenuSeeds(database.DB); err != nil {
-		logging.LogError("菜单种子数据初始化失败", zap.Error(err))
-	}
-	if err := seeding.InitRoleMenuSeeds(database.DB); err != nil {
-		logging.LogError("角色菜单权限初始化失败", zap.Error(err))
-	}
-	if err := seeding.InitSuperAdmin(database.DB); err != nil {
-		logging.LogError("超级管理员初始化失败", zap.Error(err))
-	}
-	if err := seeding.EnsureStoreCodes(database.DB); err != nil {
-		logging.LogError("门店编码补全失败", zap.Error(err))
-	}
-
-	// 初始化钉钉管理菜单
-	if err := seeding.InitDingTalkMenuSeeds(database.DB); err != nil {
-		logging.LogError("钉钉管理菜单初始化失败", zap.Error(err))
-	}
+	// 种子数据初始化已移至 SQL 文件: migrations/init_seed_data.sql
+	// 首次部署请手动执行: mysql -u用户名 -p密码 数据库名 < migrations/init_seed_data.sql
+	logging.LogInfo("数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql")
 }

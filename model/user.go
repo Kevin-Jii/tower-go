@@ -41,8 +41,11 @@ type CreateUserReq struct {
 type UpdateUserReq struct {
 	Password string `json:"password,omitempty" binding:"omitempty,min=6"`
 	Username string `json:"username,omitempty"`
+	Nickname string `json:"nickname,omitempty"`
 	Email    string `json:"email,omitempty" binding:"omitempty,email"`
 	Phone    string `json:"phone,omitempty" binding:"omitempty,len=11"`
-	Status   *int   `json:"status,omitempty"`                               // 账号状态：1=正常，2=禁用；指针允许区分未提供 vs 提供0或2
+	Status   *int   `json:"status,omitempty"`                               // 账号状态：1=正常，2=禁用
 	Gender   *int   `json:"gender,omitempty" binding:"omitempty,oneof=1 2"` // 性别：1男 2女
+	RoleID   *uint  `json:"role_id,omitempty"`                              // 角色ID
+	StoreID  *uint  `json:"store_id,omitempty"`                             // 门店ID（仅管理员可修改）
 }

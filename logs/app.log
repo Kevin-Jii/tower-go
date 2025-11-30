@@ -2554,3 +2554,75 @@
 {"level":"info","timestamp":"2025-11-30 23:21:18.575","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
 {"level":"info","timestamp":"2025-11-30 23:21:18.587","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
 {"level":"info","timestamp":"2025-11-30 23:21:18.588","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 02:13:18.286","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.287","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 02:13:18.287","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.297","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.304","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.304","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.304","caller":"bootstrap/migrate.go:17","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.304","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:13:18.314","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 02:13:18.316","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 02:14:58.328","caller":"service/dingtalk.go:118","msg":"DingTalk message sent successfully","botID":7}
+{"level":"info","timestamp":"2025-12-01 02:25:50.812","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.813","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 02:25:50.813","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.823","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.830","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.830","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.830","caller":"bootstrap/migrate.go:17","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.830","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:25:50.841","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 02:25:50.842","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 02:39:42.673","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.674","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 02:39:42.674","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.684","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.690","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.690","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.690","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.690","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:39:42.701","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 02:39:42.702","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 02:46:04.360","caller":"utils/employee.go:46","msg":"生成新工号"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.197","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.198","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 02:53:32.199","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.208","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.213","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.213","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.213","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.213","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 02:53:32.226","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 02:53:32.227","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 03:38:02.478","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.479","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 03:38:02.479","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.488","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.495","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.495","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.495","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.495","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 03:38:02.507","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 03:38:02.509","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 03:39:24.194","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.194","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 03:39:24.195","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.204","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.211","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.211","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.211","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.211","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 03:39:24.222","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 03:39:24.223","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-12-01 03:40:01.759","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.760","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-01 03:40:01.761","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.771","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.777","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.777","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.777","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.777","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-01 03:40:01.793","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-01 03:40:01.794","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}

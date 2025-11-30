@@ -91,10 +91,6 @@ yarn-error.log*
 *.md.bak
 docs/*.md.bak
 
-# Markdown 文档（除 README.md）
-*.md
-!README.md
-
 # PowerShell 脚本输出
  transcripts/
 

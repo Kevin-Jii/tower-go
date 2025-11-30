@@ -45,6 +45,12 @@ definitions:
         items:
           type: integer
         type: array
+      perms:
+        additionalProperties:
+          format: int32
+          type: integer
+        description: 菜单ID -> 权限位映射
+        type: object
       role_id:
         type: integer
     required:
@@ -57,6 +63,12 @@ definitions:
         items:
           type: integer
         type: array
+      perms:
+        additionalProperties:
+          format: int32
+          type: integer
+        description: 菜单ID -> 权限位映射
+        type: object
       role_id:
         type: integer
       store_id:
@@ -64,6 +76,19 @@ definitions:
     required:
     - menu_ids
     - role_id
+    - store_id
+    type: object
+  model.BindStoreSupplierReq:
+    properties:
+      product_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+      store_id:
+        type: integer
+    required:
+    - product_ids
     - store_id
     type: object
   model.CopyStoreMenusReq:
@@ -211,6 +236,36 @@ definitions:
     - title
     - type
     type: object
+  model.CreatePurchaseOrderItemReq:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      remark:
+        maxLength: 200
+        type: string
+    required:
+    - product_id
+    - quantity
+    type: object
+  model.CreatePurchaseOrderReq:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.CreatePurchaseOrderItemReq'
+        minItems: 1
+        type: array
+      order_date:
+        description: '格式: 2024-01-01'
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+    required:
+    - items
+    - order_date
+    type: object
   model.CreateStoreReq:
     properties:
       address:
@@ -227,6 +282,72 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  model.CreateSupplierCategoryReq:
+    properties:
+      name:
+        maxLength: 100
+        type: string
+      sort:
+        type: integer
+      supplier_id:
+        type: integer
+    required:
+    - name
+    - supplier_id
+    type: object
+  model.CreateSupplierProductReq:
+    properties:
+      category_id:
+        type: integer
+      name:
+        maxLength: 200
+        type: string
+      price:
+        minimum: 0
+        type: number
+      remark:
+        maxLength: 500
+        type: string
+      spec:
+        maxLength: 100
+        type: string
+      supplier_id:
+        type: integer
+      unit:
+        maxLength: 20
+        type: string
+    required:
+    - category_id
+    - name
+    - supplier_id
+    - unit
+    type: object
+  model.CreateSupplierReq:
+    properties:
+      contact_email:
+        maxLength: 100
+        type: string
+      contact_person:
+        maxLength: 100
+        type: string
+      contact_phone:
+        maxLength: 20
+        type: string
+      remark:
+        type: string
+      supplier_address:
+        maxLength: 500
+        type: string
+      supplier_code:
+        maxLength: 50
+        type: string
+      supplier_name:
+        maxLength: 200
+        type: string
+    required:
+    - supplier_code
+    - supplier_name
     type: object
   model.CreateUserReq:
     properties:
@@ -248,13 +369,8 @@ definitions:
       phone:
         description: 手机号验证
         type: string
-      remark:
-        type: string
       role_id:
-        type: integer
-      status:
-        type: integer
-      store_id:
+        description: 角色ID，不传默认普通员工
         type: integer
       username:
         description: 强制要求非空
@@ -398,6 +514,9 @@ definitions:
         type: string
       permission:
         type: string
+      permissions:
+        description: 用户对该菜单的权限（运行时填充）
+        type: integer
       remark:
         type: string
       sort:
@@ -523,6 +642,64 @@ definitions:
         description: 总数量
         type: integer
     type: object
+  model.PurchaseOrder:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      creator:
+        $ref: '#/definitions/model.User'
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/model.PurchaseOrderItem'
+        type: array
+      order_date:
+        type: string
+      order_no:
+        type: string
+      remark:
+        type: string
+      status:
+        type: integer
+      store:
+        $ref: '#/definitions/model.Store'
+      store_id:
+        type: integer
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  model.PurchaseOrderItem:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      order_id:
+        type: integer
+      product:
+        $ref: '#/definitions/model.SupplierProduct'
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      remark:
+        type: string
+      supplier:
+        $ref: '#/definitions/model.Supplier'
+      supplier_id:
+        type: integer
+      unit_price:
+        type: number
+      updated_at:
+        type: string
+    type: object
   model.ReorderDishCategoriesReq:
     properties:
       items:
@@ -562,6 +739,16 @@ definitions:
       updated_at:
         type: string
     type: object
+  model.SetDefaultSupplierReq:
+    properties:
+      product_id:
+        type: integer
+      store_id:
+        type: integer
+    required:
+    - product_id
+    - store_id
+    type: object
   model.Store:
     properties:
       address:
@@ -591,6 +778,98 @@ definitions:
         type: integer
       store_code:
         description: 门店编码 JWXXXX
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.StoreSupplierProduct:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      product:
+        $ref: '#/definitions/model.SupplierProduct'
+      product_id:
+        type: integer
+      store:
+        $ref: '#/definitions/model.Store'
+      store_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.Supplier:
+    properties:
+      contact_email:
+        type: string
+      contact_person:
+        type: string
+      contact_phone:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      remark:
+        type: string
+      status:
+        type: integer
+      supplier_address:
+        type: string
+      supplier_code:
+        type: string
+      supplier_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.SupplierCategory:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      sort:
+        type: integer
+      status:
+        type: integer
+      supplier:
+        $ref: '#/definitions/model.Supplier'
+      supplier_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.SupplierProduct:
+    properties:
+      category:
+        $ref: '#/definitions/model.SupplierCategory'
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      remark:
+        type: string
+      spec:
+        type: string
+      status:
+        type: integer
+      supplier:
+        $ref: '#/definitions/model.Supplier'
+      supplier_id:
+        type: integer
+      unit:
         type: string
       updated_at:
         type: string
@@ -701,6 +980,19 @@ definitions:
         - 1
         type: integer
     type: object
+  model.UpdatePurchaseOrderReq:
+    properties:
+      remark:
+        maxLength: 500
+        type: string
+      status:
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        type: integer
+    type: object
   model.UpdateRoleReq:
     properties:
       code:
@@ -740,6 +1032,72 @@ definitions:
         description: 允许更新为0或2（指针已可）加 tag 标识意图
         type: integer
     type: object
+  model.UpdateSupplierCategoryReq:
+    properties:
+      name:
+        maxLength: 100
+        type: string
+      sort:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
+  model.UpdateSupplierProductReq:
+    properties:
+      category_id:
+        type: integer
+      name:
+        maxLength: 200
+        type: string
+      price:
+        minimum: 0
+        type: number
+      remark:
+        maxLength: 500
+        type: string
+      spec:
+        maxLength: 100
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      unit:
+        maxLength: 20
+        type: string
+    type: object
+  model.UpdateSupplierReq:
+    properties:
+      contact_email:
+        maxLength: 100
+        type: string
+      contact_person:
+        maxLength: 100
+        type: string
+      contact_phone:
+        maxLength: 20
+        type: string
+      remark:
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      supplier_address:
+        maxLength: 500
+        type: string
+      supplier_code:
+        maxLength: 50
+        type: string
+      supplier_name:
+        maxLength: 200
+        type: string
+    type: object
   model.UpdateUserReq:
     properties:
       email:
@@ -750,13 +1108,21 @@ definitions:
         - 1
         - 2
         type: integer
+      nickname:
+        type: string
       password:
         minLength: 6
         type: string
       phone:
         type: string
+      role_id:
+        description: 角色ID
+        type: integer
       status:
-        description: 账号状态：1=正常，2=禁用；指针允许区分未提供 vs 提供0或2
+        description: 账号状态：1=正常，2=禁用
+        type: integer
+      store_id:
+        description: 门店ID（仅管理员可修改）
         type: integer
       username:
         type: string
@@ -1771,6 +2137,37 @@ paths:
       summary: 获取角色菜单ID列表
       tags:
       - menus
+  /menus/role-permissions:
+    get:
+      consumes:
+      - application/json
+      description: 获取角色的所有菜单及其权限位（用于权限编辑回显）
+      parameters:
+      - description: 角色ID
+        in: query
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  additionalProperties:
+                    format: int32
+                    type: integer
+                  type: object
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取角色菜单权限映射
+      tags:
+      - menus
   /menus/store-role:
     get:
       consumes:
@@ -1839,6 +2236,42 @@ paths:
       security:
       - Bearer: []
       summary: 获取门店角色菜单ID列表
+      tags:
+      - menus
+  /menus/store-role-permissions:
+    get:
+      consumes:
+      - application/json
+      description: 获取门店角色的所有菜单及其权限位（用于权限编辑回显）
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        required: true
+        type: integer
+      - description: 角色ID
+        in: query
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  additionalProperties:
+                    format: int32
+                    type: integer
+                  type: object
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取门店角色菜单权限映射
       tags:
       - menus
   /menus/tree:
@@ -1913,6 +2346,174 @@ paths:
       summary: 获取当前用户权限标识列表
       tags:
       - menus
+  /purchase-orders:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      - description: 供应商ID
+        in: query
+        name: supplier_id
+        type: integer
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      - description: 开始日期
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期
+        in: query
+        name: end_date
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.PurchaseOrder'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 采购单列表
+      tags:
+      - purchase-orders
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 采购单信息
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreatePurchaseOrderReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.PurchaseOrder'
+              type: object
+      security:
+      - Bearer: []
+      summary: 创建采购单
+      tags:
+      - purchase-orders
+  /purchase-orders/{id}:
+    delete:
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除采购单
+      tags:
+      - purchase-orders
+    get:
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.PurchaseOrder'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取采购单详情
+      tags:
+      - purchase-orders
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 采购单信息
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdatePurchaseOrderReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新采购单
+      tags:
+      - purchase-orders
+  /purchase-orders/{id}/by-supplier:
+    get:
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 按供应商分组获取采购单明细
+      tags:
+      - purchase-orders
   /report/robots:
     get:
       consumes:
@@ -2203,6 +2804,133 @@ paths:
       summary: 更新角色
       tags:
       - 角色管理
+  /store-suppliers:
+    get:
+      description: 获取当前门店已绑定的所有供应商商品，管理员可查看指定门店
+      parameters:
+      - description: 门店ID（管理员可指定，普通用户使用当前门店）
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.StoreSupplierProduct'
+                  type: array
+              type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 获取门店绑定的供应商商品列表
+      tags:
+      - 门店供应商管理
+  /store-suppliers/bind:
+    post:
+      consumes:
+      - application/json
+      description: 将供应商商品绑定到指定门店，支持批量绑定
+      parameters:
+      - description: 绑定信息
+        in: body
+        name: binding
+        required: true
+        schema:
+          $ref: '#/definitions/model.BindStoreSupplierReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 绑定成功
+          schema:
+            $ref: '#/definitions/http.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/http.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 门店绑定供应商商品
+      tags:
+      - 门店供应商管理
+  /store-suppliers/default:
+    put:
+      consumes:
+      - application/json
+      description: 为门店设置某个供应商商品为默认选项
+      parameters:
+      - description: 设置信息
+        in: body
+        name: setting
+        required: true
+        schema:
+          $ref: '#/definitions/model.SetDefaultSupplierReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            $ref: '#/definitions/http.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/http.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 设置默认供应商商品
+      tags:
+      - 门店供应商管理
+  /store-suppliers/unbind:
+    delete:
+      consumes:
+      - application/json
+      description: 将供应商商品从指定门店解绑，支持批量解绑
+      parameters:
+      - description: 解绑信息
+        in: body
+        name: binding
+        required: true
+        schema:
+          $ref: '#/definitions/model.BindStoreSupplierReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 解绑成功
+          schema:
+            $ref: '#/definitions/http.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/http.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 门店解绑供应商商品
+      tags:
+      - 门店供应商管理
   /stores:
     get:
       consumes:
@@ -2657,6 +3385,385 @@ paths:
       summary: 全部门店（无分页）
       tags:
       - stores
+  /supplier-categories:
+    get:
+      parameters:
+      - description: 供应商ID
+        in: query
+        name: supplier_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.SupplierCategory'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 供应商分类列表
+      tags:
+      - supplier-categories
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 分类信息
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateSupplierCategoryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建供应商分类
+      tags:
+      - supplier-categories
+  /supplier-categories/{id}:
+    delete:
+      parameters:
+      - description: 分类ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除供应商分类
+      tags:
+      - supplier-categories
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 分类ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类信息
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateSupplierCategoryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新供应商分类
+      tags:
+      - supplier-categories
+  /supplier-products:
+    get:
+      parameters:
+      - description: 供应商ID
+        in: query
+        name: supplier_id
+        type: integer
+      - description: 分类ID
+        in: query
+        name: category_id
+        type: integer
+      - description: 关键词
+        in: query
+        name: keyword
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.SupplierProduct'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 供应商商品列表
+      tags:
+      - supplier-products
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 商品信息
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateSupplierProductReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建供应商商品
+      tags:
+      - supplier-products
+  /supplier-products/{id}:
+    delete:
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除供应商商品
+      tags:
+      - supplier-products
+    get:
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.SupplierProduct'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取供应商商品详情
+      tags:
+      - supplier-products
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 商品信息
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateSupplierProductReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新供应商商品
+      tags:
+      - supplier-products
+  /suppliers:
+    get:
+      consumes:
+      - application/json
+      description: 获取供应商列表（支持分页和搜索）
+      parameters:
+      - description: 搜索关键词（名称或编码）
+        in: query
+        name: keyword
+        type: string
+      - description: 状态筛选（0=禁用，1=启用）
+        in: query
+        name: status
+        type: integer
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Supplier'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 供应商列表
+      tags:
+      - suppliers
+    post:
+      consumes:
+      - application/json
+      description: 创建新供应商（仅管理员）
+      parameters:
+      - description: 供应商信息
+        in: body
+        name: supplier
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateSupplierReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建供应商
+      tags:
+      - suppliers
+  /suppliers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除供应商（仅管理员）
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除供应商
+      tags:
+      - suppliers
+    get:
+      consumes:
+      - application/json
+      description: 获取供应商详细信息
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Supplier'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取供应商详情
+      tags:
+      - suppliers
+    put:
+      consumes:
+      - application/json
+      description: 更新供应商信息（仅管理员）
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 供应商信息
+        in: body
+        name: supplier
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateSupplierReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新供应商信息
+      tags:
+      - suppliers
   /users:
     get:
       consumes:
@@ -2721,7 +3828,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: 删除用户
+      description: 删除用户（管理员可删除任意用户，门店管理员只能删除本门店用户）
       parameters:
       - description: 用户ID
         in: path

@@ -23,6 +23,19 @@ func ParseUintParam(ctx *gin.Context, name string) (uint, bool) {
 	return uint(v), true
 }
 
+// ParseUintQuery 解析 query 参数为 uint，返回 (value, ok)
+func ParseUintQuery(ctx *gin.Context, name string) (uint, bool) {
+	valStr := ctx.Query(name)
+	if valStr == "" {
+		return 0, false
+	}
+	v, err := strconv.ParseUint(valStr, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return uint(v), true
+}
+
 // BindJSON 统一 JSON 绑定与错误处理，返回是否继续
 func BindJSON(ctx *gin.Context, dst interface{}) bool {
 	if err := ctx.ShouldBindJSON(dst); err != nil {

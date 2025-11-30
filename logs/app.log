@@ -2519,3 +2519,38 @@
 {"level":"info","timestamp":"2025-11-19 02:17:44.117","caller":"events/event_bus.go:84","msg":"Added image link to webhook message","botID":7,"imageURL":"http://47.120.27.64:8899/images/2025/11/19/021744_bb297a78.png"}
 {"level":"info","timestamp":"2025-11-19 02:17:44.257","caller":"service/dingtalk.go:118","msg":"DingTalk message sent successfully","botID":7}
 {"level":"info","timestamp":"2025-11-19 02:17:44.257","caller":"events/event_bus.go:84","msg":"Menu report notification sent successfully","orderID":84,"botID":7,"botName":"江西小炒_机器人7"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.260","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.261","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-19 21:58:25.261","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.320","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.336","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.336","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.336","caller":"bootstrap/migrate.go:17","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.336","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-19 21:58:25.348","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-19 21:58:25.393","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"info","timestamp":"2025-11-30 23:10:30.403","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-30 23:10:30.404","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-30 23:10:30.404","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"fatal","timestamp":"2025-11-30 23:10:30.409","caller":"bootstrap/database.go:14","msg":"数据库连接失败","error":"dial tcp [::1]:3306: connectex: An attempt was made to access a socket in a way forbidden by its access permissions.","stacktrace":"github.com/Kevin-Jii/tower-go/bootstrap.InitDatabase\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/database.go:14\ngithub.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:24\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.185","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.185","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-30 23:11:59.186","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.198","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.205","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.205","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.205","caller":"bootstrap/migrate.go:17","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.205","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-30 23:11:59.232","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-30 23:11:59.233","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-11-30 23:12:04.237","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"全局Stream机器人(自动创建)","error":"Post \"https://api.dingtalk.com/v1.0/gateway/connections/open\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.560","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.561","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-11-30 23:21:18.561","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.569","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.575","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.575","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.575","caller":"bootstrap/migrate.go:17","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.575","caller":"bootstrap/app.go:31","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-11-30 23:21:18.587","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-11-30 23:21:18.588","caller":"bootstrap/app.go:40","msg":"Stream clients initialized","total":1,"success":1}

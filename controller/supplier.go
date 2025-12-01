@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -18,13 +19,15 @@ func NewSupplierController(supplierService *service.SupplierService) *SupplierCo
 
 // CreateSupplier godoc
 // @Summary 创建供应商
-// @Description 创建新供应商（仅管理员）
-// @Tags suppliers
+// @Description 创建新供应商，编码自动生成（门店ID+4位序号）
+// @Tags 供应商管理
 // @Accept json
 // @Produce json
 // @Security Bearer
 // @Param supplier body model.CreateSupplierReq true "供应商信息"
-// @Success 200 {object} http.Response
+// @Success 200 {object} http.Response "创建成功"
+// @Failure 400 {object} http.Response "请求参数错误"
+// @Failure 500 {object} http.Response "服务器内部错误"
 // @Router /suppliers [post]
 func (c *SupplierController) CreateSupplier(ctx *gin.Context) {
 	if !http.RequireAdmin(ctx) {
@@ -36,7 +39,10 @@ func (c *SupplierController) CreateSupplier(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.supplierService.CreateSupplier(&req); err != nil {
+	// 获取当前用户门店ID
+	storeID := middleware.GetStoreID(ctx)
+
+	if err := c.supplierService.CreateSupplier(storeID, &req); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}

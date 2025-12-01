@@ -105,17 +105,18 @@ func ensureStreamBotExists(botModule *module.DingTalkBotModule, streamConfig con
 		return
 	}
 
-	// 创建新的 Stream 机器人
+	// 创建新的 Stream 机器人，绑定总部门店(ID=999)
+	hqStoreID := uint(999)
 	bot := &model.DingTalkBot{
-		Name:         "全局Stream机器人(自动创建)",
+		Name:         "总部Stream机器人(自动创建)",
 		BotType:      "stream",
 		ClientID:     streamConfig.ClientID,
 		ClientSecret: streamConfig.ClientSecret,
 		AgentID:      streamConfig.AgentID,
-		StoreID:      nil, // 全局机器人
+		StoreID:      &hqStoreID, // 绑定总部门店
 		IsEnabled:    true,
 		MsgType:      "markdown",
-		Remark:       "由系统根据 config.yaml 自动创建",
+		Remark:       "由系统根据配置自动创建，绑定总部门店",
 	}
 
 	if err := botModule.Create(bot); err != nil {

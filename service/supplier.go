@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
@@ -15,17 +16,16 @@ func NewSupplierService(supplierModule *module.SupplierModule) *SupplierService 
 	return &SupplierService{supplierModule: supplierModule}
 }
 
-func (s *SupplierService) CreateSupplier(req *model.CreateSupplierReq) error {
-	exists, err := s.supplierModule.ExistsByCode(req.SupplierCode)
+// CreateSupplier 创建供应商（自动生成编码：门店ID + 4位序号）
+func (s *SupplierService) CreateSupplier(storeID uint, req *model.CreateSupplierReq) error {
+	// 生成供应商编码：门店ID + 4位序号
+	supplierCode, err := s.generateSupplierCode(storeID)
 	if err != nil {
 		return err
 	}
-	if exists {
-		return errors.New("supplier code already exists")
-	}
 
 	supplier := &model.Supplier{
-		SupplierCode:    req.SupplierCode,
+		SupplierCode:    supplierCode,
 		SupplierName:    req.SupplierName,
 		ContactPerson:   req.ContactPerson,
 		ContactPhone:    req.ContactPhone,
@@ -35,6 +35,18 @@ func (s *SupplierService) CreateSupplier(req *model.CreateSupplierReq) error {
 		Status:          1,
 	}
 	return s.supplierModule.Create(supplier)
+}
+
+// generateSupplierCode 生成供应商编码：门店ID + 4位序号
+func (s *SupplierService) generateSupplierCode(storeID uint) (string, error) {
+	// 获取当前最大序号
+	maxSeq, err := s.supplierModule.GetMaxSeqByStorePrefix(storeID)
+	if err != nil {
+		return "", err
+	}
+	nextSeq := maxSeq + 1
+	// 格式：门店ID + 4位序号，如 9990001
+	return fmt.Sprintf("%d%04d", storeID, nextSeq), nil
 }
 
 func (s *SupplierService) GetSupplier(id uint) (*model.Supplier, error) {
@@ -50,14 +62,6 @@ func (s *SupplierService) UpdateSupplier(id uint, req *model.UpdateSupplierReq) 
 	if err != nil {
 		return errors.New("supplier not found")
 	}
-
-	if req.SupplierCode != "" {
-		existing, err := s.supplierModule.GetByCode(req.SupplierCode)
-		if err == nil && existing.ID != id {
-			return errors.New("supplier code already exists")
-		}
-	}
-
 	return s.supplierModule.UpdateByID(id, req)
 }
 

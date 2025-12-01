@@ -56,39 +56,55 @@ INSERT INTO menus (id, parent_id, name, title, icon, path, component, type, sort
 (53, 51, 'dingtalk-robot-edit', '编辑机器人', '', '', '', 3, 2, 'dingtalk:robot:edit', 1, 1, NOW(), NOW()),
 (54, 51, 'dingtalk-robot-delete', '删除机器人', '', '', '', 3, 3, 'dingtalk:robot:delete', 1, 1, NOW(), NOW()),
 (55, 51, 'dingtalk-robot-test', '测试推送', '', '', '', 3, 4, 'dingtalk:robot:test', 1, 1, NOW(), NOW()),
-(56, 51, 'dingtalk-robot-status', '启用/禁用', '', '', '', 3, 5, 'dingtalk:robot:status', 1, 1, NOW(), NOW())
+(56, 51, 'dingtalk-robot-status', '启用/禁用', '', '', '', 3, 5, 'dingtalk:robot:status', 1, 1, NOW(), NOW()),
+-- 供应商管理（门店管理子菜单）
+(60, 20, 'supplier', '供应商管理', 'Shop', '/store/supplier', 'store/supplier/index', 2, 2, 'supplier:list', 1, 1, NOW(), NOW()),
+(61, 60, 'supplier-add', '新增供应商', '', '', '', 3, 1, 'supplier:add', 1, 1, NOW(), NOW()),
+(62, 60, 'supplier-edit', '编辑供应商', '', '', '', 3, 2, 'supplier:edit', 1, 1, NOW(), NOW()),
+(63, 60, 'supplier-delete', '删除供应商', '', '', '', 3, 3, 'supplier:delete', 1, 1, NOW(), NOW()),
+-- 供应商商品管理（门店管理子菜单）
+(70, 20, 'supplier-product', '供应商商品', 'Goods', '/store/supplier-product', 'store/supplier/product/index', 2, 3, 'supplier:product:list', 1, 1, NOW(), NOW()),
+(71, 70, 'supplier-product-add', '新增商品', '', '', '', 3, 1, 'supplier:product:add', 1, 1, NOW(), NOW()),
+(72, 70, 'supplier-product-edit', '编辑商品', '', '', '', 3, 2, 'supplier:product:edit', 1, 1, NOW(), NOW()),
+(73, 70, 'supplier-product-delete', '删除商品', '', '', '', 3, 3, 'supplier:product:delete', 1, 1, NOW(), NOW()),
+-- 采购管理（门店管理子菜单）
+(80, 20, 'purchase', '采购管理', 'Document', '/store/purchase', 'store/purchase/index', 2, 4, 'purchase:list', 1, 1, NOW(), NOW()),
+(81, 80, 'purchase-add', '新增采购单', '', '', '', 3, 1, 'purchase:add', 1, 1, NOW(), NOW()),
+(82, 80, 'purchase-edit', '编辑采购单', '', '', '', 3, 2, 'purchase:edit', 1, 1, NOW(), NOW()),
+(83, 80, 'purchase-delete', '删除采购单', '', '', '', 3, 3, 'purchase:delete', 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE title=VALUES(title), icon=VALUES(icon), path=VALUES(path), component=VALUES(component), updated_at=NOW();
 
--- 3. 总部门店
+-- 3. 门店数据（总部 + 示例门店）
 INSERT INTO stores (id, store_code, name, address, phone, business_hours, status, contact_person, remark, created_at, updated_at) VALUES
-(999, 'JW9999', '总部', '系统默认总部', '13082848180', '全天', 1, '超级管理员', '系统默认总部门店', NOW(), NOW())
-ON DUPLICATE KEY UPDATE name=VALUES(name), updated_at=NOW();
+(999, 'JW9999', '总部', '系统默认总部地址', '13082848180', '全天', 1, '超级管理员', '系统默认总部门店', NOW(), NOW()),
+(1, 'JW0001', '示例门店1', '杭州市西湖区文三路100号', '13800000001', '09:00-22:00', 1, '张三', '示例门店', NOW(), NOW()),
+(2, 'JW0002', '示例门店2', '杭州市余杭区勾庄路200号', '13800000002', '08:00-21:00', 1, '李四', '示例门店', NOW(), NOW())
+ON DUPLICATE KEY UPDATE name=name;
 
 -- 4. 超级管理员用户 (密码: Admin@123456)
--- 密码哈希值需要用 bcrypt 生成，这里使用预生成的哈希
 INSERT INTO users (id, employee_no, username, phone, password, nickname, email, store_id, role_id, status, gender, created_at, updated_at) VALUES
-(999, '999999', 'admin', '13082848180', '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqQb9tTmMYgDKwANaIJ/Ld9Ld9Ld9', '超级管理员', 'admin@tower.com', 999, 999, 1, 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE username=VALUES(username), updated_at=NOW();
+(999, '999999', 'admin', '13082848180', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '超级管理员', 'admin@tower.com', 999, 999, 1, 1, NOW(), NOW()),
+(1, '000001', 'store1_admin', '13800000001', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '门店1管理员', 'store1@tower.com', 1, 2, 1, 1, NOW(), NOW()),
+(2, '000002', 'store2_admin', '13800000002', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '门店2管理员', 'store2@tower.com', 2, 2, 1, 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE username=username;
 
--- 5. 添加权限字段（如果不存在）
+-- 5. 添加权限字段（忽略已存在错误）
 -- permissions: bit0=查看, bit1=新增, bit2=修改, bit3=删除, 15=全部权限
-ALTER TABLE `role_menus` ADD COLUMN IF NOT EXISTS `permissions` TINYINT UNSIGNED NOT NULL DEFAULT 15 COMMENT '权限位：bit0=查看,bit1=新增,bit2=修改,bit3=删除' AFTER `menu_id`;
-ALTER TABLE `store_role_menus` ADD COLUMN IF NOT EXISTS `permissions` TINYINT UNSIGNED NOT NULL DEFAULT 15 COMMENT '权限位：bit0=查看,bit1=新增,bit2=修改,bit3=删除' AFTER `menu_id`;
 
 -- 6. 角色菜单权限（带权限位，15=全部权限）
 -- 总部管理员(ID:1): 所有权限
 INSERT INTO role_menus (role_id, menu_id, permissions) 
-SELECT 1, id, 15 FROM menus WHERE id <= 56
+SELECT 1, id, 15 FROM menus WHERE id <= 83
 ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 超级管理员(ID:999): 所有权限
 INSERT INTO role_menus (role_id, menu_id, permissions) 
-SELECT 999, id, 15 FROM menus WHERE id <= 56
+SELECT 999, id, 15 FROM menus WHERE id <= 83
 ON DUPLICATE KEY UPDATE permissions=15;
 
--- 门店管理员(ID:2): 门店、菜品、报菜权限
+-- 门店管理员(ID:2): 门店、菜品、报菜、采购权限
 INSERT INTO role_menus (role_id, menu_id, permissions) 
-SELECT 2, id, 15 FROM menus WHERE id >= 20 AND id <= 56
+SELECT 2, id, 15 FROM menus WHERE id >= 20 AND id <= 83
 ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 普通员工(ID:3): 菜品和报菜权限（不含删除，permissions=7: 查看+新增+修改）

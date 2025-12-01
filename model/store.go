@@ -27,13 +27,13 @@ type CreateStoreReq struct {
 	Remark        string `json:"remark"`
 }
 
-// UpdateStoreReq 更新门店请求
+// UpdateStoreReq 更新门店请求（使用指针类型实现部分更新）
 type UpdateStoreReq struct {
-	Name          string `json:"name,omitempty"`                          // 名称不允许置空，保持非指针
-	Address       string `json:"address,omitempty" patch:"always"`        // 允许清空地址
-	Phone         string `json:"phone,omitempty" patch:"always"`          // 允许清空电话
-	BusinessHours string `json:"business_hours,omitempty" patch:"always"` // 允许清空营业时间
-	Status        *int   `json:"status,omitempty" patch:"allowZero"`      // 允许更新为0或2（指针已可）加 tag 标识意图
-	ContactPerson string `json:"contact_person,omitempty" patch:"always"` // 允许清空联系人
-	Remark        string `json:"remark,omitempty" patch:"always"`         // 允许清空备注
+	Name          *string `json:"name,omitempty"`           // 门店名称
+	Address       *string `json:"address,omitempty"`        // 门店地址
+	Phone         *string `json:"phone,omitempty"`          // 联系电话
+	BusinessHours *string `json:"business_hours,omitempty"` // 营业时间
+	Status        *int    `json:"status,omitempty"`         // 状态：1=正常，2=停业
+	ContactPerson *string `json:"contact_person,omitempty"` // 联系人
+	Remark        *string `json:"remark,omitempty"`         // 备注
 }

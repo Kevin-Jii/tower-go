@@ -26,6 +26,7 @@ func Run() {
 	defer closeRedis()
 
 	AutoMigrateAndSeeds()
+	RunSeedSQL()
 
 	session.InitSessionManager("single", 3)
 	logging.LogInfo("会话管理初始化完成")

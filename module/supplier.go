@@ -1,8 +1,9 @@
 package module
 
 import (
+	"fmt"
+
 	"github.com/Kevin-Jii/tower-go/model"
-	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )
@@ -75,7 +76,30 @@ func (m *SupplierModule) List(req *model.ListSupplierReq) ([]*model.Supplier, in
 }
 
 func (m *SupplierModule) UpdateByID(id uint, req *model.UpdateSupplierReq) error {
-	updateMap := updatesPkg.BuildUpdatesFromReq(req)
+	updateMap := make(map[string]interface{})
+
+	if req.SupplierName != nil {
+		updateMap["supplier_name"] = *req.SupplierName
+	}
+	if req.ContactPerson != nil {
+		updateMap["contact_person"] = *req.ContactPerson
+	}
+	if req.ContactPhone != nil {
+		updateMap["contact_phone"] = *req.ContactPhone
+	}
+	if req.ContactEmail != nil {
+		updateMap["contact_email"] = *req.ContactEmail
+	}
+	if req.SupplierAddress != nil {
+		updateMap["supplier_address"] = *req.SupplierAddress
+	}
+	if req.Remark != nil {
+		updateMap["remark"] = *req.Remark
+	}
+	if req.Status != nil {
+		updateMap["status"] = *req.Status
+	}
+
 	if len(updateMap) == 0 {
 		return nil
 	}
@@ -84,4 +108,29 @@ func (m *SupplierModule) UpdateByID(id uint, req *model.UpdateSupplierReq) error
 
 func (m *SupplierModule) Delete(id uint) error {
 	return m.db.Delete(&model.Supplier{}, id).Error
+}
+
+// GetMaxSeqByStorePrefix 获取指定门店前缀的最大序号
+func (m *SupplierModule) GetMaxSeqByStorePrefix(storeID uint) (int, error) {
+	var maxCode string
+	prefix := fmt.Sprintf("%d", storeID)
+	// 查找以门店ID开头的最大编码
+	err := m.db.Model(&model.Supplier{}).
+		Where("supplier_code LIKE ?", prefix+"%").
+		Order("supplier_code DESC").
+		Limit(1).
+		Pluck("supplier_code", &maxCode).Error
+
+	if err != nil || maxCode == "" {
+		return 0, nil
+	}
+
+	// 提取序号部分（去掉门店ID前缀）
+	if len(maxCode) > len(prefix) {
+		seqStr := maxCode[len(prefix):]
+		var seq int
+		fmt.Sscanf(seqStr, "%d", &seq)
+		return seq, nil
+	}
+	return 0, nil
 }

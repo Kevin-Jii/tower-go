@@ -9,6 +9,7 @@ type Dish struct {
 	Store       *Store        `json:"store,omitempty" gorm:"foreignKey:StoreID"`                                  // 门店关联
 	Name        string        `json:"name" gorm:"not null;type:varchar(100);index:idx_store_cat_name,priority:3"` // 菜品名称（同门店同分类唯一）
 	Price       float64       `json:"price" gorm:"not null;type:decimal(10,2)"`                                   // 价格
+	Unit        string        `json:"unit" gorm:"type:varchar(20);default:'份'"`                                   // 单位
 	CategoryID  *uint         `json:"category_id" gorm:"index:idx_store_cat_name,priority:2"`                     // 分类ID (复合唯一的一部分)
 	CategoryRef *DishCategory `json:"category_ref,omitempty" gorm:"foreignKey:CategoryID"`                        // 分类关联
 	Status      int           `json:"status" gorm:"not null;default:1"`                                           // 状态：1=上架，2=下架
@@ -22,6 +23,7 @@ type Dish struct {
 type CreateDishReq struct {
 	Name       string  `json:"name" binding:"required"`
 	Price      float64 `json:"price" binding:"required,gt=0"`
+	Unit       string  `json:"unit"`
 	CategoryID *uint   `json:"category_id"`
 	Image      string  `json:"image"`
 	Remark     string  `json:"remark"`
@@ -31,6 +33,7 @@ type CreateDishReq struct {
 type UpdateDishReq struct {
 	Name       string   `json:"name,omitempty"`
 	Price      *float64 `json:"price,omitempty" binding:"omitempty,gt=0"`
+	Unit       string   `json:"unit,omitempty"`
 	CategoryID *uint    `json:"category_id,omitempty"`
 	Status     *int     `json:"status,omitempty"`
 	Image      string   `json:"image,omitempty"`

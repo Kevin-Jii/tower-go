@@ -487,8 +487,8 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	// 调试日志：打印当前用户的权限信息
 	fmt.Printf("[GetUserMenus] 用户权限信息 - storeID: %d, roleCode: %s, roleID: %d\n", storeID, roleCode, roleID)
 
-	// 总部管理员获取所有菜单
-	if roleCode == model.RoleCodeAdmin {
+	// 总部管理员或超级管理员获取所有菜单
+	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
 		tree, err := c.menuService.GetMenuTree()
 		if err != nil {
 			http.Error(ctx, 500, err.Error())
@@ -528,8 +528,8 @@ func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 	var permissions []string
 	var err error
 
-	// 总部管理员获取所有权限
-	if roleCode == model.RoleCodeAdmin {
+	// 总部管理员或超级管理员获取所有权限
+	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
 		permissions, err = c.menuService.GetAllPermissions()
 	} else {
 		// 其他用户根据门店和角色获取权限

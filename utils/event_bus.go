@@ -67,10 +67,10 @@ func (e *EventBus) NotifyAsync(event EventType, data interface{}) {
 	}
 }
 
-// Event types
-const (
-	EventMenuReportCreated EventType = "menu_report.created"
-)
+// Event types - 预留事件类型定义
+// const (
+// 	EventExample EventType = "example.created"
+// )
 
 // Global event bus instance
 var GlobalEventBus = NewEventBus()

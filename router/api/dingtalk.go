@@ -22,14 +22,4 @@ func RegisterDingTalkRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		}
 	}
 
-	// 报菜机器人路由
-	report := v1.Group("/report")
-	report.Use(middleware.AuthMiddleware())
-	{
-		report.POST("", c.ReportBot.CreateBot)
-		report.GET("", c.ReportBot.ListBots)
-		report.GET("/:id", c.ReportBot.GetBot)
-		report.PUT("/:id", c.ReportBot.UpdateBot)
-		report.DELETE("/:id", c.ReportBot.DeleteBot)
-	}
 }

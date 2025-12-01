@@ -22,6 +22,7 @@ type UpdateRoleReq struct {
 }
 
 const (
+	RoleCodeSuperAdmin = "super_admin" // 超级管理员
 	RoleCodeAdmin      = "admin"       // 总部管理员
 	RoleCodeStoreAdmin = "store_admin" // 门店管理员
 	RoleCodeStaff      = "staff"       // 普通员工

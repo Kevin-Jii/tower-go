@@ -30,9 +30,6 @@ func NewSupplierController(supplierService *service.SupplierService) *SupplierCo
 // @Failure 500 {object} http.Response "服务器内部错误"
 // @Router /suppliers [post]
 func (c *SupplierController) CreateSupplier(ctx *gin.Context) {
-	if !http.RequireAdmin(ctx) {
-		return
-	}
 
 	var req model.CreateSupplierReq
 	if !http.BindJSON(ctx, &req) {
@@ -123,9 +120,6 @@ func (c *SupplierController) ListSuppliers(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /suppliers/{id} [put]
 func (c *SupplierController) UpdateSupplier(ctx *gin.Context) {
-	if !http.RequireAdmin(ctx) {
-		return
-	}
 
 	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {
@@ -156,9 +150,6 @@ func (c *SupplierController) UpdateSupplier(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /suppliers/{id} [delete]
 func (c *SupplierController) DeleteSupplier(ctx *gin.Context) {
-	if !http.RequireAdmin(ctx) {
-		return
-	}
 
 	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {

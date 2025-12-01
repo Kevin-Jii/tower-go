@@ -21,7 +21,6 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterUserRoutes(v1, c)
 	api.RegisterRoleRoutes(v1)
 	api.RegisterStoreRoutes(v1, c)
-	api.RegisterDishRoutes(v1, c)
 	api.RegisterMenuRoutes(v1, c)
 	api.RegisterDingTalkRoutes(v1, c)
 	api.RegisterSupplierRoutes(v1, c)

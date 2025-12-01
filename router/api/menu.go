@@ -29,16 +29,4 @@ func RegisterMenuRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		menus.GET("/user-permissions", c.Menu.GetUserPermissions)
 	}
 
-	// 报表路由
-	reports := v1.Group("/menu-reports")
-	reports.Use(middleware.StoreAuthMiddleware())
-	{
-		reports.POST("", c.MenuReport.CreateMenuReportOrder)
-		reports.GET("", c.MenuReport.ListMenuReportOrders)
-		reports.GET("/statistics", c.MenuReport.GetStatistics)
-		reports.GET("/:id", c.MenuReport.GetMenuReportOrder)
-		reports.GET("/:id/download", c.MenuReport.DownloadExcel)
-		reports.PUT("/:id", c.MenuReport.UpdateMenuReportOrder)
-		reports.DELETE("/:id", c.MenuReport.DeleteMenuReportOrder)
-	}
 }

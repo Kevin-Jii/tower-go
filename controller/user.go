@@ -118,8 +118,8 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		err   error
 	)
 
-	// 总部管理员返回全部用户（跨门店），支持分页
-	if roleCode == model.RoleCodeAdmin {
+	// 总部管理员或超级管理员返回全部用户（跨门店），支持分页
+	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
 		users, total, err = c.userService.ListAllUsers(keyword, page, pageSize)
 		if err != nil {
 			http.Error(ctx, 500, err.Error())
@@ -199,8 +199,8 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	// 管理员可以删除任意用户
-	if roleCode == model.RoleCodeAdmin {
+	// 管理员或超级管理员可以删除任意用户
+	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
 		if err := c.userService.DeleteUser(uint(id)); err != nil {
 			http.Error(ctx, 500, err.Error())
 			return
@@ -245,7 +245,7 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	if requesterRoleCode != model.RoleCodeAdmin && targetUser.StoreID != requesterStoreID {
+	if requesterRoleCode != model.RoleCodeAdmin && requesterRoleCode != model.RoleCodeSuperAdmin && targetUser.StoreID != requesterStoreID {
 		http.Error(ctx, 403, "无权重置其他门店用户密码")
 		return
 	}

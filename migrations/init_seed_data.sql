@@ -35,20 +35,7 @@ INSERT INTO menus (id, parent_id, name, title, icon, path, component, type, sort
 (23, 21, 'store-edit', '编辑门店', '', '', '', 3, 2, 'store:edit', 1, 1, NOW(), NOW()),
 (24, 21, 'store-delete', '删除门店', '', '', '', 3, 3, 'store:delete', 1, 1, NOW(), NOW()),
 (25, 21, 'store-menu', '配置权限', '', '', '', 3, 4, 'store:menu', 1, 1, NOW(), NOW()),
--- 菜品管理
-(30, 0, 'dish', '菜品管理', 'food', '', '', 1, 3, '', 1, 1, NOW(), NOW()),
-(31, 30, 'dish-list', '菜品列表', 'view-list', '/dish/list', 'dish/list/index', 2, 1, 'dish:list', 1, 1, NOW(), NOW()),
-(32, 31, 'dish-add', '新增菜品', '', '', '', 3, 1, 'dish:add', 1, 1, NOW(), NOW()),
-(33, 31, 'dish-edit', '编辑菜品', '', '', '', 3, 2, 'dish:edit', 1, 1, NOW(), NOW()),
-(34, 31, 'dish-delete', '删除菜品', '', '', '', 3, 3, 'dish:delete', 1, 1, NOW(), NOW()),
-(35, 31, 'dish-status', '上下架', '', '', '', 3, 4, 'dish:status', 1, 1, NOW(), NOW()),
--- 报菜管理
-(40, 0, 'report', '报菜管理', 'file-paste', '', '', 1, 4, '', 1, 1, NOW(), NOW()),
-(41, 40, 'report-list', '报菜记录', 'view-list', '/report/list', 'report/list/index', 2, 1, 'report:list', 1, 1, NOW(), NOW()),
-(42, 41, 'report-add', '创建报菜', '', '', '', 3, 1, 'report:add', 1, 1, NOW(), NOW()),
-(43, 41, 'report-edit', '编辑报菜', '', '', '', 3, 2, 'report:edit', 1, 1, NOW(), NOW()),
-(44, 41, 'report-delete', '删除报菜', '', '', '', 3, 3, 'report:delete', 1, 1, NOW(), NOW()),
-(45, 40, 'report-stats', '数据统计', 'chart-bar', '/report/statistics', 'report/statistics/index', 2, 2, 'report:statistics', 1, 1, NOW(), NOW()),
+
 -- 钉钉管理
 (50, 0, 'dingtalk', '钉钉管理', 'link', '', '', 1, 50, '', 1, 1, NOW(), NOW()),
 (51, 50, 'dingtalk-robot', '机器人配置', 'robot', '/dingtalk/robot', 'dingtalk/robot/index', 2, 1, 'dingtalk:robot:list', 1, 1, NOW(), NOW()),
@@ -62,11 +49,7 @@ INSERT INTO menus (id, parent_id, name, title, icon, path, component, type, sort
 (61, 60, 'supplier-add', '新增供应商', '', '', '', 3, 1, 'supplier:add', 1, 1, NOW(), NOW()),
 (62, 60, 'supplier-edit', '编辑供应商', '', '', '', 3, 2, 'supplier:edit', 1, 1, NOW(), NOW()),
 (63, 60, 'supplier-delete', '删除供应商', '', '', '', 3, 3, 'supplier:delete', 1, 1, NOW(), NOW()),
--- 供应商商品管理（门店管理子菜单）
-(70, 20, 'supplier-product', '供应商商品', 'Goods', '/store/supplier-product', 'store/supplier/product/index', 2, 3, 'supplier:product:list', 1, 1, NOW(), NOW()),
-(71, 70, 'supplier-product-add', '新增商品', '', '', '', 3, 1, 'supplier:product:add', 1, 1, NOW(), NOW()),
-(72, 70, 'supplier-product-edit', '编辑商品', '', '', '', 3, 2, 'supplier:product:edit', 1, 1, NOW(), NOW()),
-(73, 70, 'supplier-product-delete', '删除商品', '', '', '', 3, 3, 'supplier:product:delete', 1, 1, NOW(), NOW()),
+
 -- 采购管理（门店管理子菜单）
 (80, 20, 'purchase', '采购管理', 'Document', '/store/purchase', 'store/purchase/index', 2, 4, 'purchase:list', 1, 1, NOW(), NOW()),
 (81, 80, 'purchase-add', '新增采购单', '', '', '', 3, 1, 'purchase:add', 1, 1, NOW(), NOW()),

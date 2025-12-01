@@ -2,6 +2,7 @@ package module
 
 import (
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/cache"
 
 	"gorm.io/gorm"
 )
@@ -16,6 +17,9 @@ func NewRoleMenuModule(db *gorm.DB) *RoleMenuModule {
 
 // AssignMenusToRole 为角色分配菜单（覆盖式，支持权限位）
 func (m *RoleMenuModule) AssignMenusToRole(roleID uint, menuIDs []uint, perms map[uint]uint8) error {
+	// 分配完成后清除缓存
+	defer cache.InvalidateMenuCache()
+	
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		// 1. 删除该角色的所有菜单关联
 		if err := tx.Where("role_id = ?", roleID).Delete(&model.RoleMenu{}).Error; err != nil {

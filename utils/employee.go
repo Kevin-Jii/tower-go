@@ -14,8 +14,8 @@ import (
 func GenerateEmployeeNo(db *gorm.DB) (string, error) {
 	var maxEmployeeNo string
 
-	// 查询当前最大工号
-	err := db.Raw("SELECT employee_no FROM users WHERE employee_no IS NOT NULL AND employee_no != '' ORDER BY employee_no DESC LIMIT 1").Scan(&maxEmployeeNo).Error
+	// 查询当前最大工号（排除管理员的999999）
+	err := db.Raw("SELECT employee_no FROM users WHERE employee_no IS NOT NULL AND employee_no != '' AND employee_no != '999999' ORDER BY employee_no DESC LIMIT 1").Scan(&maxEmployeeNo).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		logging.LogDatabaseError("查询最大工号失败", err)
 		return "", fmt.Errorf("查询最大工号失败: %v", err)

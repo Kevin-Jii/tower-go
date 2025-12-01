@@ -87,7 +87,8 @@ func GetRoleID(c *gin.Context) uint {
 	return 0
 }
 
-// IsAdmin 判断是否是总部管理员
+// IsAdmin 判断是否是总部管理员或超级管理员
 func IsAdmin(c *gin.Context) bool {
-	return GetRoleCode(c) == model.RoleCodeAdmin
+	roleCode := GetRoleCode(c)
+	return roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin
 }

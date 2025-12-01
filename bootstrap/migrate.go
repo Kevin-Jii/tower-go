@@ -34,11 +34,6 @@ func AutoMigrateAndSeeds() {
 		&model.Role{},
 		&model.Menu{},
 		&model.User{},
-		&model.DishCategory{},
-		&model.Dish{},
-		&model.MenuReportOrder{},
-		&model.MenuReportItem{},
-		&model.MenuReport{},
 		&model.RoleMenu{},
 		&model.StoreRoleMenu{},
 		&model.DingTalkBot{},
@@ -57,12 +52,6 @@ func AutoMigrateAndSeeds() {
 		}
 	}
 	logging.LogInfo("数据表迁移完成")
-
-	if err := database.MigrateDishCategoryData(); err != nil {
-		logging.LogWarn("菜品分类数据迁移失败", zap.Error(err))
-	} else {
-		logging.LogInfo("菜品分类数据迁移完成")
-	}
 
 	if err := database.CreateOptimizedIndexes(database.DB); err != nil {
 		logging.LogError("创建优化索引失败", zap.Error(err))

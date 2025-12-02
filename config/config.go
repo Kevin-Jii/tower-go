@@ -14,6 +14,17 @@ type Config struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	DingTalk DingTalkConfig
+	MinIO    MinIOConfig
+}
+
+// MinIOConfig MinIO对象存储配置
+type MinIOConfig struct {
+	Enabled   bool
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	UseSSL    bool
 }
 
 // AppConfig 应用配置
@@ -75,6 +86,7 @@ func InitConfig() {
 		Database: loadDatabaseConfig(),
 		Redis:    loadRedisConfig(),
 		DingTalk: loadDingTalkConfig(),
+		MinIO:    loadMinIOConfig(),
 	}
 }
 
@@ -257,4 +269,21 @@ func getAppBool(key string, defaultValue bool) bool {
 		}
 	}
 	return defaultValue
+}
+
+// loadMinIOConfig 加载MinIO配置
+func loadMinIOConfig() MinIOConfig {
+	return MinIOConfig{
+		Enabled:   getAppBool("MINIO_ENABLED", false),
+		Endpoint:  getAppString("MINIO_ENDPOINT", "localhost:9000"),
+		AccessKey: getAppString("MINIO_ACCESS_KEY", ""),
+		SecretKey: getAppString("MINIO_SECRET_KEY", ""),
+		Bucket:    getAppString("MINIO_BUCKET", "tower"),
+		UseSSL:    getAppBool("MINIO_USE_SSL", false),
+	}
+}
+
+// GetMinIOConfig 获取MinIO配置
+func GetMinIOConfig() MinIOConfig {
+	return GetConfig().MinIO
 }

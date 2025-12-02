@@ -34,7 +34,9 @@ func Run() {
 	r := gin.Default()
 	r.Use(middleware.RequestLoggerMiddleware(4096))
 
+	fmt.Println("🔧 正在初始化控制器...")
 	controllers := BuildControllers()
+	fmt.Println("🔧 控制器初始化完成")
 	RegisterRoutes(r, controllers)
 
 	// 初始化 Stream 客户端

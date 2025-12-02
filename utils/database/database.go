@@ -165,40 +165,54 @@ func CreateOptimizedIndexes(db *gorm.DB) error {
 			desc:      "门店-状态索引",
 		},
 
-		// 菜品表索引
+		// 供应商表索引
 		{
-			table:     "dishes",
-			indexName: "idx_dishes_store_status",
-			sql:       "CREATE INDEX idx_dishes_store_status ON dishes(store_id, status)",
-			desc:      "菜品-门店-状态复合索引",
+			table:     "suppliers",
+			indexName: "idx_suppliers_status",
+			sql:       "CREATE INDEX idx_suppliers_status ON suppliers(status)",
+			desc:      "供应商-状态索引",
 		},
 
-		// 报菜记录单表索引
+		// 供应商商品表索引
 		{
-			table:     "menu_report_orders",
-			indexName: "idx_menu_report_orders_store_created",
-			sql:       "CREATE INDEX idx_menu_report_orders_store_created ON menu_report_orders(store_id, created_at)",
-			desc:      "报菜记录单-门店-创建时间复合索引",
+			table:     "supplier_products",
+			indexName: "idx_supplier_products_supplier",
+			sql:       "CREATE INDEX idx_supplier_products_supplier ON supplier_products(supplier_id)",
+			desc:      "供应商商品-供应商索引",
+		},
+		{
+			table:     "supplier_products",
+			indexName: "idx_supplier_products_category",
+			sql:       "CREATE INDEX idx_supplier_products_category ON supplier_products(category_id)",
+			desc:      "供应商商品-分类索引",
 		},
 
-		// 报菜详情表索引
+		// 采购订单表索引
 		{
-			table:     "menu_report_items",
-			indexName: "idx_menu_report_items_order",
-			sql:       "CREATE INDEX idx_menu_report_items_order ON menu_report_items(report_order_id)",
-			desc:      "报菜详情-记录单索引",
+			table:     "purchase_orders",
+			indexName: "idx_purchase_orders_store_status",
+			sql:       "CREATE INDEX idx_purchase_orders_store_status ON purchase_orders(store_id, status)",
+			desc:      "采购订单-门店-状态复合索引",
 		},
 		{
-			table:     "menu_report_items",
-			indexName: "idx_menu_report_items_dish",
-			sql:       "CREATE INDEX idx_menu_report_items_dish ON menu_report_items(dish_id)",
-			desc:      "报菜详情-菜品索引",
+			table:     "purchase_orders",
+			indexName: "idx_purchase_orders_order_date",
+			sql:       "CREATE INDEX idx_purchase_orders_order_date ON purchase_orders(order_date)",
+			desc:      "采购订单-日期索引",
+		},
+
+		// 采购订单明细表索引
+		{
+			table:     "purchase_order_items",
+			indexName: "idx_purchase_order_items_order",
+			sql:       "CREATE INDEX idx_purchase_order_items_order ON purchase_order_items(order_id)",
+			desc:      "采购订单明细-订单索引",
 		},
 		{
-			table:     "menu_report_items",
-			indexName: "idx_menu_report_items_created",
-			sql:       "CREATE INDEX idx_menu_report_items_created ON menu_report_items(created_at)",
-			desc:      "报菜详情-创建时间索引",
+			table:     "purchase_order_items",
+			indexName: "idx_purchase_order_items_supplier",
+			sql:       "CREATE INDEX idx_purchase_order_items_supplier ON purchase_order_items(supplier_id)",
+			desc:      "采购订单明细-供应商索引",
 		},
 	}
 

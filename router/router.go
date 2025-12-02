@@ -25,6 +25,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterDingTalkRoutes(v1, c)
 	api.RegisterSupplierRoutes(v1, c)
 	api.RegisterPurchaseRoutes(v1, c)
+	api.RegisterFileRoutes(v1, c.File)
 
 	// WebSocket
 	r.GET("/ws", controller.WebSocketHandler)

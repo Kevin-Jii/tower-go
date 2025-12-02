@@ -3054,3 +3054,287 @@
 {"level":"info","timestamp":"2025-12-02 00:09:33.771","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
 {"level":"error","timestamp":"2025-12-02 00:09:33.930","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"DDC7F8B3-575F-74FC-9AE2-5B7FD20358D7\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
 {"level":"info","timestamp":"2025-12-02 00:10:50.314","caller":"cache/cache.go:122","msg":"缓存批量删除成功","pattern":"role:menus:*","count":2}
+{"level":"info","timestamp":"2025-12-02 17:40:06.759","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:40:06.765","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 17:40:06.765","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 17:40:06.792","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 17:40:06.800","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 17:40:06.800","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 17:40:06.861","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 17:40:32.138","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 17:40:32.187","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 17:40:32.188","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 17:40:32.188","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:40:32.201","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 17:40:32.244","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 17:40:32.512","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"114044A1-0CD4-7889-99C2-5AC657515A09\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 17:43:23.202","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:43:23.209","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 17:43:23.209","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 17:43:23.218","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 17:43:23.225","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 17:43:23.225","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 17:43:23.274","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 17:43:48.884","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 17:43:49.014","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 17:43:49.015","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 17:43:49.015","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:43:49.022","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 17:43:49.065","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 17:43:49.214","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"156D3624-AAF8-72B7-8526-0D37E297BFEC\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 17:48:50.187","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:48:50.193","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 17:48:50.193","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 17:48:50.201","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 17:48:50.208","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 17:48:50.208","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 17:48:50.262","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 17:49:15.172","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 17:49:15.220","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 17:49:15.221","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 17:49:15.221","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:49:15.233","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 17:49:15.280","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 17:49:15.444","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"DC921FB5-7FD9-782A-9707-A4213653691A\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 17:50:46.080","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:50:46.086","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 17:50:46.086","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 17:50:46.094","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 17:50:46.100","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 17:50:46.100","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 17:50:46.149","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 17:51:10.679","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 17:51:10.727","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 17:51:10.729","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 17:51:10.729","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:51:10.732","caller":"api/container.go:66","msg":"AList文件服务未启用"}
+{"level":"info","timestamp":"2025-12-02 17:51:10.759","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 17:51:10.804","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 17:51:10.954","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"A9A0C777-FA82-7B84-AE22-2266B968B1C8\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 17:53:06.575","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:53:06.583","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 17:53:06.584","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 17:53:06.592","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 17:53:06.600","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 17:53:06.600","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 17:53:06.652","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 17:53:31.026","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 17:53:31.104","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 17:53:31.106","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 17:53:31.106","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:53:31.106","caller":"api/container.go:66","msg":"AList文件服务未启用"}
+{"level":"info","timestamp":"2025-12-02 17:53:31.123","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 17:53:31.164","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 17:53:31.322","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"039F9162-0654-75C3-AFFB-3CBDE64D3EBD\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 17:54:00.110","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:54:00.116","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 17:54:00.117","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 17:54:00.125","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 17:54:00.130","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 17:54:00.130","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 17:54:00.179","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 17:54:24.393","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 17:54:24.437","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 17:54:24.438","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 17:54:24.438","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 17:54:24.457","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 17:54:24.501","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 17:54:24.658","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"15126A30-D31A-77E6-A66D-3D58D0F1462C\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 18:25:47.873","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:25:47.880","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 18:25:47.880","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 18:25:47.889","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 18:25:47.897","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 18:25:47.897","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 18:25:47.943","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 18:26:12.674","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 18:26:12.720","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 18:26:12.722","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 18:26:12.723","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:26:12.746","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 18:26:12.791","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"fatal","timestamp":"2025-12-02 18:26:12.796","caller":"bootstrap/app.go:46","msg":"服务启动失败","error":"listen tcp :10024: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.","stacktrace":"github.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:46\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"info","timestamp":"2025-12-02 18:26:36.300","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:26:36.307","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 18:26:36.307","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 18:26:36.315","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 18:26:36.321","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 18:26:36.321","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 18:26:36.367","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 18:27:01.259","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 18:27:01.303","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 18:27:01.307","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 18:27:01.307","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:27:01.325","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 18:27:01.367","caller":"bootstrap/app.go:41","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 18:27:01.529","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"9B36DBF6-C3C4-7792-AE14-C18DC06A8DC8\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 18:28:46.633","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:28:46.640","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 18:28:46.640","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 18:28:46.648","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 18:28:46.657","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 18:28:46.657","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 18:28:46.705","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 18:29:11.224","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 18:29:11.278","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 18:29:11.279","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 18:29:11.279","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:29:11.295","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 18:29:11.339","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 18:29:11.488","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"913A65AE-5681-7327-8289-56904FA86849\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 18:30:18.181","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 18:30:18.187","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 18:30:18.187","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 18:30:18.195","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 18:30:18.201","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 18:30:18.201","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 18:30:18.252","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 18:30:43.233","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 18:30:43.279","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 18:30:43.281","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 18:30:43.281","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"error","timestamp":"2025-12-02 18:30:43.294","caller":"service/alist.go:92","msg":"AList登录请求失败","error":"Post \"http://localhost:5244/api/auth/login\": dial tcp [::1]:5244: connectex: No connection could be made because the target machine actively refused it.","stacktrace":"github.com/Kevin-Jii/tower-go/service.(*AListService).Login\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/service/alist.go:92\ngithub.com/Kevin-Jii/tower-go/router/api.BuildControllers\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/router/api/container.go:62\ngithub.com/Kevin-Jii/tower-go/bootstrap.BuildControllers\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/routes.go:11\ngithub.com/Kevin-Jii/tower-go/bootstrap.Run\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/bootstrap/app.go:38\nmain.main\n\tC:/Users/Administrator/Desktop/xdAdmin/tower-go/cmd/main.go:29\nruntime.main\n\tC:/Program Files/Application/go/src/runtime/proc.go:285"}
+{"level":"warn","timestamp":"2025-12-02 18:30:43.294","caller":"api/container.go:64","msg":"AList服务连接失败，文件服务不可用: 登录请求失败: Post \"http://localhost:5244/api/auth/login\": dial tcp [::1]:5244: connectex: No connection could be made because the target machine actively refused it."}
+{"level":"info","timestamp":"2025-12-02 18:30:43.309","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 18:30:43.353","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 18:30:43.567","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"FEAF6F3C-3FC3-7BBB-872F-140AFA2C745E\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:11:16.224","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:11:16.230","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 19:11:16.230","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 19:11:16.244","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 19:11:16.252","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 19:11:16.252","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 19:11:16.300","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 19:11:40.613","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 19:11:40.656","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 19:11:40.659","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 19:11:40.659","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:11:40.685","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 19:11:40.727","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 19:11:40.911","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"7F7AADEA-299D-772E-90FC-16DFC41E3CAE\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:42:39.386","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:42:39.392","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 19:42:39.392","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 19:42:39.405","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 19:42:39.412","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 19:42:39.412","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 19:42:39.462","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 19:43:03.597","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 19:43:03.641","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 19:43:03.642","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 19:43:03.642","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:43:03.648","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 19:43:03.692","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 19:43:03.845","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"A2065EFC-B82E-78FB-9229-0BE61B3C434E\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:43:22.441","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:43:22.447","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 19:43:22.447","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 19:43:22.456","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 19:43:22.463","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 19:43:22.463","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 19:43:22.516","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 19:43:47.371","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 19:43:47.414","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 19:43:47.415","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 19:43:47.415","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-02 19:43:47.422","caller":"api/container.go:70","msg":"MinIO服务连接失败，文件服务不可用: 检查bucket失败: Get \"http://localhost:9000/tower/?location=\": dial tcp [::1]:9000: connectex: No connection could be made because the target machine actively refused it."}
+{"level":"info","timestamp":"2025-12-02 19:43:47.434","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 19:43:47.478","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 19:43:47.629","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"0E9661CF-F9CA-71A0-A967-FD8403F02AB1\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:44:26.134","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:44:26.139","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 19:44:26.140","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 19:44:26.148","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 19:44:26.154","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 19:44:26.154","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 19:44:26.208","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 19:44:50.962","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 19:44:51.009","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 19:44:51.011","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 19:44:51.011","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-02 19:44:51.074","caller":"api/container.go:70","msg":"MinIO服务连接失败，文件服务不可用: 检查bucket失败: The Access Key Id you provided does not exist in our records."}
+{"level":"info","timestamp":"2025-12-02 19:44:51.082","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 19:44:51.129","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 19:44:51.289","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"C3339982-63C6-73D3-9BAB-049306E59CCA\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:47:25.389","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:47:25.395","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 19:47:25.395","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 19:47:25.403","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 19:47:25.409","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 19:47:25.409","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 19:47:25.461","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.084","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.133","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.136","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.136","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.231","caller":"service/minio.go:58","msg":"MinIO服务初始化成功","endpoint":"47.120.27.64:9000","bucket":"images"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.231","caller":"api/container.go:74","msg":"MinIO文件服务已启用"}
+{"level":"info","timestamp":"2025-12-02 19:47:50.266","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 19:47:50.311","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 19:47:50.455","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"0650A9B0-BCA8-744C-A9B8-C2872E150B79\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:53:45.490","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:53:45.496","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 19:53:45.496","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 19:53:45.506","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 19:53:45.514","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 19:53:45.514","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 19:53:45.561","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 19:54:09.920","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 19:54:09.964","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 19:54:09.965","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 19:54:09.966","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 19:54:10.058","caller":"service/minio.go:58","msg":"MinIO服务初始化成功","endpoint":"47.120.27.64:9000","bucket":"images"}
+{"level":"info","timestamp":"2025-12-02 19:54:10.058","caller":"api/container.go:74","msg":"MinIO文件服务已启用"}
+{"level":"info","timestamp":"2025-12-02 19:54:10.063","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 19:54:10.113","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 19:54:10.270","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"695271C3-F995-773E-9359-6E3A4334A3D9\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 19:57:00.308","caller":"service/minio.go:98","msg":"MinIO文件上传成功","object":"images/products/20251202_c5d123dd.jpg","size":1101046}
+{"level":"info","timestamp":"2025-12-02 20:09:56.730","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 20:09:56.736","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 20:09:56.736","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 20:09:56.744","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 20:09:56.751","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 20:09:56.751","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 20:09:56.799","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 20:10:20.889","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 20:10:20.934","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 20:10:20.935","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 20:10:20.935","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 20:10:21.019","caller":"service/minio.go:58","msg":"MinIO服务初始化成功","endpoint":"47.120.27.64:9000","bucket":"images"}
+{"level":"info","timestamp":"2025-12-02 20:10:21.019","caller":"api/container.go:74","msg":"MinIO文件服务已启用"}
+{"level":"info","timestamp":"2025-12-02 20:10:21.025","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 20:10:21.069","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 20:10:21.201","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"4DBD30F8-95D0-7E3A-9697-88B7C89C435C\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 20:10:51.788","caller":"service/minio.go:98","msg":"MinIO文件上传成功","object":"products/20251202_1ac1be64.jpg","size":642987}
+{"level":"info","timestamp":"2025-12-02 20:14:51.367","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-02 20:14:51.373","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-02 20:14:51.373","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-02 20:14:51.384","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-02 20:14:51.391","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-02 20:14:51.391","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-02 20:14:51.444","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.548","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.592","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.593","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.593","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.701","caller":"service/minio.go:58","msg":"MinIO服务初始化成功","endpoint":"47.120.27.64:9000","bucket":"images"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.703","caller":"api/container.go:74","msg":"MinIO文件服务已启用"}
+{"level":"info","timestamp":"2025-12-02 20:15:15.743","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-02 20:15:15.788","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-02 20:15:15.948","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"91F049BA-1671-75D5-A934-1D3DFC777285\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-02 20:15:41.949","caller":"service/minio.go:98","msg":"MinIO文件上传成功","object":"suppliers/2025/12/02/201541_560effcb.jpg","size":1141822}
+{"level":"info","timestamp":"2025-12-03 01:04:01.304","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-03 01:04:01.309","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-03 01:04:01.309","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-03 01:04:01.319","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-03 01:04:01.326","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-03 01:04:01.326","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-03 01:04:01.380","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-03 01:04:25.648","caller":"bootstrap/migrate.go:54","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-03 01:04:25.696","caller":"bootstrap/migrate.go:62","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-03 01:04:25.697","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-03 01:04:25.697","caller":"bootstrap/app.go:32","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-03 01:04:27.929","caller":"api/container.go:70","msg":"MinIO服务连接失败，文件服务不可用: 检查bucket失败: Get \"http://47.120.27.64:9000/images/?location=\": dial tcp 47.120.27.64:9000: connectex: No connection could be made because the target machine actively refused it."}
+{"level":"info","timestamp":"2025-12-03 01:04:27.968","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-03 01:04:28.013","caller":"bootstrap/app.go:43","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-03 01:04:28.197","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"74D296E0-751D-7DDD-A884-698B27759C65\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}

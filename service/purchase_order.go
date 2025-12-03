@@ -6,12 +6,15 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/statemachine"
+	"github.com/Kevin-Jii/tower-go/utils"
 )
 
 type PurchaseOrderService struct {
 	orderModule         *module.PurchaseOrderModule
 	productModule       *module.SupplierProductModule
 	storeSupplierModule *module.StoreSupplierModule
+	stateMachine        *statemachine.StateMachine
 }
 
 func NewPurchaseOrderService(
@@ -19,10 +22,41 @@ func NewPurchaseOrderService(
 	productModule *module.SupplierProductModule,
 	storeSupplierModule *module.StoreSupplierModule,
 ) *PurchaseOrderService {
+	// 创建状态机并注册钩子
+	sm := statemachine.NewOrderStateMachine()
+
+	// 确认订单时发布事件
+	sm.OnAction(statemachine.ActionConfirm, func(from, to statemachine.State) error {
+		utils.GlobalEventBus.Publish(utils.EventOrderConfirmed, map[string]interface{}{
+			"from": from,
+			"to":   to,
+		})
+		return nil
+	})
+
+	// 完成订单时发布事件
+	sm.OnAction(statemachine.ActionComplete, func(from, to statemachine.State) error {
+		utils.GlobalEventBus.Publish(utils.EventOrderCompleted, map[string]interface{}{
+			"from": from,
+			"to":   to,
+		})
+		return nil
+	})
+
+	// 取消订单时发布事件
+	sm.OnAction(statemachine.ActionCancel, func(from, to statemachine.State) error {
+		utils.GlobalEventBus.Publish(utils.EventOrderCancelled, map[string]interface{}{
+			"from": from,
+			"to":   to,
+		})
+		return nil
+	})
+
 	return &PurchaseOrderService{
 		orderModule:         orderModule,
 		productModule:       productModule,
 		storeSupplierModule: storeSupplierModule,
+		stateMachine:        sm,
 	}
 }
 
@@ -107,6 +141,9 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 	s.orderModule.GetDB().Model(&model.PurchaseOrder{}).Where("id = ?", order.ID).Update("total_amount", totalAmount)
 	order.TotalAmount = totalAmount
 
+	// 发布订单创建事件
+	utils.GlobalEventBus.Publish(utils.EventOrderCreated, order)
+
 	return order, nil
 }
 
@@ -127,41 +164,68 @@ func (s *PurchaseOrderService) UpdateOrder(id uint, req *model.UpdatePurchaseOrd
 		return errors.New("order not found")
 	}
 
-	// 验证状态转换
+	// 使用状态机验证状态转换
 	if req.Status != nil {
-		if !isValidStatusTransition(order.Status, *req.Status) {
+		action := s.getActionForStatus(order.Status, *req.Status)
+		if action == "" {
 			return errors.New("invalid status transition")
+		}
+
+		// 执行状态机转换（会触发钩子和事件）
+		_, err := s.stateMachine.Execute(statemachine.State(order.Status), action)
+		if err != nil {
+			return err
 		}
 	}
 
 	return s.orderModule.UpdateByID(id, req)
 }
 
-// isValidStatusTransition 验证状态转换是否有效
-// 有效的状态转换：
-// 待确认(1) -> 已确认(2), 已取消(4)
-// 已确认(2) -> 已完成(3), 已取消(4)
-// 已完成(3) -> 无法转换
-// 已取消(4) -> 无法转换
-func isValidStatusTransition(currentStatus, newStatus int8) bool {
-	validTransitions := map[int8][]int8{
-		model.PurchaseStatusPending:   {model.PurchaseStatusConfirmed, model.PurchaseStatusCancelled},
-		model.PurchaseStatusConfirmed: {model.PurchaseStatusCompleted, model.PurchaseStatusCancelled},
-		model.PurchaseStatusCompleted: {},
-		model.PurchaseStatusCancelled: {},
+// getActionForStatus 根据目标状态获取对应的动作
+func (s *PurchaseOrderService) getActionForStatus(currentStatus, newStatus int8) statemachine.Action {
+	switch newStatus {
+	case model.PurchaseStatusConfirmed:
+		return statemachine.ActionConfirm
+	case model.PurchaseStatusCompleted:
+		return statemachine.ActionComplete
+	case model.PurchaseStatusCancelled:
+		return statemachine.ActionCancel
+	default:
+		return ""
+	}
+}
+
+// GetAvailableActions 获取订单可用的操作
+func (s *PurchaseOrderService) GetAvailableActions(id uint) ([]string, error) {
+	order, err := s.orderModule.GetByID(id)
+	if err != nil {
+		return nil, errors.New("order not found")
 	}
 
-	allowedStatuses, ok := validTransitions[currentStatus]
-	if !ok {
-		return false
+	actions := s.stateMachine.GetAvailableActions(statemachine.State(order.Status))
+	result := make([]string, len(actions))
+	for i, a := range actions {
+		result[i] = string(a)
 	}
+	return result, nil
+}
 
-	for _, allowed := range allowedStatuses {
-		if newStatus == allowed {
-			return true
-		}
-	}
-	return false
+// ConfirmOrder 确认采购单（便捷方法）
+func (s *PurchaseOrderService) ConfirmOrder(id uint) error {
+	status := model.PurchaseStatusConfirmed
+	return s.UpdateOrder(id, &model.UpdatePurchaseOrderReq{Status: &status})
+}
+
+// CompleteOrder 完成采购单（便捷方法）
+func (s *PurchaseOrderService) CompleteOrder(id uint) error {
+	status := model.PurchaseStatusCompleted
+	return s.UpdateOrder(id, &model.UpdatePurchaseOrderReq{Status: &status})
+}
+
+// CancelOrder 取消采购单（便捷方法）
+func (s *PurchaseOrderService) CancelOrder(id uint, reason string) error {
+	status := model.PurchaseStatusCancelled
+	return s.UpdateOrder(id, &model.UpdatePurchaseOrderReq{Status: &status, Remark: reason})
 }
 
 // DeleteOrder 删除采购单
@@ -178,18 +242,7 @@ func (s *PurchaseOrderService) DeleteOrder(id uint) error {
 
 // getStatusName 获取状态名称
 func getStatusName(status int8) string {
-	switch status {
-	case model.PurchaseStatusPending:
-		return "pending"
-	case model.PurchaseStatusConfirmed:
-		return "confirmed"
-	case model.PurchaseStatusCompleted:
-		return "completed"
-	case model.PurchaseStatusCancelled:
-		return "cancelled"
-	default:
-		return "unknown"
-	}
+	return statemachine.GetStateName(statemachine.State(status))
 }
 
 // GetOrdersBySupplier 按供应商分组获取采购单明细

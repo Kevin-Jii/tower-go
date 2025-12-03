@@ -16,112 +16,71 @@ func NewStoreSupplierController(storeSupplierService *service.StoreSupplierServi
 	return &StoreSupplierController{storeSupplierService: storeSupplierService}
 }
 
-// BindProducts godoc
-// @Summary 门店绑定供应商商品
-// @Description 将供应商商品绑定到指定门店，支持批量绑定
-// @Tags 门店供应商管理
-// @Accept json
-// @Produce json
-// @Security Bearer
-// @Param binding body model.BindStoreSupplierReq true "绑定信息"
-// @Success 200 {object} http.Response "绑定成功"
-// @Failure 400 {object} http.Response "请求参数错误"
-// @Failure 500 {object} http.Response "服务器内部错误"
-// @Router /store-suppliers/bind [post]
-func (c *StoreSupplierController) BindProducts(ctx *gin.Context) {
-	if !http.RequireAdmin(ctx) {
-		return
-	}
-	var req model.BindStoreSupplierReq
+// BindSuppliers 门店绑定供应商
+func (c *StoreSupplierController) BindSuppliers(ctx *gin.Context) {
+	var req model.BindStoreSuppliersReq
 	if !http.BindJSON(ctx, &req) {
 		return
 	}
-	if err := c.storeSupplierService.BindProducts(req.StoreID, req.ProductIDs); err != nil {
+	if err := c.storeSupplierService.BindSuppliers(req.StoreID, req.SupplierIDs); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 	http.Success(ctx, nil)
 }
 
-// UnbindProducts godoc
-// @Summary 门店解绑供应商商品
-// @Description 将供应商商品从指定门店解绑，支持批量解绑
-// @Tags 门店供应商管理
-// @Accept json
-// @Produce json
-// @Security Bearer
-// @Param binding body model.BindStoreSupplierReq true "解绑信息"
-// @Success 200 {object} http.Response "解绑成功"
-// @Failure 400 {object} http.Response "请求参数错误"
-// @Failure 500 {object} http.Response "服务器内部错误"
-// @Router /store-suppliers/unbind [delete]
-func (c *StoreSupplierController) UnbindProducts(ctx *gin.Context) {
-	if !http.RequireAdmin(ctx) {
-		return
-	}
-	var req model.BindStoreSupplierReq
+// UnbindSuppliers 门店解绑供应商
+func (c *StoreSupplierController) UnbindSuppliers(ctx *gin.Context) {
+	var req model.UnbindStoreSuppliersReq
 	if !http.BindJSON(ctx, &req) {
 		return
 	}
-	if err := c.storeSupplierService.UnbindProducts(req.StoreID, req.ProductIDs); err != nil {
+	if err := c.storeSupplierService.UnbindSuppliers(req.StoreID, req.SupplierIDs); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 	http.Success(ctx, nil)
 }
 
-// SetDefault godoc
-// @Summary 设置默认供应商商品
-// @Description 为门店设置某个供应商商品为默认选项
-// @Tags 门店供应商管理
-// @Accept json
-// @Produce json
-// @Security Bearer
-// @Param setting body model.SetDefaultSupplierReq true "设置信息"
-// @Success 200 {object} http.Response "设置成功"
-// @Failure 400 {object} http.Response "请求参数错误"
-// @Failure 500 {object} http.Response "服务器内部错误"
-// @Router /store-suppliers/default [put]
-func (c *StoreSupplierController) SetDefault(ctx *gin.Context) {
-	if !http.RequireAdmin(ctx) {
-		return
-	}
-	var req model.SetDefaultSupplierReq
-	if !http.BindJSON(ctx, &req) {
-		return
-	}
-	if err := c.storeSupplierService.SetDefault(req.StoreID, req.ProductID); err != nil {
-		http.Error(ctx, 500, err.Error())
-		return
-	}
-	http.Success(ctx, nil)
-}
-
-// ListByStore godoc
-// @Summary 获取门店绑定的供应商商品列表
-// @Description 获取当前门店已绑定的所有供应商商品，管理员可查看指定门店
-// @Tags 门店供应商管理
-// @Produce json
-// @Security Bearer
-// @Param store_id query int false "门店ID（管理员可指定，普通用户使用当前门店）"
-// @Success 200 {object} http.Response{data=[]model.StoreSupplierProduct} "获取成功"
-// @Failure 500 {object} http.Response "服务器内部错误"
-// @Router /store-suppliers [get]
-func (c *StoreSupplierController) ListByStore(ctx *gin.Context) {
+// ListSuppliers 获取门店绑定的供应商列表
+func (c *StoreSupplierController) ListSuppliers(ctx *gin.Context) {
+	// 从 token 获取 storeID
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 
-	// 管理员可以查看指定门店
-	if roleCode == model.RoleCodeAdmin {
+	// 管理员可以通过 query 参数查看其他门店
+	if middleware.IsAdmin(ctx) {
 		if queryStoreID, ok := http.ParseUintQuery(ctx, "store_id"); ok && queryStoreID > 0 {
 			storeID = queryStoreID
 		}
 	}
 
-	bindings, err := c.storeSupplierService.ListByStoreID(storeID)
+	suppliers, err := c.storeSupplierService.ListSuppliersByStoreID(storeID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
-	http.Success(ctx, bindings)
+	http.Success(ctx, suppliers)
+}
+
+// ListProducts 获取门店可采购的商品列表
+func (c *StoreSupplierController) ListProducts(ctx *gin.Context) {
+	// 从 token 获取 storeID
+	storeID := middleware.GetStoreID(ctx)
+
+	// 管理员可以通过 query 参数查看其他门店
+	if middleware.IsAdmin(ctx) {
+		if queryStoreID, ok := http.ParseUintQuery(ctx, "store_id"); ok && queryStoreID > 0 {
+			storeID = queryStoreID
+		}
+	}
+
+	supplierID, _ := http.ParseUintQuery(ctx, "supplier_id")
+	categoryID, _ := http.ParseUintQuery(ctx, "category_id")
+	keyword := ctx.Query("keyword")
+	products, err := c.storeSupplierService.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, products)
 }

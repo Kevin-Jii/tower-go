@@ -39,13 +39,13 @@ func RegisterSupplierRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		supplierCategories.DELETE("/:id", c.SupplierProduct.DeleteCategory)
 	}
 
-	// 门店供应商商品关联
+	// 门店供应商关联
 	storeSuppliers := v1.Group("/store-suppliers")
 	storeSuppliers.Use(middleware.StoreAuthMiddleware())
 	{
-		storeSuppliers.POST("/bind", c.StoreSupplier.BindProducts)
-		storeSuppliers.DELETE("/unbind", c.StoreSupplier.UnbindProducts)
-		storeSuppliers.PUT("/default", c.StoreSupplier.SetDefault)
-		storeSuppliers.GET("", c.StoreSupplier.ListByStore)
+		storeSuppliers.POST("", c.StoreSupplier.BindSuppliers)            // 绑定供应商
+		storeSuppliers.DELETE("", c.StoreSupplier.UnbindSuppliers)        // 解绑供应商
+		storeSuppliers.GET("", c.StoreSupplier.ListSuppliers)             // 获取绑定的供应商列表
+		storeSuppliers.GET("/products", c.StoreSupplier.ListProducts)     // 获取可采购的商品列表
 	}
 }

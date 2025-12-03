@@ -1,9 +1,8 @@
 package controller
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
@@ -73,8 +72,6 @@ func (c *MenuController) GetMenu(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(menu, "", "  ")
-	fmt.Printf("[GetMenu] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, menu)
 }
 
@@ -94,8 +91,6 @@ func (c *MenuController) ListMenus(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(menus, "", "  ")
-	fmt.Printf("[ListMenus] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, menus)
 }
 
@@ -115,8 +110,6 @@ func (c *MenuController) GetMenuTree(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(tree, "", "  ")
-	fmt.Printf("[GetMenuTree] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, tree)
 }
 
@@ -240,8 +233,6 @@ func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(tree, "", "  ")
-	fmt.Printf("[GetRoleMenus] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, tree)
 }
 
@@ -268,8 +259,6 @@ func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(menuIDs, "", "  ")
-	fmt.Printf("[GetRoleMenuIDs] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, menuIDs)
 }
 
@@ -296,8 +285,6 @@ func (c *MenuController) GetRoleMenuPermissions(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(perms, "", "  ")
-	fmt.Printf("[GetRoleMenuPermissions] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, perms)
 }
 
@@ -365,8 +352,6 @@ func (c *MenuController) GetStoreRoleMenus(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(tree, "", "  ")
-	fmt.Printf("[GetStoreRoleMenus] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, tree)
 }
 
@@ -400,8 +385,6 @@ func (c *MenuController) GetStoreRoleMenuIDs(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(menuIDs, "", "  ")
-	fmt.Printf("[GetStoreRoleMenuIDs] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, menuIDs)
 }
 
@@ -435,8 +418,6 @@ func (c *MenuController) GetStoreRoleMenuPermissions(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(perms, "", "  ")
-	fmt.Printf("[GetStoreRoleMenuPermissions] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, perms)
 }
 
@@ -484,9 +465,6 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	roleCode := middleware.GetRoleCode(ctx)
 	roleID := middleware.GetRoleID(ctx)
 
-	// 调试日志：打印当前用户的权限信息
-	fmt.Printf("[GetUserMenus] 用户权限信息 - storeID: %d, roleCode: %s, roleID: %d\n", storeID, roleCode, roleID)
-
 	// 总部管理员或超级管理员获取所有菜单
 	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
 		tree, err := c.menuService.GetMenuTree()
@@ -494,8 +472,6 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 			http.Error(ctx, 500, err.Error())
 			return
 		}
-		jsonData, _ := json.MarshalIndent(tree, "", "  ")
-		fmt.Printf("[GetUserMenus-Admin] 查询结果:\n%s\n", string(jsonData))
 		http.Success(ctx, tree)
 		return
 	}
@@ -506,8 +482,6 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
-	jsonData, _ := json.MarshalIndent(tree, "", "  ")
-	fmt.Printf("[GetUserMenus] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, tree)
 }
 
@@ -541,7 +515,5 @@ func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 		return
 	}
 
-	jsonData, _ := json.MarshalIndent(permissions, "", "  ")
-	fmt.Printf("[GetUserPermissions] 查询结果:\n%s\n", string(jsonData))
 	http.Success(ctx, permissions)
 }

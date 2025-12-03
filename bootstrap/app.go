@@ -16,17 +16,20 @@ func Run() {
 	defer closeLogger()
 
 	LoadAppConfig()
-	
+
 	// 自动生成 swagger 文档（开发模式）- 移到配置加载之后
 	// 可通过环境变量 SWAG_AUTO=0 禁用以加快启动速度
 	GenerateSwaggerDocs()
-	
+
 	InitDatabase()
 	closeRedis := InitRedisCache()
 	defer closeRedis()
 
 	AutoMigrateAndSeeds()
 	RunSeedSQL()
+
+	// 初始化事件订阅
+	InitEventSubscribers()
 
 	session.InitSessionManager("single", 3)
 	logging.LogInfo("会话管理初始化完成")

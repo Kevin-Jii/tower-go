@@ -40,7 +40,7 @@ func AutoMigrateAndSeeds() {
 		&model.Supplier{},
 		&model.SupplierCategory{},
 		&model.SupplierProduct{},
-		&model.StoreSupplierProduct{},
+		&model.StoreSupplier{},
 		&model.PurchaseOrder{},
 		&model.PurchaseOrderItem{},
 	}

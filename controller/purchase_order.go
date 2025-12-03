@@ -173,3 +173,90 @@ func (c *PurchaseOrderController) GetOrdersBySupplier(ctx *gin.Context) {
 	}
 	http.Success(ctx, result)
 }
+
+// GetAvailableActions godoc
+// @Summary 获取采购单可用操作
+// @Tags purchase-orders
+// @Produce json
+// @Security Bearer
+// @Param id path int true "采购单ID"
+// @Success 200 {object} http.Response{data=[]string}
+// @Router /purchase-orders/{id}/actions [get]
+func (c *PurchaseOrderController) GetAvailableActions(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	actions, err := c.orderService.GetAvailableActions(id)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, actions)
+}
+
+// ConfirmOrder godoc
+// @Summary 确认采购单
+// @Tags purchase-orders
+// @Produce json
+// @Security Bearer
+// @Param id path int true "采购单ID"
+// @Success 200 {object} http.Response
+// @Router /purchase-orders/{id}/confirm [post]
+func (c *PurchaseOrderController) ConfirmOrder(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	if err := c.orderService.ConfirmOrder(id); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+// CompleteOrder godoc
+// @Summary 完成采购单
+// @Tags purchase-orders
+// @Produce json
+// @Security Bearer
+// @Param id path int true "采购单ID"
+// @Success 200 {object} http.Response
+// @Router /purchase-orders/{id}/complete [post]
+func (c *PurchaseOrderController) CompleteOrder(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	if err := c.orderService.CompleteOrder(id); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+// CancelOrder godoc
+// @Summary 取消采购单
+// @Tags purchase-orders
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "采购单ID"
+// @Param body body object{reason=string} false "取消原因"
+// @Success 200 {object} http.Response
+// @Router /purchase-orders/{id}/cancel [post]
+func (c *PurchaseOrderController) CancelOrder(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	_ = ctx.ShouldBindJSON(&req)
+	if err := c.orderService.CancelOrder(id, req.Reason); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}

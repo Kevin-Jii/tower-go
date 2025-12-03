@@ -5,16 +5,29 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/tenant"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 	"gorm.io/gorm"
 )
 
 type PurchaseOrderModule struct {
-	db *gorm.DB
+	db       *gorm.DB
+	strategy tenant.IsolationStrategy
 }
 
 func NewPurchaseOrderModule(db *gorm.DB) *PurchaseOrderModule {
-	return &PurchaseOrderModule{db: db}
+	return &PurchaseOrderModule{
+		db:       db,
+		strategy: tenant.NewStoreIsolationStrategy(),
+	}
+}
+
+// withTenant 应用租户隔离
+func (m *PurchaseOrderModule) withTenant(storeID uint) func(*gorm.DB) *gorm.DB {
+	if storeID == 0 {
+		return tenant.AdminScope()
+	}
+	return tenant.StoreScope(storeID)
 }
 
 func (m *PurchaseOrderModule) GetDB() *gorm.DB {
@@ -42,11 +55,10 @@ func (m *PurchaseOrderModule) List(req *model.ListPurchaseOrderReq) ([]*model.Pu
 	var orders []*model.PurchaseOrder
 	var total int64
 
-	query := m.db.Model(&model.PurchaseOrder{})
+	// 使用租户隔离策略
+	query := m.db.Model(&model.PurchaseOrder{}).Scopes(m.withTenant(req.StoreID))
 
-	if req.StoreID > 0 {
-		query = query.Where("store_id = ?", req.StoreID)
-	}
+	// 其他过滤条件
 	if req.Status != nil {
 		query = query.Where("status = ?", *req.Status)
 	}

@@ -2,8 +2,10 @@ package service
 
 import (
 	"errors"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/composite"
 )
 
 type MenuService struct {
@@ -65,14 +67,24 @@ func (s *MenuService) GetMenuTree() ([]*model.Menu, error) {
 		return nil, err
 	}
 
-	// 使用优化的树构建算法 + 缓存
-	cacheKey := "menu_tree_all"
-	return s.buildMenuTreeWithCache(menus, 0, cacheKey), nil
+	// 使用组合模式构建树
+	tree := composite.NewMenuTree().Build(menus)
+	return tree.ToMenus(), nil
+}
+
+// GetMenuTreeComposite 获取组合模式的菜单树（提供更多操作能力）
+func (s *MenuService) GetMenuTreeComposite() (*composite.MenuTree, error) {
+	menus, err := s.menuModule.List()
+	if err != nil {
+		return nil, err
+	}
+	return composite.NewMenuTree().Build(menus), nil
 }
 
 // buildMenuTree 构建树形菜单结构（保留旧方法用于兼容，但内部调用优化版本）
 func (s *MenuService) buildMenuTree(menus []*model.Menu, parentID uint) []*model.Menu {
-	return s.buildMenuTreeOptimized(menus, parentID)
+	tree := composite.NewMenuTree().Build(menus)
+	return tree.ToMenus()
 }
 
 // UpdateMenu 更新菜单
@@ -156,9 +168,9 @@ func (s *MenuService) GetRoleMenuTree(roleID uint) ([]*model.Menu, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 使用缓存优化
-	cacheKey := "role_menu_tree_" + string(rune(roleID))
-	return s.buildMenuTreeWithCache(menus, 0, cacheKey), nil
+
+	tree := composite.NewMenuTree().Build(menus)
+	return tree.ToMenus(), nil
 }
 
 // GetRoleMenuIDs 获取角色的所有菜单ID（用于前端回显）
@@ -182,7 +194,9 @@ func (s *MenuService) GetStoreRoleMenuTree(storeID uint, roleID uint) ([]*model.
 	if err != nil {
 		return nil, err
 	}
-	return s.buildMenuTree(menus, 0), nil
+
+	tree := composite.NewMenuTree().Build(menus)
+	return tree.ToMenus(), nil
 }
 
 // GetStoreRoleMenuIDs 获取门店角色的所有菜单ID
@@ -206,7 +220,11 @@ func (s *MenuService) GetUserMenuTree(storeID uint, roleID uint) ([]*model.Menu,
 	if err != nil {
 		return nil, err
 	}
-	return s.buildMenuTree(menus, 0), nil
+
+	// 使用组合模式构建树，只返回可见菜单
+	tree := composite.NewMenuTree().Build(menus)
+	visibleTree := tree.GetVisibleMenus()
+	return visibleTree.ToMenus(), nil
 }
 
 // GetUserPermissions 获取用户的所有权限标识（用于前端按钮级权限控制）
@@ -216,14 +234,9 @@ func (s *MenuService) GetUserPermissions(storeID uint, roleID uint) ([]string, e
 		return nil, err
 	}
 
-	var permissions []string
-	for _, menu := range menus {
-		if menu.Permission != "" {
-			permissions = append(permissions, menu.Permission)
-		}
-	}
-
-	return permissions, nil
+	// 使用组合模式收集权限
+	tree := composite.NewMenuTree().Build(menus)
+	return tree.GetAllPermissions(), nil
 }
 
 // GetAllPermissions 获取所有菜单权限标识（总部管理员）
@@ -233,14 +246,10 @@ func (s *MenuService) GetAllPermissions() ([]string, error) {
 		return nil, err
 	}
 
-	var permissions []string
-	for _, menu := range menus {
-		if menu.Permission != "" && menu.Status == 1 {
-			permissions = append(permissions, menu.Permission)
-		}
-	}
-
-	return permissions, nil
+	// 使用组合模式 + 访问者模式收集权限
+	tree := composite.NewMenuTree().Build(menus)
+	enabledTree := tree.GetEnabledMenus()
+	return enabledTree.GetAllPermissions(), nil
 }
 
 // GetRoleMenuPermissions 获取角色的菜单权限映射

@@ -16,5 +16,11 @@ func RegisterPurchaseRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		purchaseOrders.PUT("/:id", c.PurchaseOrder.UpdateOrder)
 		purchaseOrders.DELETE("/:id", c.PurchaseOrder.DeleteOrder)
 		purchaseOrders.GET("/:id/by-supplier", c.PurchaseOrder.GetOrdersBySupplier)
+
+		// 状态机相关操作
+		purchaseOrders.GET("/:id/actions", c.PurchaseOrder.GetAvailableActions)
+		purchaseOrders.POST("/:id/confirm", c.PurchaseOrder.ConfirmOrder)
+		purchaseOrders.POST("/:id/complete", c.PurchaseOrder.CompleteOrder)
+		purchaseOrders.POST("/:id/cancel", c.PurchaseOrder.CancelOrder)
 	}
 }

@@ -21,6 +21,7 @@ type Controllers struct {
 	SupplierProduct   *controller.SupplierProductController
 	StoreSupplier     *controller.StoreSupplierController
 	PurchaseOrder     *controller.PurchaseOrderController
+	Dict              *controller.DictController
 	File              *controller.FileController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 }
@@ -39,6 +40,7 @@ func BuildControllers() *Controllers {
 	supplierProductModule := userModulePkg.NewSupplierProductModule(database.DB)
 	storeSupplierModule := userModulePkg.NewStoreSupplierModule(database.DB)
 	purchaseOrderModule := userModulePkg.NewPurchaseOrderModule(database.DB)
+	dictModule := userModulePkg.NewDictModule(database.DB)
 
 	userModulePkg.SetDB(database.DB)
 
@@ -51,6 +53,7 @@ func BuildControllers() *Controllers {
 	supplierProductService := service.NewSupplierProductService(supplierProductModule, supplierCategoryModule, supplierModule)
 	storeSupplierService := service.NewStoreSupplierService(storeSupplierModule)
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule)
+	dictService := service.NewDictService(dictModule)
 
 	// 初始化MinIO文件服务（可选）
 	var fileController *controller.FileController
@@ -86,6 +89,7 @@ func BuildControllers() *Controllers {
 		SupplierProduct:   controller.NewSupplierProductController(supplierProductService),
 		StoreSupplier:     controller.NewStoreSupplierController(storeSupplierService),
 		PurchaseOrder:     controller.NewPurchaseOrderController(purchaseOrderService),
+		Dict:              controller.NewDictController(dictService),
 		File:              fileController,
 		DingTalkBotModule: dingTalkBotModule,
 	}

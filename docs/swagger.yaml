@@ -91,19 +91,6 @@ definitions:
     - role_id
     - store_id
     type: object
-  model.BindStoreSupplierReq:
-    properties:
-      product_ids:
-        items:
-          type: integer
-        minItems: 1
-        type: array
-      store_id:
-        type: integer
-    required:
-    - product_ids
-    - store_id
-    type: object
   model.CopyStoreMenusReq:
     properties:
       from_store_id:
@@ -116,6 +103,60 @@ definitions:
     - from_store_id
     - role_id
     - to_store_id
+    type: object
+  model.CreateDictDataReq:
+    properties:
+      css_class:
+        maxLength: 100
+        type: string
+      is_default:
+        type: boolean
+      label:
+        maxLength: 100
+        type: string
+      list_class:
+        maxLength: 100
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+      sort:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      type_code:
+        maxLength: 100
+        type: string
+      value:
+        maxLength: 100
+        type: string
+    required:
+    - label
+    - type_code
+    - value
+    type: object
+  model.CreateDictTypeReq:
+    properties:
+      code:
+        maxLength: 100
+        type: string
+      name:
+        maxLength: 100
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - code
+    - name
     type: object
   model.CreateDingTalkBotReq:
     properties:
@@ -342,6 +383,52 @@ definitions:
     - phone
     - username
     type: object
+  model.DictData:
+    properties:
+      created_at:
+        type: string
+      css_class:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      label:
+        type: string
+      list_class:
+        type: string
+      remark:
+        type: string
+      sort:
+        type: integer
+      status:
+        type: integer
+      type_code:
+        type: string
+      type_id:
+        type: integer
+      updated_at:
+        type: string
+      value:
+        type: string
+    type: object
+  model.DictType:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      remark:
+        type: string
+      status:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   model.DingTalkBot:
     properties:
       agent_id:
@@ -511,16 +598,6 @@ definitions:
       updated_at:
         type: string
     type: object
-  model.SetDefaultSupplierReq:
-    properties:
-      product_id:
-        type: integer
-      store_id:
-        type: integer
-    required:
-    - product_id
-    - store_id
-    type: object
   model.Store:
     properties:
       address:
@@ -551,25 +628,6 @@ definitions:
       store_code:
         description: 门店编码 JWXXXX
         type: string
-      updated_at:
-        type: string
-    type: object
-  model.StoreSupplierProduct:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-      is_default:
-        type: boolean
-      product:
-        $ref: '#/definitions/model.SupplierProduct'
-      product_id:
-        type: integer
-      store:
-        $ref: '#/definitions/model.Store'
-      store_id:
-        type: integer
       updated_at:
         type: string
     type: object
@@ -645,6 +703,50 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  model.UpdateDictDataReq:
+    properties:
+      css_class:
+        maxLength: 100
+        type: string
+      is_default:
+        type: boolean
+      label:
+        maxLength: 100
+        type: string
+      list_class:
+        maxLength: 100
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+      sort:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      value:
+        maxLength: 100
+        type: string
+    type: object
+  model.UpdateDictTypeReq:
+    properties:
+      code:
+        maxLength: 100
+        type: string
+      name:
+        maxLength: 100
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
     type: object
   model.UpdateDingTalkBotReq:
     properties:
@@ -973,6 +1075,280 @@ paths:
       summary: 用户注册
       tags:
       - auth
+  /dict-data:
+    get:
+      parameters:
+      - description: 字典类型编码
+        in: query
+        name: type_code
+        type: string
+      - description: 字典类型ID
+        in: query
+        name: type_id
+        type: integer
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.DictData'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 根据类型获取字典数据
+      tags:
+      - dict-data
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 字典数据信息
+        in: body
+        name: dict
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateDictDataReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建字典数据
+      tags:
+      - dict-data
+  /dict-data/{id}:
+    delete:
+      parameters:
+      - description: 字典数据ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除字典数据
+      tags:
+      - dict-data
+    get:
+      parameters:
+      - description: 字典数据ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DictData'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取字典数据详情
+      tags:
+      - dict-data
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 字典数据ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 字典数据信息
+        in: body
+        name: dict
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateDictDataReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新字典数据
+      tags:
+      - dict-data
+  /dict-types:
+    get:
+      parameters:
+      - description: 关键词
+        in: query
+        name: keyword
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.DictType'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取字典类型列表
+      tags:
+      - dict-types
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 字典类型信息
+        in: body
+        name: dict
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateDictTypeReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建字典类型
+      tags:
+      - dict-types
+  /dict-types/{id}:
+    delete:
+      parameters:
+      - description: 字典类型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除字典类型
+      tags:
+      - dict-types
+    get:
+      parameters:
+      - description: 字典类型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DictType'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取字典类型详情
+      tags:
+      - dict-types
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 字典类型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 字典类型信息
+        in: body
+        name: dict
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateDictTypeReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新字典类型
+      tags:
+      - dict-types
+  /dicts:
+    get:
+      description: 获取所有字典数据，用于前端缓存
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      $ref: '#/definitions/model.DictData'
+                    type: array
+                  type: object
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取所有字典
+      tags:
+      - dicts
   /dingtalk-bots:
     get:
       consumes:
@@ -1268,10 +1644,14 @@ paths:
         name: file
         required: true
         type: file
-      - description: 图片类型：product/supplier/avatar
+      - description: 图片类型：product/supplier/avatar/purchase
         in: formData
         name: type
         type: string
+      - description: 门店ID（type=purchase时必填）
+        in: formData
+        name: store_id
+        type: integer
       produces:
       - application/json
       responses:
@@ -1903,6 +2283,33 @@ paths:
       summary: 更新采购单
       tags:
       - purchase-orders
+  /purchase-orders/{id}/actions:
+    get:
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取采购单可用操作
+      tags:
+      - purchase-orders
   /purchase-orders/{id}/by-supplier:
     get:
       parameters:
@@ -1921,6 +2328,76 @@ paths:
       security:
       - Bearer: []
       summary: 按供应商分组获取采购单明细
+      tags:
+      - purchase-orders
+  /purchase-orders/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 取消原因
+        in: body
+        name: body
+        schema:
+          properties:
+            reason:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 取消采购单
+      tags:
+      - purchase-orders
+  /purchase-orders/{id}/complete:
+    post:
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 完成采购单
+      tags:
+      - purchase-orders
+  /purchase-orders/{id}/confirm:
+    post:
+      parameters:
+      - description: 采购单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 确认采购单
       tags:
       - purchase-orders
   /roles:
@@ -2076,133 +2553,6 @@ paths:
       summary: 更新角色
       tags:
       - 角色管理
-  /store-suppliers:
-    get:
-      description: 获取当前门店已绑定的所有供应商商品，管理员可查看指定门店
-      parameters:
-      - description: 门店ID（管理员可指定，普通用户使用当前门店）
-        in: query
-        name: store_id
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 获取成功
-          schema:
-            allOf:
-            - $ref: '#/definitions/http.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/model.StoreSupplierProduct'
-                  type: array
-              type: object
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/http.Response'
-      security:
-      - Bearer: []
-      summary: 获取门店绑定的供应商商品列表
-      tags:
-      - 门店供应商管理
-  /store-suppliers/bind:
-    post:
-      consumes:
-      - application/json
-      description: 将供应商商品绑定到指定门店，支持批量绑定
-      parameters:
-      - description: 绑定信息
-        in: body
-        name: binding
-        required: true
-        schema:
-          $ref: '#/definitions/model.BindStoreSupplierReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 绑定成功
-          schema:
-            $ref: '#/definitions/http.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/http.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/http.Response'
-      security:
-      - Bearer: []
-      summary: 门店绑定供应商商品
-      tags:
-      - 门店供应商管理
-  /store-suppliers/default:
-    put:
-      consumes:
-      - application/json
-      description: 为门店设置某个供应商商品为默认选项
-      parameters:
-      - description: 设置信息
-        in: body
-        name: setting
-        required: true
-        schema:
-          $ref: '#/definitions/model.SetDefaultSupplierReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 设置成功
-          schema:
-            $ref: '#/definitions/http.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/http.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/http.Response'
-      security:
-      - Bearer: []
-      summary: 设置默认供应商商品
-      tags:
-      - 门店供应商管理
-  /store-suppliers/unbind:
-    delete:
-      consumes:
-      - application/json
-      description: 将供应商商品从指定门店解绑，支持批量解绑
-      parameters:
-      - description: 解绑信息
-        in: body
-        name: binding
-        required: true
-        schema:
-          $ref: '#/definitions/model.BindStoreSupplierReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 解绑成功
-          schema:
-            $ref: '#/definitions/http.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/http.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/http.Response'
-      security:
-      - Bearer: []
-      summary: 门店解绑供应商商品
-      tags:
-      - 门店供应商管理
   /stores:
     get:
       consumes:

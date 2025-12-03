@@ -147,9 +147,9 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 	return order, nil
 }
 
-// GetOrder 获取采购单详情
+// GetOrder 获取采购单详情（包含关联数据）
 func (s *PurchaseOrderService) GetOrder(id uint) (*model.PurchaseOrder, error) {
-	return s.orderModule.GetByID(id)
+	return s.orderModule.GetByIDWithDetails(id)
 }
 
 // ListOrders 获取采购单列表

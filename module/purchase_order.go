@@ -45,6 +45,15 @@ func (m *PurchaseOrderModule) Create(order *model.PurchaseOrder) error {
 
 func (m *PurchaseOrderModule) GetByID(id uint) (*model.PurchaseOrder, error) {
 	var order model.PurchaseOrder
+	if err := m.db.First(&order, id).Error; err != nil {
+		return nil, err
+	}
+	return &order, nil
+}
+
+// GetByIDWithDetails 获取采购单详情（包含关联数据）
+func (m *PurchaseOrderModule) GetByIDWithDetails(id uint) (*model.PurchaseOrder, error) {
+	var order model.PurchaseOrder
 	if err := m.db.Preload("Store").Preload("Creator").Preload("Items.Supplier").Preload("Items.Product").First(&order, id).Error; err != nil {
 		return nil, err
 	}

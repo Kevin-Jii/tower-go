@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
@@ -74,13 +77,21 @@ func (c *StoreSupplierController) ListProducts(ctx *gin.Context) {
 		}
 	}
 
+	fmt.Printf("🔍 ListProducts: storeID=%d, isAdmin=%v\n", storeID, middleware.IsAdmin(ctx))
+
 	supplierID, _ := http.ParseUintQuery(ctx, "supplier_id")
 	categoryID, _ := http.ParseUintQuery(ctx, "category_id")
 	keyword := ctx.Query("keyword")
 	products, err := c.storeSupplierService.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
 	if err != nil {
+		fmt.Printf("❌ ListProducts error: %v\n", err)
 		http.Error(ctx, 500, err.Error())
 		return
 	}
+
+	// 打印响应数据
+	jsonData, _ := json.MarshalIndent(products, "", "  ")
+	fmt.Printf("✅ ListProducts response (%d items):\n%s\n", len(products), string(jsonData))
+
 	http.Success(ctx, products)
 }

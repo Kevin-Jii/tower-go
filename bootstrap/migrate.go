@@ -46,7 +46,8 @@ func AutoMigrateAndSeeds() {
 		&model.DictType{},
 		&model.DictData{},
 		&model.Inventory{},
-		&model.InventoryRecord{},
+		&model.InventoryOrder{},
+		&model.InventoryOrderItem{},
 		&model.Gallery{},
 		&model.StoreAccount{},
 	}

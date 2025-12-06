@@ -27,27 +27,29 @@ func (m *StatisticsModule) GetInventoryStats(storeID uint) (*model.InventoryStat
 	query.Count(&stats.TotalProducts)
 	query.Select("COALESCE(SUM(quantity), 0)").Scan(&stats.TotalQuantity)
 
-	// 出入库记录总数
-	recordQuery := m.db.Model(&model.InventoryRecord{}).Where("deleted_at IS NULL")
+	// 出入库单总数
+	orderQuery := m.db.Model(&model.InventoryOrder{}).Where("deleted_at IS NULL")
 	if storeID > 0 {
-		recordQuery = recordQuery.Where("store_id = ?", storeID)
+		orderQuery = orderQuery.Where("store_id = ?", storeID)
 	}
-	recordQuery.Count(&stats.TotalRecords)
+	orderQuery.Count(&stats.TotalRecords)
 
-	// 今日入库/出库
+	// 今日入库/出库（从出入库单统计）
 	today := time.Now().Format("2006-01-02")
-	todayQuery := m.db.Model(&model.InventoryRecord{}).
-		Where("deleted_at IS NULL AND DATE(created_at) = ?", today)
-	if storeID > 0 {
-		todayQuery = todayQuery.Where("store_id = ?", storeID)
-	}
 
 	// 今日入库
-	todayQuery.Where("type = ?", model.InventoryTypeIn).
-		Select("COALESCE(SUM(quantity), 0)").Scan(&stats.TodayIn)
+	m.db.Model(&model.InventoryOrder{}).
+		Where("deleted_at IS NULL AND DATE(created_at) = ? AND type = ?", today, model.InventoryTypeIn).
+		Where(func(db *gorm.DB) *gorm.DB {
+			if storeID > 0 {
+				return db.Where("store_id = ?", storeID)
+			}
+			return db
+		}(m.db)).
+		Select("COALESCE(SUM(total_quantity), 0)").Scan(&stats.TodayIn)
 
 	// 今日出库
-	m.db.Model(&model.InventoryRecord{}).
+	m.db.Model(&model.InventoryOrder{}).
 		Where("deleted_at IS NULL AND DATE(created_at) = ? AND type = ?", today, model.InventoryTypeOut).
 		Where(func(db *gorm.DB) *gorm.DB {
 			if storeID > 0 {
@@ -55,7 +57,7 @@ func (m *StatisticsModule) GetInventoryStats(storeID uint) (*model.InventoryStat
 			}
 			return db
 		}(m.db)).
-		Select("COALESCE(SUM(quantity), 0)").Scan(&stats.TodayOut)
+		Select("COALESCE(SUM(total_quantity), 0)").Scan(&stats.TodayOut)
 
 	return stats, nil
 }

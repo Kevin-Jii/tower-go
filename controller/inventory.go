@@ -52,51 +52,51 @@ func (c *InventoryController) ListInventory(ctx *gin.Context) {
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
 }
 
-
-// CreateRecord godoc
-// @Summary 创建出入库记录
+// CreateOrder godoc
+// @Summary 创建出入库单
 // @Tags inventory
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param record body model.CreateInventoryRecordReq true "出入库信息"
-// @Success 200 {object} http.Response
-// @Router /inventory-records [post]
-func (c *InventoryController) CreateRecord(ctx *gin.Context) {
+// @Param order body model.CreateInventoryOrderReq true "出入库单信息"
+// @Success 200 {object} http.Response{data=model.InventoryOrder}
+// @Router /inventory-orders [post]
+func (c *InventoryController) CreateOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	userID := middleware.GetUserID(ctx)
 
-	var req model.CreateInventoryRecordReq
+	var req model.CreateInventoryOrderReq
 	if !http.BindJSON(ctx, &req) {
 		return
 	}
 
-	if err := c.inventoryService.CreateRecord(storeID, userID, &req); err != nil {
+	order, err := c.inventoryService.CreateOrder(storeID, userID, &req)
+	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	http.Success(ctx, nil)
+	http.Success(ctx, order)
 }
 
-// ListRecords godoc
-// @Summary 出入库记录列表
+// ListOrders godoc
+// @Summary 出入库单列表
 // @Tags inventory
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
-// @Param product_id query int false "商品ID"
 // @Param type query int false "类型 1=入库 2=出库"
+// @Param order_no query string false "单号"
 // @Param date query string false "日期"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} http.Response{data=[]model.InventoryRecord}
-// @Router /inventory-records [get]
-func (c *InventoryController) ListRecords(ctx *gin.Context) {
+// @Success 200 {object} http.Response{data=[]model.InventoryOrder}
+// @Router /inventory-orders [get]
+func (c *InventoryController) ListOrders(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	roleCode := middleware.GetRoleCode(ctx)
 
-	var req model.ListInventoryRecordReq
+	var req model.ListInventoryOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		http.Error(ctx, 400, err.Error())
 		return
@@ -107,11 +107,58 @@ func (c *InventoryController) ListRecords(ctx *gin.Context) {
 		req.StoreID = storeID
 	}
 
-	list, total, err := c.inventoryService.ListRecords(&req)
+	list, total, err := c.inventoryService.ListOrders(&req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+// GetOrderByNo godoc
+// @Summary 根据单号获取出入库单详情
+// @Tags inventory
+// @Produce json
+// @Security Bearer
+// @Param order_no path string true "单据编号"
+// @Success 200 {object} http.Response{data=model.InventoryOrder}
+// @Router /inventory-orders/no/{order_no} [get]
+func (c *InventoryController) GetOrderByNo(ctx *gin.Context) {
+	orderNo := ctx.Param("order_no")
+	if orderNo == "" {
+		http.Error(ctx, 400, "单据编号不能为空")
+		return
+	}
+
+	order, err := c.inventoryService.GetOrderByNo(orderNo)
+	if err != nil {
+		http.Error(ctx, 500, "未找到该单据")
+		return
+	}
+
+	http.Success(ctx, order)
+}
+
+// GetOrderByID godoc
+// @Summary 根据ID获取出入库单详情
+// @Tags inventory
+// @Produce json
+// @Security Bearer
+// @Param id path int true "出入库单ID"
+// @Success 200 {object} http.Response{data=model.InventoryOrder}
+// @Router /inventory-orders/{id} [get]
+func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	order, err := c.inventoryService.GetOrderByID(id)
+	if err != nil {
+		http.Error(ctx, 500, "未找到该单据")
+		return
+	}
+
+	http.Success(ctx, order)
 }

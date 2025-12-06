@@ -13,10 +13,12 @@ func RegisterInventoryRoutes(r *gin.RouterGroup, c *Controllers) {
 		inventories.GET("", c.Inventory.ListInventory)
 	}
 
-	// 出入库记录
-	records := r.Group("/inventory-records").Use(middleware.AuthMiddleware())
+	// 出入库单
+	orders := r.Group("/inventory-orders").Use(middleware.AuthMiddleware())
 	{
-		records.GET("", c.Inventory.ListRecords)
-		records.POST("", c.Inventory.CreateRecord)
+		orders.POST("", c.Inventory.CreateOrder)
+		orders.GET("", c.Inventory.ListOrders)
+		orders.GET("/no/:order_no", c.Inventory.GetOrderByNo)
+		orders.GET("/:id", c.Inventory.GetOrderByID)
 	}
 }

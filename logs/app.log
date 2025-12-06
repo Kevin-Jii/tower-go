@@ -4255,3 +4255,124 @@
 {"level":"info","timestamp":"2025-12-07 01:04:15.446","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
 {"level":"info","timestamp":"2025-12-07 01:04:15.452","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
 {"level":"info","timestamp":"2025-12-07 01:04:15.452","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 01:04:15.554","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 01:04:15.562","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 01:04:15.569","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 01:04:15.569","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 01:04:15.615","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-07 01:04:52.859","caller":"bootstrap/migrate.go:60","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-07 01:04:52.905","caller":"bootstrap/migrate.go:68","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-07 01:04:52.908","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 01:04:52.910","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 01:04:52.982","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 01:04:53.006","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 01:04:53.050","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 01:04:53.193","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"5EB02D6E-0F9B-745E-B8BD-71E0AF452A48\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 01:06:40.937","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 01:06:40.943","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 01:06:40.943","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 01:06:41.050","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 01:06:41.058","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 01:06:41.064","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 01:06:41.064","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 01:06:41.112","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-07 01:07:18.443","caller":"bootstrap/migrate.go:60","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-07 01:07:18.487","caller":"bootstrap/migrate.go:68","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-07 01:07:18.488","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 01:07:18.488","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 01:07:18.556","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 01:07:18.571","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 01:07:18.615","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 01:07:18.738","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"9FF31270-7508-72F6-B006-42FA1659B9A1\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 01:14:01.032","caller":"bootstrap/events.go:42","msg":"🔗 门店 999 绑定了供应商: [5 4 3 2 1]"}
+{"level":"info","timestamp":"2025-12-07 01:14:20.558","caller":"bootstrap/events.go:16","msg":"📦 新采购单创建: PO202512070114205700, 门店ID: 999"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.149","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.156","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 01:33:49.156","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.273","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.283","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.289","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.289","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 01:33:49.337","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-07 01:34:25.961","caller":"bootstrap/migrate.go:60","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-07 01:34:26.009","caller":"bootstrap/migrate.go:68","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-07 01:34:26.010","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 01:34:26.010","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 01:34:26.076","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 01:34:26.111","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 01:34:26.153","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 01:34:26.309","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"A19CDAB1-D34C-788B-A160-3DFAFC08AB61\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.104","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.111","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 01:38:34.111","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.231","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.241","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.250","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.250","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 01:38:34.297","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-07 01:39:11.529","caller":"bootstrap/migrate.go:60","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-07 01:39:11.584","caller":"bootstrap/migrate.go:68","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-07 01:39:11.589","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 01:39:11.590","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 01:39:11.671","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 01:39:11.714","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 01:39:11.756","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 01:39:11.928","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"A19AFFC7-DD46-7C5B-BD09-EEA17330A11A\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 01:46:02.888","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 01:46:02.894","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 01:46:02.894","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 01:46:02.996","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 01:46:03.006","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 01:46:03.014","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 01:46:03.014","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 01:46:03.071","caller":"bootstrap/migrate.go:22","msg":"数据表已存在，跳过迁移检查（如需强制迁移请删除表）"}
+{"level":"info","timestamp":"2025-12-07 01:46:39.992","caller":"bootstrap/migrate.go:60","msg":"数据表迁移完成"}
+{"level":"info","timestamp":"2025-12-07 01:46:40.039","caller":"bootstrap/migrate.go:68","msg":"数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql"}
+{"level":"info","timestamp":"2025-12-07 01:46:40.040","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 01:46:40.041","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 01:46:40.124","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 01:46:40.161","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 01:46:40.204","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 01:46:40.347","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"9B3DE143-B09E-7B52-B3E4-71A98D3186A8\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.520","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.531","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 01:48:55.531","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.650","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.660","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.670","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.671","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.671","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.672","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 01:48:55.674","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 01:48:55.755","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 01:48:55.764","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 01:48:55.805","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 01:48:55.946","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"44862E9E-8A55-73D6-8B38-585CA0476B48\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.500","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.506","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 02:00:42.506","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.622","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.633","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.641","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.641","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.641","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.644","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 02:00:42.644","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 02:00:42.715","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 02:00:42.759","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 02:00:42.803","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 02:00:42.961","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"1291E9E2-73EA-7A30-8F8B-C5327709E31B\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.211","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.217","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-07 02:06:30.217","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.331","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.342","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.348","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.348","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.348","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.350","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-07 02:06:30.350","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-07 02:06:30.427","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-07 02:06:30.437","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-07 02:06:30.481","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-07 02:06:30.612","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"8A0A39D8-0EE6-70C1-BAD3-438413A8E3C0\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}

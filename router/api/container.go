@@ -62,7 +62,7 @@ func BuildControllers() *Controllers {
 	storeSupplierService := service.NewStoreSupplierService(storeSupplierModule)
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule)
 	dictService := service.NewDictService(dictModule)
-	inventoryService := service.NewInventoryService(inventoryModule)
+	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 

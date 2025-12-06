@@ -223,12 +223,32 @@ definitions:
         description: webhook 模式必填
         type: string
     type: object
-  model.CreateInventoryRecordReq:
+  model.CreateInventoryOrderItemReq:
     properties:
+      expiry_date:
+        description: 截止日期
+        type: string
       product_id:
         type: integer
+      production_date:
+        description: 生产日期
+        type: string
       quantity:
         type: number
+      remark:
+        maxLength: 500
+        type: string
+    required:
+    - product_id
+    - quantity
+    type: object
+  model.CreateInventoryOrderReq:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/model.CreateInventoryOrderItemReq'
+        minItems: 1
+        type: array
       reason:
         maxLength: 100
         type: string
@@ -241,8 +261,7 @@ definitions:
         - 2
         type: integer
     required:
-    - product_id
-    - quantity
+    - items
     - reason
     - type
     type: object
@@ -607,39 +626,62 @@ definitions:
       url:
         type: string
     type: object
-  model.InventoryRecord:
+  model.InventoryOrder:
     properties:
       created_at:
         type: string
       id:
         type: integer
-      operator:
-        $ref: '#/definitions/model.User'
+      item_count:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/model.InventoryOrderItem'
+        type: array
       operator_id:
         type: integer
-      product:
-        $ref: '#/definitions/model.SupplierProduct'
-      product_id:
-        type: integer
-      quantity:
-        type: number
-      reason:
+      operator_name:
         type: string
-      record_no:
+      operator_phone:
+        type: string
+      order_no:
+        type: string
+      reason:
         type: string
       remark:
         type: string
-      store:
-        allOf:
-        - $ref: '#/definitions/model.Store'
-        description: 关联
       store_id:
         type: integer
+      store_name:
+        type: string
+      total_quantity:
+        type: number
       type:
         type: integer
-      unit:
-        type: string
       updated_at:
+        type: string
+    type: object
+  model.InventoryOrderItem:
+    properties:
+      created_at:
+        type: string
+      expiry_date:
+        type: string
+      id:
+        type: integer
+      order_id:
+        type: integer
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      production_date:
+        type: string
+      quantity:
+        type: number
+      remark:
+        type: string
+      unit:
         type: string
     type: object
   model.InventoryStats:
@@ -2199,21 +2241,21 @@ paths:
       summary: 库存列表
       tags:
       - inventory
-  /inventory-records:
+  /inventory-orders:
     get:
       parameters:
       - description: 门店ID
         in: query
         name: store_id
         type: integer
-      - description: 商品ID
-        in: query
-        name: product_id
-        type: integer
       - description: 类型 1=入库 2=出库
         in: query
         name: type
         type: integer
+      - description: 单号
+        in: query
+        name: order_no
+        type: string
       - description: 日期
         in: query
         name: date
@@ -2237,34 +2279,89 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/model.InventoryRecord'
+                    $ref: '#/definitions/model.InventoryOrder'
                   type: array
               type: object
       security:
       - Bearer: []
-      summary: 出入库记录列表
+      summary: 出入库单列表
       tags:
       - inventory
     post:
       consumes:
       - application/json
       parameters:
-      - description: 出入库信息
+      - description: 出入库单信息
         in: body
-        name: record
+        name: order
         required: true
         schema:
-          $ref: '#/definitions/model.CreateInventoryRecordReq'
+          $ref: '#/definitions/model.CreateInventoryOrderReq'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/http.Response'
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.InventoryOrder'
+              type: object
       security:
       - Bearer: []
-      summary: 创建出入库记录
+      summary: 创建出入库单
+      tags:
+      - inventory
+  /inventory-orders/{id}:
+    get:
+      parameters:
+      - description: 出入库单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.InventoryOrder'
+              type: object
+      security:
+      - Bearer: []
+      summary: 根据ID获取出入库单详情
+      tags:
+      - inventory
+  /inventory-orders/no/{order_no}:
+    get:
+      parameters:
+      - description: 单据编号
+        in: path
+        name: order_no
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.InventoryOrder'
+              type: object
+      security:
+      - Bearer: []
+      summary: 根据单号获取出入库单详情
       tags:
       - inventory
   /menus:

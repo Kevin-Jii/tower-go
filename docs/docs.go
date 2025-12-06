@@ -1460,7 +1460,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory-records": {
+        "/inventory-orders": {
             "get": {
                 "security": [
                     {
@@ -1473,7 +1473,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "出入库记录列表",
+                "summary": "出入库单列表",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1483,14 +1483,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "商品ID",
-                        "name": "product_id",
+                        "description": "类型 1=入库 2=出库",
+                        "name": "type",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "类型 1=入库 2=出库",
-                        "name": "type",
+                        "type": "string",
+                        "description": "单号",
+                        "name": "order_no",
                         "in": "query"
                     },
                     {
@@ -1526,7 +1526,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/model.InventoryRecord"
+                                                "$ref": "#/definitions/model.InventoryOrder"
                                             }
                                         }
                                     }
@@ -1551,15 +1551,15 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "创建出入库记录",
+                "summary": "创建出入库单",
                 "parameters": [
                     {
-                        "description": "出入库信息",
-                        "name": "record",
+                        "description": "出入库单信息",
+                        "name": "order",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateInventoryRecordReq"
+                            "$ref": "#/definitions/model.CreateInventoryOrderReq"
                         }
                     }
                 ],
@@ -1567,7 +1567,109 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.InventoryOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory-orders/no/{order_no}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "根据单号获取出入库单详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "单据编号",
+                        "name": "order_no",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.InventoryOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory-orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "根据ID获取出入库单详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "出入库单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.InventoryOrder"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -5160,20 +5262,47 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CreateInventoryRecordReq": {
+        "model.CreateInventoryOrderItemReq": {
             "type": "object",
             "required": [
                 "product_id",
-                "quantity",
+                "quantity"
+            ],
+            "properties": {
+                "expiry_date": {
+                    "description": "截止日期",
+                    "type": "string"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "production_date": {
+                    "description": "生产日期",
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "model.CreateInventoryOrderReq": {
+            "type": "object",
+            "required": [
+                "items",
                 "reason",
                 "type"
             ],
             "properties": {
-                "product_id": {
-                    "type": "integer"
-                },
-                "quantity": {
-                    "type": "number"
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.CreateInventoryOrderItemReq"
+                    }
                 },
                 "reason": {
                     "type": "string",
@@ -5713,7 +5842,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.InventoryRecord": {
+        "model.InventoryOrder": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -5722,48 +5851,81 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "operator": {
-                    "$ref": "#/definitions/model.User"
+                "item_count": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.InventoryOrderItem"
+                    }
                 },
                 "operator_id": {
                     "type": "integer"
                 },
-                "product": {
-                    "$ref": "#/definitions/model.SupplierProduct"
-                },
-                "product_id": {
-                    "type": "integer"
-                },
-                "quantity": {
-                    "type": "number"
-                },
-                "reason": {
+                "operator_name": {
                     "type": "string"
                 },
-                "record_no": {
+                "operator_phone": {
+                    "type": "string"
+                },
+                "order_no": {
+                    "type": "string"
+                },
+                "reason": {
                     "type": "string"
                 },
                 "remark": {
                     "type": "string"
                 },
-                "store": {
-                    "description": "关联",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.Store"
-                        }
-                    ]
-                },
                 "store_id": {
                     "type": "integer"
+                },
+                "store_name": {
+                    "type": "string"
+                },
+                "total_quantity": {
+                    "type": "number"
                 },
                 "type": {
                     "type": "integer"
                 },
-                "unit": {
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.InventoryOrderItem": {
+            "type": "object",
+            "properties": {
+                "created_at": {
                     "type": "string"
                 },
-                "updated_at": {
+                "expiry_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "order_id": {
+                    "type": "integer"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "production_date": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "unit": {
                     "type": "string"
                 }
             }

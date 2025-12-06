@@ -1,9 +1,12 @@
 package http
 
 import (
-	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -18,19 +21,39 @@ type Response struct {
 
 // Success 成功响应
 func Success(c *gin.Context, data interface{}) {
-	c.JSON(http.StatusOK, Response{
+	resp := Response{
 		Code:    200,
 		Message: "success",
 		Data:    data,
-	})
+	}
+
+	// 打印响应数据到控制台
+	printResponse(c, resp)
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// printResponse 打印响应数据到控制台
+func printResponse(c *gin.Context, resp Response) {
+	jsonData, _ := json.MarshalIndent(resp, "", "  ")
+	fmt.Println(strings.Repeat("=", 60))
+	fmt.Printf("📤 API Response [%s %s]\n", c.Request.Method, c.Request.URL.Path)
+	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println(string(jsonData))
+	fmt.Println(strings.Repeat("=", 60))
 }
 
 // Error 错误响应
 func Error(c *gin.Context, code int, message string) {
-	c.JSON(http.StatusOK, Response{
+	resp := Response{
 		Code:    code,
 		Message: message,
-	})
+	}
+
+	// 打印错误响应到控制台
+	printErrorResponse(c, resp)
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // WithError 带错误信息的响应
@@ -41,11 +64,26 @@ func WithError(c *gin.Context, code int, message string, err error) {
 		logging.LogError("API Error", zap.String("message", message), zap.Error(err))
 	}
 
-	c.JSON(http.StatusOK, Response{
+	resp := Response{
 		Code:    code,
 		Message: message,
 		Error:   errorMsg,
-	})
+	}
+
+	// 打印错误响应到控制台
+	printErrorResponse(c, resp)
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// printErrorResponse 打印错误响应到控制台
+func printErrorResponse(c *gin.Context, resp Response) {
+	jsonData, _ := json.MarshalIndent(resp, "", "  ")
+	fmt.Println(strings.Repeat("=", 60))
+	fmt.Printf("❌ API Error [%s %s]\n", c.Request.Method, c.Request.URL.Path)
+	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println(string(jsonData))
+	fmt.Println(strings.Repeat("=", 60))
 }
 
 // BadRequest 400 响应

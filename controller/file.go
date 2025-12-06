@@ -15,26 +15,26 @@ import (
 
 // FileController 文件控制器
 type FileController struct {
-	minioService *service.MinIOService
+	rustfsService *service.RustFSService
 }
 
 // NewFileController 创建文件控制器
-func NewFileController(minioService *service.MinIOService) *FileController {
+func NewFileController(rustfsService *service.RustFSService) *FileController {
 	return &FileController{
-		minioService: minioService,
+		rustfsService: rustfsService,
 	}
 }
 
 // Upload godoc
 // @Summary 上传文件
-// @Description 上传文件到MinIO对象存储
+// @Description 上传文件到RustFS对象存储
 // @Tags 文件管理
 // @Accept multipart/form-data
 // @Produce json
 // @Security Bearer
 // @Param file formData file true "文件"
 // @Param folder formData string false "目标文件夹，如 documents"
-// @Success 200 {object} http.Response{data=service.MinIOUploadResult}
+// @Success 200 {object} http.Response{data=service.RustFSUploadResult}
 // @Router /files/upload [post]
 func (c *FileController) Upload(ctx *gin.Context) {
 	file, header, err := ctx.Request.FormFile("file")
@@ -66,7 +66,7 @@ func (c *FileController) Upload(ctx *gin.Context) {
 	}
 
 	// 上传文件
-	result, err := c.minioService.Upload(folder, uniqueName, file, header.Size, contentType)
+	result, err := c.rustfsService.Upload(folder, uniqueName, file, header.Size, contentType)
 	if err != nil {
 		http.Error(ctx, 500, "上传失败: "+err.Error())
 		return
@@ -87,7 +87,7 @@ func (c *FileController) Upload(ctx *gin.Context) {
 // @Param file formData file true "图片文件"
 // @Param type formData string false "图片类型：product/supplier/avatar/purchase"
 // @Param store_id formData int false "门店ID（type=purchase时必填）"
-// @Success 200 {object} http.Response{data=service.MinIOUploadResult}
+// @Success 200 {object} http.Response{data=service.RustFSUploadResult}
 // @Router /files/upload-image [post]
 func (c *FileController) UploadImage(ctx *gin.Context) {
 	file, header, err := ctx.Request.FormFile("file")
@@ -148,7 +148,7 @@ func (c *FileController) UploadImage(ctx *gin.Context) {
 		contentType = "image/" + strings.TrimPrefix(ext, ".")
 	}
 
-	result, err := c.minioService.Upload(folder, uniqueName, file, header.Size, contentType)
+	result, err := c.rustfsService.Upload(folder, uniqueName, file, header.Size, contentType)
 	if err != nil {
 		http.Error(ctx, 500, "上传失败: "+err.Error())
 		return
@@ -171,7 +171,7 @@ func (c *FileController) UploadImage(ctx *gin.Context) {
 func (c *FileController) List(ctx *gin.Context) {
 	prefix := ctx.Query("prefix")
 
-	objects, err := c.minioService.List(prefix, true)
+	objects, err := c.rustfsService.List(prefix, true)
 	if err != nil {
 		http.Error(ctx, 500, "获取文件列表失败: "+err.Error())
 		return
@@ -181,10 +181,10 @@ func (c *FileController) List(ctx *gin.Context) {
 	var files []map[string]interface{}
 	for _, obj := range objects {
 		files = append(files, map[string]interface{}{
-			"name":         obj.Key,
-			"size":         obj.Size,
+			"name":          obj.Key,
+			"size":          obj.Size,
 			"last_modified": obj.LastModified,
-			"url":          c.minioService.GetPublicURL(obj.Key),
+			"url":           c.rustfsService.GetPublicURL(obj.Key),
 		})
 	}
 
@@ -219,7 +219,7 @@ func (c *FileController) Delete(ctx *gin.Context) {
 		if req.Dir != "" {
 			path = req.Dir + "/" + name
 		}
-		if err := c.minioService.Delete(path); err != nil {
+		if err := c.rustfsService.Delete(path); err != nil {
 			http.Error(ctx, 500, "删除失败: "+err.Error())
 			return
 		}
@@ -251,7 +251,7 @@ func (c *FileController) GetPresignedURL(ctx *gin.Context) {
 		fmt.Sscanf(e, "%d", &expires)
 	}
 
-	url, err := c.minioService.GetPresignedURL(path, time.Duration(expires)*time.Minute)
+	url, err := c.rustfsService.GetPresignedURL(path, time.Duration(expires)*time.Minute)
 	if err != nil {
 		http.Error(ctx, 500, "获取URL失败: "+err.Error())
 		return

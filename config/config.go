@@ -14,11 +14,11 @@ type Config struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	DingTalk DingTalkConfig
-	MinIO    MinIOConfig
+	RustFS   RustFSConfig
 }
 
-// MinIOConfig MinIO对象存储配置
-type MinIOConfig struct {
+// RustFSConfig RustFS对象存储配置（S3兼容）
+type RustFSConfig struct {
 	Enabled   bool
 	Endpoint  string
 	AccessKey string
@@ -86,7 +86,7 @@ func InitConfig() {
 		Database: loadDatabaseConfig(),
 		Redis:    loadRedisConfig(),
 		DingTalk: loadDingTalkConfig(),
-		MinIO:    loadMinIOConfig(),
+		RustFS:   loadRustFSConfig(),
 	}
 }
 
@@ -271,19 +271,19 @@ func getAppBool(key string, defaultValue bool) bool {
 	return defaultValue
 }
 
-// loadMinIOConfig 加载MinIO配置
-func loadMinIOConfig() MinIOConfig {
-	return MinIOConfig{
-		Enabled:   getAppBool("MINIO_ENABLED", false),
-		Endpoint:  getAppString("MINIO_ENDPOINT", "localhost:9000"),
-		AccessKey: getAppString("MINIO_ACCESS_KEY", ""),
-		SecretKey: getAppString("MINIO_SECRET_KEY", ""),
-		Bucket:    getAppString("MINIO_BUCKET", "tower"),
-		UseSSL:    getAppBool("MINIO_USE_SSL", false),
+// loadRustFSConfig 加载RustFS配置
+func loadRustFSConfig() RustFSConfig {
+	return RustFSConfig{
+		Enabled:   getAppBool("RUSTFS_ENABLED", false),
+		Endpoint:  getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
+		AccessKey: getAppString("RUSTFS_ACCESS_KEY", ""),
+		SecretKey: getAppString("RUSTFS_SECRET_KEY", ""),
+		Bucket:    getAppString("RUSTFS_BUCKET", "tower"),
+		UseSSL:    getAppBool("RUSTFS_USE_SSL", false),
 	}
 }
 
-// GetMinIOConfig 获取MinIO配置
-func GetMinIOConfig() MinIOConfig {
-	return GetConfig().MinIO
+// GetRustFSConfig 获取RustFS配置
+func GetRustFSConfig() RustFSConfig {
+	return GetConfig().RustFS
 }

@@ -994,7 +994,7 @@
                         "Bearer": []
                     }
                 ],
-                "description": "上传文件到MinIO对象存储",
+                "description": "上传文件到RustFS对象存储",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1032,7 +1032,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/service.MinIOUploadResult"
+                                            "$ref": "#/definitions/service.RustFSUploadResult"
                                         }
                                     }
                                 }
@@ -1093,11 +1093,479 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/service.MinIOUploadResult"
+                                            "$ref": "#/definitions/service.RustFSUploadResult"
                                         }
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/galleries": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gallery"
+                ],
+                "summary": "获取图库列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "分类",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键词",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Gallery"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/galleries/batch-delete": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gallery"
+                ],
+                "summary": "批量删除图库",
+                "parameters": [
+                    {
+                        "description": "删除请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.BatchDeleteReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/galleries/upload": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gallery"
+                ],
+                "summary": "上传图片到图库",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "图片文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "分类(product/supplier/avatar/other)",
+                        "name": "category",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "备注",
+                        "name": "remark",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Gallery"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/galleries/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gallery"
+                ],
+                "summary": "获取图库详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "图库ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Gallery"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gallery"
+                ],
+                "summary": "更新图库信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "图库ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateGalleryReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "gallery"
+                ],
+                "summary": "删除图库",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "图库ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventories": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "库存列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "商品ID",
+                        "name": "product_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "商品名称关键词",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.InventoryWithProduct"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory-records": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "出入库记录列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "商品ID",
+                        "name": "product_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "类型 1=入库 2=出库",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "日期",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.InventoryRecord"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "创建出入库记录",
+                "parameters": [
+                    {
+                        "description": "出入库信息",
+                        "name": "record",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateInventoryRecordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
                         }
                     }
                 }
@@ -1927,14 +2395,8 @@
                     },
                     {
                         "type": "string",
-                        "description": "开始日期",
-                        "name": "start_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "结束日期",
-                        "name": "end_date",
+                        "description": "日期 格式:2024-01-01",
+                        "name": "date",
                         "in": "query"
                     },
                     {
@@ -2581,6 +3043,567 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/channel": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "渠道销售统计",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "month",
+                        "description": "统计周期: today/week/month/quarter/year",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.ChannelStatsItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取库存和销售统计数据，支持当天/当周/当月/当季/当年",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "统计面板数据",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "today",
+                        "description": "统计周期: today/week/month/quarter/year",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID（管理员可指定）",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.DashboardStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/inventory": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "库存统计",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.InventoryStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/sales": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "销售统计",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "today",
+                        "description": "统计周期: today/week/month/quarter/year",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.SalesStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/sales-trend": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "销售趋势（图表数据）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "month",
+                        "description": "统计周期: week/month/quarter/year",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.SalesTrendItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/store-accounts": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "store-account"
+                ],
+                "summary": "记账列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "商品ID",
+                        "name": "product_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "销售渠道",
+                        "name": "channel",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "订单来源",
+                        "name": "order_source",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "订单编号",
+                        "name": "order_no",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始日期",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.StoreAccount"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "store-account"
+                ],
+                "summary": "创建记账",
+                "parameters": [
+                    {
+                        "description": "记账信息",
+                        "name": "account",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateStoreAccountReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.StoreAccount"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/store-accounts/stats": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "store-account"
+                ],
+                "summary": "记账统计",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始日期",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/store-accounts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "store-account"
+                ],
+                "summary": "获取记账详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "记账ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.StoreAccount"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "store-account"
+                ],
+                "summary": "更新记账",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "记账ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "记账信息",
+                        "name": "account",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateStoreAccountReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "store-account"
+                ],
+                "summary": "删除记账",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "记账ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
                         }
                     }
                 }
@@ -3818,6 +4841,20 @@
         }
     },
     "definitions": {
+        "controller.BatchDeleteReq": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "controller.DeleteFileReq": {
             "type": "object",
             "required": [
@@ -3946,6 +4983,31 @@
                 },
                 "store_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "model.ChannelStatsItem": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "销售额",
+                    "type": "number"
+                },
+                "channel": {
+                    "description": "渠道编码",
+                    "type": "string"
+                },
+                "channel_name": {
+                    "description": "渠道名称",
+                    "type": "string"
+                },
+                "orders": {
+                    "description": "订单数",
+                    "type": "integer"
+                },
+                "percent": {
+                    "description": "占比",
+                    "type": "number"
                 }
             }
         },
@@ -4096,6 +5158,38 @@
                 }
             }
         },
+        "model.CreateInventoryRecordReq": {
+            "type": "object",
+            "required": [
+                "product_id",
+                "quantity",
+                "reason",
+                "type"
+            ],
+            "properties": {
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "reason": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "type": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2
+                    ]
+                }
+            }
+        },
         "model.CreateMenuReq": {
             "type": "object",
             "required": [
@@ -4195,6 +5289,59 @@
                 "remark": {
                     "type": "string",
                     "maxLength": 500
+                }
+            }
+        },
+        "model.CreateStoreAccountReq": {
+            "type": "object",
+            "required": [
+                "channel",
+                "order_source",
+                "product_id",
+                "quantity"
+            ],
+            "properties": {
+                "account_date": {
+                    "description": "格式: 2024-12-07",
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "channel": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "order_no": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "order_source": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "spec": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
                 }
             }
         },
@@ -4359,6 +5506,27 @@
                 }
             }
         },
+        "model.DashboardStats": {
+            "type": "object",
+            "properties": {
+                "inventory": {
+                    "description": "库存统计",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.InventoryStats"
+                        }
+                    ]
+                },
+                "sales": {
+                    "description": "销售统计",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.SalesStats"
+                        }
+                    ]
+                }
+            }
+        },
         "model.DictData": {
             "type": "object",
             "properties": {
@@ -4495,6 +5663,156 @@
                 },
                 "webhook": {
                     "description": "Webhook 地址（webhook 模式）",
+                    "type": "string"
+                }
+            }
+        },
+        "model.Gallery": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "upload_by": {
+                    "type": "integer"
+                },
+                "upload_by_name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.InventoryRecord": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "operator": {
+                    "$ref": "#/definitions/model.User"
+                },
+                "operator_id": {
+                    "type": "integer"
+                },
+                "product": {
+                    "$ref": "#/definitions/model.SupplierProduct"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "record_no": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "store": {
+                    "description": "关联",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Store"
+                        }
+                    ]
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "integer"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.InventoryStats": {
+            "type": "object",
+            "properties": {
+                "today_in": {
+                    "description": "今日入库",
+                    "type": "number"
+                },
+                "today_out": {
+                    "description": "今日出库",
+                    "type": "number"
+                },
+                "total_products": {
+                    "description": "商品种类数",
+                    "type": "integer"
+                },
+                "total_quantity": {
+                    "description": "总库存数量",
+                    "type": "number"
+                },
+                "total_records": {
+                    "description": "出入库记录数",
+                    "type": "integer"
+                }
+            }
+        },
+        "model.InventoryWithProduct": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "store_name": {
+                    "type": "string"
+                },
+                "unit": {
                     "type": "string"
                 }
             }
@@ -4678,6 +5996,48 @@
                 }
             }
         },
+        "model.SalesStats": {
+            "type": "object",
+            "properties": {
+                "avg_amount": {
+                    "description": "平均客单价",
+                    "type": "number"
+                },
+                "period_label": {
+                    "description": "周期标签",
+                    "type": "string"
+                },
+                "total_amount": {
+                    "description": "总销售额",
+                    "type": "number"
+                },
+                "total_orders": {
+                    "description": "总订单数",
+                    "type": "integer"
+                },
+                "total_qty": {
+                    "description": "总销售数量",
+                    "type": "number"
+                }
+            }
+        },
+        "model.SalesTrendItem": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "description": "销售额",
+                    "type": "number"
+                },
+                "date": {
+                    "description": "日期",
+                    "type": "string"
+                },
+                "orders": {
+                    "description": "订单数",
+                    "type": "integer"
+                }
+            }
+        },
         "model.Store": {
             "type": "object",
             "properties": {
@@ -4717,6 +6077,76 @@
                 },
                 "store_code": {
                     "description": "门店编码 JWXXXX",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.StoreAccount": {
+            "type": "object",
+            "properties": {
+                "account_date": {
+                    "type": "string"
+                },
+                "account_no": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "channel": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "operator": {
+                    "$ref": "#/definitions/model.User"
+                },
+                "operator_id": {
+                    "type": "integer"
+                },
+                "order_no": {
+                    "type": "string"
+                },
+                "order_source": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product": {
+                    "$ref": "#/definitions/model.SupplierProduct"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "spec": {
+                    "type": "string"
+                },
+                "store": {
+                    "description": "关联",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Store"
+                        }
+                    ]
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "unit": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -4938,6 +6368,23 @@
                 }
             }
         },
+        "model.UpdateGalleryReq": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "model.UpdateMenuReq": {
             "type": "object",
             "properties": {
@@ -5028,6 +6475,52 @@
                 "status": {
                     "description": "允许更新为0（禁用）",
                     "type": "integer"
+                }
+            }
+        },
+        "model.UpdateStoreAccountReq": {
+            "type": "object",
+            "properties": {
+                "account_date": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "channel": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "order_no": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "order_source": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "spec": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
                 }
             }
         },
@@ -5260,7 +6753,7 @@
                 }
             }
         },
-        "service.MinIOUploadResult": {
+        "service.RustFSUploadResult": {
             "type": "object",
             "properties": {
                 "etag": {

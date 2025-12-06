@@ -71,11 +71,8 @@ func (m *PurchaseOrderModule) List(req *model.ListPurchaseOrderReq) ([]*model.Pu
 	if req.Status != nil {
 		query = query.Where("status = ?", *req.Status)
 	}
-	if req.StartDate != "" {
-		query = query.Where("order_date >= ?", req.StartDate)
-	}
-	if req.EndDate != "" {
-		query = query.Where("order_date <= ?", req.EndDate)
+	if req.Date != "" {
+		query = query.Where("DATE(order_date) = ?", req.Date)
 	}
 
 	// 如果指定了供应商，需要关联查询

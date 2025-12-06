@@ -15,16 +15,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// MinIOService MinIO文件服务
-type MinIOService struct {
+// RustFSService RustFS文件服务（S3兼容）
+type RustFSService struct {
 	client     *minio.Client
 	bucketName string
 	endpoint   string
 	useSSL     bool
 }
 
-// MinIOUploadResult 上传结果
-type MinIOUploadResult struct {
+// RustFSUploadResult 上传结果
+type RustFSUploadResult struct {
 	Path string `json:"path"`
 	URL  string `json:"url"`
 	Name string `json:"name"`
@@ -32,18 +32,18 @@ type MinIOUploadResult struct {
 	ETag string `json:"etag"`
 }
 
-// NewMinIOService 创建MinIO服务实例
-func NewMinIOService(endpoint, accessKey, secretKey, bucketName string, useSSL bool) (*MinIOService, error) {
+// NewRustFSService 创建RustFS服务实例
+func NewRustFSService(endpoint, accessKey, secretKey, bucketName string, useSSL bool) (*RustFSService, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
 	})
 	if err != nil {
-		logging.LogError("MinIO客户端创建失败", zap.Error(err))
-		return nil, fmt.Errorf("创建MinIO客户端失败: %v", err)
+		logging.LogError("RustFS客户端创建失败", zap.Error(err))
+		return nil, fmt.Errorf("创建RustFS客户端失败: %v", err)
 	}
 
-	service := &MinIOService{
+	service := &RustFSService{
 		client:     client,
 		bucketName: bucketName,
 		endpoint:   endpoint,
@@ -55,12 +55,12 @@ func NewMinIOService(endpoint, accessKey, secretKey, bucketName string, useSSL b
 		return nil, err
 	}
 
-	logging.LogInfo("MinIO服务初始化成功", zap.String("endpoint", endpoint), zap.String("bucket", bucketName))
+	logging.LogInfo("RustFS服务初始化成功", zap.String("endpoint", endpoint), zap.String("bucket", bucketName))
 	return service, nil
 }
 
 // ensureBucket 确保bucket存在
-func (s *MinIOService) ensureBucket() error {
+func (s *RustFSService) ensureBucket() error {
 	ctx := context.Background()
 	exists, err := s.client.BucketExists(ctx, s.bucketName)
 	if err != nil {
@@ -72,14 +72,14 @@ func (s *MinIOService) ensureBucket() error {
 		if err != nil {
 			return fmt.Errorf("创建bucket失败: %v", err)
 		}
-		logging.LogInfo("MinIO bucket创建成功", zap.String("bucket", s.bucketName))
+		logging.LogInfo("RustFS bucket创建成功", zap.String("bucket", s.bucketName))
 	}
 
 	return nil
 }
 
 // Upload 上传文件
-func (s *MinIOService) Upload(folder, filename string, reader io.Reader, fileSize int64, contentType string) (*MinIOUploadResult, error) {
+func (s *RustFSService) Upload(folder, filename string, reader io.Reader, fileSize int64, contentType string) (*RustFSUploadResult, error) {
 	ctx := context.Background()
 
 	// 构建对象路径
@@ -91,13 +91,13 @@ func (s *MinIOService) Upload(folder, filename string, reader io.Reader, fileSiz
 		ContentType: contentType,
 	})
 	if err != nil {
-		logging.LogError("MinIO上传失败", zap.Error(err), zap.String("object", objectName))
+		logging.LogError("RustFS上传失败", zap.Error(err), zap.String("object", objectName))
 		return nil, fmt.Errorf("上传失败: %v", err)
 	}
 
-	logging.LogInfo("MinIO文件上传成功", zap.String("object", objectName), zap.Int64("size", info.Size))
+	logging.LogInfo("RustFS文件上传成功", zap.String("object", objectName), zap.Int64("size", info.Size))
 
-	return &MinIOUploadResult{
+	return &RustFSUploadResult{
 		Path: objectName,
 		URL:  s.GetPublicURL(objectName),
 		Name: filename,
@@ -107,7 +107,7 @@ func (s *MinIOService) Upload(folder, filename string, reader io.Reader, fileSiz
 }
 
 // UploadMultipart 上传multipart文件
-func (s *MinIOService) UploadMultipart(folder string, file multipart.File, header *multipart.FileHeader) (*MinIOUploadResult, error) {
+func (s *RustFSService) UploadMultipart(folder string, file multipart.File, header *multipart.FileHeader) (*RustFSUploadResult, error) {
 	contentType := header.Header.Get("Content-Type")
 	if contentType == "" {
 		contentType = "application/octet-stream"
@@ -116,7 +116,7 @@ func (s *MinIOService) UploadMultipart(folder string, file multipart.File, heade
 }
 
 // GetPublicURL 获取公开访问URL
-func (s *MinIOService) GetPublicURL(objectName string) string {
+func (s *RustFSService) GetPublicURL(objectName string) string {
 	protocol := "http"
 	if s.useSSL {
 		protocol = "https"
@@ -125,7 +125,7 @@ func (s *MinIOService) GetPublicURL(objectName string) string {
 }
 
 // GetPresignedURL 获取预签名URL（临时访问）
-func (s *MinIOService) GetPresignedURL(objectName string, expires time.Duration) (string, error) {
+func (s *RustFSService) GetPresignedURL(objectName string, expires time.Duration) (string, error) {
 	ctx := context.Background()
 	url, err := s.client.PresignedGetObject(ctx, s.bucketName, objectName, expires, nil)
 	if err != nil {
@@ -135,19 +135,19 @@ func (s *MinIOService) GetPresignedURL(objectName string, expires time.Duration)
 }
 
 // Delete 删除文件
-func (s *MinIOService) Delete(objectName string) error {
+func (s *RustFSService) Delete(objectName string) error {
 	ctx := context.Background()
 	err := s.client.RemoveObject(ctx, s.bucketName, objectName, minio.RemoveObjectOptions{})
 	if err != nil {
-		logging.LogError("MinIO删除失败", zap.Error(err), zap.String("object", objectName))
+		logging.LogError("RustFS删除失败", zap.Error(err), zap.String("object", objectName))
 		return fmt.Errorf("删除失败: %v", err)
 	}
-	logging.LogInfo("MinIO文件删除成功", zap.String("object", objectName))
+	logging.LogInfo("RustFS文件删除成功", zap.String("object", objectName))
 	return nil
 }
 
 // List 列出文件
-func (s *MinIOService) List(prefix string, recursive bool) ([]minio.ObjectInfo, error) {
+func (s *RustFSService) List(prefix string, recursive bool) ([]minio.ObjectInfo, error) {
 	ctx := context.Background()
 	var objects []minio.ObjectInfo
 
@@ -167,7 +167,7 @@ func (s *MinIOService) List(prefix string, recursive bool) ([]minio.ObjectInfo, 
 }
 
 // GetObjectInfo 获取文件信息
-func (s *MinIOService) GetObjectInfo(objectName string) (*minio.ObjectInfo, error) {
+func (s *RustFSService) GetObjectInfo(objectName string) (*minio.ObjectInfo, error) {
 	ctx := context.Background()
 	info, err := s.client.StatObject(ctx, s.bucketName, objectName, minio.StatObjectOptions{})
 	if err != nil {

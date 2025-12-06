@@ -36,6 +36,19 @@ func ParseUintQuery(ctx *gin.Context, name string) (uint, bool) {
 	return uint(v), true
 }
 
+// ParseUint 解析字符串为 uint
+func ParseUint(s string, result *uint) bool {
+	if s == "" {
+		return false
+	}
+	v, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return false
+	}
+	*result = uint(v)
+	return true
+}
+
 // BindJSON 统一 JSON 绑定与错误处理，返回是否继续
 func BindJSON(ctx *gin.Context, dst interface{}) bool {
 	if err := ctx.ShouldBindJSON(dst); err != nil {
@@ -45,7 +58,7 @@ func BindJSON(ctx *gin.Context, dst interface{}) bool {
 	return true
 }
 
-// RequireAdmin 校验是否 admin，不是则返回 403，返回是否通过
+// RequireAdmin 校验是否管理员，不是则返回 403，返回是否通过
 func RequireAdmin(ctx *gin.Context) bool {
 	roleCodeVal, exists := ctx.Get("roleCode")
 	if !exists {
@@ -53,7 +66,8 @@ func RequireAdmin(ctx *gin.Context) bool {
 		return false
 	}
 	roleCode, _ := roleCodeVal.(string)
-	if roleCode != "admin" { // 与 model.RoleCodeAdmin 保持一致，避免循环依赖
+	// 允许多种管理员角色
+	if roleCode != "admin" && roleCode != "super_admin" && roleCode != "store_admin" {
 		Error(ctx, http.StatusForbidden, "Only admin allowed")
 		return false
 	}

@@ -68,8 +68,7 @@ type ListPurchaseOrderReq struct {
 	StoreID    uint   `form:"store_id"`
 	SupplierID uint   `form:"supplier_id"`
 	Status     *int8  `form:"status"`
-	StartDate  string `form:"start_date"` // 格式: 2024-01-01
-	EndDate    string `form:"end_date"`
+	Date       string `form:"date"` // 格式: 2024-01-01
 	Page       int    `form:"page,default=1" binding:"min=1"`
 	PageSize   int    `form:"page_size,default=20" binding:"min=1,max=100"`
 }

@@ -1,5 +1,14 @@
 basePath: /api/v1
 definitions:
+  controller.BatchDeleteReq:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - ids
+    type: object
   controller.DeleteFileReq:
     properties:
       dir:
@@ -90,6 +99,24 @@ definitions:
     - menu_ids
     - role_id
     - store_id
+    type: object
+  model.ChannelStatsItem:
+    properties:
+      amount:
+        description: 销售额
+        type: number
+      channel:
+        description: 渠道编码
+        type: string
+      channel_name:
+        description: 渠道名称
+        type: string
+      orders:
+        description: 订单数
+        type: integer
+      percent:
+        description: 占比
+        type: number
     type: object
   model.CopyStoreMenusReq:
     properties:
@@ -196,6 +223,29 @@ definitions:
         description: webhook 模式必填
         type: string
     type: object
+  model.CreateInventoryRecordReq:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      reason:
+        maxLength: 100
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+      type:
+        enum:
+        - 1
+        - 2
+        type: integer
+    required:
+    - product_id
+    - quantity
+    - reason
+    - type
+    type: object
   model.CreateMenuReq:
     properties:
       component:
@@ -266,6 +316,45 @@ definitions:
     required:
     - items
     - order_date
+    type: object
+  model.CreateStoreAccountReq:
+    properties:
+      account_date:
+        description: '格式: 2024-12-07'
+        type: string
+      amount:
+        minimum: 0
+        type: number
+      channel:
+        maxLength: 50
+        type: string
+      order_no:
+        maxLength: 100
+        type: string
+      order_source:
+        maxLength: 50
+        type: string
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      remark:
+        maxLength: 500
+        type: string
+      spec:
+        maxLength: 100
+        type: string
+      unit:
+        maxLength: 20
+        type: string
+    required:
+    - channel
+    - order_source
+    - product_id
+    - quantity
     type: object
   model.CreateStoreReq:
     properties:
@@ -383,6 +472,17 @@ definitions:
     - phone
     - username
     type: object
+  model.DashboardStats:
+    properties:
+      inventory:
+        allOf:
+        - $ref: '#/definitions/model.InventoryStats'
+        description: 库存统计
+      sales:
+        allOf:
+        - $ref: '#/definitions/model.SalesStats'
+        description: 销售统计
+    type: object
   model.DictData:
     properties:
       created_at:
@@ -476,6 +576,105 @@ definitions:
         type: string
       webhook:
         description: Webhook 地址（webhook 模式）
+        type: string
+    type: object
+  model.Gallery:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      mime_type:
+        type: string
+      name:
+        type: string
+      path:
+        type: string
+      remark:
+        type: string
+      size:
+        type: integer
+      store_id:
+        type: integer
+      updated_at:
+        type: string
+      upload_by:
+        type: integer
+      upload_by_name:
+        type: string
+      url:
+        type: string
+    type: object
+  model.InventoryRecord:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      operator:
+        $ref: '#/definitions/model.User'
+      operator_id:
+        type: integer
+      product:
+        $ref: '#/definitions/model.SupplierProduct'
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      reason:
+        type: string
+      record_no:
+        type: string
+      remark:
+        type: string
+      store:
+        allOf:
+        - $ref: '#/definitions/model.Store'
+        description: 关联
+      store_id:
+        type: integer
+      type:
+        type: integer
+      unit:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.InventoryStats:
+    properties:
+      today_in:
+        description: 今日入库
+        type: number
+      today_out:
+        description: 今日出库
+        type: number
+      total_products:
+        description: 商品种类数
+        type: integer
+      total_quantity:
+        description: 总库存数量
+        type: number
+      total_records:
+        description: 出入库记录数
+        type: integer
+    type: object
+  model.InventoryWithProduct:
+    properties:
+      id:
+        type: integer
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      quantity:
+        type: number
+      store_id:
+        type: integer
+      store_name:
+        type: string
+      unit:
         type: string
     type: object
   model.Menu:
@@ -598,6 +797,36 @@ definitions:
       updated_at:
         type: string
     type: object
+  model.SalesStats:
+    properties:
+      avg_amount:
+        description: 平均客单价
+        type: number
+      period_label:
+        description: 周期标签
+        type: string
+      total_amount:
+        description: 总销售额
+        type: number
+      total_orders:
+        description: 总订单数
+        type: integer
+      total_qty:
+        description: 总销售数量
+        type: number
+    type: object
+  model.SalesTrendItem:
+    properties:
+      amount:
+        description: 销售额
+        type: number
+      date:
+        description: 日期
+        type: string
+      orders:
+        description: 订单数
+        type: integer
+    type: object
   model.Store:
     properties:
       address:
@@ -627,6 +856,51 @@ definitions:
         type: integer
       store_code:
         description: 门店编码 JWXXXX
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.StoreAccount:
+    properties:
+      account_date:
+        type: string
+      account_no:
+        type: string
+      amount:
+        type: number
+      channel:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      operator:
+        $ref: '#/definitions/model.User'
+      operator_id:
+        type: integer
+      order_no:
+        type: string
+      order_source:
+        type: string
+      price:
+        type: number
+      product:
+        $ref: '#/definitions/model.SupplierProduct'
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      remark:
+        type: string
+      spec:
+        type: string
+      store:
+        allOf:
+        - $ref: '#/definitions/model.Store'
+        description: 关联
+      store_id:
+        type: integer
+      unit:
         type: string
       updated_at:
         type: string
@@ -775,6 +1049,18 @@ definitions:
       webhook:
         type: string
     type: object
+  model.UpdateGalleryReq:
+    properties:
+      category:
+        maxLength: 50
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      remark:
+        maxLength: 500
+        type: string
+    type: object
   model.UpdateMenuReq:
     properties:
       component:
@@ -839,6 +1125,39 @@ definitions:
       status:
         description: 允许更新为0（禁用）
         type: integer
+    type: object
+  model.UpdateStoreAccountReq:
+    properties:
+      account_date:
+        type: string
+      amount:
+        minimum: 0
+        type: number
+      channel:
+        maxLength: 50
+        type: string
+      order_no:
+        maxLength: 100
+        type: string
+      order_source:
+        maxLength: 50
+        type: string
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      remark:
+        maxLength: 500
+        type: string
+      spec:
+        maxLength: 100
+        type: string
+      unit:
+        maxLength: 20
+        type: string
     type: object
   model.UpdateStoreReq:
     properties:
@@ -999,7 +1318,7 @@ definitions:
       username:
         type: string
     type: object
-  service.MinIOUploadResult:
+  service.RustFSUploadResult:
     properties:
       etag:
         type: string
@@ -1605,7 +1924,7 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: 上传文件到MinIO对象存储
+      description: 上传文件到RustFS对象存储
       parameters:
       - description: 文件
         in: formData
@@ -1626,7 +1945,7 @@ paths:
             - $ref: '#/definitions/http.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.MinIOUploadResult'
+                  $ref: '#/definitions/service.RustFSUploadResult'
               type: object
       security:
       - Bearer: []
@@ -1662,13 +1981,292 @@ paths:
             - $ref: '#/definitions/http.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.MinIOUploadResult'
+                  $ref: '#/definitions/service.RustFSUploadResult'
               type: object
       security:
       - Bearer: []
       summary: 上传图片
       tags:
       - 文件管理
+  /galleries:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - description: 分类
+        in: query
+        name: category
+        type: string
+      - description: 关键词
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Gallery'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取图库列表
+      tags:
+      - gallery
+  /galleries/{id}:
+    delete:
+      parameters:
+      - description: 图库ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除图库
+      tags:
+      - gallery
+    get:
+      parameters:
+      - description: 图库ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Gallery'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取图库详情
+      tags:
+      - gallery
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 图库ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateGalleryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新图库信息
+      tags:
+      - gallery
+  /galleries/batch-delete:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 删除请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller.BatchDeleteReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 批量删除图库
+      tags:
+      - gallery
+  /galleries/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: 图片文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 分类(product/supplier/avatar/other)
+        in: formData
+        name: category
+        type: string
+      - description: 备注
+        in: formData
+        name: remark
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Gallery'
+              type: object
+      security:
+      - Bearer: []
+      summary: 上传图片到图库
+      tags:
+      - gallery
+  /inventories:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      - description: 商品ID
+        in: query
+        name: product_id
+        type: integer
+      - description: 商品名称关键词
+        in: query
+        name: keyword
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.InventoryWithProduct'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 库存列表
+      tags:
+      - inventory
+  /inventory-records:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      - description: 商品ID
+        in: query
+        name: product_id
+        type: integer
+      - description: 类型 1=入库 2=出库
+        in: query
+        name: type
+        type: integer
+      - description: 日期
+        in: query
+        name: date
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.InventoryRecord'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 出入库记录列表
+      tags:
+      - inventory
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 出入库信息
+        in: body
+        name: record
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateInventoryRecordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建出入库记录
+      tags:
+      - inventory
   /menus:
     get:
       consumes:
@@ -2150,13 +2748,9 @@ paths:
         in: query
         name: status
         type: integer
-      - description: 开始日期
+      - description: 日期 格式:2024-01-01
         in: query
-        name: start_date
-        type: string
-      - description: 结束日期
-        in: query
-        name: end_date
+        name: date
         type: string
       - description: 页码
         in: query
@@ -2553,6 +3147,334 @@ paths:
       summary: 更新角色
       tags:
       - 角色管理
+  /statistics/channel:
+    get:
+      parameters:
+      - default: month
+        description: '统计周期: today/week/month/quarter/year'
+        in: query
+        name: period
+        type: string
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.ChannelStatsItem'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 渠道销售统计
+      tags:
+      - statistics
+  /statistics/dashboard:
+    get:
+      description: 获取库存和销售统计数据，支持当天/当周/当月/当季/当年
+      parameters:
+      - default: today
+        description: '统计周期: today/week/month/quarter/year'
+        in: query
+        name: period
+        type: string
+      - description: 门店ID（管理员可指定）
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.DashboardStats'
+              type: object
+      security:
+      - Bearer: []
+      summary: 统计面板数据
+      tags:
+      - statistics
+  /statistics/inventory:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.InventoryStats'
+              type: object
+      security:
+      - Bearer: []
+      summary: 库存统计
+      tags:
+      - statistics
+  /statistics/sales:
+    get:
+      parameters:
+      - default: today
+        description: '统计周期: today/week/month/quarter/year'
+        in: query
+        name: period
+        type: string
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.SalesStats'
+              type: object
+      security:
+      - Bearer: []
+      summary: 销售统计
+      tags:
+      - statistics
+  /statistics/sales-trend:
+    get:
+      parameters:
+      - default: month
+        description: '统计周期: week/month/quarter/year'
+        in: query
+        name: period
+        type: string
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.SalesTrendItem'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 销售趋势（图表数据）
+      tags:
+      - statistics
+  /store-accounts:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      - description: 商品ID
+        in: query
+        name: product_id
+        type: integer
+      - description: 销售渠道
+        in: query
+        name: channel
+        type: string
+      - description: 订单来源
+        in: query
+        name: order_source
+        type: string
+      - description: 订单编号
+        in: query
+        name: order_no
+        type: string
+      - description: 开始日期
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期
+        in: query
+        name: end_date
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.StoreAccount'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 记账列表
+      tags:
+      - store-account
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 记账信息
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateStoreAccountReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.StoreAccount'
+              type: object
+      security:
+      - Bearer: []
+      summary: 创建记账
+      tags:
+      - store-account
+  /store-accounts/{id}:
+    delete:
+      parameters:
+      - description: 记账ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除记账
+      tags:
+      - store-account
+    get:
+      parameters:
+      - description: 记账ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.StoreAccount'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取记账详情
+      tags:
+      - store-account
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 记账ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 记账信息
+        in: body
+        name: account
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateStoreAccountReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新记账
+      tags:
+      - store-account
+  /store-accounts/stats:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      - description: 开始日期
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 记账统计
+      tags:
+      - store-account
   /stores:
     get:
       consumes:

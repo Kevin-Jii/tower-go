@@ -9,7 +9,7 @@ import (
 // RegisterFileRoutes 注册文件管理路由
 func RegisterFileRoutes(v1 *gin.RouterGroup, fileController *controller.FileController) {
 	if fileController == nil {
-		return // MinIO未配置时跳过
+		return // RustFS未配置时跳过
 	}
 
 	files := v1.Group("/files")

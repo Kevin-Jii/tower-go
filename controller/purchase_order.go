@@ -71,8 +71,7 @@ func (c *PurchaseOrderController) GetOrder(ctx *gin.Context) {
 // @Param store_id query int false "门店ID"
 // @Param supplier_id query int false "供应商ID"
 // @Param status query int false "状态"
-// @Param start_date query string false "开始日期"
-// @Param end_date query string false "结束日期"
+// @Param date query string false "日期 格式:2024-01-01"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} http.Response{data=[]model.PurchaseOrder}

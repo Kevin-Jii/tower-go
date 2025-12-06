@@ -124,7 +124,7 @@ func (f *PurchaseFacade) CancelOrder(orderID uint, reason string) error {
 	status := int8(newStatus)
 	return f.orderService.UpdateOrder(orderID, &model.UpdatePurchaseOrderReq{
 		Status: &status,
-		Remark: &reason,
+		Remark: reason,
 	})
 }
 

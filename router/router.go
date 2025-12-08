@@ -35,10 +35,27 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	// WebSocket
 	r.GET("/ws", controller.WebSocketHandler)
 
-	// Swagger
+	// Swagger - 保留原始JSON接口
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// Scalar - 美化版API文档
+	r.GET("/docs", func(c *gin.Context) {
+		c.Header("Content-Type", "text/html")
+		c.String(200, `<!DOCTYPE html>
+<html>
+<head>
+    <title>API 文档</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+</head>
+<body>
+    <script id="api-reference" data-url="/swagger/doc.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`)
+	})
+
 	addr := fmt.Sprintf(":%d", config.GetConfig().App.Port)
-	swaggerURL := fmt.Sprintf("http://localhost%s/swagger/index.html", addr)
-	fmt.Printf("📚 Swagger UI: %s\n\n", swaggerURL)
+	fmt.Printf("📚 Swagger UI: http://localhost%s/swagger/index.html\n", addr)
+	fmt.Printf("📚 Scalar Docs: http://localhost%s/docs\n\n", addr)
 }

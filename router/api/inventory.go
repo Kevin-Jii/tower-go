@@ -11,6 +11,7 @@ func RegisterInventoryRoutes(r *gin.RouterGroup, c *Controllers) {
 	inventories := r.Group("/inventories").Use(middleware.AuthMiddleware())
 	{
 		inventories.GET("", c.Inventory.ListInventory)
+		inventories.PUT("/:id", c.Inventory.UpdateInventory)
 	}
 
 	// 出入库单

@@ -20,7 +20,7 @@ func NewStoreController(storeService *service.StoreService) *StoreController {
 // CreateStore godoc
 // @Summary 创建门店
 // @Description 创建新门店（仅总部管理员）
-// @Tags stores
+// @Tags 门店管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -49,7 +49,7 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 // GetStore godoc
 // @Summary 获取门店详情
 // @Description 获取门店详细信息
-// @Tags stores
+// @Tags 门店管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -73,7 +73,7 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 // ListStores godoc
 // @Summary 门店列表
 // @Description 获取全部门店列表（不分页）
-// @Tags stores
+// @Tags 门店管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -93,7 +93,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 // ListAllStores godoc
 // @Summary 全部门店（无分页）
 // @Description 返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断
-// @Tags stores
+// @Tags 门店管理
 // @Security Bearer
 // @Produce json
 // @Success 200 {object} http.Response{data=[]model.Store}
@@ -115,7 +115,7 @@ func (c *StoreController) ListAllStores(ctx *gin.Context) {
 // UpdateStore godoc
 // @Summary 更新门店信息
 // @Description 更新门店信息（仅总部管理员）
-// @Tags stores
+// @Tags 门店管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -146,7 +146,7 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 // DeleteStore godoc
 // @Summary 删除门店
 // @Description 删除门店（仅总部管理员）
-// @Tags stores
+// @Tags 门店管理
 // @Accept json
 // @Produce json
 // @Security Bearer

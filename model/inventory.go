@@ -132,3 +132,9 @@ type InventoryWithProduct struct {
 	Quantity    float64 `json:"quantity"`
 	Unit        string  `json:"unit"`
 }
+
+// UpdateInventoryReq 修改库存数量请求
+type UpdateInventoryReq struct {
+	Quantity float64 `json:"quantity" binding:"required,gte=0"`
+	Remark   string  `json:"remark" binding:"max=500"`
+}

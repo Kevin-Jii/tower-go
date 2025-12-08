@@ -22,7 +22,7 @@ func NewDictController(dictService *service.DictService) *DictController {
 
 // CreateType godoc
 // @Summary 创建字典类型
-// @Tags dict-types
+// @Tags 字典类型
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -49,7 +49,7 @@ func (c *DictController) CreateType(ctx *gin.Context) {
 
 // GetType godoc
 // @Summary 获取字典类型详情
-// @Tags dict-types
+// @Tags 字典类型
 // @Produce json
 // @Security Bearer
 // @Param id path int true "字典类型ID"
@@ -72,7 +72,7 @@ func (c *DictController) GetType(ctx *gin.Context) {
 
 // ListTypes godoc
 // @Summary 获取字典类型列表
-// @Tags dict-types
+// @Tags 字典类型
 // @Produce json
 // @Security Bearer
 // @Param keyword query string false "关键词"
@@ -99,7 +99,7 @@ func (c *DictController) ListTypes(ctx *gin.Context) {
 
 // UpdateType godoc
 // @Summary 更新字典类型
-// @Tags dict-types
+// @Tags 字典类型
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -133,7 +133,7 @@ func (c *DictController) UpdateType(ctx *gin.Context) {
 
 // DeleteType godoc
 // @Summary 删除字典类型
-// @Tags dict-types
+// @Tags 字典类型
 // @Produce json
 // @Security Bearer
 // @Param id path int true "字典类型ID"
@@ -162,7 +162,7 @@ func (c *DictController) DeleteType(ctx *gin.Context) {
 
 // CreateData godoc
 // @Summary 创建字典数据
-// @Tags dict-data
+// @Tags 字典数据
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -189,7 +189,7 @@ func (c *DictController) CreateData(ctx *gin.Context) {
 
 // GetData godoc
 // @Summary 获取字典数据详情
-// @Tags dict-data
+// @Tags 字典数据
 // @Produce json
 // @Security Bearer
 // @Param id path int true "字典数据ID"
@@ -212,7 +212,7 @@ func (c *DictController) GetData(ctx *gin.Context) {
 
 // ListDataByType godoc
 // @Summary 根据类型获取字典数据
-// @Tags dict-data
+// @Tags 字典数据
 // @Produce json
 // @Security Bearer
 // @Param type_code query string false "字典类型编码"
@@ -261,7 +261,7 @@ func (c *DictController) ListDataByType(ctx *gin.Context) {
 
 // UpdateData godoc
 // @Summary 更新字典数据
-// @Tags dict-data
+// @Tags 字典数据
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -295,7 +295,7 @@ func (c *DictController) UpdateData(ctx *gin.Context) {
 
 // DeleteData godoc
 // @Summary 删除字典数据
-// @Tags dict-data
+// @Tags 字典数据
 // @Produce json
 // @Security Bearer
 // @Param id path int true "字典数据ID"
@@ -323,7 +323,7 @@ func (c *DictController) DeleteData(ctx *gin.Context) {
 // GetAllDict godoc
 // @Summary 获取所有字典
 // @Description 获取所有字典数据，用于前端缓存
-// @Tags dicts
+// @Tags 字典管理
 // @Produce json
 // @Security Bearer
 // @Success 200 {object} http.Response{data=map[string][]model.DictData}

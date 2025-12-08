@@ -63,6 +63,21 @@ func (m *InventoryModule) SubQuantity(storeID, productID uint, quantity float64)
 	return m.db.Model(&inv).Update("quantity", gorm.Expr("quantity - ?", quantity)).Error
 }
 
+// UpdateQuantity 直接修改库存数量
+func (m *InventoryModule) UpdateQuantity(id uint, quantity float64) error {
+	return m.db.Model(&model.Inventory{}).Where("id = ?", id).Update("quantity", quantity).Error
+}
+
+// GetByID 根据ID获取库存
+func (m *InventoryModule) GetByID(id uint) (*model.Inventory, error) {
+	var inv model.Inventory
+	err := m.db.First(&inv, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &inv, nil
+}
+
 // List 库存列表
 func (m *InventoryModule) List(req *model.ListInventoryReq) ([]*model.InventoryWithProduct, int64, error) {
 	var results []*model.InventoryWithProduct

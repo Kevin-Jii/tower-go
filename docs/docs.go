@@ -34,7 +34,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "认证"
                 ],
                 "summary": "用户登录",
                 "parameters": [
@@ -80,7 +80,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "认证"
                 ],
                 "summary": "用户注册",
                 "parameters": [
@@ -115,7 +115,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-data"
+                    "字典数据"
                 ],
                 "summary": "根据类型获取字典数据",
                 "parameters": [
@@ -175,7 +175,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-data"
+                    "字典数据"
                 ],
                 "summary": "创建字典数据",
                 "parameters": [
@@ -210,7 +210,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-data"
+                    "字典数据"
                 ],
                 "summary": "获取字典数据详情",
                 "parameters": [
@@ -256,7 +256,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-data"
+                    "字典数据"
                 ],
                 "summary": "更新字典数据",
                 "parameters": [
@@ -296,7 +296,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-data"
+                    "字典数据"
                 ],
                 "summary": "删除字典数据",
                 "parameters": [
@@ -329,7 +329,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-types"
+                    "字典类型"
                 ],
                 "summary": "获取字典类型列表",
                 "parameters": [
@@ -383,7 +383,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-types"
+                    "字典类型"
                 ],
                 "summary": "创建字典类型",
                 "parameters": [
@@ -418,7 +418,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-types"
+                    "字典类型"
                 ],
                 "summary": "获取字典类型详情",
                 "parameters": [
@@ -464,7 +464,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-types"
+                    "字典类型"
                 ],
                 "summary": "更新字典类型",
                 "parameters": [
@@ -504,7 +504,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dict-types"
+                    "字典类型"
                 ],
                 "summary": "删除字典类型",
                 "parameters": [
@@ -538,7 +538,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dicts"
+                    "字典管理"
                 ],
                 "summary": "获取所有字典",
                 "responses": {
@@ -583,7 +583,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "获取钉钉机器人列表",
                 "parameters": [
@@ -637,7 +637,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "创建钉钉机器人配置",
                 "parameters": [
@@ -687,7 +687,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "获取钉钉机器人详情",
                 "parameters": [
@@ -733,7 +733,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "更新钉钉机器人配置",
                 "parameters": [
@@ -776,7 +776,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "删除钉钉机器人配置",
                 "parameters": [
@@ -812,7 +812,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "测试钉钉机器人连接",
                 "parameters": [
@@ -848,7 +848,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "dingtalk-bots"
+                    "钉钉机器人"
                 ],
                 "summary": "测试 Stream 机器人接收回调",
                 "parameters": [
@@ -1116,7 +1116,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gallery"
+                    "图库管理"
                 ],
                 "summary": "获取图库列表",
                 "parameters": [
@@ -1186,7 +1186,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gallery"
+                    "图库管理"
                 ],
                 "summary": "批量删除图库",
                 "parameters": [
@@ -1224,7 +1224,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gallery"
+                    "图库管理"
                 ],
                 "summary": "上传图片到图库",
                 "parameters": [
@@ -1281,7 +1281,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gallery"
+                    "图库管理"
                 ],
                 "summary": "获取图库详情",
                 "parameters": [
@@ -1327,7 +1327,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gallery"
+                    "图库管理"
                 ],
                 "summary": "更新图库信息",
                 "parameters": [
@@ -1367,7 +1367,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "gallery"
+                    "图库管理"
                 ],
                 "summary": "删除图库",
                 "parameters": [
@@ -1400,7 +1400,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "库存管理"
                 ],
                 "summary": "库存列表",
                 "parameters": [
@@ -1471,7 +1471,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "库存管理"
                 ],
                 "summary": "出入库单列表",
                 "parameters": [
@@ -1549,7 +1549,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "库存管理"
                 ],
                 "summary": "创建出入库单",
                 "parameters": [
@@ -1596,7 +1596,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "库存管理"
                 ],
                 "summary": "根据单号获取出入库单详情",
                 "parameters": [
@@ -1641,7 +1641,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "库存管理"
                 ],
                 "summary": "根据ID获取出入库单详情",
                 "parameters": [
@@ -1690,7 +1690,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "菜单列表",
                 "responses": {
@@ -1731,7 +1731,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "创建菜单",
                 "parameters": [
@@ -1770,7 +1770,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "为角色分配菜单",
                 "parameters": [
@@ -1809,7 +1809,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "为门店角色分配菜单",
                 "parameters": [
@@ -1848,7 +1848,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "复制门店菜单权限",
                 "parameters": [
@@ -1887,7 +1887,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取角色菜单",
                 "parameters": [
@@ -1939,7 +1939,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取角色菜单ID列表",
                 "parameters": [
@@ -1991,7 +1991,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取角色菜单权限映射",
                 "parameters": [
@@ -2044,7 +2044,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取门店角色菜单",
                 "parameters": [
@@ -2103,7 +2103,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取门店角色菜单ID列表",
                 "parameters": [
@@ -2162,7 +2162,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取门店角色菜单权限映射",
                 "parameters": [
@@ -2222,7 +2222,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "菜单树形结构",
                 "responses": {
@@ -2265,7 +2265,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取当前用户菜单",
                 "responses": {
@@ -2308,7 +2308,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取当前用户权限标识列表",
                 "responses": {
@@ -2351,7 +2351,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "获取菜单详情",
                 "parameters": [
@@ -2398,7 +2398,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "更新菜单",
                 "parameters": [
@@ -2442,7 +2442,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "menus"
+                    "菜单管理"
                 ],
                 "summary": "删除菜单",
                 "parameters": [
@@ -2475,7 +2475,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "采购单列表",
                 "parameters": [
@@ -2553,7 +2553,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "创建采购单",
                 "parameters": [
@@ -2600,7 +2600,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "获取采购单详情",
                 "parameters": [
@@ -2646,7 +2646,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "更新采购单",
                 "parameters": [
@@ -2686,7 +2686,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "删除采购单",
                 "parameters": [
@@ -2719,7 +2719,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "获取采购单可用操作",
                 "parameters": [
@@ -2767,7 +2767,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "按供应商分组获取采购单明细",
                 "parameters": [
@@ -2803,7 +2803,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "取消采购单",
                 "parameters": [
@@ -2849,7 +2849,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "完成采购单",
                 "parameters": [
@@ -2882,7 +2882,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "purchase-orders"
+                    "采购单管理"
                 ],
                 "summary": "确认采购单",
                 "parameters": [
@@ -3163,7 +3163,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "statistics"
+                    "统计分析"
                 ],
                 "summary": "渠道销售统计",
                 "parameters": [
@@ -3218,7 +3218,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "statistics"
+                    "统计分析"
                 ],
                 "summary": "统计面板数据",
                 "parameters": [
@@ -3269,7 +3269,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "statistics"
+                    "统计分析"
                 ],
                 "summary": "库存统计",
                 "parameters": [
@@ -3313,7 +3313,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "statistics"
+                    "统计分析"
                 ],
                 "summary": "销售统计",
                 "parameters": [
@@ -3364,7 +3364,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "statistics"
+                    "统计分析"
                 ],
                 "summary": "销售趋势（图表数据）",
                 "parameters": [
@@ -3418,7 +3418,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "store-account"
+                    "门店记账"
                 ],
                 "summary": "记账列表",
                 "parameters": [
@@ -3514,7 +3514,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "store-account"
+                    "门店记账"
                 ],
                 "summary": "创建记账",
                 "parameters": [
@@ -3561,7 +3561,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "store-account"
+                    "门店记账"
                 ],
                 "summary": "记账统计",
                 "parameters": [
@@ -3605,7 +3605,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "store-account"
+                    "门店记账"
                 ],
                 "summary": "获取记账详情",
                 "parameters": [
@@ -3651,7 +3651,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "store-account"
+                    "门店记账"
                 ],
                 "summary": "更新记账",
                 "parameters": [
@@ -3691,7 +3691,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "store-account"
+                    "门店记账"
                 ],
                 "summary": "删除记账",
                 "parameters": [
@@ -3728,7 +3728,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stores"
+                    "门店管理"
                 ],
                 "summary": "门店列表",
                 "responses": {
@@ -3769,7 +3769,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stores"
+                    "门店管理"
                 ],
                 "summary": "创建门店",
                 "parameters": [
@@ -3805,7 +3805,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stores"
+                    "门店管理"
                 ],
                 "summary": "全部门店（无分页）",
                 "responses": {
@@ -3848,7 +3848,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stores"
+                    "门店管理"
                 ],
                 "summary": "获取门店详情",
                 "parameters": [
@@ -3895,7 +3895,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stores"
+                    "门店管理"
                 ],
                 "summary": "更新门店信息",
                 "parameters": [
@@ -3939,7 +3939,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stores"
+                    "门店管理"
                 ],
                 "summary": "删除门店",
                 "parameters": [
@@ -3972,7 +3972,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-categories"
+                    "供应商分类"
                 ],
                 "summary": "供应商分类列表",
                 "parameters": [
@@ -4021,7 +4021,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-categories"
+                    "供应商分类"
                 ],
                 "summary": "创建供应商分类",
                 "parameters": [
@@ -4059,7 +4059,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-categories"
+                    "供应商分类"
                 ],
                 "summary": "更新供应商分类",
                 "parameters": [
@@ -4099,7 +4099,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-categories"
+                    "供应商分类"
                 ],
                 "summary": "删除供应商分类",
                 "parameters": [
@@ -4132,7 +4132,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-products"
+                    "供应商商品"
                 ],
                 "summary": "供应商商品列表",
                 "parameters": [
@@ -4210,7 +4210,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-products"
+                    "供应商商品"
                 ],
                 "summary": "创建供应商商品",
                 "parameters": [
@@ -4245,7 +4245,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-products"
+                    "供应商商品"
                 ],
                 "summary": "获取供应商商品详情",
                 "parameters": [
@@ -4291,7 +4291,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-products"
+                    "供应商商品"
                 ],
                 "summary": "更新供应商商品",
                 "parameters": [
@@ -4331,7 +4331,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "supplier-products"
+                    "供应商商品"
                 ],
                 "summary": "删除供应商商品",
                 "parameters": [
@@ -4368,7 +4368,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "suppliers"
+                    "供应商管理"
                 ],
                 "summary": "供应商列表",
                 "parameters": [
@@ -4488,7 +4488,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "suppliers"
+                    "供应商管理"
                 ],
                 "summary": "获取供应商详情",
                 "parameters": [
@@ -4535,7 +4535,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "suppliers"
+                    "供应商管理"
                 ],
                 "summary": "更新供应商信息",
                 "parameters": [
@@ -4579,7 +4579,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "suppliers"
+                    "供应商管理"
                 ],
                 "summary": "删除供应商",
                 "parameters": [
@@ -4616,7 +4616,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "用户列表",
                 "parameters": [
@@ -4677,7 +4677,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "创建用户",
                 "parameters": [
@@ -4716,7 +4716,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "获取用户个人信息",
                 "responses": {
@@ -4754,7 +4754,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "更新个人信息",
                 "parameters": [
@@ -4793,7 +4793,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "获取用户",
                 "parameters": [
@@ -4840,7 +4840,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "更新用户",
                 "parameters": [
@@ -4884,7 +4884,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "删除用户",
                 "parameters": [
@@ -4921,7 +4921,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "用户管理"
                 ],
                 "summary": "重置用户密码",
                 "parameters": [

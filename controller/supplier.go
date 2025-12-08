@@ -50,7 +50,7 @@ func (c *SupplierController) CreateSupplier(ctx *gin.Context) {
 // GetSupplier godoc
 // @Summary 获取供应商详情
 // @Description 获取供应商详细信息
-// @Tags suppliers
+// @Tags 供应商管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -75,7 +75,7 @@ func (c *SupplierController) GetSupplier(ctx *gin.Context) {
 // ListSuppliers godoc
 // @Summary 供应商列表
 // @Description 获取供应商列表（支持分页和搜索）
-// @Tags suppliers
+// @Tags 供应商管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -111,7 +111,7 @@ func (c *SupplierController) ListSuppliers(ctx *gin.Context) {
 // UpdateSupplier godoc
 // @Summary 更新供应商信息
 // @Description 更新供应商信息（仅管理员）
-// @Tags suppliers
+// @Tags 供应商管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -142,7 +142,7 @@ func (c *SupplierController) UpdateSupplier(ctx *gin.Context) {
 // DeleteSupplier godoc
 // @Summary 删除供应商
 // @Description 删除供应商（仅管理员）
-// @Tags suppliers
+// @Tags 供应商管理
 // @Accept json
 // @Produce json
 // @Security Bearer

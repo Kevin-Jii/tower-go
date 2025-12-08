@@ -20,7 +20,7 @@ func NewDingTalkBotController(svc *service.DingTalkService) *DingTalkBotControll
 
 // CreateBot godoc
 // @Summary 创建钉钉机器人配置
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -56,7 +56,7 @@ func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 
 // GetBot godoc
 // @Summary 获取钉钉机器人详情
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -85,7 +85,7 @@ func (c *DingTalkBotController) GetBot(ctx *gin.Context) {
 
 // ListBots godoc
 // @Summary 获取钉钉机器人列表
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -128,7 +128,7 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 
 // UpdateBot godoc
 // @Summary 更新钉钉机器人配置
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -174,7 +174,7 @@ func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 
 // DeleteBot godoc
 // @Summary 删除钉钉机器人配置
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -203,7 +203,7 @@ func (c *DingTalkBotController) DeleteBot(ctx *gin.Context) {
 
 // TestBot godoc
 // @Summary 测试钉钉机器人连接
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -244,7 +244,7 @@ func (c *DingTalkBotController) TestBot(ctx *gin.Context) {
 
 // TestStreamBotCallback godoc
 // @Summary 测试 Stream 机器人接收回调
-// @Tags dingtalk-bots
+// @Tags 钉钉机器人
 // @Accept json
 // @Produce json
 // @Security Bearer

@@ -17,7 +17,7 @@ func NewSupplierProductController(productService *service.SupplierProductService
 
 // CreateProduct godoc
 // @Summary 创建供应商商品
-// @Tags supplier-products
+// @Tags 供应商商品
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -41,7 +41,7 @@ func (c *SupplierProductController) CreateProduct(ctx *gin.Context) {
 
 // GetProduct godoc
 // @Summary 获取供应商商品详情
-// @Tags supplier-products
+// @Tags 供应商商品
 // @Produce json
 // @Security Bearer
 // @Param id path int true "商品ID"
@@ -62,7 +62,7 @@ func (c *SupplierProductController) GetProduct(ctx *gin.Context) {
 
 // ListProducts godoc
 // @Summary 供应商商品列表
-// @Tags supplier-products
+// @Tags 供应商商品
 // @Produce json
 // @Security Bearer
 // @Param supplier_id query int false "供应商ID"
@@ -95,7 +95,7 @@ func (c *SupplierProductController) ListProducts(ctx *gin.Context) {
 
 // UpdateProduct godoc
 // @Summary 更新供应商商品
-// @Tags supplier-products
+// @Tags 供应商商品
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -124,7 +124,7 @@ func (c *SupplierProductController) UpdateProduct(ctx *gin.Context) {
 
 // DeleteProduct godoc
 // @Summary 删除供应商商品
-// @Tags supplier-products
+// @Tags 供应商商品
 // @Produce json
 // @Security Bearer
 // @Param id path int true "商品ID"
@@ -147,7 +147,7 @@ func (c *SupplierProductController) DeleteProduct(ctx *gin.Context) {
 
 // CreateCategory godoc
 // @Summary 创建供应商分类
-// @Tags supplier-categories
+// @Tags 供应商分类
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -171,7 +171,7 @@ func (c *SupplierProductController) CreateCategory(ctx *gin.Context) {
 
 // ListCategories godoc
 // @Summary 供应商分类列表
-// @Tags supplier-categories
+// @Tags 供应商分类
 // @Produce json
 // @Security Bearer
 // @Param supplier_id query int true "供应商ID"
@@ -193,7 +193,7 @@ func (c *SupplierProductController) ListCategories(ctx *gin.Context) {
 
 // UpdateCategory godoc
 // @Summary 更新供应商分类
-// @Tags supplier-categories
+// @Tags 供应商分类
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -222,7 +222,7 @@ func (c *SupplierProductController) UpdateCategory(ctx *gin.Context) {
 
 // DeleteCategory godoc
 // @Summary 删除供应商分类
-// @Tags supplier-categories
+// @Tags 供应商分类
 // @Produce json
 // @Security Bearer
 // @Param id path int true "分类ID"

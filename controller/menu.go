@@ -22,7 +22,7 @@ func NewMenuController(menuService *service.MenuService) *MenuController {
 // CreateMenu godoc
 // @Summary 创建菜单
 // @Description 创建新菜单（仅总部管理员）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -52,7 +52,7 @@ func (c *MenuController) CreateMenu(ctx *gin.Context) {
 // GetMenu godoc
 // @Summary 获取菜单详情
 // @Description 获取菜单详细信息
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -78,7 +78,7 @@ func (c *MenuController) GetMenu(ctx *gin.Context) {
 // ListMenus godoc
 // @Summary 菜单列表
 // @Description 获取所有菜单列表（平铺形式）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -97,7 +97,7 @@ func (c *MenuController) ListMenus(ctx *gin.Context) {
 // GetMenuTree godoc
 // @Summary 菜单树形结构
 // @Description 获取菜单树形结构
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -116,7 +116,7 @@ func (c *MenuController) GetMenuTree(ctx *gin.Context) {
 // UpdateMenu godoc
 // @Summary 更新菜单
 // @Description 更新菜单信息（仅总部管理员）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -153,7 +153,7 @@ func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 // DeleteMenu godoc
 // @Summary 删除菜单
 // @Description 删除菜单（仅总部管理员）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -183,7 +183,7 @@ func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 // AssignMenusToRole godoc
 // @Summary 为角色分配菜单
 // @Description 为角色分配默认菜单权限（仅总部管理员）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -213,7 +213,7 @@ func (c *MenuController) AssignMenusToRole(ctx *gin.Context) {
 // GetRoleMenus godoc
 // @Summary 获取角色菜单
 // @Description 获取角色的默认菜单权限（树形结构）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -239,7 +239,7 @@ func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 // GetRoleMenuIDs godoc
 // @Summary 获取角色菜单ID列表
 // @Description 获取角色的所有菜单ID（用于权限回显）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -265,7 +265,7 @@ func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 // GetRoleMenuPermissions godoc
 // @Summary 获取角色菜单权限映射
 // @Description 获取角色的所有菜单及其权限位（用于权限编辑回显）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -291,7 +291,7 @@ func (c *MenuController) GetRoleMenuPermissions(ctx *gin.Context) {
 // AssignMenusToStoreRole godoc
 // @Summary 为门店角色分配菜单
 // @Description 为特定门店的角色定制菜单权限（总部管理员或门店管理员）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -325,7 +325,7 @@ func (c *MenuController) AssignMenusToStoreRole(ctx *gin.Context) {
 // GetStoreRoleMenus godoc
 // @Summary 获取门店角色菜单
 // @Description 获取特定门店角色的菜单权限（树形结构）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -358,7 +358,7 @@ func (c *MenuController) GetStoreRoleMenus(ctx *gin.Context) {
 // GetStoreRoleMenuIDs godoc
 // @Summary 获取门店角色菜单ID列表
 // @Description 获取门店角色的所有菜单ID（用于权限回显）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -391,7 +391,7 @@ func (c *MenuController) GetStoreRoleMenuIDs(ctx *gin.Context) {
 // GetStoreRoleMenuPermissions godoc
 // @Summary 获取门店角色菜单权限映射
 // @Description 获取门店角色的所有菜单及其权限位（用于权限编辑回显）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -424,7 +424,7 @@ func (c *MenuController) GetStoreRoleMenuPermissions(ctx *gin.Context) {
 // CopyStoreMenus godoc
 // @Summary 复制门店菜单权限
 // @Description 将一个门店的菜单配置复制到另一个门店（仅总部管理员）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -454,7 +454,7 @@ func (c *MenuController) CopyStoreMenus(ctx *gin.Context) {
 // GetUserMenus godoc
 // @Summary 获取当前用户菜单
 // @Description 获取当前登录用户的菜单树（用于渲染后台侧边栏）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -488,7 +488,7 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 // GetUserPermissions godoc
 // @Summary 获取当前用户权限标识列表
 // @Description 获取当前用户所有可访问的权限标识（用于前端按钮级权限控制）
-// @Tags menus
+// @Tags 菜单管理
 // @Accept json
 // @Produce json
 // @Security Bearer

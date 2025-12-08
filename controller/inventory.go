@@ -18,7 +18,7 @@ func NewInventoryController(inventoryService *service.InventoryService) *Invento
 
 // ListInventory godoc
 // @Summary 库存列表
-// @Tags inventory
+// @Tags 库存管理
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
@@ -54,7 +54,7 @@ func (c *InventoryController) ListInventory(ctx *gin.Context) {
 
 // CreateOrder godoc
 // @Summary 创建出入库单
-// @Tags inventory
+// @Tags 库存管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -81,7 +81,7 @@ func (c *InventoryController) CreateOrder(ctx *gin.Context) {
 
 // ListOrders godoc
 // @Summary 出入库单列表
-// @Tags inventory
+// @Tags 库存管理
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
@@ -118,7 +118,7 @@ func (c *InventoryController) ListOrders(ctx *gin.Context) {
 
 // GetOrderByNo godoc
 // @Summary 根据单号获取出入库单详情
-// @Tags inventory
+// @Tags 库存管理
 // @Produce json
 // @Security Bearer
 // @Param order_no path string true "单据编号"
@@ -142,7 +142,7 @@ func (c *InventoryController) GetOrderByNo(ctx *gin.Context) {
 
 // GetOrderByID godoc
 // @Summary 根据ID获取出入库单详情
-// @Tags inventory
+// @Tags 库存管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "出入库单ID"
@@ -161,4 +161,45 @@ func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
 	}
 
 	http.Success(ctx, order)
+}
+
+// UpdateInventory godoc
+// @Summary 修改库存数量
+// @Description 直接修改库存数量（仅管理员）
+// @Tags 库存管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "库存ID"
+// @Param body body model.UpdateInventoryReq true "库存信息"
+// @Success 200 {object} http.Response
+// @Router /inventories/{id} [put]
+func (c *InventoryController) UpdateInventory(ctx *gin.Context) {
+	if !middleware.IsAdmin(ctx) {
+		http.Error(ctx, 403, "仅管理员可修改库存")
+		return
+	}
+
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	var req model.UpdateInventoryReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+
+	// 检查库存是否存在
+	if _, err := c.inventoryService.GetInventoryByID(id); err != nil {
+		http.Error(ctx, 404, "库存记录不存在")
+		return
+	}
+
+	if err := c.inventoryService.UpdateInventory(id, req.Quantity); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	http.Success(ctx, nil)
 }

@@ -1413,7 +1413,7 @@ paths:
               type: object
       summary: 用户登录
       tags:
-      - auth
+      - 认证
   /auth/register:
     post:
       consumes:
@@ -1435,7 +1435,7 @@ paths:
             $ref: '#/definitions/http.Response'
       summary: 用户注册
       tags:
-      - auth
+      - 认证
   /dict-data:
     get:
       parameters:
@@ -1469,7 +1469,7 @@ paths:
       - Bearer: []
       summary: 根据类型获取字典数据
       tags:
-      - dict-data
+      - 字典数据
     post:
       consumes:
       - application/json
@@ -1491,7 +1491,7 @@ paths:
       - Bearer: []
       summary: 创建字典数据
       tags:
-      - dict-data
+      - 字典数据
   /dict-data/{id}:
     delete:
       parameters:
@@ -1511,7 +1511,7 @@ paths:
       - Bearer: []
       summary: 删除字典数据
       tags:
-      - dict-data
+      - 字典数据
     get:
       parameters:
       - description: 字典数据ID
@@ -1535,7 +1535,7 @@ paths:
       - Bearer: []
       summary: 获取字典数据详情
       tags:
-      - dict-data
+      - 字典数据
     put:
       consumes:
       - application/json
@@ -1562,7 +1562,7 @@ paths:
       - Bearer: []
       summary: 更新字典数据
       tags:
-      - dict-data
+      - 字典数据
   /dict-types:
     get:
       parameters:
@@ -1592,7 +1592,7 @@ paths:
       - Bearer: []
       summary: 获取字典类型列表
       tags:
-      - dict-types
+      - 字典类型
     post:
       consumes:
       - application/json
@@ -1614,7 +1614,7 @@ paths:
       - Bearer: []
       summary: 创建字典类型
       tags:
-      - dict-types
+      - 字典类型
   /dict-types/{id}:
     delete:
       parameters:
@@ -1634,7 +1634,7 @@ paths:
       - Bearer: []
       summary: 删除字典类型
       tags:
-      - dict-types
+      - 字典类型
     get:
       parameters:
       - description: 字典类型ID
@@ -1658,7 +1658,7 @@ paths:
       - Bearer: []
       summary: 获取字典类型详情
       tags:
-      - dict-types
+      - 字典类型
     put:
       consumes:
       - application/json
@@ -1685,7 +1685,7 @@ paths:
       - Bearer: []
       summary: 更新字典类型
       tags:
-      - dict-types
+      - 字典类型
   /dicts:
     get:
       description: 获取所有字典数据，用于前端缓存
@@ -1709,7 +1709,7 @@ paths:
       - Bearer: []
       summary: 获取所有字典
       tags:
-      - dicts
+      - 字典管理
   /dingtalk-bots:
     get:
       consumes:
@@ -1741,7 +1741,7 @@ paths:
       - Bearer: []
       summary: 获取钉钉机器人列表
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
     post:
       consumes:
       - application/json
@@ -1768,7 +1768,7 @@ paths:
       - Bearer: []
       summary: 创建钉钉机器人配置
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
   /dingtalk-bots/{id}:
     delete:
       consumes:
@@ -1790,7 +1790,7 @@ paths:
       - Bearer: []
       summary: 删除钉钉机器人配置
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
     get:
       consumes:
       - application/json
@@ -1816,7 +1816,7 @@ paths:
       - Bearer: []
       summary: 获取钉钉机器人详情
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
     put:
       consumes:
       - application/json
@@ -1843,7 +1843,7 @@ paths:
       - Bearer: []
       summary: 更新钉钉机器人配置
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
   /dingtalk-bots/{id}/test:
     post:
       consumes:
@@ -1865,7 +1865,7 @@ paths:
       - Bearer: []
       summary: 测试钉钉机器人连接
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
   /dingtalk-bots/{id}/test-callback:
     post:
       consumes:
@@ -1887,7 +1887,7 @@ paths:
       - Bearer: []
       summary: 测试 Stream 机器人接收回调
       tags:
-      - dingtalk-bots
+      - 钉钉机器人
   /files/delete:
     post:
       consumes:
@@ -2069,7 +2069,7 @@ paths:
       - Bearer: []
       summary: 获取图库列表
       tags:
-      - gallery
+      - 图库管理
   /galleries/{id}:
     delete:
       parameters:
@@ -2089,7 +2089,7 @@ paths:
       - Bearer: []
       summary: 删除图库
       tags:
-      - gallery
+      - 图库管理
     get:
       parameters:
       - description: 图库ID
@@ -2113,7 +2113,7 @@ paths:
       - Bearer: []
       summary: 获取图库详情
       tags:
-      - gallery
+      - 图库管理
     put:
       consumes:
       - application/json
@@ -2140,7 +2140,7 @@ paths:
       - Bearer: []
       summary: 更新图库信息
       tags:
-      - gallery
+      - 图库管理
   /galleries/batch-delete:
     post:
       consumes:
@@ -2163,7 +2163,7 @@ paths:
       - Bearer: []
       summary: 批量删除图库
       tags:
-      - gallery
+      - 图库管理
   /galleries/upload:
     post:
       consumes:
@@ -2198,7 +2198,7 @@ paths:
       - Bearer: []
       summary: 上传图片到图库
       tags:
-      - gallery
+      - 图库管理
   /inventories:
     get:
       parameters:
@@ -2240,7 +2240,7 @@ paths:
       - Bearer: []
       summary: 库存列表
       tags:
-      - inventory
+      - 库存管理
   /inventory-orders:
     get:
       parameters:
@@ -2286,7 +2286,7 @@ paths:
       - Bearer: []
       summary: 出入库单列表
       tags:
-      - inventory
+      - 库存管理
     post:
       consumes:
       - application/json
@@ -2313,7 +2313,7 @@ paths:
       - Bearer: []
       summary: 创建出入库单
       tags:
-      - inventory
+      - 库存管理
   /inventory-orders/{id}:
     get:
       parameters:
@@ -2338,7 +2338,7 @@ paths:
       - Bearer: []
       summary: 根据ID获取出入库单详情
       tags:
-      - inventory
+      - 库存管理
   /inventory-orders/no/{order_no}:
     get:
       parameters:
@@ -2363,7 +2363,7 @@ paths:
       - Bearer: []
       summary: 根据单号获取出入库单详情
       tags:
-      - inventory
+      - 库存管理
   /menus:
     get:
       consumes:
@@ -2387,7 +2387,7 @@ paths:
       - Bearer: []
       summary: 菜单列表
       tags:
-      - menus
+      - 菜单管理
     post:
       consumes:
       - application/json
@@ -2410,7 +2410,7 @@ paths:
       - Bearer: []
       summary: 创建菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/{id}:
     delete:
       consumes:
@@ -2433,7 +2433,7 @@ paths:
       - Bearer: []
       summary: 删除菜单
       tags:
-      - menus
+      - 菜单管理
     get:
       consumes:
       - application/json
@@ -2460,7 +2460,7 @@ paths:
       - Bearer: []
       summary: 获取菜单详情
       tags:
-      - menus
+      - 菜单管理
     put:
       consumes:
       - application/json
@@ -2488,7 +2488,7 @@ paths:
       - Bearer: []
       summary: 更新菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/assign-role:
     post:
       consumes:
@@ -2512,7 +2512,7 @@ paths:
       - Bearer: []
       summary: 为角色分配菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/assign-store-role:
     post:
       consumes:
@@ -2536,7 +2536,7 @@ paths:
       - Bearer: []
       summary: 为门店角色分配菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/copy-store:
     post:
       consumes:
@@ -2560,7 +2560,7 @@ paths:
       - Bearer: []
       summary: 复制门店菜单权限
       tags:
-      - menus
+      - 菜单管理
   /menus/role:
     get:
       consumes:
@@ -2590,7 +2590,7 @@ paths:
       - Bearer: []
       summary: 获取角色菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/role-ids:
     get:
       consumes:
@@ -2620,7 +2620,7 @@ paths:
       - Bearer: []
       summary: 获取角色菜单ID列表
       tags:
-      - menus
+      - 菜单管理
   /menus/role-permissions:
     get:
       consumes:
@@ -2651,7 +2651,7 @@ paths:
       - Bearer: []
       summary: 获取角色菜单权限映射
       tags:
-      - menus
+      - 菜单管理
   /menus/store-role:
     get:
       consumes:
@@ -2686,7 +2686,7 @@ paths:
       - Bearer: []
       summary: 获取门店角色菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/store-role-ids:
     get:
       consumes:
@@ -2721,7 +2721,7 @@ paths:
       - Bearer: []
       summary: 获取门店角色菜单ID列表
       tags:
-      - menus
+      - 菜单管理
   /menus/store-role-permissions:
     get:
       consumes:
@@ -2757,7 +2757,7 @@ paths:
       - Bearer: []
       summary: 获取门店角色菜单权限映射
       tags:
-      - menus
+      - 菜单管理
   /menus/tree:
     get:
       consumes:
@@ -2781,7 +2781,7 @@ paths:
       - Bearer: []
       summary: 菜单树形结构
       tags:
-      - menus
+      - 菜单管理
   /menus/user-menus:
     get:
       consumes:
@@ -2805,7 +2805,7 @@ paths:
       - Bearer: []
       summary: 获取当前用户菜单
       tags:
-      - menus
+      - 菜单管理
   /menus/user-permissions:
     get:
       consumes:
@@ -2829,7 +2829,7 @@ paths:
       - Bearer: []
       summary: 获取当前用户权限标识列表
       tags:
-      - menus
+      - 菜单管理
   /purchase-orders:
     get:
       parameters:
@@ -2875,7 +2875,7 @@ paths:
       - Bearer: []
       summary: 采购单列表
       tags:
-      - purchase-orders
+      - 采购单管理
     post:
       consumes:
       - application/json
@@ -2902,7 +2902,7 @@ paths:
       - Bearer: []
       summary: 创建采购单
       tags:
-      - purchase-orders
+      - 采购单管理
   /purchase-orders/{id}:
     delete:
       parameters:
@@ -2922,7 +2922,7 @@ paths:
       - Bearer: []
       summary: 删除采购单
       tags:
-      - purchase-orders
+      - 采购单管理
     get:
       parameters:
       - description: 采购单ID
@@ -2946,7 +2946,7 @@ paths:
       - Bearer: []
       summary: 获取采购单详情
       tags:
-      - purchase-orders
+      - 采购单管理
     put:
       consumes:
       - application/json
@@ -2973,7 +2973,7 @@ paths:
       - Bearer: []
       summary: 更新采购单
       tags:
-      - purchase-orders
+      - 采购单管理
   /purchase-orders/{id}/actions:
     get:
       parameters:
@@ -3000,7 +3000,7 @@ paths:
       - Bearer: []
       summary: 获取采购单可用操作
       tags:
-      - purchase-orders
+      - 采购单管理
   /purchase-orders/{id}/by-supplier:
     get:
       parameters:
@@ -3020,7 +3020,7 @@ paths:
       - Bearer: []
       summary: 按供应商分组获取采购单明细
       tags:
-      - purchase-orders
+      - 采购单管理
   /purchase-orders/{id}/cancel:
     post:
       consumes:
@@ -3050,7 +3050,7 @@ paths:
       - Bearer: []
       summary: 取消采购单
       tags:
-      - purchase-orders
+      - 采购单管理
   /purchase-orders/{id}/complete:
     post:
       parameters:
@@ -3070,7 +3070,7 @@ paths:
       - Bearer: []
       summary: 完成采购单
       tags:
-      - purchase-orders
+      - 采购单管理
   /purchase-orders/{id}/confirm:
     post:
       parameters:
@@ -3090,7 +3090,7 @@ paths:
       - Bearer: []
       summary: 确认采购单
       tags:
-      - purchase-orders
+      - 采购单管理
   /roles:
     get:
       description: 获取角色列表（排除admin），支持 keyword 模糊查询 name/code/description，status=0|1
@@ -3274,7 +3274,7 @@ paths:
       - Bearer: []
       summary: 渠道销售统计
       tags:
-      - statistics
+      - 统计分析
   /statistics/dashboard:
     get:
       description: 获取库存和销售统计数据，支持当天/当周/当月/当季/当年
@@ -3304,7 +3304,7 @@ paths:
       - Bearer: []
       summary: 统计面板数据
       tags:
-      - statistics
+      - 统计分析
   /statistics/inventory:
     get:
       parameters:
@@ -3328,7 +3328,7 @@ paths:
       - Bearer: []
       summary: 库存统计
       tags:
-      - statistics
+      - 统计分析
   /statistics/sales:
     get:
       parameters:
@@ -3357,7 +3357,7 @@ paths:
       - Bearer: []
       summary: 销售统计
       tags:
-      - statistics
+      - 统计分析
   /statistics/sales-trend:
     get:
       parameters:
@@ -3388,7 +3388,7 @@ paths:
       - Bearer: []
       summary: 销售趋势（图表数据）
       tags:
-      - statistics
+      - 统计分析
   /store-accounts:
     get:
       parameters:
@@ -3446,7 +3446,7 @@ paths:
       - Bearer: []
       summary: 记账列表
       tags:
-      - store-account
+      - 门店记账
     post:
       consumes:
       - application/json
@@ -3473,7 +3473,7 @@ paths:
       - Bearer: []
       summary: 创建记账
       tags:
-      - store-account
+      - 门店记账
   /store-accounts/{id}:
     delete:
       parameters:
@@ -3493,7 +3493,7 @@ paths:
       - Bearer: []
       summary: 删除记账
       tags:
-      - store-account
+      - 门店记账
     get:
       parameters:
       - description: 记账ID
@@ -3517,7 +3517,7 @@ paths:
       - Bearer: []
       summary: 获取记账详情
       tags:
-      - store-account
+      - 门店记账
     put:
       consumes:
       - application/json
@@ -3544,7 +3544,7 @@ paths:
       - Bearer: []
       summary: 更新记账
       tags:
-      - store-account
+      - 门店记账
   /store-accounts/stats:
     get:
       parameters:
@@ -3571,7 +3571,7 @@ paths:
       - Bearer: []
       summary: 记账统计
       tags:
-      - store-account
+      - 门店记账
   /stores:
     get:
       consumes:
@@ -3595,7 +3595,7 @@ paths:
       - Bearer: []
       summary: 门店列表
       tags:
-      - stores
+      - 门店管理
     post:
       consumes:
       - application/json
@@ -3618,7 +3618,7 @@ paths:
       - Bearer: []
       summary: 创建门店
       tags:
-      - stores
+      - 门店管理
   /stores/{id}:
     delete:
       consumes:
@@ -3641,7 +3641,7 @@ paths:
       - Bearer: []
       summary: 删除门店
       tags:
-      - stores
+      - 门店管理
     get:
       consumes:
       - application/json
@@ -3668,7 +3668,7 @@ paths:
       - Bearer: []
       summary: 获取门店详情
       tags:
-      - stores
+      - 门店管理
     put:
       consumes:
       - application/json
@@ -3696,7 +3696,7 @@ paths:
       - Bearer: []
       summary: 更新门店信息
       tags:
-      - stores
+      - 门店管理
   /stores/all:
     get:
       description: 返回全部门店列表。默认仅总部管理员可访问，如需开放可去掉权限判断
@@ -3718,7 +3718,7 @@ paths:
       - Bearer: []
       summary: 全部门店（无分页）
       tags:
-      - stores
+      - 门店管理
   /supplier-categories:
     get:
       parameters:
@@ -3745,7 +3745,7 @@ paths:
       - Bearer: []
       summary: 供应商分类列表
       tags:
-      - supplier-categories
+      - 供应商分类
     post:
       consumes:
       - application/json
@@ -3767,7 +3767,7 @@ paths:
       - Bearer: []
       summary: 创建供应商分类
       tags:
-      - supplier-categories
+      - 供应商分类
   /supplier-categories/{id}:
     delete:
       parameters:
@@ -3787,7 +3787,7 @@ paths:
       - Bearer: []
       summary: 删除供应商分类
       tags:
-      - supplier-categories
+      - 供应商分类
     put:
       consumes:
       - application/json
@@ -3814,7 +3814,7 @@ paths:
       - Bearer: []
       summary: 更新供应商分类
       tags:
-      - supplier-categories
+      - 供应商分类
   /supplier-products:
     get:
       parameters:
@@ -3860,7 +3860,7 @@ paths:
       - Bearer: []
       summary: 供应商商品列表
       tags:
-      - supplier-products
+      - 供应商商品
     post:
       consumes:
       - application/json
@@ -3882,7 +3882,7 @@ paths:
       - Bearer: []
       summary: 创建供应商商品
       tags:
-      - supplier-products
+      - 供应商商品
   /supplier-products/{id}:
     delete:
       parameters:
@@ -3902,7 +3902,7 @@ paths:
       - Bearer: []
       summary: 删除供应商商品
       tags:
-      - supplier-products
+      - 供应商商品
     get:
       parameters:
       - description: 商品ID
@@ -3926,7 +3926,7 @@ paths:
       - Bearer: []
       summary: 获取供应商商品详情
       tags:
-      - supplier-products
+      - 供应商商品
     put:
       consumes:
       - application/json
@@ -3953,7 +3953,7 @@ paths:
       - Bearer: []
       summary: 更新供应商商品
       tags:
-      - supplier-products
+      - 供应商商品
   /suppliers:
     get:
       consumes:
@@ -3996,7 +3996,7 @@ paths:
       - Bearer: []
       summary: 供应商列表
       tags:
-      - suppliers
+      - 供应商管理
     post:
       consumes:
       - application/json
@@ -4050,7 +4050,7 @@ paths:
       - Bearer: []
       summary: 删除供应商
       tags:
-      - suppliers
+      - 供应商管理
     get:
       consumes:
       - application/json
@@ -4077,7 +4077,7 @@ paths:
       - Bearer: []
       summary: 获取供应商详情
       tags:
-      - suppliers
+      - 供应商管理
     put:
       consumes:
       - application/json
@@ -4105,7 +4105,7 @@ paths:
       - Bearer: []
       summary: 更新供应商信息
       tags:
-      - suppliers
+      - 供应商管理
   /users:
     get:
       consumes:
@@ -4142,7 +4142,7 @@ paths:
       - Bearer: []
       summary: 用户列表
       tags:
-      - users
+      - 用户管理
     post:
       consumes:
       - application/json
@@ -4165,7 +4165,7 @@ paths:
       - Bearer: []
       summary: 创建用户
       tags:
-      - users
+      - 用户管理
   /users/{id}:
     delete:
       consumes:
@@ -4188,7 +4188,7 @@ paths:
       - Bearer: []
       summary: 删除用户
       tags:
-      - users
+      - 用户管理
     get:
       consumes:
       - application/json
@@ -4215,7 +4215,7 @@ paths:
       - Bearer: []
       summary: 获取用户
       tags:
-      - users
+      - 用户管理
     put:
       consumes:
       - application/json
@@ -4243,7 +4243,7 @@ paths:
       - Bearer: []
       summary: 更新用户
       tags:
-      - users
+      - 用户管理
   /users/{id}/reset-password:
     post:
       consumes:
@@ -4266,7 +4266,7 @@ paths:
       - Bearer: []
       summary: 重置用户密码
       tags:
-      - users
+      - 用户管理
   /users/profile:
     get:
       consumes:
@@ -4288,7 +4288,7 @@ paths:
       - Bearer: []
       summary: 获取用户个人信息
       tags:
-      - users
+      - 用户管理
     put:
       consumes:
       - application/json
@@ -4311,7 +4311,7 @@ paths:
       - Bearer: []
       summary: 更新个人信息
       tags:
-      - users
+      - 用户管理
 schemes:
 - http
 - https

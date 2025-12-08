@@ -18,7 +18,7 @@ func NewPurchaseOrderController(orderService *service.PurchaseOrderService) *Pur
 
 // CreateOrder godoc
 // @Summary 创建采购单
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -44,7 +44,7 @@ func (c *PurchaseOrderController) CreateOrder(ctx *gin.Context) {
 
 // GetOrder godoc
 // @Summary 获取采购单详情
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "采购单ID"
@@ -65,7 +65,7 @@ func (c *PurchaseOrderController) GetOrder(ctx *gin.Context) {
 
 // ListOrders godoc
 // @Summary 采购单列表
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
@@ -108,7 +108,7 @@ func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 
 // UpdateOrder godoc
 // @Summary 更新采购单
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -134,7 +134,7 @@ func (c *PurchaseOrderController) UpdateOrder(ctx *gin.Context) {
 
 // DeleteOrder godoc
 // @Summary 删除采购单
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "采购单ID"
@@ -154,7 +154,7 @@ func (c *PurchaseOrderController) DeleteOrder(ctx *gin.Context) {
 
 // GetOrdersBySupplier godoc
 // @Summary 按供应商分组获取采购单明细
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "采购单ID"
@@ -175,7 +175,7 @@ func (c *PurchaseOrderController) GetOrdersBySupplier(ctx *gin.Context) {
 
 // GetAvailableActions godoc
 // @Summary 获取采购单可用操作
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "采购单ID"
@@ -196,7 +196,7 @@ func (c *PurchaseOrderController) GetAvailableActions(ctx *gin.Context) {
 
 // ConfirmOrder godoc
 // @Summary 确认采购单
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "采购单ID"
@@ -216,7 +216,7 @@ func (c *PurchaseOrderController) ConfirmOrder(ctx *gin.Context) {
 
 // CompleteOrder godoc
 // @Summary 完成采购单
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "采购单ID"
@@ -236,7 +236,7 @@ func (c *PurchaseOrderController) CompleteOrder(ctx *gin.Context) {
 
 // CancelOrder godoc
 // @Summary 取消采购单
-// @Tags purchase-orders
+// @Tags 采购单管理
 // @Accept json
 // @Produce json
 // @Security Bearer

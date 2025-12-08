@@ -30,7 +30,7 @@ func NewGalleryController(galleryService *service.GalleryService, rustfsService 
 
 // Upload godoc
 // @Summary 上传图片到图库
-// @Tags gallery
+// @Tags 图库管理
 // @Accept multipart/form-data
 // @Produce json
 // @Security Bearer
@@ -119,7 +119,7 @@ func (c *GalleryController) uploadToRustFS(file multipart.File, header *multipar
 
 // List godoc
 // @Summary 获取图库列表
-// @Tags gallery
+// @Tags 图库管理
 // @Produce json
 // @Security Bearer
 // @Param page query int false "页码" default(1)
@@ -156,7 +156,7 @@ func (c *GalleryController) List(ctx *gin.Context) {
 
 // Get godoc
 // @Summary 获取图库详情
-// @Tags gallery
+// @Tags 图库管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "图库ID"
@@ -179,7 +179,7 @@ func (c *GalleryController) Get(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新图库信息
-// @Tags gallery
+// @Tags 图库管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -208,7 +208,7 @@ func (c *GalleryController) Update(ctx *gin.Context) {
 
 // Delete godoc
 // @Summary 删除图库
-// @Tags gallery
+// @Tags 图库管理
 // @Produce json
 // @Security Bearer
 // @Param id path int true "图库ID"
@@ -235,7 +235,7 @@ func (c *GalleryController) Delete(ctx *gin.Context) {
 
 // BatchDelete godoc
 // @Summary 批量删除图库
-// @Tags gallery
+// @Tags 图库管理
 // @Accept json
 // @Produce json
 // @Security Bearer

@@ -19,7 +19,7 @@ func NewStatisticsController(statisticsService *service.StatisticsService) *Stat
 // Dashboard godoc
 // @Summary 统计面板数据
 // @Description 获取库存和销售统计数据，支持当天/当周/当月/当季/当年
-// @Tags statistics
+// @Tags 统计分析
 // @Produce json
 // @Security Bearer
 // @Param period query string false "统计周期: today/week/month/quarter/year" default(today)
@@ -60,7 +60,7 @@ func (c *StatisticsController) Dashboard(ctx *gin.Context) {
 
 // InventoryStats godoc
 // @Summary 库存统计
-// @Tags statistics
+// @Tags 统计分析
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
@@ -91,7 +91,7 @@ func (c *StatisticsController) InventoryStats(ctx *gin.Context) {
 
 // SalesStats godoc
 // @Summary 销售统计
-// @Tags statistics
+// @Tags 统计分析
 // @Produce json
 // @Security Bearer
 // @Param period query string false "统计周期: today/week/month/quarter/year" default(today)
@@ -125,7 +125,7 @@ func (c *StatisticsController) SalesStats(ctx *gin.Context) {
 
 // SalesTrend godoc
 // @Summary 销售趋势（图表数据）
-// @Tags statistics
+// @Tags 统计分析
 // @Produce json
 // @Security Bearer
 // @Param period query string false "统计周期: week/month/quarter/year" default(month)
@@ -159,7 +159,7 @@ func (c *StatisticsController) SalesTrend(ctx *gin.Context) {
 
 // ChannelStats godoc
 // @Summary 渠道销售统计
-// @Tags statistics
+// @Tags 统计分析
 // @Produce json
 // @Security Bearer
 // @Param period query string false "统计周期: today/week/month/quarter/year" default(month)

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -40,6 +41,28 @@ func (s *InventoryService) ListInventory(req *model.ListInventoryReq) ([]*model.
 
 // CreateOrder 创建出入库单
 func (s *InventoryService) CreateOrder(storeID, operatorID uint, req *model.CreateInventoryOrderReq) (*model.InventoryOrder, error) {
+	// 出库时校验库存
+	if req.Type == model.InventoryTypeOut {
+		for _, item := range req.Items {
+			inv, err := s.inventoryModule.GetByStoreAndProduct(storeID, item.ProductID)
+			if err != nil {
+				// 获取商品名称用于错误提示
+				productName := "未知商品"
+				if product, _ := s.productModule.GetByID(item.ProductID); product != nil {
+					productName = product.Name
+				}
+				return nil, fmt.Errorf("商品【%s】不在库存中，无法出库", productName)
+			}
+			if inv.Quantity < item.Quantity {
+				productName := "未知商品"
+				if product, _ := s.productModule.GetByID(item.ProductID); product != nil {
+					productName = product.Name
+				}
+				return nil, fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，出库数量: %.2f", productName, inv.Quantity, item.Quantity)
+			}
+		}
+	}
+
 	// 生成单据编号
 	orderNo := s.inventoryModule.GenerateOrderNo(req.Type)
 
@@ -153,4 +176,14 @@ func (s *InventoryService) GetOrderByID(id uint) (*model.InventoryOrder, error) 
 // ListOrders 出入库单列表
 func (s *InventoryService) ListOrders(req *model.ListInventoryOrderReq) ([]*model.InventoryOrder, int64, error) {
 	return s.inventoryModule.ListOrders(req)
+}
+
+// UpdateInventory 修改库存数量
+func (s *InventoryService) UpdateInventory(id uint, quantity float64) error {
+	return s.inventoryModule.UpdateQuantity(id, quantity)
+}
+
+// GetInventoryByID 根据ID获取库存
+func (s *InventoryService) GetInventoryByID(id uint) (*model.Inventory, error) {
+	return s.inventoryModule.GetByID(id)
 }

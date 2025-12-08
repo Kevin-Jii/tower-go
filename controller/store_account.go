@@ -20,7 +20,7 @@ func NewStoreAccountController(storeAccountService *service.StoreAccountService)
 
 // Create godoc
 // @Summary 创建记账
-// @Tags store-account
+// @Tags 门店记账
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -47,7 +47,7 @@ func (c *StoreAccountController) Create(ctx *gin.Context) {
 
 // Get godoc
 // @Summary 获取记账详情
-// @Tags store-account
+// @Tags 门店记账
 // @Produce json
 // @Security Bearer
 // @Param id path int true "记账ID"
@@ -71,7 +71,7 @@ func (c *StoreAccountController) Get(ctx *gin.Context) {
 
 // List godoc
 // @Summary 记账列表
-// @Tags store-account
+// @Tags 门店记账
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
@@ -111,7 +111,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新记账
-// @Tags store-account
+// @Tags 门店记账
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -141,7 +141,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 
 // Delete godoc
 // @Summary 删除记账
-// @Tags store-account
+// @Tags 门店记账
 // @Produce json
 // @Security Bearer
 // @Param id path int true "记账ID"
@@ -164,7 +164,7 @@ func (c *StoreAccountController) Delete(ctx *gin.Context) {
 
 // Stats godoc
 // @Summary 记账统计
-// @Tags store-account
+// @Tags 门店记账
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"

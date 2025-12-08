@@ -42,7 +42,7 @@ func NewUserController(userService *service.UserService) *UserController {
 // CreateUser godoc
 // @Summary 创建用户
 // @Description 创建新用户
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -71,7 +71,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 // GetUser godoc
 // @Summary 获取用户
 // @Description 获取用户详情
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -97,7 +97,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // ListUsers godoc
 // @Summary 用户列表
 // @Description 获取用户列表。总部管理员返回全部用户（跨门店，支持分页），门店管理员返回其门店用户（分页）
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -148,7 +148,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 // UpdateUser godoc
 // @Summary 更新用户
 // @Description 更新用户信息
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -180,7 +180,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // DeleteUser godoc
 // @Summary 删除用户
 // @Description 删除用户（管理员可删除任意用户，门店管理员只能删除本门店用户）
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -221,7 +221,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // ResetUserPassword godoc
 // @Summary 重置用户密码
 // @Description 将指定用户密码重置为 123456
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -272,7 +272,7 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 // Register godoc
 // @Summary 用户注册
 // @Description 创建新用户账户
-// @Tags auth
+// @Tags 认证
 // @Accept json
 // @Produce json
 // @Param user body model.CreateUserReq true "用户信息"
@@ -297,7 +297,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 // Login godoc
 // @Summary 用户登录
 // @Description 用户登录并获取token
-// @Tags auth
+// @Tags 认证
 // @Accept json
 // @Produce json
 // @Param login body LoginRequest true "登录信息"
@@ -353,7 +353,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 // GetProfile godoc
 // @Summary 获取用户个人信息
 // @Description 获取当前登录用户的详细信息
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer
@@ -373,7 +373,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 // UpdateProfile godoc
 // @Summary 更新个人信息
 // @Description 更新当前登录用户的个人信息
-// @Tags users
+// @Tags 用户管理
 // @Accept json
 // @Produce json
 // @Security Bearer

@@ -4460,3 +4460,17 @@
 {"level":"info","timestamp":"2025-12-07 22:09:53.076","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
 {"level":"info","timestamp":"2025-12-07 22:09:53.121","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
 {"level":"error","timestamp":"2025-12-07 22:09:53.282","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"8489BA63-BD8D-75BB-BDFE-4C5183A7E93D\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.197","caller":"bootstrap/logger.go:23","msg":"日志系统初始化完成"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.203","caller":"bootstrap/config.go:22","msg":"使用环境变量端口","port":10024}
+{"level":"info","timestamp":"2025-12-08 20:38:44.203","caller":"bootstrap/config.go:25","msg":"配置加载完成"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.340","caller":"bootstrap/swagger.go:33","msg":"swagger 文档已自动生成"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.376","caller":"bootstrap/database.go:16","msg":"数据库连接成功"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.388","caller":"redis/redis.go:39","msg":"Redis 连接成功","addr":"localhost:6379"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.388","caller":"bootstrap/redis.go:18","msg":"Redis 缓存已启用"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.389","caller":"bootstrap/migrate.go:16","msg":"跳过数据库迁移（SKIP_AUTO_MIGRATE=1）"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.396","caller":"bootstrap/seed.go:29","msg":"数据库已有数据，跳过种子数据初始化"}
+{"level":"info","timestamp":"2025-12-08 20:38:44.396","caller":"bootstrap/app.go:35","msg":"会话管理初始化完成"}
+{"level":"warn","timestamp":"2025-12-08 20:38:44.458","caller":"api/container.go:88","msg":"RustFS服务连接失败，文件服务不可用: 检查bucket失败: The request signature we calculated does not match the signature you provided. Check your key and signing method."}
+{"level":"info","timestamp":"2025-12-08 20:38:44.494","caller":"bootstrap/stream.go:20","msg":"⏭️ Stream bot already exists, skipping creation","count":1}
+{"level":"info","timestamp":"2025-12-08 20:38:44.539","caller":"bootstrap/app.go:46","msg":"Stream clients initialized","total":1,"success":1}
+{"level":"error","timestamp":"2025-12-08 20:38:44.691","caller":"runtime/asm_amd64.s:1693","msg":"Stream client start failed","botID":1,"botName":"总部Stream机器人(自动创建)","error":"{\"requestid\":\"E47A6726-FD52-7A2F-BD5D-5FC17A210F42\",\"code\":\"authFailed\",\"message\":\"鉴权失败\"}","stacktrace":"runtime.goexit\n\tC:/Program Files/Application/go/src/runtime/asm_amd64.s:1693"}

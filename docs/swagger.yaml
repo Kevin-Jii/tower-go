@@ -1103,6 +1103,17 @@ definitions:
         maxLength: 500
         type: string
     type: object
+  model.UpdateInventoryReq:
+    properties:
+      quantity:
+        minimum: 0
+        type: number
+      remark:
+        maxLength: 500
+        type: string
+    required:
+    - quantity
+    type: object
   model.UpdateMenuReq:
     properties:
       component:
@@ -2239,6 +2250,35 @@ paths:
       security:
       - Bearer: []
       summary: 库存列表
+      tags:
+      - 库存管理
+  /inventories/{id}:
+    put:
+      consumes:
+      - application/json
+      description: 直接修改库存数量（仅管理员）
+      parameters:
+      - description: 库存ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 库存信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateInventoryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 修改库存数量
       tags:
       - 库存管理
   /inventory-orders:

@@ -9,10 +9,14 @@ import (
 
 type StoreAccountService struct {
 	storeAccountModule *module.StoreAccountModule
+	productModule      *module.SupplierProductModule
 }
 
-func NewStoreAccountService(storeAccountModule *module.StoreAccountModule) *StoreAccountService {
-	return &StoreAccountService{storeAccountModule: storeAccountModule}
+func NewStoreAccountService(storeAccountModule *module.StoreAccountModule, productModule *module.SupplierProductModule) *StoreAccountService {
+	return &StoreAccountService{
+		storeAccountModule: storeAccountModule,
+		productModule:      productModule,
+	}
 }
 
 // Create 创建记账
@@ -27,27 +31,56 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		}
 	}
 
-	// 计算金额
-	amount := req.Amount
-	if amount == 0 && req.Price > 0 && req.Quantity > 0 {
-		amount = req.Price * req.Quantity
+	// 构建明细
+	var items []model.StoreAccountItem
+	var totalAmount float64
+
+	for _, item := range req.Items {
+		// 获取商品名称
+		productName := ""
+		unit := item.Unit
+		if s.productModule != nil {
+			if product, err := s.productModule.GetByID(item.ProductID); err == nil && product != nil {
+				productName = product.Name
+				if unit == "" {
+					unit = product.Unit
+				}
+			}
+		}
+
+		// 计算金额
+		amount := item.Amount
+		if amount == 0 && item.Price > 0 && item.Quantity > 0 {
+			amount = item.Price * item.Quantity
+		}
+
+		items = append(items, model.StoreAccountItem{
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Spec:        item.Spec,
+			Quantity:    item.Quantity,
+			Unit:        unit,
+			Price:       item.Price,
+			Amount:      amount,
+			Remark:      item.Remark,
+		})
+
+		totalAmount += amount
 	}
 
 	account := &model.StoreAccount{
 		AccountNo:   accountNo,
 		StoreID:     storeID,
-		ProductID:   req.ProductID,
-		Spec:        req.Spec,
-		Quantity:    req.Quantity,
-		Unit:        req.Unit,
-		Price:       req.Price,
-		Amount:      amount,
 		Channel:     req.Channel,
-		OrderSource: req.OrderSource,
 		OrderNo:     req.OrderNo,
+		TotalAmount: totalAmount,
+		ItemCount:   len(items),
+		TagCode:     req.TagCode,
+		TagName:     req.TagName,
 		Remark:      req.Remark,
 		OperatorID:  operatorID,
 		AccountDate: accountDate,
+		Items:       items,
 	}
 
 	if err := s.storeAccountModule.Create(account); err != nil {
@@ -71,32 +104,17 @@ func (s *StoreAccountService) List(req *model.ListStoreAccountReq) ([]*model.Sto
 func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) error {
 	updates := make(map[string]interface{})
 
-	if req.ProductID != nil {
-		updates["product_id"] = *req.ProductID
-	}
-	if req.Spec != "" {
-		updates["spec"] = req.Spec
-	}
-	if req.Quantity != nil {
-		updates["quantity"] = *req.Quantity
-	}
-	if req.Unit != "" {
-		updates["unit"] = req.Unit
-	}
-	if req.Price != nil {
-		updates["price"] = *req.Price
-	}
-	if req.Amount != nil {
-		updates["amount"] = *req.Amount
-	}
 	if req.Channel != "" {
 		updates["channel"] = req.Channel
 	}
-	if req.OrderSource != "" {
-		updates["order_source"] = req.OrderSource
-	}
 	if req.OrderNo != "" {
 		updates["order_no"] = req.OrderNo
+	}
+	if req.TagCode != "" {
+		updates["tag_code"] = req.TagCode
+	}
+	if req.TagName != "" {
+		updates["tag_name"] = req.TagName
 	}
 	if req.Remark != "" {
 		updates["remark"] = req.Remark

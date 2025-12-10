@@ -2,6 +2,7 @@ package controller
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
@@ -20,6 +21,7 @@ func NewStoreAccountController(storeAccountService *service.StoreAccountService)
 
 // Create godoc
 // @Summary 创建记账
+// @Description 创建记账单，支持多个商品
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -75,10 +77,9 @@ func (c *StoreAccountController) Get(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
-// @Param product_id query int false "商品ID"
-// @Param channel query string false "销售渠道"
-// @Param order_source query string false "订单来源"
+// @Param channel query string false "渠道来源"
 // @Param order_no query string false "订单编号"
+// @Param tag_code query string false "标签编码"
 // @Param start_date query string false "开始日期"
 // @Param end_date query string false "结束日期"
 // @Param page query int false "页码"
@@ -111,6 +112,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新记账
+// @Description 更新记账信息，仅限创建后24小时内可修改（管理员不受限制）
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -124,6 +126,22 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 	if err != nil {
 		http.Error(ctx, 400, "无效的ID")
 		return
+	}
+
+	// 获取记账记录
+	account, err := c.storeAccountService.Get(uint(id))
+	if err != nil {
+		http.Error(ctx, 404, "记账记录不存在")
+		return
+	}
+
+	// 非管理员检查24小时限制
+	roleCode := middleware.GetRoleCode(ctx)
+	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
+		if time.Since(account.CreatedAt) > 24*time.Hour {
+			http.Error(ctx, 403, "账单创建超过24小时，无法修改")
+			return
+		}
 	}
 
 	var req model.UpdateStoreAccountReq

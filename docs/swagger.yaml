@@ -366,6 +366,12 @@ definitions:
       spec:
         maxLength: 100
         type: string
+      tag_code:
+        maxLength: 50
+        type: string
+      tag_name:
+        maxLength: 100
+        type: string
       unit:
         maxLength: 20
         type: string
@@ -930,6 +936,8 @@ definitions:
         $ref: '#/definitions/model.SupplierProduct'
       product_id:
         type: integer
+      product_name:
+        type: string
       quantity:
         type: number
       remark:
@@ -942,6 +950,10 @@ definitions:
         description: 关联
       store_id:
         type: integer
+      tag_code:
+        type: string
+      tag_name:
+        type: string
       unit:
         type: string
       updated_at:
@@ -1206,6 +1218,12 @@ definitions:
         maxLength: 500
         type: string
       spec:
+        maxLength: 100
+        type: string
+      tag_code:
+        maxLength: 50
+        type: string
+      tag_name:
         maxLength: 100
         type: string
       unit:
@@ -3561,6 +3579,7 @@ paths:
     put:
       consumes:
       - application/json
+      description: 更新记账信息，仅限创建后24小时内可修改（管理员不受限制）
       parameters:
       - description: 记账ID
         in: path

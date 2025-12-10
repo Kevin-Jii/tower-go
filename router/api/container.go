@@ -63,7 +63,7 @@ func BuildControllers() *Controllers {
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule)
 	dictService := service.NewDictService(dictModule)
 	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule)
-	storeAccountService := service.NewStoreAccountService(storeAccountModule)
+	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 
 	// 初始化RustFS文件服务（可选）

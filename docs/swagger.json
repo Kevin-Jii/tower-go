@@ -3688,6 +3688,7 @@
                         "Bearer": []
                     }
                 ],
+                "description": "更新记账信息，仅限创建后24小时内可修改（管理员不受限制）",
                 "consumes": [
                     "application/json"
                 ],
@@ -5514,6 +5515,14 @@
                     "type": "string",
                     "maxLength": 100
                 },
+                "tag_code": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "tag_name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
                 "unit": {
                     "type": "string",
                     "maxLength": 20
@@ -6334,6 +6343,9 @@
                 "product_id": {
                     "type": "integer"
                 },
+                "product_name": {
+                    "type": "string"
+                },
                 "quantity": {
                     "type": "number"
                 },
@@ -6353,6 +6365,12 @@
                 },
                 "store_id": {
                     "type": "integer"
+                },
+                "tag_code": {
+                    "type": "string"
+                },
+                "tag_name": {
+                    "type": "string"
                 },
                 "unit": {
                     "type": "string"
@@ -6739,6 +6757,14 @@
                     "maxLength": 500
                 },
                 "spec": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "tag_code": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "tag_name": {
                     "type": "string",
                     "maxLength": 100
                 },

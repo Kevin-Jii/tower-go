@@ -16,15 +16,15 @@ func NewStoreAccountModule(db *gorm.DB) *StoreAccountModule {
 	return &StoreAccountModule{db: db}
 }
 
-// Create 创建记账
+// Create 创建记账（含明细）
 func (m *StoreAccountModule) Create(account *model.StoreAccount) error {
 	return m.db.Create(account).Error
 }
 
-// GetByID 根据ID获取记账
+// GetByID 根据ID获取记账（含明细）
 func (m *StoreAccountModule) GetByID(id uint) (*model.StoreAccount, error) {
 	var account model.StoreAccount
-	err := m.db.Preload("Store").Preload("Product").Preload("Operator").First(&account, id).Error
+	err := m.db.Preload("Items").Preload("Store").Preload("Operator").First(&account, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -41,17 +41,14 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	if req.StoreID > 0 {
 		query = query.Where("store_id = ?", req.StoreID)
 	}
-	if req.ProductID > 0 {
-		query = query.Where("product_id = ?", req.ProductID)
-	}
 	if req.Channel != "" {
 		query = query.Where("channel = ?", req.Channel)
 	}
-	if req.OrderSource != "" {
-		query = query.Where("order_source = ?", req.OrderSource)
-	}
 	if req.OrderNo != "" {
 		query = query.Where("order_no LIKE ?", "%"+req.OrderNo+"%")
+	}
+	if req.TagCode != "" {
+		query = query.Where("tag_code = ?", req.TagCode)
 	}
 	if req.StartDate != "" {
 		query = query.Where("account_date >= ?", req.StartDate)
@@ -65,7 +62,7 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	}
 
 	offset := (req.Page - 1) * req.PageSize
-	if err := query.Preload("Store").Preload("Product").Preload("Operator").
+	if err := query.Preload("Items").Preload("Store").Preload("Operator").
 		Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&accounts).Error; err != nil {
 		return nil, 0, err
 	}
@@ -78,31 +75,23 @@ func (m *StoreAccountModule) Update(id uint, updates map[string]interface{}) err
 	return m.db.Model(&model.StoreAccount{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// Delete 删除记账
+// Delete 删除记账（含明细）
 func (m *StoreAccountModule) Delete(id uint) error {
-	return m.db.Delete(&model.StoreAccount{}, id).Error
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		// 先删除明细
+		if err := tx.Where("account_id = ?", id).Delete(&model.StoreAccountItem{}).Error; err != nil {
+			return err
+		}
+		// 再删除主表
+		return tx.Delete(&model.StoreAccount{}, id).Error
+	})
 }
 
 // GenerateAccountNo 生成记账编号
-// 格式: JZ + 日期 + 序号，如 JZ202412070001
 func (m *StoreAccountModule) GenerateAccountNo() string {
-	today := time.Now().Format("20060102")
-	pattern := "JZ" + today + "%"
-
-	var maxNo string
-	m.db.Model(&model.StoreAccount{}).
-		Where("account_no LIKE ?", pattern).
-		Order("account_no DESC").
-		Limit(1).
-		Pluck("account_no", &maxNo)
-
-	seq := 1
-	if maxNo != "" && len(maxNo) >= 14 {
-		fmt.Sscanf(maxNo[len(maxNo)-4:], "%d", &seq)
-		seq++
-	}
-
-	return fmt.Sprintf("JZ%s%04d", today, seq)
+	now := time.Now()
+	random := now.UnixNano() % 1000
+	return fmt.Sprintf("JZ%s%03d", now.Format("20060102150405"), random)
 }
 
 // GetStatsByDateRange 按日期范围统计
@@ -125,7 +114,7 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		return 0, 0, err
 	}
 
-	query.Select("COALESCE(SUM(amount), 0)").Scan(&totalAmount)
+	query.Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount)
 
 	return totalAmount, count, nil
 }

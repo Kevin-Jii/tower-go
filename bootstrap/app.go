@@ -2,7 +2,9 @@ package bootstrap
 
 import (
 	"fmt"
+
 	"github.com/Kevin-Jii/tower-go/config"
+	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/Kevin-Jii/tower-go/utils/session"
 

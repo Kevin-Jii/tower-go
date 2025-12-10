@@ -33,7 +33,7 @@ func (m *StoreAccountModule) GetByID(id uint) (*model.StoreAccount, error) {
 
 // List 记账列表
 func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
-	var accounts []*model.StoreAccount
+	accounts := make([]*model.StoreAccount, 0) // 初始化为空数组，避免返回null
 	var total int64
 
 	query := m.db.Model(&model.StoreAccount{})
@@ -58,13 +58,13 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	}
 
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+		return accounts, 0, err
 	}
 
 	offset := (req.Page - 1) * req.PageSize
 	if err := query.Preload("Items").Preload("Store").Preload("Operator").
 		Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&accounts).Error; err != nil {
-		return nil, 0, err
+		return accounts, 0, err
 	}
 
 	return accounts, total, nil

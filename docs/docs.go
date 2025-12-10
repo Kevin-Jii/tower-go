@@ -3475,27 +3475,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "商品ID",
-                        "name": "product_id",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "销售渠道",
+                        "description": "渠道来源",
                         "name": "channel",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "订单来源",
-                        "name": "order_source",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "订单编号",
                         "name": "order_no",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "标签编码",
+                        "name": "tag_code",
                         "in": "query"
                     },
                     {
@@ -3553,6 +3547,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
+                "description": "创建记账单，支持多个商品",
                 "consumes": [
                     "application/json"
                 ],
@@ -5470,34 +5465,16 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CreateStoreAccountReq": {
+        "model.CreateStoreAccountItemReq": {
             "type": "object",
             "required": [
-                "channel",
-                "order_source",
                 "product_id",
                 "quantity"
             ],
             "properties": {
-                "account_date": {
-                    "description": "格式: 2024-12-07",
-                    "type": "string"
-                },
                 "amount": {
                     "type": "number",
                     "minimum": 0
-                },
-                "channel": {
-                    "type": "string",
-                    "maxLength": 50
-                },
-                "order_no": {
-                    "type": "string",
-                    "maxLength": 100
-                },
-                "order_source": {
-                    "type": "string",
-                    "maxLength": 50
                 },
                 "price": {
                     "type": "number",
@@ -5517,6 +5494,41 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100
                 },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            }
+        },
+        "model.CreateStoreAccountReq": {
+            "type": "object",
+            "required": [
+                "channel",
+                "items"
+            ],
+            "properties": {
+                "account_date": {
+                    "type": "string"
+                },
+                "channel": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.CreateStoreAccountItemReq"
+                    }
+                },
+                "order_no": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
                 "tag_code": {
                     "type": "string",
                     "maxLength": 50
@@ -5524,10 +5536,6 @@ const docTemplate = `{
                 "tag_name": {
                     "type": "string",
                     "maxLength": 100
-                },
-                "unit": {
-                    "type": "string",
-                    "maxLength": 20
                 }
             }
         },
@@ -6312,9 +6320,6 @@ const docTemplate = `{
                 "account_no": {
                     "type": "string"
                 },
-                "amount": {
-                    "type": "number"
-                },
                 "channel": {
                     "type": "string"
                 },
@@ -6323,6 +6328,15 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "item_count": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StoreAccountItem"
+                    }
                 },
                 "operator": {
                     "$ref": "#/definitions/model.User"
@@ -6333,28 +6347,7 @@ const docTemplate = `{
                 "order_no": {
                     "type": "string"
                 },
-                "order_source": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "product": {
-                    "$ref": "#/definitions/model.SupplierProduct"
-                },
-                "product_id": {
-                    "type": "integer"
-                },
-                "product_name": {
-                    "type": "string"
-                },
-                "quantity": {
-                    "type": "number"
-                },
                 "remark": {
-                    "type": "string"
-                },
-                "spec": {
                     "type": "string"
                 },
                 "store": {
@@ -6374,10 +6367,48 @@ const docTemplate = `{
                 "tag_name": {
                     "type": "string"
                 },
-                "unit": {
-                    "type": "string"
+                "total_amount": {
+                    "type": "number"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.StoreAccountItem": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "integer"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "spec": {
+                    "type": "string"
+                },
+                "unit": {
                     "type": "string"
                 }
             }
@@ -6728,10 +6759,6 @@ const docTemplate = `{
                 "account_date": {
                     "type": "string"
                 },
-                "amount": {
-                    "type": "number",
-                    "minimum": 0
-                },
                 "channel": {
                     "type": "string",
                     "maxLength": 50
@@ -6740,27 +6767,9 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100
                 },
-                "order_source": {
-                    "type": "string",
-                    "maxLength": 50
-                },
-                "price": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "product_id": {
-                    "type": "integer"
-                },
-                "quantity": {
-                    "type": "number"
-                },
                 "remark": {
                     "type": "string",
                     "maxLength": 500
-                },
-                "spec": {
-                    "type": "string",
-                    "maxLength": 100
                 },
                 "tag_code": {
                     "type": "string",
@@ -6769,10 +6778,6 @@ const docTemplate = `{
                 "tag_name": {
                     "type": "string",
                     "maxLength": 100
-                },
-                "unit": {
-                    "type": "string",
-                    "maxLength": 20
                 }
             }
         },

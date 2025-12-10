@@ -336,23 +336,11 @@ definitions:
     - items
     - order_date
     type: object
-  model.CreateStoreAccountReq:
+  model.CreateStoreAccountItemReq:
     properties:
-      account_date:
-        description: '格式: 2024-12-07'
-        type: string
       amount:
         minimum: 0
         type: number
-      channel:
-        maxLength: 50
-        type: string
-      order_no:
-        maxLength: 100
-        type: string
-      order_source:
-        maxLength: 50
-        type: string
       price:
         minimum: 0
         type: number
@@ -366,20 +354,40 @@ definitions:
       spec:
         maxLength: 100
         type: string
+      unit:
+        maxLength: 20
+        type: string
+    required:
+    - product_id
+    - quantity
+    type: object
+  model.CreateStoreAccountReq:
+    properties:
+      account_date:
+        type: string
+      channel:
+        maxLength: 50
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/model.CreateStoreAccountItemReq'
+        minItems: 1
+        type: array
+      order_no:
+        maxLength: 100
+        type: string
+      remark:
+        maxLength: 500
+        type: string
       tag_code:
         maxLength: 50
         type: string
       tag_name:
         maxLength: 100
         type: string
-      unit:
-        maxLength: 20
-        type: string
     required:
     - channel
-    - order_source
-    - product_id
-    - quantity
+    - items
     type: object
   model.CreateStoreReq:
     properties:
@@ -914,35 +922,25 @@ definitions:
         type: string
       account_no:
         type: string
-      amount:
-        type: number
       channel:
         type: string
       created_at:
         type: string
       id:
         type: integer
+      item_count:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/model.StoreAccountItem'
+        type: array
       operator:
         $ref: '#/definitions/model.User'
       operator_id:
         type: integer
       order_no:
         type: string
-      order_source:
-        type: string
-      price:
-        type: number
-      product:
-        $ref: '#/definitions/model.SupplierProduct'
-      product_id:
-        type: integer
-      product_name:
-        type: string
-      quantity:
-        type: number
       remark:
-        type: string
-      spec:
         type: string
       store:
         allOf:
@@ -954,9 +952,34 @@ definitions:
         type: string
       tag_name:
         type: string
-      unit:
-        type: string
+      total_amount:
+        type: number
       updated_at:
+        type: string
+    type: object
+  model.StoreAccountItem:
+    properties:
+      account_id:
+        type: integer
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      price:
+        type: number
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      quantity:
+        type: number
+      remark:
+        type: string
+      spec:
+        type: string
+      unit:
         type: string
     type: object
   model.Supplier:
@@ -1195,39 +1218,20 @@ definitions:
     properties:
       account_date:
         type: string
-      amount:
-        minimum: 0
-        type: number
       channel:
         maxLength: 50
         type: string
       order_no:
         maxLength: 100
         type: string
-      order_source:
-        maxLength: 50
-        type: string
-      price:
-        minimum: 0
-        type: number
-      product_id:
-        type: integer
-      quantity:
-        type: number
       remark:
         maxLength: 500
-        type: string
-      spec:
-        maxLength: 100
         type: string
       tag_code:
         maxLength: 50
         type: string
       tag_name:
         maxLength: 100
-        type: string
-      unit:
-        maxLength: 20
         type: string
     type: object
   model.UpdateStoreReq:
@@ -3454,21 +3458,17 @@ paths:
         in: query
         name: store_id
         type: integer
-      - description: 商品ID
-        in: query
-        name: product_id
-        type: integer
-      - description: 销售渠道
+      - description: 渠道来源
         in: query
         name: channel
-        type: string
-      - description: 订单来源
-        in: query
-        name: order_source
         type: string
       - description: 订单编号
         in: query
         name: order_no
+        type: string
+      - description: 标签编码
+        in: query
+        name: tag_code
         type: string
       - description: 开始日期
         in: query
@@ -3508,6 +3508,7 @@ paths:
     post:
       consumes:
       - application/json
+      description: 创建记账单，支持多个商品
       parameters:
       - description: 记账信息
         in: body

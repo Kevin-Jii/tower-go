@@ -27,6 +27,7 @@ type Controllers struct {
 	Gallery           *controller.GalleryController
 	StoreAccount      *controller.StoreAccountController
 	Statistics        *controller.StatisticsController
+	MessageTemplate   *controller.MessageTemplateController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 }
 
@@ -39,6 +40,7 @@ func BuildControllers() *Controllers {
 	roleMenuModule := userModulePkg.NewRoleMenuModule(database.DB)
 	storeRoleMenuModule := userModulePkg.NewStoreRoleMenuModule(database.DB)
 	dingTalkBotModule := userModulePkg.NewDingTalkBotModule(database.DB)
+	dingTalkUserModule := userModulePkg.NewDingTalkUserModule(database.DB)
 	supplierModule := userModulePkg.NewSupplierModule(database.DB)
 	supplierCategoryModule := userModulePkg.NewSupplierCategoryModule(database.DB)
 	supplierProductModule := userModulePkg.NewSupplierProductModule(database.DB)
@@ -49,22 +51,32 @@ func BuildControllers() *Controllers {
 	galleryModule := userModulePkg.NewGalleryModule(database.DB)
 	storeAccountModule := userModulePkg.NewStoreAccountModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
+	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
 
 	userModulePkg.SetDB(database.DB)
 
 	// 初始化服务层
 	userService := service.NewUserService(userModule)
 	storeService := service.NewStoreService(storeModule)
-	dingTalkService := service.NewDingTalkService(dingTalkBotModule)
+	dingTalkService := service.NewDingTalkService(dingTalkBotModule, dingTalkUserModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
 	supplierService := service.NewSupplierService(supplierModule)
 	supplierProductService := service.NewSupplierProductService(supplierProductModule, supplierCategoryModule, supplierModule)
 	storeSupplierService := service.NewStoreSupplierService(storeSupplierModule)
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule)
 	dictService := service.NewDictService(dictModule)
-	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule)
-	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule)
+	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
+	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
+	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule, storeModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	statisticsService := service.NewStatisticsService(statisticsModule)
+
+	// 初始化默认消息模板
+	if err := messageTemplateService.InitDefaultTemplates(); err != nil {
+		logging.LogWarn("初始化消息模板失败: " + err.Error())
+	}
+
+	// 初始化钉钉命令处理器
+	service.InitCommandHandler(inventoryModule, storeAccountModule, storeModule, userModule, messageTemplateService)
 
 	// 初始化RustFS文件服务（可选）
 	var fileController *controller.FileController
@@ -112,6 +124,7 @@ func BuildControllers() *Controllers {
 		Gallery:           galleryController,
 		StoreAccount:      controller.NewStoreAccountController(storeAccountService),
 		Statistics:        controller.NewStatisticsController(statisticsService),
+		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
 		DingTalkBotModule: dingTalkBotModule,
 	}
 }

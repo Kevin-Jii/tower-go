@@ -216,3 +216,171 @@ ON DUPLICATE KEY UPDATE permissions=15;
 -- 7  = 0111 = 查看+新增+修改
 -- 15 = 1111 = 全部权限
 -- ============================================
+
+-- 7. 消息模板数据
+INSERT INTO message_templates (code, name, title, content, description, variables, is_enabled, created_at, updated_at) VALUES
+-- 业务通知模板
+('store_account_created', '记账通知', '📝 新记账通知 - {{.StoreName}}', 
+'## 📝 新记账通知 - {{.StoreName}}
+
+**记账编号：** {{.AccountNo}}
+
+**渠道来源：** {{.ChannelName}}
+
+**记账日期：** {{.AccountDate}}
+
+**操作人：** {{.OperatorName}}
+
+### 商品明细
+
+{{.ItemList}}
+
+**合计金额：** ¥{{.TotalAmount}}
+
+**商品数量：** {{.ItemCount}} 项
+
+---
+
+{{.CreateTime}}',
+'新增记账时发送给门店负责人的通知',
+'["StoreName","AccountNo","ChannelName","AccountDate","OperatorName","ItemList","TotalAmount","ItemCount","CreateTime"]',
+1, NOW(), NOW()),
+
+('inventory_created', '入库通知', '📦 新入库通知 - {{.StoreName}}',
+'## 📦 新入库通知 - {{.StoreName}}
+
+**入库单号：** {{.OrderNo}}
+
+**入库类型：** {{.OrderType}}
+
+**入库日期：** {{.OrderDate}}
+
+**操作人：** {{.OperatorName}}
+
+### 入库明细
+
+{{.ItemList}}
+
+**合计金额：** ¥{{.TotalAmount}}
+
+**商品数量：** {{.ItemCount}} 项
+
+---
+
+{{.CreateTime}}',
+'新增入库时发送给门店负责人的通知',
+'["StoreName","OrderNo","OrderType","OrderDate","OperatorName","ItemList","TotalAmount","ItemCount","CreateTime"]',
+1, NOW(), NOW()),
+
+-- 钉钉机器人命令回复模板
+('bot_help', '机器人帮助菜单', '📋 功能菜单',
+'## 📋 功能菜单
+
+您可以发送以下命令：
+
+**库存相关**
+
+- 库存查询 - 查看当前库存
+
+- 查询库存 商品名 - 搜索指定商品
+
+**记账相关**
+
+- 今日记账 - 查看今日记账汇总
+
+**入库相关**
+
+- 今日入库 - 查看今日入库记录
+
+---
+
+发送 **帮助** 可再次查看此菜单',
+'钉钉机器人帮助菜单',
+'[]',
+1, NOW(), NOW()),
+
+('bot_inventory_query', '库存查询回复', '📦 库存查询',
+'## 📦 库存查询
+
+**门店库存（共{{.Total}}项）**
+
+{{.ItemList}}
+
+---
+
+{{.CreateTime}}',
+'钉钉机器人库存查询回复',
+'["Total","ItemList","CreateTime"]',
+1, NOW(), NOW()),
+
+('bot_today_account', '今日记账回复', '📝 今日记账',
+'## 📝 今日记账汇总
+
+**日期：** {{.Date}}
+
+**记账笔数：** {{.Count}} 笔
+
+**总金额：** ¥{{.TotalAmount}}
+
+---
+
+{{.CreateTime}}',
+'钉钉机器人今日记账查询回复',
+'["Date","Count","TotalAmount","CreateTime"]',
+1, NOW(), NOW()),
+
+('bot_today_inventory', '今日入库回复', '📦 今日入库',
+'## 📦 今日入库汇总
+
+**日期：** {{.Date}}
+
+**入库单数：** {{.Count}} 单
+
+**总入库数量：** {{.TotalQuantity}}
+
+**入库明细：**
+
+{{.ItemList}}
+
+---
+
+{{.CreateTime}}',
+'钉钉机器人今日入库查询回复',
+'["Date","Count","TotalQuantity","ItemList","CreateTime"]',
+1, NOW(), NOW()),
+
+('bot_search_result', '搜索结果回复', '🔍 库存搜索',
+'## 🔍 库存搜索
+
+**关键词：** {{.Keyword}}
+
+**搜索结果（共{{.Total}}项）**
+
+{{.ItemList}}
+
+---
+
+{{.CreateTime}}',
+'钉钉机器人库存搜索回复',
+'["Keyword","Total","ItemList","CreateTime"]',
+1, NOW(), NOW()),
+
+('bot_unknown', '未知命令回复', '🤖 智能助手',
+'## 🤖 智能助手
+
+您发送的内容：{{.Content}}
+
+抱歉，我暂时无法理解您的意思。
+
+发送 **帮助** 或 **菜单** 查看可用功能',
+'钉钉机器人未知命令回复',
+'["Content"]',
+1, NOW(), NOW())
+
+ON DUPLICATE KEY UPDATE 
+    name=VALUES(name),
+    title=VALUES(title),
+    content=VALUES(content),
+    description=VALUES(description),
+    variables=VALUES(variables),
+    updated_at=NOW();

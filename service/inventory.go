@@ -2,10 +2,12 @@ package service
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 // parseDate 解析日期字符串
@@ -18,14 +20,28 @@ type InventoryService struct {
 	userModule      *module.UserModule
 	storeModule     *module.StoreModule
 	productModule   *module.SupplierProductModule
+	dingTalkService *DingTalkService
+	botModule       *module.DingTalkBotModule
+	templateService *MessageTemplateService
 }
 
-func NewInventoryService(inventoryModule *module.InventoryModule, userModule *module.UserModule, storeModule *module.StoreModule, productModule *module.SupplierProductModule) *InventoryService {
+func NewInventoryService(
+	inventoryModule *module.InventoryModule,
+	userModule *module.UserModule,
+	storeModule *module.StoreModule,
+	productModule *module.SupplierProductModule,
+	dingTalkService *DingTalkService,
+	botModule *module.DingTalkBotModule,
+	templateService *MessageTemplateService,
+) *InventoryService {
 	return &InventoryService{
 		inventoryModule: inventoryModule,
 		userModule:      userModule,
 		storeModule:     storeModule,
 		productModule:   productModule,
+		dingTalkService: dingTalkService,
+		botModule:       botModule,
+		templateService: templateService,
 	}
 }
 
@@ -160,7 +176,131 @@ func (s *InventoryService) CreateOrder(storeID, operatorID uint, req *model.Crea
 		}
 	}
 
+	// 异步发送钉钉通知（仅入库）
+	if req.Type == model.InventoryTypeIn {
+		go s.sendDingTalkNotification(order, storeID)
+	}
+
 	return order, nil
+}
+
+// sendDingTalkNotification 发送入库通知到门店负责人
+func (s *InventoryService) sendDingTalkNotification(order *model.InventoryOrder, storeID uint) {
+	if s.dingTalkService == nil || s.storeModule == nil || s.botModule == nil {
+		return
+	}
+
+	// 获取门店信息
+	store, err := s.storeModule.GetByID(storeID)
+	if err != nil || store == nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to get store for notification", "storeID", storeID, "error", err)
+		}
+		return
+	}
+
+	// 检查门店是否有联系电话
+	if store.Phone == "" {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Store has no phone, skip notification", "storeID", storeID)
+		}
+		return
+	}
+
+	// 获取门店绑定的机器人
+	bot, err := s.botModule.GetByStoreID(storeID)
+	if err != nil || bot == nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("No bot found for store", "storeID", storeID, "error", err)
+		}
+		return
+	}
+
+	if !bot.IsEnabled || bot.BotType != "stream" {
+		return
+	}
+
+	// 构建商品明细
+	var itemLines []string
+	for i, item := range order.Items {
+		line := fmt.Sprintf("%d. %s x%.2f%s", i+1, item.ProductName, item.Quantity, item.Unit)
+		itemLines = append(itemLines, line)
+	}
+
+	// 入库类型显示
+	orderType := order.Reason
+	if orderType == "" {
+		orderType = "入库"
+	}
+
+	var title, text string
+
+	// 尝试使用模板
+	if s.templateService != nil {
+		data := map[string]interface{}{
+			"StoreName":    store.Name,
+			"OrderNo":      order.OrderNo,
+			"OrderType":    orderType,
+			"OrderDate":    order.CreatedAt.Format("2006-01-02"),
+			"OperatorName": order.OperatorName,
+			"ItemList":     strings.Join(itemLines, "\n\n"),
+			"TotalAmount":  fmt.Sprintf("%.2f", order.TotalQuantity),
+			"ItemCount":    order.ItemCount,
+			"CreateTime":   time.Now().Format("2006-01-02 15:04:05"),
+		}
+		var err error
+		title, text, err = s.templateService.RenderTemplate(model.TemplateInventoryCreated, data)
+		if err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Failed to render template, using default", "error", err)
+			}
+		}
+	}
+
+	// 如果模板渲染失败，使用默认格式
+	if text == "" {
+		title = fmt.Sprintf("📦 新入库通知 - %s", store.Name)
+		text = fmt.Sprintf("## %s\n\n"+
+			"**入库单号：** %s\n\n"+
+			"**入库类型：** %s\n\n"+
+			"**入库日期：** %s\n\n"+
+			"**操作人：** %s\n\n"+
+			"### 入库明细\n\n"+
+			"%s\n\n"+
+			"**总数量：** %.2f\n\n"+
+			"**商品种类：** %d 项\n\n"+
+			"---\n\n"+
+			"%s",
+			title,
+			order.OrderNo,
+			orderType,
+			order.CreatedAt.Format("2006-01-02"),
+			order.OperatorName,
+			strings.Join(itemLines, "\n\n"),
+			order.TotalQuantity,
+			order.ItemCount,
+			time.Now().Format("2006-01-02 15:04:05"),
+		)
+	}
+
+	// 发送通知
+	if err := s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone); err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to send inventory notification",
+				"storeID", storeID,
+				"orderNo", order.OrderNo,
+				"error", err,
+			)
+		}
+	} else {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Inventory notification sent",
+				"storeID", storeID,
+				"orderNo", order.OrderNo,
+				"mobile", store.Phone,
+			)
+		}
+	}
 }
 
 // GetOrderByNo 根据单号获取出入库单详情

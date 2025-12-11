@@ -2,6 +2,7 @@ package module
 
 import (
 	"log"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	searchPkg "github.com/Kevin-Jii/tower-go/utils/search"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
@@ -173,4 +174,20 @@ func (m *UserModule) DeleteByUserIDAndStoreID(userID uint, storeID uint) error {
 // UpdatePasswordByID 仅更新密码字段
 func (m *UserModule) UpdatePasswordByID(id uint, hashed string) error {
 	return m.db.Model(&model.User{}).Where("id = ?", id).Update("password", hashed).Error
+}
+
+// GetByDingTalkID 根据钉钉用户ID获取用户（通过手机号关联）
+func (m *UserModule) GetByDingTalkID(dingTalkID string) (*model.User, error) {
+	// 先从钉钉用户缓存表查找手机号
+	var dingUser model.DingTalkUser
+	if err := m.db.Where("user_id = ?", dingTalkID).First(&dingUser).Error; err != nil {
+		return nil, err
+	}
+
+	// 再通过手机号查找系统用户
+	var user model.User
+	if err := m.db.Where("phone = ?", dingUser.Mobile).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

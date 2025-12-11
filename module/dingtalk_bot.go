@@ -124,3 +124,19 @@ func (m *DingTalkBotModule) GetStoreByID(storeID uint) (*model.Store, error) {
 	}
 	return &store, nil
 }
+
+// GetByStoreID 获取门店绑定的机器人（优先返回门店专属机器人，否则返回全局机器人）
+func (m *DingTalkBotModule) GetByStoreID(storeID uint) (*model.DingTalkBot, error) {
+	var bot model.DingTalkBot
+	// 优先查找门店专属机器人
+	err := m.db.Where("store_id = ? AND is_enabled = ?", storeID, true).First(&bot).Error
+	if err == nil {
+		return &bot, nil
+	}
+	// 如果没有专属机器人，查找全局机器人（store_id IS NULL 或 store_id = 999 总部）
+	err = m.db.Where("(store_id IS NULL OR store_id = 999) AND is_enabled = ?", true).First(&bot).Error
+	if err != nil {
+		return nil, err
+	}
+	return &bot, nil
+}

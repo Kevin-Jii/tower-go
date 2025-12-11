@@ -306,6 +306,31 @@ definitions:
     - title
     - type
     type: object
+  model.CreateMessageTemplateReq:
+    properties:
+      code:
+        maxLength: 50
+        type: string
+      content:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      is_enabled:
+        type: boolean
+      name:
+        maxLength: 100
+        type: string
+      title:
+        maxLength: 200
+        type: string
+      variables:
+        type: string
+    required:
+    - code
+    - content
+    - name
+    type: object
   model.CreatePurchaseOrderItemReq:
     properties:
       product_id:
@@ -774,6 +799,29 @@ definitions:
       visible:
         type: integer
     type: object
+  model.MessageTemplate:
+    properties:
+      code:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_enabled:
+        type: boolean
+      name:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      variables:
+        type: string
+    type: object
   model.PurchaseOrder:
     properties:
       created_at:
@@ -1191,6 +1239,24 @@ definitions:
         - 0
         - 1
         type: integer
+    type: object
+  model.UpdateMessageTemplateReq:
+    properties:
+      content:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      is_enabled:
+        type: boolean
+      name:
+        maxLength: 100
+        type: string
+      title:
+        maxLength: 200
+        type: string
+      variables:
+        type: string
     type: object
   model.UpdatePurchaseOrderReq:
     properties:
@@ -2898,6 +2964,125 @@ paths:
       summary: 获取当前用户权限标识列表
       tags:
       - 菜单管理
+  /message-templates:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.MessageTemplate'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取消息模板列表
+      tags:
+      - 消息模板
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 模板信息
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateMessageTemplateReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.MessageTemplate'
+              type: object
+      security:
+      - Bearer: []
+      summary: 创建消息模板
+      tags:
+      - 消息模板
+  /message-templates/{id}:
+    delete:
+      parameters:
+      - description: 模板ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除消息模板
+      tags:
+      - 消息模板
+    get:
+      parameters:
+      - description: 模板ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.MessageTemplate'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取消息模板详情
+      tags:
+      - 消息模板
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 模板ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 模板信息
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateMessageTemplateReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新消息模板
+      tags:
+      - 消息模板
   /purchase-orders:
     get:
       parameters:

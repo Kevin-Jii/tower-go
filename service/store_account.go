@@ -1,21 +1,45 @@
 package service
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 type StoreAccountService struct {
 	storeAccountModule *module.StoreAccountModule
 	productModule      *module.SupplierProductModule
+	storeModule        *module.StoreModule
+	userModule         *module.UserModule
+	dictModule         *module.DictModule
+	dingTalkService    *DingTalkService
+	botModule          *module.DingTalkBotModule
+	templateService    *MessageTemplateService
 }
 
-func NewStoreAccountService(storeAccountModule *module.StoreAccountModule, productModule *module.SupplierProductModule) *StoreAccountService {
+func NewStoreAccountService(
+	storeAccountModule *module.StoreAccountModule,
+	productModule *module.SupplierProductModule,
+	storeModule *module.StoreModule,
+	userModule *module.UserModule,
+	dictModule *module.DictModule,
+	dingTalkService *DingTalkService,
+	botModule *module.DingTalkBotModule,
+	templateService *MessageTemplateService,
+) *StoreAccountService {
 	return &StoreAccountService{
 		storeAccountModule: storeAccountModule,
 		productModule:      productModule,
+		storeModule:        storeModule,
+		userModule:         userModule,
+		dictModule:         dictModule,
+		dingTalkService:    dingTalkService,
+		botModule:          botModule,
+		templateService:    templateService,
 	}
 }
 
@@ -87,7 +111,148 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		return nil, err
 	}
 
+	// 获取操作人名称
+	operatorName := ""
+	if s.userModule != nil {
+		if user, err := s.userModule.GetByID(operatorID); err == nil && user != nil {
+			operatorName = user.Nickname
+			if operatorName == "" {
+				operatorName = user.Username
+			}
+		}
+	}
+
+	// 获取渠道名称（字典转换）
+	channelName := account.Channel
+	if s.dictModule != nil && account.Channel != "" {
+		if dictData, err := s.dictModule.GetDataByTypeAndValue("sales_channel", account.Channel); err == nil && dictData != nil {
+			channelName = dictData.Label
+		}
+	}
+
+	// 异步发送钉钉通知
+	go s.sendDingTalkNotification(account, storeID, operatorName, channelName)
+
 	return account, nil
+}
+
+// sendDingTalkNotification 发送记账通知到门店负责人
+func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccount, storeID uint, operatorName, channelName string) {
+	if s.dingTalkService == nil || s.storeModule == nil || s.botModule == nil {
+		return
+	}
+
+	// 获取门店信息
+	store, err := s.storeModule.GetByID(storeID)
+	if err != nil || store == nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to get store for notification", "storeID", storeID, "error", err)
+		}
+		return
+	}
+
+	// 检查门店是否有联系电话
+	if store.Phone == "" {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Store has no phone, skip notification", "storeID", storeID)
+		}
+		return
+	}
+
+	// 获取门店绑定的机器人
+	bot, err := s.botModule.GetByStoreID(storeID)
+	if err != nil || bot == nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("No bot found for store", "storeID", storeID, "error", err)
+		}
+		return
+	}
+
+	if !bot.IsEnabled || bot.BotType != "stream" {
+		return
+	}
+
+	// 构建商品明细
+	var itemLines []string
+	for i, item := range account.Items {
+		line := fmt.Sprintf("%d. %s x%.2f%s = ¥%.2f", i+1, item.ProductName, item.Quantity, item.Unit, item.Amount)
+		itemLines = append(itemLines, line)
+	}
+
+	// 操作人显示
+	operatorDisplay := operatorName
+	if operatorDisplay == "" {
+		operatorDisplay = "未知"
+	}
+
+	var title, text string
+
+	// 尝试使用模板
+	if s.templateService != nil {
+		data := map[string]interface{}{
+			"StoreName":    store.Name,
+			"AccountNo":    account.AccountNo,
+			"ChannelName":  channelName,
+			"AccountDate":  account.AccountDate.Format("2006-01-02"),
+			"OperatorName": operatorDisplay,
+			"ItemList":     strings.Join(itemLines, "\n\n"),
+			"TotalAmount":  fmt.Sprintf("%.2f", account.TotalAmount),
+			"ItemCount":    account.ItemCount,
+			"CreateTime":   time.Now().Format("2006-01-02 15:04:05"),
+		}
+		var err error
+		title, text, err = s.templateService.RenderTemplate(model.TemplateStoreAccountCreated, data)
+		if err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Failed to render template, using default", "error", err)
+			}
+		}
+	}
+
+	// 如果模板渲染失败，使用默认格式
+	if text == "" {
+		title = fmt.Sprintf("📝 新记账通知 - %s", store.Name)
+		text = fmt.Sprintf("## %s\n\n"+
+			"**记账编号：** %s\n\n"+
+			"**渠道来源：** %s\n\n"+
+			"**记账日期：** %s\n\n"+
+			"**操作人：** %s\n\n"+
+			"### 商品明细\n\n"+
+			"%s\n\n"+
+			"**合计金额：** ¥%.2f\n\n"+
+			"**商品数量：** %d 项\n\n"+
+			"---\n\n"+
+			"%s",
+			title,
+			account.AccountNo,
+			channelName,
+			account.AccountDate.Format("2006-01-02"),
+			operatorDisplay,
+			strings.Join(itemLines, "\n\n"),
+			account.TotalAmount,
+			account.ItemCount,
+			time.Now().Format("2006-01-02 15:04:05"),
+		)
+	}
+
+	// 发送通知
+	if err := s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone); err != nil {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Errorw("Failed to send account notification",
+				"storeID", storeID,
+				"accountNo", account.AccountNo,
+				"error", err,
+			)
+		}
+	} else {
+		if logging.SugaredLogger != nil {
+			logging.SugaredLogger.Infow("Account notification sent",
+				"storeID", storeID,
+				"accountNo", account.AccountNo,
+				"mobile", store.Phone,
+			)
+		}
+	}
 }
 
 // Get 获取记账详情

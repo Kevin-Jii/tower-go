@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/Kevin-Jii/tower-go/model"
-	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"sync"
 	"time"
+
+	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
@@ -155,38 +156,29 @@ func (sc *DingTalkStreamClient) OnChatBotMessageReceived(ctx context.Context, da
 		)
 	}
 
-	// TODO: 在这里添加你的业务逻辑
-	// 例如：
-	// 1. 解析用户消息
-	// 2. 调用 AI 接口获取回复
-	// 3. 处理业务逻辑
-
-	// 使用 SessionWebhook 回复消息（如果需要）
+	// 使用 SessionWebhook 回复消息
 	if data.SessionWebhook != "" {
 		replier := chatbot.NewChatbotReplier()
 
-		// 回复文本消息
-		replyMsg := fmt.Sprintf("✅ 消息已收到\n你发送的内容是：%s\n\n时间：%s",
-			data.Text.Content,
-			time.Now().Format("2006-01-02 15:04:05"))
-
-		if err := replier.SimpleReplyText(ctx, data.SessionWebhook, []byte(replyMsg)); err != nil {
-			logging.SugaredLogger.Errorw("Failed to reply text message",
-				"error", err,
-			)
+		// 使用命令处理器处理消息
+		handler := GetCommandHandler()
+		var title, content string
+		if handler != nil {
+			title, content = handler.HandleCommand(ctx, data)
+		} else {
+			// 命令处理器未初始化，使用默认回复
+			title = "消息已收到"
+			content = fmt.Sprintf("## ✅ 消息已收到\n\n**内容：** %s\n\n**时间：** %s\n\n发送 **帮助** 查看可用功能",
+				data.Text.Content,
+				time.Now().Format("2006-01-02 15:04:05"))
 		}
 
 		// 回复 Markdown 消息
-		markdownContent := fmt.Sprintf("### 📨 消息处理完成\n\n**发送者：**@%s\n\n**内容：**\n%s\n\n**处理时间：** %s",
-			data.SenderNick,
-			data.Text.Content,
-			time.Now().Format("2006-01-02 15:04:05"))
-
 		if err := replier.SimpleReplyMarkdown(ctx, data.SessionWebhook,
-			[]byte("消息处理结果"), []byte(markdownContent)); err != nil {
-			logging.SugaredLogger.Errorw("Failed to reply markdown message",
-				"error", err,
-			)
+			[]byte(title), []byte(content)); err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Errorw("Failed to reply markdown message", "error", err)
+			}
 		}
 	}
 

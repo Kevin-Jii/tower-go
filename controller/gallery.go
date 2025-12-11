@@ -60,8 +60,8 @@ func (c *GalleryController) Upload(ctx *gin.Context) {
 		return
 	}
 
-	// 限制文件大小（10MB）
-	if header.Size > 10*1024*1024 {
+	// 限制文件大小（20MB）
+	if header.Size > 20*1024*1024 {
 		http.Error(ctx, 400, "图片大小不能超过10MB")
 		return
 	}
@@ -81,7 +81,7 @@ func (c *GalleryController) Upload(ctx *gin.Context) {
 	// 保存到数据库
 	userID := middleware.GetUserID(ctx)
 	storeID := middleware.GetStoreID(ctx)
-	
+
 	gallery, err := c.galleryService.Create(&model.CreateGalleryReq{
 		Name:     header.Filename,
 		Path:     result.Path,

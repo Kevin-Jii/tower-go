@@ -25,12 +25,14 @@ import (
 
 type DingTalkService struct {
 	botModule    *module.DingTalkBotModule
+	userModule   *module.DingTalkUserModule
 	streamClient *DingTalkStreamClient
 }
 
-func NewDingTalkService(botModule *module.DingTalkBotModule) *DingTalkService {
+func NewDingTalkService(botModule *module.DingTalkBotModule, userModule *module.DingTalkUserModule) *DingTalkService {
 	return &DingTalkService{
 		botModule:    botModule,
+		userModule:   userModule,
 		streamClient: GetStreamClient(),
 	}
 }
@@ -120,6 +122,11 @@ func (s *DingTalkService) SendMarkdownToBot(bot *model.DingTalkBot, title, text 
 
 // SendStreamText Stream 模式发送文本消息
 func (s *DingTalkService) SendStreamText(bot *model.DingTalkBot, content string) error {
+	return s.SendStreamTextToMobile(bot, content, "")
+}
+
+// SendStreamTextToMobile Stream 模式发送文本消息到指定手机号用户
+func (s *DingTalkService) SendStreamTextToMobile(bot *model.DingTalkBot, content, mobile string) error {
 	if bot.RobotCode == "" {
 		return errors.New("robotCode is required for stream mode")
 	}
@@ -130,19 +137,33 @@ func (s *DingTalkService) SendStreamText(bot *model.DingTalkBot, content string)
 		return fmt.Errorf("failed to get access token: %w", err)
 	}
 
+	// 获取用户ID
+	var userIds []string
+	if mobile != "" {
+		userId, err := s.GetUserIdByMobile(mobile, accessToken)
+		if err != nil {
+			return fmt.Errorf("failed to get userId by mobile %s: %w", mobile, err)
+		}
+		userIds = []string{userId}
+	}
+
 	// 构造消息体 - 使用 sampleText 模板
-	// 注意：msgParam 的格式应该直接是 {"content": "文本"}，而不是嵌套 text 对象
 	msgBody := map[string]interface{}{
 		"msgtype": "sampleText",
 		"content": content,
 	}
 
-	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
+	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
 }
 
 // SendStreamMarkdown Stream 模式发送 Markdown 消息
-// 注意：群消息不支持 Markdown，改用 Text 格式
+// 注意：单聊支持 Markdown
 func (s *DingTalkService) SendStreamMarkdown(bot *model.DingTalkBot, title, text string) error {
+	return s.SendStreamMarkdownToMobile(bot, title, text, "")
+}
+
+// SendStreamMarkdownToMobile Stream 模式发送 Markdown 消息到指定手机号用户
+func (s *DingTalkService) SendStreamMarkdownToMobile(bot *model.DingTalkBot, title, text, mobile string) error {
 	if bot.RobotCode == "" {
 		return errors.New("robotCode is required for stream mode")
 	}
@@ -153,28 +174,35 @@ func (s *DingTalkService) SendStreamMarkdown(bot *model.DingTalkBot, title, text
 		return fmt.Errorf("failed to get access token: %w", err)
 	}
 
-	// 将 Markdown 格式转换为纯文本（移除 Markdown 标记）
-	plainText := title + "\n\n" + convertMarkdownToPlainText(text)
-
-	// 构造消息体 - 使用 sampleText 模板（群消息不支持 Markdown）
-	// 注意：msgParam 的格式应该直接是 {"content": "文本"}，而不是嵌套 text 对象
-	msgBody := map[string]interface{}{
-		"msgtype": "sampleText",
-		"content": plainText,
+	// 获取用户ID
+	var userIds []string
+	if mobile != "" {
+		userId, err := s.GetUserIdByMobile(mobile, accessToken)
+		if err != nil {
+			return fmt.Errorf("failed to get userId by mobile %s: %w", mobile, err)
+		}
+		userIds = []string{userId}
 	}
 
-	return s.sendStreamMessage(bot.RobotCode, accessToken, msgBody)
+	// 单聊消息支持 Markdown
+	msgBody := map[string]interface{}{
+		"msgtype": "sampleMarkdown",
+		"title":   title,
+		"text":    text,
+	}
+
+	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
 }
 
 // convertMarkdownToPlainText 将 Markdown 格式转换为纯文本
 func convertMarkdownToPlainText(markdown string) string {
 	text := markdown
-	
+
 	// 先移除 Markdown 标记（在处理图片之前）
 	text = strings.ReplaceAll(text, "## ", "")
 	text = strings.ReplaceAll(text, "**", "")
 	text = strings.ReplaceAll(text, "- ", "• ")
-	
+
 	// 处理图片链接：![alt](url) -> 📷 查看报菜图片: url
 	// 使用正则表达式或简单字符串替换
 	for strings.Contains(text, "![") {
@@ -182,28 +210,28 @@ func convertMarkdownToPlainText(markdown string) string {
 		if start == -1 {
 			break
 		}
-		
+
 		// 找到对应的 ](
 		bracketStart := strings.Index(text[start:], "](")
 		if bracketStart == -1 {
 			break
 		}
 		bracketStart += start
-		
+
 		// 找到最后的 )
 		urlEnd := strings.Index(text[bracketStart+2:], ")")
 		if urlEnd == -1 {
 			break
 		}
 		urlEnd += bracketStart + 2
-		
+
 		// 提取 URL
 		url := text[bracketStart+2 : urlEnd]
-		
+
 		// 替换整个图片 Markdown 为纯文本链接
 		replacement := "\n\n📷 查看报菜图片:\n" + url + "\n"
 		text = text[:start] + replacement + text[urlEnd+1:]
-		
+
 		// 调试日志
 		if logging.SugaredLogger != nil {
 			logging.SugaredLogger.Infow("Converted image markdown to plain text",
@@ -211,10 +239,10 @@ func convertMarkdownToPlainText(markdown string) string {
 				"replacement", replacement)
 		}
 	}
-	
+
 	// 移除剩余的星号
 	text = strings.ReplaceAll(text, "*", "")
-	
+
 	return text
 }
 
@@ -547,14 +575,90 @@ func (s *DingTalkService) getStreamAccessToken(clientID, clientSecret string) (s
 	return "", fmt.Errorf("failed to get access token: %v", result)
 }
 
-var defaultStreamUserIds = []string{"010903622624-181076934"}
+// GetUserIdByMobile 通过手机号获取钉钉用户ID（先查缓存，没有再调API）
+func (s *DingTalkService) GetUserIdByMobile(mobile, accessToken string) (string, error) {
+	if mobile == "" {
+		return "", errors.New("mobile is empty")
+	}
 
-// sendStreamMessage 通过钉钉服务端 API 发送消息到群聊
-// 使用机器人发送群消息 API: https://open.dingtalk.com/document/orgapp/robot-group-message-verification
-// 注意：群消息需要指定 openConversationId，可以通过 Stream 事件获取或在机器人配置中设置
+	// 1. 先从缓存表查询
+	if s.userModule != nil {
+		user, err := s.userModule.GetByMobile(mobile)
+		if err == nil && user != nil && user.UserID != "" {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Infow("Got user from cache", "mobile", mobile, "userId", user.UserID)
+			}
+			return user.UserID, nil
+		}
+	}
+
+	// 2. 调用钉钉API获取
+	apiURL := "https://oapi.dingtalk.com/topapi/v2/user/getbymobile?access_token=" + accessToken
+
+	reqBody := map[string]string{
+		"mobile": mobile,
+	}
+	jsonData, _ := json.Marshal(reqBody)
+
+	resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("failed to call dingtalk api: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	var result map[string]interface{}
+	json.Unmarshal(body, &result)
+
+	if logging.SugaredLogger != nil {
+		logging.SugaredLogger.Infow("GetUserByMobile response", "mobile", mobile, "response", result)
+	}
+
+	// 检查错误
+	if errCode, ok := result["errcode"].(float64); ok && errCode != 0 {
+		return "", fmt.Errorf("dingtalk api error: code=%v, msg=%v", errCode, result["errmsg"])
+	}
+
+	// 提取 userid
+	resultData, ok := result["result"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("invalid response format")
+	}
+	userId, ok := resultData["userid"].(string)
+	if !ok || userId == "" {
+		return "", fmt.Errorf("userid not found in response")
+	}
+
+	// 3. 保存到缓存表
+	if s.userModule != nil {
+		name := ""
+		if n, ok := resultData["name"].(string); ok {
+			name = n
+		}
+		s.userModule.Upsert(&model.DingTalkUser{
+			Mobile: mobile,
+			UserID: userId,
+			Name:   name,
+		})
+	}
+
+	return userId, nil
+}
+
+// sendStreamMessage 通过钉钉服务端 API 发送单聊消息
+// 使用机器人发送单聊消息 API: https://open.dingtalk.com/document/orgapp/chatbots-send-one-on-one-chat-messages-in-batches
 func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBody map[string]interface{}) error {
-	// 使用群消息 API
-	apiURL := "https://api.dingtalk.com/v1.0/robot/groupMessages/send"
+	return s.sendStreamMessageToUsers(robotCode, accessToken, msgBody, nil)
+}
+
+// sendStreamMessageToUsers 发送单聊消息给指定用户
+func (s *DingTalkService) sendStreamMessageToUsers(robotCode, accessToken string, msgBody map[string]interface{}, userIds []string) error {
+	if len(userIds) == 0 {
+		return fmt.Errorf("no userIds specified for single chat message")
+	}
+
+	// 使用单聊消息 API
+	apiURL := "https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend"
 
 	// 构造完整请求体
 	msgType := msgBody["msgtype"].(string)
@@ -566,6 +670,7 @@ func (s *DingTalkService) sendStreamMessage(robotCode, accessToken string, msgBo
 		"msgKey":    msgType,
 		"msgParam":  string(msgParamJSON),
 		"robotCode": robotCode,
+		"userIds":   userIds,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -1096,10 +1201,23 @@ func (s *DingTalkService) TestBot(id uint) error {
 	testMsg := fmt.Sprintf("🔔 机器人测试消息\n\n发送时间: %s", time.Now().Format("2006-01-02 15:04:05"))
 
 	if bot.BotType == "stream" {
-		if bot.MsgType == "markdown" {
-			return s.SendStreamMarkdown(bot, "机器人测试", testMsg)
+		// 获取门店负责人手机号
+		var mobile string
+		if bot.StoreID != nil {
+			store, err := s.botModule.GetStoreByID(*bot.StoreID)
+			if err == nil && store != nil && store.Phone != "" {
+				mobile = store.Phone
+			}
 		}
-		return s.SendStreamText(bot, testMsg)
+
+		if mobile == "" {
+			return errors.New("robot_code is empty for stream bot: please set the store phone number (门店联系电话) for testing")
+		}
+
+		if bot.MsgType == "markdown" {
+			return s.SendStreamMarkdownToMobile(bot, "机器人测试", testMsg, mobile)
+		}
+		return s.SendStreamTextToMobile(bot, testMsg, mobile)
 	}
 
 	// webhook 模式

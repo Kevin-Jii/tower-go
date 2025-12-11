@@ -50,6 +50,8 @@ func AutoMigrateAndSeeds() {
 		&model.InventoryOrderItem{},
 		&model.Gallery{},
 		&model.StoreAccount{},
+		&model.DingTalkUser{},
+		&model.MessageTemplate{},
 	}
 	for _, m := range migrateModels {
 		if err := database.DB.AutoMigrate(m); err != nil {

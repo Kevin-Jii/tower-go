@@ -28,6 +28,7 @@ func Run() {
 
 	AutoMigrateAndSeeds()
 	RunSeedSQL()
+	InitDefaultDicts()
 
 	// 初始化事件订阅
 	InitEventSubscribers()

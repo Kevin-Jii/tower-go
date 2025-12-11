@@ -31,6 +31,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterGalleryRoutes(v1, c.Gallery)
 	api.RegisterStoreAccountRoutes(v1, c)
 	api.RegisterStatisticsRoutes(v1, c)
+	api.RegisterMessageTemplateRoutes(v1, c)
 
 	// WebSocket
 	r.GET("/ws", controller.WebSocketHandler)

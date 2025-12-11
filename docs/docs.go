@@ -5762,6 +5762,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.CreateStoreAccountItemReq"
                     }
                 },
+                "notify_image": {
+                    "description": "通知图片URL（前端生成）",
+                    "type": "string"
+                },
                 "order_no": {
                     "type": "string",
                     "maxLength": 100

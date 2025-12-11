@@ -55,6 +55,36 @@ func BuildControllers() *Controllers {
 
 	userModulePkg.SetDB(database.DB)
 
+	// 初始化RustFS文件服务（可选）- 提前初始化以便其他服务使用
+	var rustfsService *service.RustFSService
+	var imageGeneratorService *service.ImageGeneratorService
+
+	rustfsConfig := config.GetRustFSConfig()
+	fmt.Printf("📁 RustFS配置: enabled=%v, endpoint=%s, bucket=%s, notifyBucket=%s\n", rustfsConfig.Enabled, rustfsConfig.Endpoint, rustfsConfig.Bucket, rustfsConfig.NotifyBucket)
+	if rustfsConfig.Enabled {
+		fmt.Println("📁 正在连接RustFS服务...")
+		var err error
+		rustfsService, err = service.NewRustFSServiceWithNotify(
+			rustfsConfig.Endpoint,
+			rustfsConfig.AccessKey,
+			rustfsConfig.SecretKey,
+			rustfsConfig.Bucket,
+			rustfsConfig.NotifyBucket,
+			rustfsConfig.UseSSL,
+		)
+		if err != nil {
+			fmt.Printf("❌ RustFS服务连接失败: %v\n", err)
+			logging.LogWarn("RustFS服务连接失败，文件服务不可用: " + err.Error())
+		} else {
+			fmt.Println("✅ RustFS文件服务已启用")
+			logging.LogInfo("RustFS文件服务已启用")
+			// 初始化图片生成服务
+			imageGeneratorService = service.NewImageGeneratorService(rustfsService)
+		}
+	} else {
+		fmt.Println("⚠️  RustFS文件服务未启用 (RUSTFS_ENABLED=false)")
+	}
+
 	// 初始化服务层
 	userService := service.NewUserService(userModule)
 	storeService := service.NewStoreService(storeModule)
@@ -67,7 +97,7 @@ func BuildControllers() *Controllers {
 	dictService := service.NewDictService(dictModule)
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
 	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
-	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule, storeModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService)
+	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule, storeModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 
 	// 初始化默认消息模板
@@ -78,35 +108,13 @@ func BuildControllers() *Controllers {
 	// 初始化钉钉命令处理器
 	service.InitCommandHandler(inventoryModule, storeAccountModule, storeModule, userModule, messageTemplateService)
 
-	// 初始化RustFS文件服务（可选）
+	// 初始化文件和图库控制器（依赖RustFS）
 	var fileController *controller.FileController
 	var galleryController *controller.GalleryController
-	var rustfsService *service.RustFSService
-
-	rustfsConfig := config.GetRustFSConfig()
-	fmt.Printf("📁 RustFS配置: enabled=%v, endpoint=%s, bucket=%s\n", rustfsConfig.Enabled, rustfsConfig.Endpoint, rustfsConfig.Bucket)
-	if rustfsConfig.Enabled {
-		fmt.Println("📁 正在连接RustFS服务...")
-		var err error
-		rustfsService, err = service.NewRustFSService(
-			rustfsConfig.Endpoint,
-			rustfsConfig.AccessKey,
-			rustfsConfig.SecretKey,
-			rustfsConfig.Bucket,
-			rustfsConfig.UseSSL,
-		)
-		if err != nil {
-			fmt.Printf("❌ RustFS服务连接失败: %v\n", err)
-			logging.LogWarn("RustFS服务连接失败，文件服务不可用: " + err.Error())
-		} else {
-			fileController = controller.NewFileController(rustfsService)
-			galleryService := service.NewGalleryService(galleryModule, rustfsService)
-			galleryController = controller.NewGalleryController(galleryService, rustfsService)
-			fmt.Println("✅ RustFS文件服务已启用")
-			logging.LogInfo("RustFS文件服务已启用")
-		}
-	} else {
-		fmt.Println("⚠️  RustFS文件服务未启用 (RUSTFS_ENABLED=false)")
+	if rustfsService != nil {
+		fileController = controller.NewFileController(rustfsService)
+		galleryService := service.NewGalleryService(galleryModule, rustfsService)
+		galleryController = controller.NewGalleryController(galleryService, rustfsService)
 	}
 
 	return &Controllers{

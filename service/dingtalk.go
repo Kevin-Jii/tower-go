@@ -194,6 +194,53 @@ func (s *DingTalkService) SendStreamMarkdownToMobile(bot *model.DingTalkBot, tit
 	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
 }
 
+// SendStreamImageToMobile Stream 模式发送图片消息到指定手机号用户
+// imageURL: 图片的公开访问URL
+func (s *DingTalkService) SendStreamImageToMobile(bot *model.DingTalkBot, imageURL, mobile string) error {
+	if bot.RobotCode == "" {
+		return errors.New("robotCode is required for stream mode")
+	}
+
+	// 获取 access_token
+	accessToken, err := s.getStreamAccessToken(bot.ClientID, bot.ClientSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	// 获取用户ID
+	var userIds []string
+	if mobile != "" {
+		userId, err := s.GetUserIdByMobile(mobile, accessToken)
+		if err != nil {
+			return fmt.Errorf("failed to get userId by mobile %s: %w", mobile, err)
+		}
+		userIds = []string{userId}
+	}
+
+	// 图片消息
+	msgBody := map[string]interface{}{
+		"msgtype":  "sampleImageMsg",
+		"photoURL": imageURL,
+	}
+
+	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
+}
+
+// SendStreamMarkdownWithImageToMobile 发送带图片的Markdown消息（先发图片，再发文字）
+func (s *DingTalkService) SendStreamMarkdownWithImageToMobile(bot *model.DingTalkBot, title, text, imageURL, mobile string) error {
+	// 先发送图片
+	if imageURL != "" {
+		if err := s.SendStreamImageToMobile(bot, imageURL, mobile); err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Failed to send image, will send text only", "error", err)
+			}
+		}
+	}
+
+	// 再发送文字消息
+	return s.SendStreamMarkdownToMobile(bot, title, text, mobile)
+}
+
 // convertMarkdownToPlainText 将 Markdown 格式转换为纯文本
 func convertMarkdownToPlainText(markdown string) string {
 	text := markdown

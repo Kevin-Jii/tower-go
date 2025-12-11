@@ -19,12 +19,13 @@ type Config struct {
 
 // RustFSConfig RustFS对象存储配置（S3兼容）
 type RustFSConfig struct {
-	Enabled   bool
-	Endpoint  string
-	AccessKey string
-	SecretKey string
-	Bucket    string
-	UseSSL    bool
+	Enabled      bool
+	Endpoint     string
+	AccessKey    string
+	SecretKey    string
+	Bucket       string
+	NotifyBucket string // 通知图片专用bucket（不加密）
+	UseSSL       bool
 }
 
 // AppConfig 应用配置
@@ -274,12 +275,13 @@ func getAppBool(key string, defaultValue bool) bool {
 // loadRustFSConfig 加载RustFS配置
 func loadRustFSConfig() RustFSConfig {
 	return RustFSConfig{
-		Enabled:   getAppBool("RUSTFS_ENABLED", false),
-		Endpoint:  getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
-		AccessKey: getAppString("RUSTFS_ACCESS_KEY", ""),
-		SecretKey: getAppString("RUSTFS_SECRET_KEY", ""),
-		Bucket:    getAppString("RUSTFS_BUCKET", "tower"),
-		UseSSL:    getAppBool("RUSTFS_USE_SSL", false),
+		Enabled:      getAppBool("RUSTFS_ENABLED", false),
+		Endpoint:     getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
+		AccessKey:    getAppString("RUSTFS_ACCESS_KEY", ""),
+		SecretKey:    getAppString("RUSTFS_SECRET_KEY", ""),
+		Bucket:       getAppString("RUSTFS_BUCKET", "tower"),
+		NotifyBucket: getAppString("RUSTFS_NOTIFY_BUCKET", "notify"),
+		UseSSL:       getAppBool("RUSTFS_USE_SSL", false),
 	}
 }
 

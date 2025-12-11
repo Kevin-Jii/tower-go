@@ -11,14 +11,15 @@ import (
 )
 
 type StoreAccountService struct {
-	storeAccountModule *module.StoreAccountModule
-	productModule      *module.SupplierProductModule
-	storeModule        *module.StoreModule
-	userModule         *module.UserModule
-	dictModule         *module.DictModule
-	dingTalkService    *DingTalkService
-	botModule          *module.DingTalkBotModule
-	templateService    *MessageTemplateService
+	storeAccountModule    *module.StoreAccountModule
+	productModule         *module.SupplierProductModule
+	storeModule           *module.StoreModule
+	userModule            *module.UserModule
+	dictModule            *module.DictModule
+	dingTalkService       *DingTalkService
+	botModule             *module.DingTalkBotModule
+	templateService       *MessageTemplateService
+	imageGeneratorService *ImageGeneratorService
 }
 
 func NewStoreAccountService(
@@ -30,16 +31,18 @@ func NewStoreAccountService(
 	dingTalkService *DingTalkService,
 	botModule *module.DingTalkBotModule,
 	templateService *MessageTemplateService,
+	imageGeneratorService *ImageGeneratorService,
 ) *StoreAccountService {
 	return &StoreAccountService{
-		storeAccountModule: storeAccountModule,
-		productModule:      productModule,
-		storeModule:        storeModule,
-		userModule:         userModule,
-		dictModule:         dictModule,
-		dingTalkService:    dingTalkService,
-		botModule:          botModule,
-		templateService:    templateService,
+		storeAccountModule:    storeAccountModule,
+		productModule:         productModule,
+		storeModule:           storeModule,
+		userModule:            userModule,
+		dictModule:            dictModule,
+		dingTalkService:       dingTalkService,
+		botModule:             botModule,
+		templateService:       templateService,
+		imageGeneratorService: imageGeneratorService,
 	}
 }
 
@@ -172,6 +175,46 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 		return
 	}
 
+	// 操作人显示
+	operatorDisplay := operatorName
+	if operatorDisplay == "" {
+		operatorDisplay = "未知"
+	}
+
+	// 尝试生成通知图片
+	var imageURL string
+	if s.imageGeneratorService != nil {
+		var items []AccountItemData
+		for _, item := range account.Items {
+			items = append(items, AccountItemData{
+				Name:     item.ProductName,
+				Quantity: item.Quantity,
+				Unit:     item.Unit,
+				Amount:   item.Amount,
+			})
+		}
+
+		imgData := &AccountNotifyData{
+			StoreName:    store.Name,
+			AccountNo:    account.AccountNo,
+			ChannelName:  channelName,
+			AccountDate:  account.AccountDate.Format("2006-01-02"),
+			OperatorName: operatorDisplay,
+			Items:        items,
+			TotalAmount:  account.TotalAmount,
+			CreateTime:   time.Now().Format("2006-01-02 15:04:05"),
+		}
+
+		url, err := s.imageGeneratorService.GenerateAccountNotifyImage(imgData)
+		if err != nil {
+			if logging.SugaredLogger != nil {
+				logging.SugaredLogger.Warnw("Failed to generate notify image", "error", err)
+			}
+		} else {
+			imageURL = url
+		}
+	}
+
 	// 构建商品明细
 	var itemLines []string
 	for i, item := range account.Items {
@@ -179,14 +222,9 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 		itemLines = append(itemLines, line)
 	}
 
-	// 操作人显示
-	operatorDisplay := operatorName
-	if operatorDisplay == "" {
-		operatorDisplay = "未知"
-	}
-
 	var title, text string
 
+	// 构建文字消息内容
 	// 尝试使用模板
 	if s.templateService != nil {
 		data := map[string]interface{}{
@@ -235,13 +273,20 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 		)
 	}
 
-	// 发送通知
-	if err := s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone); err != nil {
+	// 发送通知：如果有图片，先发图片再发文字；否则只发文字
+	var sendErr error
+	if imageURL != "" {
+		sendErr = s.dingTalkService.SendStreamMarkdownWithImageToMobile(bot, title, text, imageURL, store.Phone)
+	} else {
+		sendErr = s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone)
+	}
+
+	if sendErr != nil {
 		if logging.SugaredLogger != nil {
 			logging.SugaredLogger.Errorw("Failed to send account notification",
 				"storeID", storeID,
 				"accountNo", account.AccountNo,
-				"error", err,
+				"error", sendErr,
 			)
 		}
 	} else {
@@ -250,6 +295,7 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 				"storeID", storeID,
 				"accountNo", account.AccountNo,
 				"mobile", store.Phone,
+				"hasImage", imageURL != "",
 			)
 		}
 	}

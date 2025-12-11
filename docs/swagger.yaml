@@ -398,6 +398,9 @@ definitions:
           $ref: '#/definitions/model.CreateStoreAccountItemReq'
         minItems: 1
         type: array
+      notify_image:
+        description: 通知图片URL（前端生成）
+        type: string
       order_no:
         maxLength: 100
         type: string

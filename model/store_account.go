@@ -8,22 +8,22 @@ import (
 
 // StoreAccount 门店记账（主表）
 type StoreAccount struct {
-	ID          uint                 `json:"id" gorm:"primaryKey;autoIncrement"`
-	AccountNo   string               `json:"account_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:记账编号"`
-	StoreID     uint                 `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	Channel     string               `json:"channel" gorm:"type:varchar(50);index;comment:渠道来源(字典:sales_channel)"`
-	OrderNo     string               `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
-	TotalAmount float64              `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
-	ItemCount   int                  `json:"item_count" gorm:"comment:商品数量"`
-	TagCode     string               `json:"tag_code" gorm:"type:varchar(50);index;comment:标签编码"`
-	TagName     string               `json:"tag_name" gorm:"type:varchar(100);comment:标签名称"`
-	Remark      string               `json:"remark" gorm:"type:text;comment:备注"`
-	OperatorID  uint                 `json:"operator_id" gorm:"not null;comment:操作人ID"`
-	AccountDate time.Time            `json:"account_date" gorm:"type:date;index;comment:记账日期"`
-	CreatedAt   time.Time            `json:"created_at"`
-	UpdatedAt   time.Time            `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt       `json:"-" gorm:"index"`
-	Items       []StoreAccountItem   `json:"items,omitempty" gorm:"foreignKey:AccountID"`
+	ID          uint               `json:"id" gorm:"primaryKey;autoIncrement"`
+	AccountNo   string             `json:"account_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:记账编号"`
+	StoreID     uint               `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	Channel     string             `json:"channel" gorm:"type:varchar(50);index;comment:渠道来源(字典:sales_channel)"`
+	OrderNo     string             `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
+	TotalAmount float64            `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
+	ItemCount   int                `json:"item_count" gorm:"comment:商品数量"`
+	TagCode     string             `json:"tag_code" gorm:"type:varchar(50);index;comment:标签编码"`
+	TagName     string             `json:"tag_name" gorm:"type:varchar(100);comment:标签名称"`
+	Remark      string             `json:"remark" gorm:"type:text;comment:备注"`
+	OperatorID  uint               `json:"operator_id" gorm:"not null;comment:操作人ID"`
+	AccountDate time.Time          `json:"account_date" gorm:"type:date;index;comment:记账日期"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt     `json:"-" gorm:"index"`
+	Items       []StoreAccountItem `json:"items,omitempty" gorm:"foreignKey:AccountID"`
 
 	// 关联
 	Store    *Store `json:"store,omitempty" gorm:"foreignKey:StoreID"`
@@ -63,6 +63,7 @@ type CreateStoreAccountReq struct {
 	Remark      string                      `json:"remark" binding:"max=500"`
 	AccountDate string                      `json:"account_date"`
 	Items       []CreateStoreAccountItemReq `json:"items" binding:"required,min=1,dive"`
+	NotifyImage string                      `json:"notify_image"` // 通知图片URL（前端生成）
 }
 
 // CreateStoreAccountItemReq 创建记账明细请求

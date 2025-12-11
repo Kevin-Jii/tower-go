@@ -17,11 +17,13 @@ type InventoryStats struct {
 
 // SalesStats 销售统计
 type SalesStats struct {
-	TotalAmount  float64 `json:"total_amount"`  // 总销售额
-	TotalOrders  int64   `json:"total_orders"`  // 总订单数
-	TotalQty     float64 `json:"total_qty"`     // 总销售数量
-	AvgAmount    float64 `json:"avg_amount"`    // 平均客单价
-	PeriodLabel  string  `json:"period_label"`  // 周期标签
+	TotalAmount float64 `json:"total_amount"` // 总销售额
+	TodayAmount float64 `json:"today_amount"` // 今日销售额
+	MonthAmount float64 `json:"month_amount"` // 本月销售额
+	TotalOrders int64   `json:"total_orders"` // 总订单数
+	TotalQty    float64 `json:"total_qty"`    // 总销售数量
+	AvgAmount   float64 `json:"avg_amount"`   // 平均客单价
+	PeriodLabel string  `json:"period_label"` // 周期标签
 }
 
 // SalesTrendItem 销售趋势项

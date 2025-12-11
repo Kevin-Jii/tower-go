@@ -1,6 +1,7 @@
 package module
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -80,7 +81,7 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 	// 总订单数
 	query.Count(&stats.TotalOrders)
 
-	// 总销售额和总数量
+	// 总销售额和总数量（使用新字段 total_amount 和 item_count）
 	m.db.Model(&model.StoreAccount{}).
 		Where("deleted_at IS NULL").
 		Where(func(db *gorm.DB) *gorm.DB {
@@ -95,13 +96,34 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 			}
 			return db
 		}(m.db)).
-		Select("COALESCE(SUM(amount), 0) as total_amount, COALESCE(SUM(quantity), 0) as total_qty").
+		Select("COALESCE(SUM(total_amount), 0) as total_amount, COALESCE(SUM(item_count), 0) as total_qty").
 		Row().Scan(&stats.TotalAmount, &stats.TotalQty)
 
 	// 平均客单价
 	if stats.TotalOrders > 0 {
 		stats.AvgAmount = stats.TotalAmount / float64(stats.TotalOrders)
 	}
+
+	// 今日销售额
+	today := time.Now().Format("2006-01-02")
+	fmt.Printf("🔍 [Statistics] 今日日期: %s, storeID: %d\n", today, storeID)
+	todayQuery := m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND DATE(account_date) = ?", today)
+	if storeID > 0 {
+		todayQuery = todayQuery.Where("store_id = ?", storeID)
+	}
+	todayQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TodayAmount)
+	fmt.Printf("🔍 [Statistics] 今日销售额: %.2f\n", stats.TodayAmount)
+
+	// 本月销售额
+	monthStart := time.Now().Format("2006-01") + "-01"
+	fmt.Printf("🔍 [Statistics] 本月开始: %s\n", monthStart)
+	monthQuery := m.db.Model(&model.StoreAccount{}).
+		Where("deleted_at IS NULL AND DATE(account_date) >= ?", monthStart)
+	if storeID > 0 {
+		monthQuery = monthQuery.Where("store_id = ?", storeID)
+	}
+	monthQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.MonthAmount)
+	fmt.Printf("🔍 [Statistics] 本月销售额: %.2f\n", stats.MonthAmount)
 
 	return stats, nil
 }
@@ -118,7 +140,7 @@ func (m *StatisticsModule) GetSalesTrend(storeID uint, startDate, endDate, perio
 	}
 
 	query := m.db.Model(&model.StoreAccount{}).
-		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(amount), 0) as amount, COUNT(*) as orders", dateFormat).
+		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders", dateFormat).
 		Where("deleted_at IS NULL")
 
 	if storeID > 0 {
@@ -141,7 +163,7 @@ func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate stri
 	var results []model.ChannelStatsItem
 
 	query := m.db.Model(&model.StoreAccount{}).
-		Select("channel, COALESCE(SUM(amount), 0) as amount, COUNT(*) as orders").
+		Select("channel, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders").
 		Where("deleted_at IS NULL")
 
 	if storeID > 0 {

@@ -6230,9 +6230,17 @@ const docTemplate = `{
                     "description": "平均客单价",
                     "type": "number"
                 },
+                "month_amount": {
+                    "description": "本月销售额",
+                    "type": "number"
+                },
                 "period_label": {
                     "description": "周期标签",
                     "type": "string"
+                },
+                "today_amount": {
+                    "description": "今日销售额",
+                    "type": "number"
                 },
                 "total_amount": {
                     "description": "总销售额",

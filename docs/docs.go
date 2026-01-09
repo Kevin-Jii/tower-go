@@ -1721,6 +1721,369 @@ const docTemplate = `{
                 }
             }
         },
+        "/members": {
+            "get": {
+                "description": "获取会员列表，支持关键字模糊查询手机号/UID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "获取会员列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键字(模糊匹配手机号/UID)",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Member"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "新增一个会员",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "创建会员",
+                "parameters": [
+                    {
+                        "description": "会员信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateMemberReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Member"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/members/phone": {
+            "get": {
+                "description": "根据手机号获取会员信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "通过手机号获取会员",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "手机号",
+                        "name": "phone",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Member"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/members/{id}": {
+            "get": {
+                "description": "根据ID获取会员信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "获取会员详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Member"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据ID更新会员信息，可局部更新",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "更新会员",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "仅传需要修改的字段",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateMemberReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Member"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除会员",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "删除会员",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/members/{id}/adjust-balance": {
+            "post": {
+                "description": "使用乐观锁调整会员余额（仅管理员可操作）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "调整会员余额",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "调整信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AdjustBalanceReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Member"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/menus": {
             "get": {
                 "security": [
@@ -3151,6 +3514,278 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/recharge-orders": {
+            "get": {
+                "description": "查询会员充值记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "充值管理"
+                ],
+                "summary": "查询充值单列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "memberId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "支付状态 0=待支付 1=已支付 2=已取消 3=已退款",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.RechargeOrder"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建会员充值订单",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "充值管理"
+                ],
+                "summary": "创建充值单",
+                "parameters": [
+                    {
+                        "description": "充值信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateRechargeOrderReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.RechargeOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/recharge-orders/pay": {
+            "post": {
+                "description": "支付充值单（余额充值）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "充值管理"
+                ],
+                "summary": "支付充值单",
+                "parameters": [
+                    {
+                        "description": "支付信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.PayRechargeOrderReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.RechargeOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/recharge-orders/{id}": {
+            "get": {
+                "description": "根据ID或单号获取充值单信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "充值管理"
+                ],
+                "summary": "获取充值单详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "充值单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.RechargeOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/recharge-orders/{orderNo}/cancel": {
+            "post": {
+                "description": "取消待支付的充值单",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "充值管理"
+                ],
+                "summary": "取消充值单",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "充值单号",
+                        "name": "orderNo",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.RechargeOrder"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -5190,6 +5825,79 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/wallet-logs": {
+            "get": {
+                "description": "查询会员流水记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "流水管理"
+                ],
+                "summary": "查询流水列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "memberId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "变动类型 1=充值 2=消费 3=退款 4=调增 5=调减",
+                        "name": "changeType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始时间",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.WalletLog"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -5282,6 +5990,37 @@ const docTemplate = `{
                 }
             }
         },
+        "model.AdjustBalanceReq": {
+            "type": "object",
+            "required": [
+                "amount",
+                "type"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "4=调增 5=调减",
+                    "enum": [
+                        4,
+                        5
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.ChangeTypeEnum"
+                        }
+                    ]
+                },
+                "version": {
+                    "description": "乐观锁版本号",
+                    "type": "integer"
+                }
+            }
+        },
         "model.AssignMenusToRoleReq": {
             "type": "object",
             "required": [
@@ -5337,6 +6076,37 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "model.ChangeTypeEnum": {
+            "type": "integer",
+            "enum": [
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "x-enum-comments": {
+                "ChangeTypeAdjustAdd": "调增",
+                "ChangeTypeAdjustLess": "调减",
+                "ChangeTypeConsume": "消费",
+                "ChangeTypeRecharge": "充值",
+                "ChangeTypeRefund": "退款"
+            },
+            "x-enum-descriptions": [
+                "充值",
+                "消费",
+                "退款",
+                "调增",
+                "调减"
+            ],
+            "x-enum-varnames": [
+                "ChangeTypeRecharge",
+                "ChangeTypeConsume",
+                "ChangeTypeRefund",
+                "ChangeTypeAdjustAdd",
+                "ChangeTypeAdjustLess"
+            ]
         },
         "model.ChannelStatsItem": {
             "type": "object",
@@ -5569,6 +6339,21 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CreateMemberReq": {
+            "type": "object",
+            "required": [
+                "phone",
+                "uid"
+            ],
+            "properties": {
+                "phone": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
         "model.CreateMenuReq": {
             "type": "object",
             "required": [
@@ -5703,6 +6488,24 @@ const docTemplate = `{
                 "remark": {
                     "type": "string",
                     "maxLength": 500
+                }
+            }
+        },
+        "model.CreateRechargeOrderReq": {
+            "type": "object",
+            "required": [
+                "memberId",
+                "payAmount"
+            ],
+            "properties": {
+                "giftAmount": {
+                    "type": "number"
+                },
+                "memberId": {
+                    "type": "integer"
+                },
+                "payAmount": {
+                    "type": "number"
                 }
             }
         },
@@ -6289,6 +7092,38 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Member": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "number"
+                },
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updateTime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.Menu": {
             "type": "object",
             "properties": {
@@ -6385,6 +7220,44 @@ const docTemplate = `{
                 }
             }
         },
+        "model.PayRechargeOrderReq": {
+            "type": "object",
+            "required": [
+                "orderNo"
+            ],
+            "properties": {
+                "orderNo": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PayStatusEnum": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-comments": {
+                "PayStatusCancelled": "已取消",
+                "PayStatusPaid": "已支付",
+                "PayStatusPending": "待支付",
+                "PayStatusRefunded": "已退款"
+            },
+            "x-enum-descriptions": [
+                "待支付",
+                "已支付",
+                "已取消",
+                "已退款"
+            ],
+            "x-enum-varnames": [
+                "PayStatusPending",
+                "PayStatusPaid",
+                "PayStatusCancelled",
+                "PayStatusRefunded"
+            ]
+        },
         "model.PurchaseOrder": {
             "type": "object",
             "properties": {
@@ -6469,6 +7342,41 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RechargeOrder": {
+            "type": "object",
+            "properties": {
+                "createTime": {
+                    "type": "string"
+                },
+                "giftAmount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "memberId": {
+                    "type": "integer"
+                },
+                "orderNo": {
+                    "type": "string"
+                },
+                "payAmount": {
+                    "type": "number"
+                },
+                "payStatus": {
+                    "$ref": "#/definitions/model.PayStatusEnum"
+                },
+                "payTime": {
+                    "type": "string"
+                },
+                "totalAmount": {
+                    "type": "number"
+                },
+                "updateTime": {
                     "type": "string"
                 }
             }
@@ -6948,6 +7856,20 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UpdateMemberReq": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "integer"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.UpdateMenuReq": {
             "type": "object",
             "properties": {
@@ -7320,6 +8242,38 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.WalletLog": {
+            "type": "object",
+            "properties": {
+                "balanceAfter": {
+                    "type": "number"
+                },
+                "changeAmount": {
+                    "type": "number"
+                },
+                "changeType": {
+                    "$ref": "#/definitions/model.ChangeTypeEnum"
+                },
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "memberId": {
+                    "type": "integer"
+                },
+                "relatedOrderNo": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "updateTime": {
                     "type": "string"
                 }
             }

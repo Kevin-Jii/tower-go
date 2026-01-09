@@ -140,18 +140,18 @@ func (c *GalleryController) List(ctx *gin.Context) {
 		req.StoreID = middleware.GetStoreID(ctx)
 	}
 
-	galleries, total, err := c.galleryService.List(&req)
+	galleries, _, err := c.galleryService.List(&req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	http.Success(ctx, gin.H{
-		"list":  galleries,
-		"total": total,
-		"page":  req.Page,
-		"size":  req.PageSize,
-	})
+	// 确保返回空数组而不是空对象
+	if galleries == nil {
+		galleries = []*model.Gallery{}
+	}
+
+	http.Success(ctx, galleries)
 }
 
 // Get godoc

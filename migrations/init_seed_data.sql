@@ -127,6 +127,17 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 (@account_id, 'store-account-edit', '编辑记账', '', '', '', 3, 2, 'store:account:edit', 1, 1, NOW(), NOW()),
 (@account_id, 'store-account-delete', '删除记账', '', '', '', 3, 3, 'store:account:delete', 1, 1, NOW(), NOW());
 
+-- 会员管理（门店管理子菜单）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at) VALUES
+(@store_id, 'store-member', '会员管理', 'User', '/store/member', 'store/member/index', 2, 7, 'store:member:list', 1, 1, NOW(), NOW());
+SET @store_member_id = LAST_INSERT_ID();
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at) VALUES
+(@store_member_id, 'store-member-add', '新增会员', '', '', '', 3, 1, 'store:member:add', 1, 1, NOW(), NOW()),
+(@store_member_id, 'store-member-edit', '编辑会员', '', '', '', 3, 2, 'store:member:edit', 1, 1, NOW(), NOW()),
+(@store_member_id, 'store-member-delete', '删除会员', '', '', '', 3, 3, 'store:member:delete', 1, 1, NOW(), NOW()),
+(@store_member_id, 'store-member-balance', '调整余额', '', '', '', 3, 4, 'store:member:balance', 1, 1, NOW(), NOW());
+
 -- 钉钉管理
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at) VALUES
 (0, 'dingtalk', '钉钉管理', 'link', '', '', 1, 50, '', 1, 1, NOW(), NOW());
@@ -377,10 +388,75 @@ INSERT INTO message_templates (code, name, title, content, description, variable
 '["Content"]',
 1, NOW(), NOW())
 
-ON DUPLICATE KEY UPDATE 
+ON DUPLICATE KEY UPDATE
     name=VALUES(name),
     title=VALUES(title),
     content=VALUES(content),
     description=VALUES(description),
     variables=VALUES(variables),
     updated_at=NOW();
+
+-- ============================================
+-- 会员管理模块（表结构和示例数据）
+-- ============================================
+
+-- 会员管理表结构
+-- 会员表
+CREATE TABLE IF NOT EXISTS `t_member` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `uid` varchar(32) NOT NULL DEFAULT '' COMMENT '用户唯一标识',
+  `phone` varchar(20) NOT NULL DEFAULT '' COMMENT '手机号',
+  `balance` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '余额',
+  `points` int NOT NULL DEFAULT '0' COMMENT '积分',
+  `level` int NOT NULL DEFAULT '1' COMMENT '等级',
+  `version` int NOT NULL DEFAULT '0' COMMENT '乐观锁版本号',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_uid` (`uid`),
+  UNIQUE KEY `idx_phone` (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员表';
+
+-- 流水表
+CREATE TABLE IF NOT EXISTS `t_member_wallet_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `member_id` int unsigned NOT NULL DEFAULT '0' COMMENT '会员ID',
+  `change_type` tinyint NOT NULL DEFAULT '0' COMMENT '变动类型: 1=充值 2=消费 3=退款 4=调增 5=调减',
+  `change_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '变动金额',
+  `balance_after` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '变动后余额',
+  `related_order_no` varchar(64) NOT NULL DEFAULT '' COMMENT '关联单号',
+  `remark` varchar(255) NOT NULL DEFAULT '' COMMENT '备注',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_member_id` (`member_id`),
+  KEY `idx_related_order_no` (`related_order_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员流水表';
+
+-- 充值单表
+CREATE TABLE IF NOT EXISTS `t_recharge_order` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `order_no` varchar(32) NOT NULL DEFAULT '' COMMENT '单号',
+  `member_id` int unsigned NOT NULL DEFAULT '0' COMMENT '会员ID',
+  `pay_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '实付金额',
+  `gift_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '赠送金额',
+  `total_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '总金额',
+  `pay_status` tinyint NOT NULL DEFAULT '0' COMMENT '支付状态: 0=待支付 1=已支付 2=已取消 3=已退款',
+  `pay_time` datetime DEFAULT NULL COMMENT '支付时间',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_order_no` (`order_no`),
+  KEY `idx_member_id` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='充值单表';
+
+
+
+-- 13. 门店管理员赋予会员管理权限
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE name IN ('store-member', 'store-member-add', 'store-member-edit', 'store-member-delete', 'store-member-balance')
+ON DUPLICATE KEY UPDATE permissions=15;
+
+-- ============================================
+-- 会员管理模块初始化完成
+-- ============================================

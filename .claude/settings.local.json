@@ -39,7 +39,8 @@
       "Bash(git push:*)",
       "Bash(./main.exe:*)",
       "Bash(nul)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(go get:*)"
     ],
     "deny": [],
     "ask": []

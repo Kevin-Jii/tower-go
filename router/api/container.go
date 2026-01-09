@@ -28,6 +28,7 @@ type Controllers struct {
 	StoreAccount      *controller.StoreAccountController
 	Statistics        *controller.StatisticsController
 	MessageTemplate   *controller.MessageTemplateController
+	Member            *controller.MemberController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 }
 
@@ -52,6 +53,7 @@ func BuildControllers() *Controllers {
 	storeAccountModule := userModulePkg.NewStoreAccountModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
+	memberModule := userModulePkg.NewMemberModule(database.DB)
 
 	userModulePkg.SetDB(database.DB)
 
@@ -99,6 +101,7 @@ func BuildControllers() *Controllers {
 	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule, storeModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
 	statisticsService := service.NewStatisticsService(statisticsModule)
+	memberService := service.NewMemberService(memberModule)
 
 	// 初始化默认消息模板
 	if err := messageTemplateService.InitDefaultTemplates(); err != nil {
@@ -133,6 +136,7 @@ func BuildControllers() *Controllers {
 		StoreAccount:      controller.NewStoreAccountController(storeAccountService),
 		Statistics:        controller.NewStatisticsController(statisticsService),
 		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
+		Member:            controller.NewMemberController(memberService),
 		DingTalkBotModule: dingTalkBotModule,
 	}
 }

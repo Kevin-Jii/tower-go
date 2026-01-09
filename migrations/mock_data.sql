@@ -147,3 +147,22 @@ INSERT INTO supplier_products (id, supplier_id, category_id, name, unit, price, 
 -- 分类: 16个
 -- 商品: 60个
 -- ============================================
+-- 10. 示例会员数据
+INSERT INTO `t_member` (id, uid, phone, balance, points, level, version, created_at, updated_at) VALUES
+(1, 'U001', '13800000001', 1000.00, 100, 1, 0, NOW(), NOW()),
+(2, 'U002', '13800000002', 500.50, 50, 1, 0, NOW(), NOW()),
+(3, 'U003', '13800000003', 2000.00, 200, 2, 0, NOW(), NOW())
+ON DUPLICATE KEY UPDATE balance=VALUES(balance);
+
+-- 11. 示例流水数据
+INSERT INTO `t_member_wallet_log` (member_id, change_type, change_amount, balance_after, related_order_no, remark, created_at) VALUES
+(1, 1, 1000.00, 1000.00, '', '初始充值', NOW()),
+(1, 2, -100.00, 900.00, 'SO202401090001', '消费', NOW()),
+(2, 1, 500.50, 500.50, '', '初始充值', NOW()),
+(3, 1, 2000.00, 2000.00, '', '初始充值', NOW());
+
+-- 12. 示例充值单数据
+INSERT INTO `t_recharge_order` (order_no, member_id, pay_amount, gift_amount, total_amount, pay_status, pay_time, created_at) VALUES
+('RE202401090001', 1, 100.00, 10.00, 110.00, 1, NOW(), NOW()),
+('RE202401090002', 2, 200.00, 20.00, 220.00, 0, NULL, NOW()),
+('RE202401090003', 3, 500.00, 50.00, 550.00, 1, NOW(), NOW());

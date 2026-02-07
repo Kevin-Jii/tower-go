@@ -11,24 +11,22 @@ import (
 	"go.uber.org/zap"
 )
 
+const migrationVersionFile = ".migration_version"
+const currentMigrationVersion = "1"
+
 func AutoMigrateAndSeeds() {
 	if os.Getenv("SKIP_AUTO_MIGRATE") == "1" {
 		logging.LogInfo("跳过数据库迁移（SKIP_AUTO_MIGRATE=1）")
 		return
 	}
-	// 可通过环境变量 SKIP_MIGRATION=1 跳过迁移和种子数据初始化（加快启动速度）
-	if skipMigration := fmt.Sprintf("%v", database.GetDB().Migrator().HasTable(&model.User{})); skipMigration == "true" {
-		// 表已存在，跳过详细检查
-		logging.LogInfo("数据表已存在，跳过迁移检查（如需强制迁移请删除表）")
+
+	// 检查迁移版本，避免重复迁移
+	if shouldSkipMigration() {
+		logging.LogInfo("数据表已迁移，跳过迁移检查")
+		return
 	}
 
-	// 外键前置数据检查
-	var invalidUserCount int64
-	database.GetDB().Raw("SELECT COUNT(*) FROM users u LEFT JOIN stores s ON u.store_id = s.id WHERE u.store_id <> 0 AND s.id IS NULL").Scan(&invalidUserCount)
-	if invalidUserCount > 0 {
-		logging.LogWarn("发现无效用户记录", zap.Int64("count", invalidUserCount))
-	}
-
+	// 执行迁移
 	migrateModels := []interface{}{
 		&model.Store{},
 		&model.Role{},
@@ -56,6 +54,7 @@ func AutoMigrateAndSeeds() {
 		&model.WalletLog{},
 		&model.RechargeOrder{},
 	}
+
 	for _, m := range migrateModels {
 		if err := database.GetDB().AutoMigrate(m); err != nil {
 			logging.LogError("数据表迁移失败", zap.String("model", fmt.Sprintf("%T", m)), zap.Error(err))
@@ -69,7 +68,28 @@ func AutoMigrateAndSeeds() {
 		logging.LogError("创建优化索引失败", zap.Error(err))
 	}
 
-	// 种子数据初始化已移至 SQL 文件: migrations/init_seed_data.sql
-	// 首次部署请手动执行: mysql -u用户名 -p密码 数据库名 < migrations/init_seed_data.sql
+	// 标记迁移已完成
+	markMigrationComplete()
+
 	logging.LogInfo("数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql")
+}
+
+// shouldSkipMigration 检查是否应该跳过迁移
+func shouldSkipMigration() bool {
+	// 检查标记文件
+	if _, err := os.Stat(migrationVersionFile); err == nil {
+		// 文件存在，读取版本
+		data, err := os.ReadFile(migrationVersionFile)
+		if err == nil && string(data) == currentMigrationVersion {
+			return true
+		}
+	}
+	return false
+}
+
+// markMigrationComplete 标记迁移已完成
+func markMigrationComplete() {
+	if err := os.WriteFile(migrationVersionFile, []byte(currentMigrationVersion), 0644); err != nil {
+		logging.LogWarn("无法写入迁移标记文件", zap.Error(err))
+	}
 }

@@ -328,7 +328,16 @@ definitions:
     type: object
   model.CreateMemberReq:
     properties:
+      level_id:
+        description: 等级（可选）
+        type: integer
+      name:
+        description: 会员姓名
+        type: string
       phone:
+        type: string
+      remark:
+        description: 备注（可选，暂不存储）
         type: string
       uid:
         description: 可选，不传则自动生成
@@ -440,9 +449,14 @@ definitions:
         type: integer
       payAmount:
         type: number
+      payType:
+        type: integer
+      remark:
+        type: string
     required:
     - memberId
     - payAmount
+    - payType
     type: object
   model.CreateStoreAccountItemReq:
     properties:
@@ -854,6 +868,8 @@ definitions:
         type: integer
       level:
         type: integer
+      name:
+        type: string
       phone:
         type: string
       points:
@@ -1026,6 +1042,12 @@ definitions:
         type: integer
       memberId:
         type: integer
+      memberName:
+        description: 不存数据库，关联查询
+        type: string
+      memberPhone:
+        description: 不存数据库，关联查询
+        type: string
       orderNo:
         type: string
       payAmount:
@@ -1033,6 +1055,16 @@ definitions:
       payStatus:
         $ref: '#/definitions/model.PayStatusEnum'
       payTime:
+        type: string
+      payType:
+        type: integer
+      payTypeName:
+        description: 不存数据库
+        type: string
+      remark:
+        type: string
+      statusName:
+        description: 不存数据库
         type: string
       totalAmount:
         type: number
@@ -1366,6 +1398,8 @@ definitions:
     properties:
       level:
         type: integer
+      name:
+        type: string
       phone:
         type: string
       points:
@@ -2743,12 +2777,20 @@ paths:
       - 系统
   /members:
     get:
-      description: 获取会员列表，支持关键字模糊查询手机号/UID
+      description: 获取会员列表，支持关键字模糊查询手机号/UID，支持分页
       parameters:
       - description: 关键字(模糊匹配手机号/UID)
         in: query
         name: keyword
         type: string
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:

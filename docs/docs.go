@@ -1806,7 +1806,7 @@ const docTemplate = `{
         },
         "/members": {
             "get": {
-                "description": "获取会员列表，支持关键字模糊查询手机号/UID",
+                "description": "获取会员列表，支持关键字模糊查询手机号/UID，支持分页",
                 "produces": [
                     "application/json"
                 ],
@@ -1819,6 +1819,18 @@ const docTemplate = `{
                         "type": "string",
                         "description": "关键字(模糊匹配手机号/UID)",
                         "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -6474,7 +6486,19 @@ const docTemplate = `{
                 "phone"
             ],
             "properties": {
+                "level_id": {
+                    "description": "等级（可选）",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "会员姓名",
+                    "type": "string"
+                },
                 "phone": {
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "备注（可选，暂不存储）",
                     "type": "string"
                 },
                 "uid": {
@@ -6624,7 +6648,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "memberId",
-                "payAmount"
+                "payAmount",
+                "payType"
             ],
             "properties": {
                 "giftAmount": {
@@ -6635,6 +6660,12 @@ const docTemplate = `{
                 },
                 "payAmount": {
                     "type": "number"
+                },
+                "payType": {
+                    "type": "integer"
+                },
+                "remark": {
+                    "type": "string"
                 }
             }
         },
@@ -7236,6 +7267,9 @@ const docTemplate = `{
                 "level": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "phone": {
                     "type": "string"
                 },
@@ -7490,6 +7524,14 @@ const docTemplate = `{
                 "memberId": {
                     "type": "integer"
                 },
+                "memberName": {
+                    "description": "不存数据库，关联查询",
+                    "type": "string"
+                },
+                "memberPhone": {
+                    "description": "不存数据库，关联查询",
+                    "type": "string"
+                },
                 "orderNo": {
                     "type": "string"
                 },
@@ -7500,6 +7542,20 @@ const docTemplate = `{
                     "$ref": "#/definitions/model.PayStatusEnum"
                 },
                 "payTime": {
+                    "type": "string"
+                },
+                "payType": {
+                    "type": "integer"
+                },
+                "payTypeName": {
+                    "description": "不存数据库",
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "statusName": {
+                    "description": "不存数据库",
                     "type": "string"
                 },
                 "totalAmount": {
@@ -7990,6 +8046,9 @@ const docTemplate = `{
             "properties": {
                 "level": {
                     "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "phone": {
                     "type": "string"

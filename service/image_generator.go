@@ -106,7 +106,7 @@ var (
 	colorTableHead  = color.RGBA{245, 247, 250, 255} // 表头背景
 )
 
-// GenerateAccountNotifyImage 生成记账通知图片（现代电子回单风格）
+// GenerateAccountNotifyImage 生成记账通知图片（优化版电子回单风格）
 func (s *ImageGeneratorService) GenerateAccountNotifyImage(data *AccountNotifyData) (string, error) {
 	// 2倍分辨率
 	scale := 2.0
@@ -118,14 +118,13 @@ func (s *ImageGeneratorService) GenerateAccountNotifyImage(data *AccountNotifyDa
 	width := int(420.0 * scale)
 
 	// 计算高度
-	headerHeight := 70.0 * scale
-	infoHeight := 90.0 * scale
-	tableHeaderHeight := 40.0 * scale
-	rowHeight := 44.0 * scale
-	footerHeight := 100.0 * scale
+	headerHeight := 120.0 * scale // 增加头部高度以容纳门店名称和金额
+	rowHeight := 50.0 * scale
+	serratedHeight := 12.0 * scale // 锯齿装饰高度
+	footerHeight := 80.0 * scale   // 底部辅助信息区域
 
 	cardWidth := float64(width) - cardMargin*2
-	cardHeight := headerHeight + infoHeight + tableHeaderHeight + float64(len(data.Items))*rowHeight + footerHeight + cardPadding
+	cardHeight := headerHeight + float64(len(data.Items))*rowHeight + serratedHeight + footerHeight + cardPadding*2
 	totalHeight := int(cardHeight + cardMargin*2)
 
 	// 创建画布
@@ -145,153 +144,72 @@ func (s *ImageGeneratorService) GenerateAccountNotifyImage(data *AccountNotifyDa
 	drawRoundedRect(dc, cardMargin, cardMargin, cardWidth, cardHeight, cardRadius)
 	dc.Fill()
 
-	// ========== 头部区域 ==========
-	// 蓝色顶部条
+	// ========== 绘制防伪水印背景 ==========
+	drawWatermark(dc, cardMargin, cardMargin, cardWidth, cardHeight, scale)
+
+	// ========== 头部区域（门店名称 + 金额）==========
+	y := cardMargin + cardPadding + 20*scale
+
+	// 门店名称（大字标）
+	dc.SetColor(colorTextDark)
+	s.loadFont(dc, 28*scale)
+	dc.DrawStringAnchored(data.StoreName, cardMargin+cardWidth/2, y, 0.5, 0.5)
+	y += 50 * scale
+
+	// 金额（大字显示）
 	dc.SetColor(colorPrimary)
-	drawRoundedRectTop(dc, cardMargin, cardMargin, cardWidth, headerHeight, cardRadius)
-	dc.Fill()
+	s.loadFont(dc, 36*scale)
+	totalStr := fmt.Sprintf("¥%.2f", data.TotalAmount)
+	dc.DrawStringAnchored(totalStr, cardMargin+cardWidth/2, y, 0.5, 0.5)
+	y += 50 * scale
 
-	// 标题
-	dc.SetColor(colorWhite)
-	s.loadFont(dc, 22*scale)
-	dc.DrawStringAnchored("记账通知", cardMargin+cardWidth/2, cardMargin+headerHeight/2-8*scale, 0.5, 0.5)
-
-	// 门店名称
-	dc.SetColor(color.RGBA{255, 255, 255, 200})
-	s.loadFont(dc, 12*scale)
-	dc.DrawStringAnchored(data.StoreName, cardMargin+cardWidth/2, cardMargin+headerHeight/2+12*scale, 0.5, 0.5)
-
-	y := cardMargin + headerHeight + cardPadding
-
-	// ========== 信息区域 ==========
+	// ========== 详情区域（左右结构）==========
 	leftX := cardMargin + cardPadding
 	rightX := cardMargin + cardWidth - cardPadding
 
-	// 第一行：编号 + 日期
-	dc.SetColor(colorTextLight)
-	s.loadFont(dc, 11*scale)
-	dc.DrawString("编号", leftX, y)
-	dc.DrawStringAnchored("日期", rightX, y, 1, 0.5)
-	y += 18 * scale
-
-	dc.SetColor(colorTextDark)
-	s.loadFont(dc, 13*scale)
-	dc.DrawString(data.AccountNo, leftX, y)
-	dc.DrawStringAnchored(data.AccountDate, rightX, y, 1, 0.5)
-	y += 28 * scale
-
-	// 第二行：渠道 + 操作人
-	dc.SetColor(colorTextLight)
-	s.loadFont(dc, 11*scale)
-	dc.DrawString("渠道", leftX, y)
-	dc.DrawStringAnchored("操作人", rightX, y, 1, 0.5)
-	y += 18 * scale
-
-	dc.SetColor(colorTextDark)
-	s.loadFont(dc, 13*scale)
-	dc.DrawString(data.ChannelName, leftX, y)
-	dc.DrawStringAnchored(data.OperatorName, rightX, y, 1, 0.5)
-	y += 24 * scale
-
-	// ========== 分隔线 ==========
-	dc.SetColor(colorBorderLine)
-	dc.SetLineWidth(1 * scale)
-	dc.DrawLine(leftX, y, rightX, y)
-	dc.Stroke()
-	y += 16 * scale
-
-	// ========== 表格区域 ==========
-	tableX := leftX
-	tableWidth := rightX - leftX
-	col1Width := tableWidth * 0.5 // 商品名称
-	col2Width := tableWidth * 0.2 // 数量
-	_ = tableWidth * 0.3          // col3Width 金额
-
-	// 表头背景
-	dc.SetColor(colorTableHead)
-	dc.DrawRectangle(tableX, y-8*scale, tableWidth, tableHeaderHeight)
-	dc.Fill()
-
-	// 表头文字
-	dc.SetColor(colorTextLight)
-	s.loadFont(dc, 11*scale)
-	dc.DrawString("商品名称", tableX+8*scale, y+10*scale)
-	dc.DrawStringAnchored("数量", tableX+col1Width+col2Width/2, y+10*scale, 0.5, 0.5)
-	dc.DrawStringAnchored("金额", tableX+tableWidth-8*scale, y+10*scale, 1, 0.5)
-	y += tableHeaderHeight
-
 	// 商品列表
-	for i, item := range data.Items {
-		// 斑马纹
-		if i%2 == 1 {
-			dc.SetColor(color.RGBA{250, 251, 252, 255})
-			dc.DrawRectangle(tableX, y-8*scale, tableWidth, rowHeight)
-			dc.Fill()
-		}
-
-		rowY := y + 14*scale
-
-		// 商品名称（左对齐）
+	for _, item := range data.Items {
+		// 左边：商品名称 / 重量
 		dc.SetColor(colorTextDark)
-		s.loadFont(dc, 13*scale)
-		name := item.Name
-		if len([]rune(name)) > 10 {
-			name = string([]rune(name)[:10]) + "..."
-		}
-		dc.DrawString(name, tableX+8*scale, rowY)
+		s.loadFont(dc, 15*scale)
+		itemText := fmt.Sprintf("%s / %.0f%s", item.Name, item.Quantity, item.Unit)
+		dc.DrawString(itemText, leftX, y)
 
-		// 数量（居中）
-		dc.SetColor(colorTextMedium)
-		s.loadFont(dc, 12*scale)
-		qtyStr := fmt.Sprintf("×%.0f%s", item.Quantity, item.Unit)
-		dc.DrawStringAnchored(qtyStr, tableX+col1Width+col2Width/2, rowY, 0.5, 0.5)
-
-		// 金额（右对齐）
+		// 右边：金额
 		dc.SetColor(colorTextDark)
-		s.loadFont(dc, 13*scale)
+		s.loadFont(dc, 15*scale)
 		amountStr := fmt.Sprintf("¥%.2f", item.Amount)
-		dc.DrawStringAnchored(amountStr, tableX+tableWidth-8*scale, rowY, 1, 0.5)
+		dc.DrawStringAnchored(amountStr, rightX, y, 1, 0.5)
 
 		y += rowHeight
 	}
 
-	y += 16 * scale
+	y += 10 * scale
 
-	// ========== 底部分隔线 ==========
-	dc.SetColor(colorBorderLine)
-	dc.SetLineWidth(1 * scale)
-	dc.DrawLine(leftX, y, rightX, y)
-	dc.Stroke()
-	y += 20 * scale
+	// ========== 锯齿装饰线 ==========
+	drawSerratedLine(dc, leftX, y, rightX-leftX, serratedHeight, scale)
+	y += serratedHeight + 20*scale
 
-	// ========== 合计区域 ==========
-	// 笔数
-	dc.SetColor(colorTextLight)
-	s.loadFont(dc, 12*scale)
-	dc.DrawString(fmt.Sprintf("共 %d 项商品", len(data.Items)), leftX, y)
+	// ========== 底部辅助信息区域 ==========
+	// 第一行：编号 + 渠道
+	dc.SetColor(color.RGBA{160, 160, 160, 255}) // 更浅的灰色
+	s.loadFont(dc, 10*scale)
+	infoText1 := fmt.Sprintf("编号: %s  |  渠道: %s", data.AccountNo, data.ChannelName)
+	dc.DrawStringAnchored(infoText1, cardMargin+cardWidth/2, y, 0.5, 0.5)
+	y += 18 * scale
 
-	// 合计金额
-	dc.SetColor(colorTextMedium)
-	s.loadFont(dc, 14*scale)
-	dc.DrawStringAnchored("合计：", rightX-120*scale, y, 1, 0.5)
+	// 第二行：操作人 + 日期
+	infoText2 := fmt.Sprintf("操作人: %s  |  日期: %s", data.OperatorName, data.AccountDate)
+	dc.DrawStringAnchored(infoText2, cardMargin+cardWidth/2, y, 0.5, 0.5)
+	y += 18 * scale
 
-	dc.SetColor(colorPrimary)
-	s.loadFont(dc, 24*scale)
-	totalStr := fmt.Sprintf("¥%.2f", data.TotalAmount)
-	dc.DrawStringAnchored(totalStr, rightX, y, 1, 0.5)
-
-	y += 36 * scale
+	// 第三行：创建时间
+	dc.DrawStringAnchored(data.CreateTime, cardMargin+cardWidth/2, y, 0.5, 0.5)
 
 	// ========== 已入账印章 ==========
-	stampX := rightX - 60*scale
-	stampY := y - 20*scale
+	stampX := rightX - 50*scale
+	stampY := cardMargin + headerHeight + 30*scale
 	drawStamp(dc, stampX, stampY, 36*scale, "已入账", colorSuccess)
-
-	// ========== 底部时间 ==========
-	y += 10 * scale
-	dc.SetColor(colorTextLight)
-	s.loadFont(dc, 10*scale)
-	dc.DrawStringAnchored(data.CreateTime, cardMargin+cardWidth/2, y, 0.5, 0.5)
 
 	// 导出为PNG
 	var buf bytes.Buffer
@@ -374,6 +292,78 @@ func drawStamp(dc *gg.Context, x, y, size float64, text string, col color.RGBA) 
 	dc.SetColor(col)
 	// 这里无法直接设置字体，使用已加载的字体
 	dc.DrawStringAnchored(text, x, y, 0.5, 0.5)
+
+	dc.Pop()
+}
+
+// drawSerratedLine 绘制锯齿装饰线（撕票效果）
+func drawSerratedLine(dc *gg.Context, x, y, width, height float64, scale float64) {
+	dc.SetColor(colorBorderLine)
+	dc.SetLineWidth(1 * scale)
+
+	// 绘制上边线
+	dc.DrawLine(x, y, x+width, y)
+	dc.Stroke()
+
+	// 绘制锯齿
+	toothWidth := 8.0 * scale
+	toothCount := int(width / toothWidth)
+	actualToothWidth := width / float64(toothCount)
+
+	dc.NewSubPath()
+	dc.MoveTo(x, y)
+	for i := 0; i < toothCount; i++ {
+		xPos := x + float64(i)*actualToothWidth
+		// 向下的三角形锯齿
+		dc.LineTo(xPos+actualToothWidth/2, y+height)
+		dc.LineTo(xPos+actualToothWidth, y)
+	}
+	dc.SetColor(colorBgLight)
+	dc.Fill()
+
+	// 绘制锯齿边框
+	dc.SetColor(colorBorderLine)
+	dc.SetLineWidth(1 * scale)
+	dc.MoveTo(x, y)
+	for i := 0; i < toothCount; i++ {
+		xPos := x + float64(i)*actualToothWidth
+		dc.LineTo(xPos+actualToothWidth/2, y+height)
+		dc.LineTo(xPos+actualToothWidth, y)
+	}
+	dc.Stroke()
+
+	// 绘制下边线
+	dc.DrawLine(x, y+height, x+width, y+height)
+	dc.Stroke()
+}
+
+// drawWatermark 绘制防伪水印背景
+func drawWatermark(dc *gg.Context, x, y, width, height float64, scale float64) {
+	dc.Push()
+
+	// 设置半透明水印颜色
+	dc.SetColor(color.RGBA{64, 158, 255, 15}) // 非常淡的蓝色
+
+	// 旋转角度
+	centerX := x + width/2
+	centerY := y + height/2
+	dc.RotateAbout(-0.35, centerX, centerY) // 约 -20 度
+
+	// 绘制多个水印文字
+	watermarkText := "已入账"
+	spacing := 80.0 * scale
+
+	// 计算需要绘制的行列数
+	rows := int(height/spacing) + 3
+	cols := int(width/spacing) + 3
+
+	for row := -1; row < rows; row++ {
+		for col := -1; col < cols; col++ {
+			wmX := centerX + float64(col-cols/2)*spacing
+			wmY := centerY + float64(row-rows/2)*spacing
+			dc.DrawStringAnchored(watermarkText, wmX, wmY, 0.5, 0.5)
+		}
+	}
 
 	dc.Pop()
 }

@@ -27,8 +27,8 @@ func Success(c *gin.Context, data interface{}) {
 		Data:    data,
 	}
 
-	// 打印响应数据到控制台
-	printResponse(c, resp)
+	// 打印响应数据到控制台（已禁用）
+	// printResponse(c, resp)
 
 	c.JSON(http.StatusOK, resp)
 }
@@ -50,8 +50,8 @@ func Error(c *gin.Context, code int, message string) {
 		Message: message,
 	}
 
-	// 打印错误响应到控制台
-	printErrorResponse(c, resp)
+	// 打印错误响应到控制台（已禁用）
+	// printErrorResponse(c, resp)
 
 	c.JSON(http.StatusOK, resp)
 }
@@ -70,8 +70,8 @@ func WithError(c *gin.Context, code int, message string, err error) {
 		Error:   errorMsg,
 	}
 
-	// 打印错误响应到控制台
-	printErrorResponse(c, resp)
+	// 打印错误响应到控制台（已禁用）
+	// printErrorResponse(c, resp)
 
 	c.JSON(http.StatusOK, resp)
 }

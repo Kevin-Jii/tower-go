@@ -125,20 +125,34 @@ func (c *MemberController) GetMember(ctx *gin.Context) {
 
 // ListMembers 获取会员列表
 // @Summary 获取会员列表
-// @Description 获取会员列表，支持关键字模糊查询手机号/UID
+// @Description 获取会员列表，支持关键字模糊查询手机号/UID，支持分页
 // @Tags 会员管理
 // @Produce json
 // @Param keyword query string false "关键字(模糊匹配手机号/UID)"
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
 // @Success 200 {object} http.Response{data=[]model.Member}
 // @Router /members [get]
 func (c *MemberController) ListMembers(ctx *gin.Context) {
 	keyword := ctx.Query("keyword")
-	members, err := c.service.ListMembers(keyword)
+	pageStr := ctx.DefaultQuery("page", "1")
+	pageSizeStr := ctx.DefaultQuery("page_size", "20")
+
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	members, total, err := c.service.ListMembers(keyword, page, pageSize)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
-	http.Success(ctx, members)
+	http.SuccessWithPagination(ctx, members, total, page, pageSize)
 }
 
 // AdjustBalance 调整余额

@@ -405,6 +405,7 @@ ON DUPLICATE KEY UPDATE
 CREATE TABLE IF NOT EXISTS `t_member` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `uid` varchar(32) NOT NULL DEFAULT '' COMMENT '用户唯一标识',
+  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '会员姓名',
   `phone` varchar(20) NOT NULL DEFAULT '' COMMENT '手机号',
   `balance` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '余额',
   `points` int NOT NULL DEFAULT '0' COMMENT '积分',

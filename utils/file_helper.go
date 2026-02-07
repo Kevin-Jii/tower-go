@@ -1,107 +1,74 @@
 package utils
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/Kevin-Jii/tower-go/config"
 )
 
 // SaveImageFile 保存图片文件到指定目录，返回访问URL
+// 用于 dingtalk 服务保存图片到本地
 // filename: 文件名（不含路径）
 // imageData: 图片数据
 // 返回: 图片访问URL, 错误
 func SaveImageFile(filename string, imageData []byte) (string, error) {
-	cfg := config.GetConfig()
-	uploadPath := cfg.App.ImageUploadPath
-	baseURL := cfg.App.ImageBaseURL
-
 	// 创建按日期分类的子目录 (例如: 2024/01/15)
 	today := time.Now().Format("2006/01/02")
-	targetDir := filepath.Join(uploadPath, today)
+	uploadDir := filepath.Join("uploads", "images", today)
 
-	// 确保目录存在
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create directory: %w", err)
+	// 创建目录
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create upload directory: %w", err)
 	}
 
-	// 生成唯一文件名（时间戳 + MD5）
-	timestamp := time.Now().Format("150405")
-	hash := md5.Sum(imageData)
-	hashStr := hex.EncodeToString(hash[:])[:8] // 取前8位
-	ext := filepath.Ext(filename)
-	if ext == "" {
-		ext = ".png"
-	}
-	uniqueFilename := fmt.Sprintf("%s_%s%s", timestamp, hashStr, ext)
-
-	// 完整文件路径
-	filePath := filepath.Join(targetDir, uniqueFilename)
-
-	// 写入文件
+	// 保存文件
+	filePath := filepath.Join(uploadDir, filename)
 	if err := os.WriteFile(filePath, imageData, 0644); err != nil {
-		return "", fmt.Errorf("failed to write file: %w", err)
+		return "", fmt.Errorf("failed to save image file: %w", err)
 	}
 
-	// 生成访问URL（使用正斜杠，适配web路径）
-	relPath := filepath.Join(today, uniqueFilename)
-	// Windows路径转换为URL路径
-	relPath = filepath.ToSlash(relPath)
-	imageURL := fmt.Sprintf("%s/%s", baseURL, relPath)
+	// 返回相对URL路径
+	relativeURL := filepath.Join("/uploads/images", today, filename)
+	// 转换为正斜杠（URL格式）
+	relativeURL = filepath.ToSlash(relativeURL)
 
-	return imageURL, nil
+	return relativeURL, nil
 }
 
 // DeleteImageFile 删除图片文件
 func DeleteImageFile(imageURL string) error {
-	cfg := config.GetConfig()
-	uploadPath := cfg.App.ImageUploadPath
-	baseURL := cfg.App.ImageBaseURL
-
 	// 从URL提取相对路径
-	if len(imageURL) <= len(baseURL) {
-		return fmt.Errorf("invalid image URL")
-	}
+	// imageURL 格式: /uploads/images/2024/01/15/filename.jpg
+	filePath := filepath.Join(".", imageURL)
 
-	relPath := imageURL[len(baseURL)+1:] // 去掉baseURL和斜杠
-	filePath := filepath.Join(uploadPath, relPath)
+	// 检查文件是否存在
+	if _, err := os.Stat(filePath); err != nil {
+		if os.IsNotExist(err) {
+			return nil // 文件不存在，不报错
+		}
+		return err
+	}
 
 	// 删除文件
-	if err := os.Remove(filePath); err != nil {
-		return fmt.Errorf("failed to delete file: %w", err)
-	}
-
-	return nil
+	return os.Remove(filePath)
 }
 
 // CleanOldImages 清理旧图片（可选功能，可用于定期清理）
 // days: 保留天数
 func CleanOldImages(days int) error {
-	cfg := config.GetConfig()
-	uploadPath := cfg.App.ImageUploadPath
+	uploadDir := filepath.Join("uploads", "images")
 
 	cutoffTime := time.Now().AddDate(0, 0, -days)
 
-	return filepath.Walk(uploadPath, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(uploadDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// 跳过目录
-		if info.IsDir() {
-			return nil
-		}
-
-		// 检查文件修改时间
-		if info.ModTime().Before(cutoffTime) {
-			if err := os.Remove(path); err != nil {
-				// 记录错误但继续处理其他文件
-				fmt.Printf("Failed to delete old image %s: %v\n", path, err)
-			}
+		// 只处理文件，跳过目录
+		if !info.IsDir() && info.ModTime().Before(cutoffTime) {
+			return os.Remove(path)
 		}
 
 		return nil

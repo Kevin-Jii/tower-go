@@ -18,6 +18,7 @@ func DecimalZero() DecimalType {
 type Member struct {
 	ID         uint            `json:"id" gorm:"primaryKey"`
 	UID        string          `json:"uid" gorm:"type:varchar(64);uniqueIndex;comment:用户唯一标识"`
+	Name       string          `json:"name" gorm:"type:varchar(100);comment:会员姓名"`
 	Phone      string          `json:"phone" gorm:"type:varchar(20);uniqueIndex;comment:手机号"`
 	Balance    decimal.Decimal `json:"balance" gorm:"type:decimal(10,2);comment:余额"`
 	Points     int             `json:"points" gorm:"type:int;default:0;comment:积分"`
@@ -66,13 +67,19 @@ type RechargeOrder struct {
 	ID          uint            `json:"id" gorm:"primaryKey"`
 	OrderNo     string          `json:"orderNo" gorm:"type:varchar(32);uniqueIndex;comment:单号"`
 	MemberID    uint            `json:"memberId" gorm:"index;comment:会员ID"`
+	MemberName  string          `json:"memberName" gorm:"-"` // 不存数据库，关联查询
+	MemberPhone string          `json:"memberPhone" gorm:"-"` // 不存数据库，关联查询
 	PayAmount   decimal.Decimal `json:"payAmount" gorm:"type:decimal(10,2);comment:实付金额"`
 	GiftAmount  decimal.Decimal `json:"giftAmount" gorm:"type:decimal(10,2);comment:赠送金额"`
 	TotalAmount decimal.Decimal `json:"totalAmount" gorm:"type:decimal(10,2);comment:总金额"`
+	PayType     int             `json:"payType" gorm:"type:int;default:0;comment:支付方式"`
+	PayTypeName string          `json:"payTypeName" gorm:"-"` // 不存数据库
 	PayStatus   PayStatusEnum   `json:"payStatus" gorm:"type:int;default:0;comment:支付状态"`
+	StatusName  string          `json:"statusName" gorm:"-"` // 不存数据库
 	PayTime     *time.Time      `json:"payTime" gorm:"comment:支付时间"`
-	CreateTime  time.Time       `json:"createTime" gorm:"autoCreateTime"`
-	UpdateTime  time.Time       `json:"updateTime" gorm:"autoUpdateTime"`
+	Remark      string          `json:"remark" gorm:"type:varchar(255);comment:备注"`
+	CreateTime  time.Time      `json:"createTime" gorm:"autoCreateTime"`
+	UpdateTime  time.Time      `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
 // TableName 指定表名为 t_recharge_order
@@ -90,27 +97,47 @@ const (
 	PayStatusRefunded  PayStatusEnum = 3 // 已退款
 )
 
+// String 获取状态名称
+func (s PayStatusEnum) String() string {
+	switch s {
+	case PayStatusPending:
+		return "待支付"
+	case PayStatusPaid:
+		return "已支付"
+	case PayStatusCancelled:
+		return "已取消"
+	case PayStatusRefunded:
+		return "已退款"
+	default:
+		return "未知"
+	}
+}
+
 // ========== 请求结构体 ==========
 
 // CreateMemberReq 创建会员请求
 type CreateMemberReq struct {
-	UID   string `json:"uid"` // 可选，不传则自动生成
-	Phone string `json:"phone" binding:"required"`
+	UID    string  `json:"uid"`  // 可选，不传则自动生成
+	Name   string  `json:"name"` // 会员姓名
+	Phone  string  `json:"phone" binding:"required"`
+	Level  *int    `json:"level_id"` // 等级（可选）
+	Remark *string `json:"remark"`   // 备注（可选，暂不存储）
 }
 
 // UpdateMemberReq 更新会员请求
 type UpdateMemberReq struct {
-	Phone  *string          `json:"phone"`
-	Points *int             `json:"points"`
-	Level  *int             `json:"level"`
+	Name   *string `json:"name"`
+	Phone  *string `json:"phone"`
+	Points *int    `json:"points"`
+	Level  *int    `json:"level"`
 }
 
 // AdjustBalanceReq 调整余额请求
 type AdjustBalanceReq struct {
-	Amount   decimal.Decimal `json:"amount" binding:"required"`
-	Type     ChangeTypeEnum  `json:"type" binding:"required,oneof=4 5"` // 4=调增 5=调减
-	Remark   string          `json:"remark"`
-	Version  int             `json:"version"` // 乐观锁版本号
+	Amount  decimal.Decimal `json:"amount" binding:"required"`
+	Type    ChangeTypeEnum  `json:"type" binding:"required,oneof=4 5"` // 4=调增 5=调减
+	Remark  string          `json:"remark"`
+	Version int             `json:"version"` // 乐观锁版本号
 }
 
 // CreateRechargeOrderReq 创建充值单请求
@@ -118,6 +145,8 @@ type CreateRechargeOrderReq struct {
 	MemberID   uint            `json:"memberId" binding:"required"`
 	PayAmount  decimal.Decimal `json:"payAmount" binding:"required"`
 	GiftAmount decimal.Decimal `json:"giftAmount"`
+	PayType    int             `json:"payType" binding:"required"`
+	Remark     string         `json:"remark"`
 }
 
 // PayRechargeOrderReq 支付充值单请求
@@ -127,8 +156,8 @@ type PayRechargeOrderReq struct {
 
 // ListWalletLogReq 查询流水请求
 type ListWalletLogReq struct {
-	MemberID uint `form:"memberId"`
+	MemberID   uint            `form:"memberId"`
 	ChangeType *ChangeTypeEnum `form:"changeType"`
-	StartTime *time.Time `form:"startTime"`
-	EndTime   *time.Time `form:"endTime"`
+	StartTime  *time.Time      `form:"startTime"`
+	EndTime    *time.Time      `form:"endTime"`
 }

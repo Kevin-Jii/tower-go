@@ -34,8 +34,7 @@ func InitDB(cfg config.DatabaseConfig) error {
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true,
-			TablePrefix:   "tower_",
+			SingularTable: false,
 		},
 	})
 
@@ -53,9 +52,9 @@ func InitDB(cfg config.DatabaseConfig) error {
 	}
 
 	// 配置连接池
-	sqlDB.SetMaxOpenConns(100)           // 最大打开连接数
-	sqlDB.SetMaxIdleConns(10)            // 最大空闲连接数
-	sqlDB.SetConnMaxLifetime(time.Hour)  // 连接最大生存时间
+	sqlDB.SetMaxOpenConns(100)          // 最大打开连接数
+	sqlDB.SetMaxIdleConns(10)           // 最大空闲连接数
+	sqlDB.SetConnMaxLifetime(time.Hour) // 连接最大生存时间
 
 	logging.LogInfo("Database connected successfully",
 		zap.String("host", cfg.Host),

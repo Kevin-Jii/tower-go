@@ -48,8 +48,8 @@ func (s *MemberService) GetMemberByUID(uid string) (*model.Member, error) {
 }
 
 // ListMembers 获取会员列表
-func (s *MemberService) ListMembers(keyword string) ([]model.Member, error) {
-	return s.module.ListMembers(keyword)
+func (s *MemberService) ListMembers(keyword string, page, pageSize int) ([]model.Member, int64, error) {
+	return s.module.ListMembers(keyword, page, pageSize)
 }
 
 // AdjustBalance 调整余额

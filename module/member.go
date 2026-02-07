@@ -43,12 +43,20 @@ func (m *MemberModule) CreateMember(req *model.CreateMemberReq) (*model.Member, 
 	if uid == "" {
 		uid = uuid.NewString()
 	}
+
+	// 设置默认等级
+	level := 1
+	if req.Level != nil {
+		level = *req.Level
+	}
+
 	member := &model.Member{
 		UID:     uid,
+		Name:    req.Name,
 		Phone:   req.Phone,
 		Balance: model.DecimalZero(),
 		Points:  0,
-		Level:   1,
+		Level:   level,
 		Version: 0,
 	}
 	if err := m.db.Create(member).Error; err != nil {
@@ -109,17 +117,29 @@ func (m *MemberModule) GetMemberByUID(uid string) (*model.Member, error) {
 }
 
 // ListMembers 获取会员列表
-func (m *MemberModule) ListMembers(keyword string) ([]model.Member, error) {
+func (m *MemberModule) ListMembers(keyword string, page, pageSize int) ([]model.Member, int64, error) {
 	var members []model.Member
+	var total int64
+
 	query := m.db.Model(&model.Member{})
 	if keyword != "" {
 		query = query.Where("phone LIKE ? OR uid LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
 	}
-	query = query.Order("id DESC")
-	if err := query.Find(&members).Error; err != nil {
-		return nil, err
+
+	// 统计总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return members, nil
+
+	// 分页查询
+	query = query.Order("id DESC")
+	query = query.Offset((page - 1) * pageSize)
+	query = query.Limit(pageSize)
+
+	if err := query.Find(&members).Error; err != nil {
+		return nil, 0, err
+	}
+	return members, total, nil
 }
 
 // AdjustBalanceWithLock 乐观锁调整余额
@@ -242,11 +262,41 @@ func (m *MemberModule) CreateRechargeOrder(req *model.CreateRechargeOrderReq) (*
 		GiftAmount:  req.GiftAmount,
 		TotalAmount: req.PayAmount.Add(req.GiftAmount),
 		PayStatus:   model.PayStatusPending,
+		PayType:     req.PayType,
+		Remark:      req.Remark,
 	}
 	if err := m.db.Create(order).Error; err != nil {
 		return nil, err
 	}
+
+	// 关联查询会员信息
+	var member model.Member
+	if err := m.db.Where("id = ?", order.MemberID).First(&member).Error; err == nil {
+		order.MemberName = member.Name
+		order.MemberPhone = member.Phone
+	}
+
+	// 设置状态名称和支付方式名称
+	order.StatusName = order.PayStatus.String()
+	order.PayTypeName = getPayTypeName(req.PayType)
+
 	return order, nil
+}
+
+// getPayTypeName 获取支付方式名称
+func getPayTypeName(payType int) string {
+	switch payType {
+	case 1:
+		return "微信支付"
+	case 2:
+		return "支付宝"
+	case 3:
+		return "现金"
+	case 4:
+		return "银行卡"
+	default:
+		return "其他"
+	}
 }
 
 // GetRechargeOrder 获取充值单

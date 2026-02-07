@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
+	"github.com/google/uuid"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -30,8 +31,20 @@ func (m *MemberModule) GetDB() *gorm.DB {
 
 // CreateMember 创建会员
 func (m *MemberModule) CreateMember(req *model.CreateMemberReq) (*model.Member, error) {
+	// 检查手机号是否已存在
+	var count int64
+	m.db.Model(&model.Member{}).Where("phone = ?", req.Phone).Count(&count)
+	if count > 0 {
+		return nil, errors.New("手机号已注册")
+	}
+
+	// 如果没有提供 UID，则自动生成
+	uid := req.UID
+	if uid == "" {
+		uid = uuid.NewString()
+	}
 	member := &model.Member{
-		UID:     req.UID,
+		UID:     uid,
 		Phone:   req.Phone,
 		Balance: model.DecimalZero(),
 		Points:  0,

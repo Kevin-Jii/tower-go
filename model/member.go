@@ -17,7 +17,7 @@ func DecimalZero() DecimalType {
 // Member 会员表
 type Member struct {
 	ID         uint            `json:"id" gorm:"primaryKey"`
-	UID        string          `json:"uid" gorm:"type:varchar(32);uniqueIndex;comment:用户唯一标识"`
+	UID        string          `json:"uid" gorm:"type:varchar(64);uniqueIndex;comment:用户唯一标识"`
 	Phone      string          `json:"phone" gorm:"type:varchar(20);uniqueIndex;comment:手机号"`
 	Balance    decimal.Decimal `json:"balance" gorm:"type:decimal(10,2);comment:余额"`
 	Points     int             `json:"points" gorm:"type:int;default:0;comment:积分"`
@@ -94,7 +94,7 @@ const (
 
 // CreateMemberReq 创建会员请求
 type CreateMemberReq struct {
-	UID   string `json:"uid" binding:"required"`
+	UID   string `json:"uid"` // 可选，不传则自动生成
 	Phone string `json:"phone" binding:"required"`
 }
 

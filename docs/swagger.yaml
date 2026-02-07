@@ -22,6 +22,21 @@ definitions:
     required:
     - names
     type: object
+  controller.HealthResponse:
+    properties:
+      services:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        type: string
+      timestamp:
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
+    type: object
   controller.LoginRequest:
     properties:
       password:
@@ -316,10 +331,10 @@ definitions:
       phone:
         type: string
       uid:
+        description: 可选，不传则自动生成
         type: string
     required:
     - phone
-    - uid
     type: object
   model.CreateMenuReq:
     properties:
@@ -2478,6 +2493,19 @@ paths:
       summary: 上传图片到图库
       tags:
       - 图库管理
+  /health:
+    get:
+      description: 检查服务健康状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.HealthResponse'
+      summary: 健康检查
+      tags:
+      - 系统
   /inventories:
     get:
       parameters:
@@ -2672,6 +2700,47 @@ paths:
       summary: 根据单号获取出入库单详情
       tags:
       - 库存管理
+  /live:
+    get:
+      description: 检查服务是否存活
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 存活检查
+      tags:
+      - 系统
+  /log-level:
+    post:
+      consumes:
+      - application/json
+      description: 动态调整当前日志级别
+      parameters:
+      - description: 日志级别
+        in: body
+        name: level
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 调整日志级别
+      tags:
+      - 系统
   /members:
     get:
       description: 获取会员列表，支持关键字模糊查询手机号/UID
@@ -3740,6 +3809,21 @@ paths:
       summary: 确认采购单
       tags:
       - 采购单管理
+  /ready:
+    get:
+      description: 检查服务是否就绪
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 就绪检查
+      tags:
+      - 系统
   /recharge-orders:
     get:
       description: 查询会员充值记录

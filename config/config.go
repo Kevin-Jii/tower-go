@@ -93,9 +93,15 @@ func InitConfig() {
 
 // loadEnvFile 加载.env文件
 func loadEnvFile() {
+	// 检查当前目录下的.env文件
 	envPath := filepath.Join(".", ".env")
+	if _, err := os.Stat(envPath); err == nil {
+		loadEnvFromFile(envPath)
+		return
+	}
 
-	// 检查项目根目录下的.env文件
+	// 检查父目录下的.env文件（支持从cmd目录运行）
+	envPath = filepath.Join("..", ".env")
 	if _, err := os.Stat(envPath); err == nil {
 		loadEnvFromFile(envPath)
 		return

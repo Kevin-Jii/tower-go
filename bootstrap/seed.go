@@ -20,7 +20,7 @@ func RunSeedSQL() {
 
 	// 检查数据库是否有数据（用户表为空则需要初始化）
 	var userCount int64
-	database.DB.Raw("SELECT COUNT(*) FROM users").Scan(&userCount)
+	database.GetDB().Raw("SELECT COUNT(*) FROM users").Scan(&userCount)
 	
 	seedMarkerFile := ".seed_executed"
 	if userCount > 0 {
@@ -52,7 +52,7 @@ func RunSeedSQL() {
 			continue
 		}
 
-		if err := database.DB.Exec(stmt).Error; err != nil {
+		if err := database.GetDB().Exec(stmt).Error; err != nil {
 			// 忽略重复键错误，继续执行
 			if strings.Contains(err.Error(), "Duplicate") {
 				skipCount++

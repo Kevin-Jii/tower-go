@@ -14,6 +14,14 @@ import (
 
 // Setup 初始化路由
 func Setup(r *gin.Engine, c *api.Controllers) {
+	// 初始化健康检查控制器
+	healthController := controller.NewHealthController()
+
+	// 注册健康检查路由（无需认证）
+	r.GET("/health", healthController.Check)
+	r.GET("/ready", healthController.Ready)
+	r.GET("/live", healthController.Live)
+
 	v1 := r.Group("/api/v1")
 
 	// 注册各模块路由

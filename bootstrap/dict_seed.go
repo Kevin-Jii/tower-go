@@ -107,7 +107,7 @@ func initInventoryReason() {
 // ensureDictType 确保字典类型存在，返回类型ID
 func ensureDictType(code, name, remark string) uint {
 	var dictType model.DictType
-	err := database.DB.Where("code = ?", code).First(&dictType).Error
+	err := database.GetDB().Where("code = ?", code).First(&dictType).Error
 	if err == nil {
 		return dictType.ID
 	}
@@ -119,7 +119,7 @@ func ensureDictType(code, name, remark string) uint {
 		Remark: remark,
 		Status: 1,
 	}
-	if err := database.DB.Create(&dictType).Error; err != nil {
+	if err := database.GetDB().Create(&dictType).Error; err != nil {
 		logging.LogWarn("创建字典类型失败: " + code)
 		return 0
 	}
@@ -129,7 +129,7 @@ func ensureDictType(code, name, remark string) uint {
 // ensureDictData 确保字典数据存在
 func ensureDictData(typeID uint, typeCode, label, value string, sort int) {
 	var count int64
-	database.DB.Model(&model.DictData{}).Where("type_code = ? AND value = ?", typeCode, value).Count(&count)
+	database.GetDB().Model(&model.DictData{}).Where("type_code = ? AND value = ?", typeCode, value).Count(&count)
 	if count > 0 {
 		return // 已存在
 	}
@@ -142,5 +142,5 @@ func ensureDictData(typeID uint, typeCode, label, value string, sort int) {
 		Sort:     sort,
 		Status:   1,
 	}
-	database.DB.Create(&data)
+	database.GetDB().Create(&data)
 }

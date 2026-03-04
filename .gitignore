@@ -63,6 +63,11 @@ config.yml
 *.sqlite
 *.sqlite3
 
+# 数据库迁移和种子标记文件
+.migration_version
+.seed_executed
+.dict_seed_executed
+
 # 缓存文件
 .cache/
 

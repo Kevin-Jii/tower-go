@@ -60,7 +60,13 @@ func (m *UserModule) List(page, pageSize int) ([]*model.User, int64, error) {
 		return nil, 0, err
 	}
 
-	if err := m.db.Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
+	// 使用Preload避免N+1查询问题
+	if err := m.db.
+		Preload("Role").
+		Preload("Store").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -93,7 +99,11 @@ func (m *UserModule) ListByStoreID(storeID uint, page, pageSize int) ([]*model.U
 		return nil, 0, err
 	}
 
-	if err := m.db.Preload("Role").Where("store_id = ?", storeID).
+	// 使用Preload避免N+1查询问题
+	if err := m.db.
+		Preload("Role").
+		Preload("Store").
+		Where("store_id = ?", storeID).
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&users).Error; err != nil {
@@ -123,7 +133,13 @@ func (m *UserModule) ListByStoreIDWithKeyword(storeID uint, keyword string, page
 		return nil, 0, err
 	}
 
-	if err := query.Preload("Role").Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
+	// 使用Preload避免N+1查询问题
+	if err := query.
+		Preload("Role").
+		Preload("Store").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	return users, total, nil
@@ -149,7 +165,13 @@ func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.
 		return nil, 0, err
 	}
 
-	if err := query.Preload("Role").Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error; err != nil {
+	// 使用Preload避免N+1查询问题
+	if err := query.
+		Preload("Role").
+		Preload("Store").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	return users, total, nil

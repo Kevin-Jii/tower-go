@@ -1,16 +1,32 @@
 package bootstrap
 
 import (
+	"os"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
+const dictSeedFile = ".dict_seed_executed"
+
 // InitDefaultDicts 初始化默认字典数据
 func InitDefaultDicts() {
+	// 检查是否已经执行过字典初始化
+	if _, err := os.Stat(dictSeedFile); err == nil {
+		logging.LogInfo("字典数据已初始化，跳过")
+		return
+	}
+
 	initSalesChannel()
 	initOrderSource()
 	initInventoryReason()
+
+	// 创建标记文件
+	if err := os.WriteFile(dictSeedFile, []byte("executed"), 0644); err != nil {
+		logging.LogWarn("创建字典初始化标记文件失败: " + err.Error())
+	}
+
 	logging.LogInfo("字典数据初始化完成")
 }
 
@@ -40,8 +56,12 @@ func initSalesChannel() {
 		{"其他", "other", 99},
 	}
 
+	// 批量检查已存在的数据
+	existingValues := getExistingDictValues(typeCode)
 	for _, item := range items {
-		ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+		if _, exists := existingValues[item.Value]; !exists {
+			ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+		}
 	}
 }
 
@@ -68,8 +88,12 @@ func initOrderSource() {
 		{"其他", "other", 99},
 	}
 
+	// 批量检查已存在的数据
+	existingValues := getExistingDictValues(typeCode)
 	for _, item := range items {
-		ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+		if _, exists := existingValues[item.Value]; !exists {
+			ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+		}
 	}
 }
 
@@ -99,8 +123,12 @@ func initInventoryReason() {
 		{"其他", "other", 99},
 	}
 
+	// 批量检查已存在的数据
+	existingValues := getExistingDictValues(typeCode)
 	for _, item := range items {
-		ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+		if _, exists := existingValues[item.Value]; !exists {
+			ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+		}
 	}
 }
 
@@ -128,9 +156,9 @@ func ensureDictType(code, name, remark string) uint {
 
 // ensureDictData 确保字典数据存在
 func ensureDictData(typeID uint, typeCode, label, value string, sort int) {
-	var count int64
-	database.GetDB().Model(&model.DictData{}).Where("type_code = ? AND value = ?", typeCode, value).Count(&count)
-	if count > 0 {
+	var existing model.DictData
+	err := database.GetDB().Where("type_code = ? AND value = ?", typeCode, value).First(&existing).Error
+	if err == nil {
 		return // 已存在
 	}
 
@@ -143,4 +171,16 @@ func ensureDictData(typeID uint, typeCode, label, value string, sort int) {
 		Status:   1,
 	}
 	database.GetDB().Create(&data)
+}
+
+// getExistingDictValues 批量获取已存在的字典值
+func getExistingDictValues(typeCode string) map[string]bool {
+	var existingData []model.DictData
+	database.GetDB().Select("value").Where("type_code = ?", typeCode).Find(&existingData)
+
+	result := make(map[string]bool)
+	for _, data := range existingData {
+		result[data.Value] = true
+	}
+	return result
 }

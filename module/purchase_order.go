@@ -87,7 +87,17 @@ func (m *PurchaseOrderModule) List(req *model.ListPurchaseOrderReq) ([]*model.Pu
 	}
 
 	offset := (req.Page - 1) * req.PageSize
-	if err := query.Preload("Store").Preload("Creator").Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&orders).Error; err != nil {
+	// 使用Preload避免N+1查询问题 - 预加载所有关联数据
+	if err := query.
+		Preload("Store").
+		Preload("Creator").
+		Preload("Items").
+		Preload("Items.Supplier").
+		Preload("Items.Product").
+		Order("id DESC").
+		Offset(offset).
+		Limit(req.PageSize).
+		Find(&orders).Error; err != nil {
 		return nil, 0, err
 	}
 

@@ -161,7 +161,13 @@ func (m *InventoryModule) ListOrders(req *model.ListInventoryOrderReq) ([]*model
 	}
 
 	offset := (req.Page - 1) * req.PageSize
-	if err := query.Preload("Items").Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&orders).Error; err != nil {
+	// 使用Preload避免N+1查询问题
+	if err := query.
+		Preload("Items").
+		Order("id DESC").
+		Offset(offset).
+		Limit(req.PageSize).
+		Find(&orders).Error; err != nil {
 		return nil, 0, err
 	}
 

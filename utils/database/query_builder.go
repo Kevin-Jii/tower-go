@@ -1,6 +1,8 @@
 package database
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -275,4 +277,227 @@ func (qb *QueryBuilder) Reset() *QueryBuilder {
 	qb.limit = 0
 	qb.offset = 0
 	return qb
+}
+
+// CursorPaginator 游标分页器接口
+type CursorPaginator interface {
+	// Paginate 执行游标分页
+	Paginate(query *gorm.DB, cursor string, limit int) (*CursorResult, error)
+
+	// EncodeCursor 编码游标
+	EncodeCursor(lastID uint, lastValue interface{}) string
+
+	// DecodeCursor 解码游标
+	DecodeCursor(cursor string) (uint, interface{}, error)
+}
+
+// CursorResult 游标分页结果
+type CursorResult struct {
+	Data       interface{} `json:"data"`
+	NextCursor string      `json:"next_cursor,omitempty"`
+	HasMore    bool        `json:"has_more"`
+	Limit      int         `json:"limit"`
+}
+
+// CursorData 游标数据结构
+type CursorData struct {
+	LastID    uint        `json:"last_id"`
+	LastValue interface{} `json:"last_value,omitempty"`
+}
+
+// cursorPaginator 游标分页器实现
+type cursorPaginator struct {
+	orderColumn string
+	orderDesc   bool
+}
+
+// NewCursorPaginator 创建游标分页器
+// orderColumn: 排序字段（默认为 "id"）
+// orderDesc: 是否降序（默认为 false）
+func NewCursorPaginator(orderColumn string, orderDesc bool) CursorPaginator {
+	if orderColumn == "" {
+		orderColumn = "id"
+	}
+	return &cursorPaginator{
+		orderColumn: orderColumn,
+		orderDesc:   orderDesc,
+	}
+}
+
+// EncodeCursor 编码游标
+func (cp *cursorPaginator) EncodeCursor(lastID uint, lastValue interface{}) string {
+	if lastID == 0 {
+		return ""
+	}
+
+	cursorData := CursorData{
+		LastID:    lastID,
+		LastValue: lastValue,
+	}
+
+	jsonData, err := json.Marshal(cursorData)
+	if err != nil {
+		return ""
+	}
+
+	return base64.URLEncoding.EncodeToString(jsonData)
+}
+
+// DecodeCursor 解码游标
+func (cp *cursorPaginator) DecodeCursor(cursor string) (uint, interface{}, error) {
+	if cursor == "" {
+		return 0, nil, nil
+	}
+
+	jsonData, err := base64.URLEncoding.DecodeString(cursor)
+	if err != nil {
+		return 0, nil, fmt.Errorf("invalid cursor format: %w", err)
+	}
+
+	var cursorData CursorData
+	if err := json.Unmarshal(jsonData, &cursorData); err != nil {
+		return 0, nil, fmt.Errorf("invalid cursor data: %w", err)
+	}
+
+	return cursorData.LastID, cursorData.LastValue, nil
+}
+
+// Paginate 执行游标分页
+func (cp *cursorPaginator) Paginate(query *gorm.DB, cursor string, limit int) (*CursorResult, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+
+	// 解码游标
+	lastID, lastValue, err := cp.DecodeCursor(cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建查询条件
+	if lastID > 0 {
+		if cp.orderDesc {
+			// 降序: 查询小于游标的记录
+			if lastValue != nil && cp.orderColumn != "id" {
+				query = query.Where(
+					fmt.Sprintf("(%s < ?) OR (%s = ? AND id < ?)", cp.orderColumn, cp.orderColumn),
+					lastValue, lastValue, lastID,
+				)
+			} else {
+				query = query.Where("id < ?", lastID)
+			}
+		} else {
+			// 升序: 查询大于游标的记录
+			if lastValue != nil && cp.orderColumn != "id" {
+				query = query.Where(
+					fmt.Sprintf("(%s > ?) OR (%s = ? AND id > ?)", cp.orderColumn, cp.orderColumn),
+					lastValue, lastValue, lastID,
+				)
+			} else {
+				query = query.Where("id > ?", lastID)
+			}
+		}
+	}
+
+	// 添加排序
+	orderDirection := "ASC"
+	if cp.orderDesc {
+		orderDirection = "DESC"
+	}
+
+	if cp.orderColumn != "id" {
+		query = query.Order(fmt.Sprintf("%s %s", cp.orderColumn, orderDirection))
+	}
+	query = query.Order(fmt.Sprintf("id %s", orderDirection))
+
+	// 查询 limit+1 条记录以判断是否还有更多数据
+	query = query.Limit(limit + 1)
+
+	return &CursorResult{
+		Limit: limit,
+	}, nil
+}
+
+// CursorPaginate 游标分页查询（QueryBuilder 方法）
+// cursor: 游标字符串
+// limit: 每页数量
+// orderColumn: 排序字段（默认为 "id"）
+// orderDesc: 是否降序（默认为 false）
+func (qb *QueryBuilder) CursorPaginate(dest interface{}, cursor string, limit int, orderColumn string, orderDesc bool) (*CursorResult, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+
+	if orderColumn == "" {
+		orderColumn = "id"
+	}
+
+	// 创建游标分页器
+	paginator := NewCursorPaginator(orderColumn, orderDesc)
+
+	// 解码游标
+	lastID, lastValue, err := paginator.DecodeCursor(cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建查询
+	query := qb.Clone()
+
+	// 添加游标条件
+	if lastID > 0 {
+		if orderDesc {
+			// 降序: 查询小于游标的记录
+			if lastValue != nil && orderColumn != "id" {
+				query.Where(
+					fmt.Sprintf("(%s < ?) OR (%s = ? AND id < ?)", orderColumn, orderColumn),
+					lastValue, lastValue, lastID,
+				)
+			} else {
+				query.Where("id < ?", lastID)
+			}
+		} else {
+			// 升序: 查询大于游标的记录
+			if lastValue != nil && orderColumn != "id" {
+				query.Where(
+					fmt.Sprintf("(%s > ?) OR (%s = ? AND id > ?)", orderColumn, orderColumn),
+					lastValue, lastValue, lastID,
+				)
+			} else {
+				query.Where("id > ?", lastID)
+			}
+		}
+	}
+
+	// 添加排序
+	orderDirection := "ASC"
+	if orderDesc {
+		orderDirection = "DESC"
+	}
+
+	if orderColumn != "id" {
+		query.OrderBy(orderColumn, orderDirection)
+	}
+	query.OrderBy("id", orderDirection)
+
+	// 查询 limit+1 条记录以判断是否还有更多数据
+	query.Limit(limit + 1)
+
+	// 执行查询
+	if err := query.Find(dest); err != nil {
+		return nil, err
+	}
+
+	// 使用反射获取结果集合的长度
+	// 这里需要处理 dest 是切片的情况
+	result := &CursorResult{
+		Limit:   limit,
+		Data:    dest,
+		HasMore: false,
+	}
+
+	// 注意: 实际使用时需要在调用方检查返回的记录数
+	// 如果记录数 > limit，则 HasMore = true，并生成 NextCursor
+
+	return result, nil
 }

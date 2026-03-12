@@ -8,6 +8,13 @@
 
 ## 🚀 核心功能
 
+### ⚡ 性能优化
+- **查询优化器** - 自动分析SQL查询，检测性能问题并提供优化建议
+- **索引分析** - 智能识别缺失索引，提供索引策略建议
+- **JOIN去重** - 自动检测和防止重复JOIN操作
+- **热路径优化** - 类型断言、并发map等高频操作优化
+- **缓存策略** - 多级缓存、分布式锁、延迟双删等缓存优化
+
 ### 📦 供应链管理
 - **多门店管理** - 支持多门店独立管理和数据隔离
 - **供应商管理** - 供应商信息、商品分类、商品管理
@@ -85,6 +92,11 @@ tower-go/
 │   ├── api/                   # API 路由模块
 │   └── router.go              # 路由注册
 ├── utils/                      # 工具函数
+├── pkg/                        # 性能优化包
+│   └── performance/           # 性能优化组件
+│       ├── query_optimizer.go # 查询优化器
+│       ├── hotpath.go         # 热路径优化
+│       └── README.md          # 性能优化文档
 ├── migrations/                 # 数据库迁移脚本
 └── docs/                       # Swagger 文档
     ├── docs.go
@@ -107,6 +119,7 @@ tower-go/
 | gg | fogleman/gg | 图片生成库 |
 | MinIO/RustFS | - | 对象存储服务 |
 | WebSocket | gorilla/websocket | 实时通信 |
+| gopter | leanovate/gopter | 属性测试库 |
 
 ## 🎯 快速开始
 
@@ -295,6 +308,86 @@ docker-compose up -d
 ## 📝 许可证
 
 [MIT License](LICENSE)
+
+---
+
+## ⚡ 性能优化
+
+系统集成了全面的性能优化组件，从数据库查询到内存管理，提供企业级的性能保障。
+
+### 查询优化器
+
+自动分析SQL查询，检测性能问题并提供优化建议：
+
+```go
+import "github.com/Kevin-Jii/tower-go/pkg/performance"
+
+optimizer := performance.NewQueryOptimizer(db)
+result, _ := optimizer.Analyze("SELECT * FROM store_accounts WHERE store_id = ?")
+
+// 检查性能问题
+for _, issue := range result.Issues {
+    fmt.Printf("[%s] %s\n", issue.Severity, issue.Message)
+}
+
+// 获取优化建议
+for _, rec := range result.Recommendations {
+    fmt.Println("建议:", rec)
+}
+```
+
+**检测的问题类型**：
+- 缺失索引
+- OFFSET分页性能问题
+- 全表扫描
+- LIKE前缀优化
+- 重复JOIN
+- SELECT * 使用
+
+### 索引分析
+
+智能分析表的索引使用情况：
+
+```go
+analyzer := performance.NewIndexAnalyzer(db)
+usage := analyzer.AnalyzeIndexUsage("store_accounts", []string{"store_id", "account_date"})
+
+fmt.Printf("潜在索引: %v\n", usage.PotentialIndexes)
+fmt.Printf("全表扫描: %v\n", usage.TableScan)
+```
+
+### 热路径优化
+
+针对高频操作的性能优化：
+
+```go
+// 类型转换优化（使用类型开关替代反射）
+converter := performance.GetTypeConverter()
+val, _ := converter.ToUint(someInterface)
+
+// 并发缓存优化（使用sync.Map）
+cache := performance.NewConcurrentCache()
+cache.Set("key", value)
+val, _ := cache.Get("key")
+
+// 正则表达式缓存
+regexCache := performance.GetRegexCache()
+regex, _ := regexCache.Get(`^\d{3}-\d{4}$`)
+```
+
+### 性能测试
+
+系统使用属性测试（Property-Based Testing）验证性能优化的正确性：
+
+```bash
+# 运行性能测试
+go test -v ./pkg/performance/... -run TestProperty
+
+# 运行基准测试
+go test -bench=. -benchmem ./pkg/performance/...
+```
+
+详细文档请参考：[pkg/performance/README.md](pkg/performance/README.md)
 
 ---
 

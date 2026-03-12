@@ -10,11 +10,12 @@ import (
 
 // Config 应用配置
 type Config struct {
-	App      AppConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	DingTalk DingTalkConfig
-	RustFS   RustFSConfig
+	App         AppConfig
+	Database    DatabaseConfig
+	Redis       RedisConfig
+	DingTalk    DingTalkConfig
+	RustFS      RustFSConfig
+	Performance PerformanceConfig
 }
 
 // RustFSConfig RustFS对象存储配置（S3兼容）
@@ -81,11 +82,12 @@ func InitConfig() {
 	loadEnvFile()
 
 	cfg = &Config{
-		App:      loadAppConfig(),
-		Database: loadDatabaseConfig(),
-		Redis:    loadRedisConfig(),
-		DingTalk: loadDingTalkConfig(),
-		RustFS:   loadRustFSConfig(),
+		App:         loadAppConfig(),
+		Database:    loadDatabaseConfig(),
+		Redis:       loadRedisConfig(),
+		DingTalk:    loadDingTalkConfig(),
+		RustFS:      loadRustFSConfig(),
+		Performance: loadPerformanceConfig(),
 	}
 }
 

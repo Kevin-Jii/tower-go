@@ -4,7 +4,101 @@ This package provides optimized utilities for hot path operations in the Tower-G
 
 ## Components
 
-### 1. TypeConverter
+### 1. QueryOptimizer
+
+Intelligent query analyzer and optimizer that detects performance issues and suggests improvements.
+
+**Features**:
+- Automatic index usage analysis
+- Detection of N+1 query problems
+- OFFSET pagination warnings
+- Duplicate JOIN detection
+- Full table scan identification
+- LIKE prefix optimization suggestions
+
+```go
+optimizer := performance.NewQueryOptimizer(db)
+
+// Analyze a SQL query
+result, err := optimizer.Analyze("SELECT * FROM store_accounts WHERE store_id = ?")
+
+// Check for issues
+for _, issue := range result.Issues {
+    fmt.Printf("[%s] %s: %s\n", issue.Severity, issue.Type, issue.Message)
+    fmt.Printf("Suggestion: %s\n", issue.Suggestion)
+}
+
+// Get recommendations
+for _, rec := range result.Recommendations {
+    fmt.Println("Recommendation:", rec)
+}
+
+// Check index usage
+fmt.Printf("Used indexes: %v\n", result.IndexUsage.UsedIndexes)
+fmt.Printf("Missing indexes: %v\n", result.IndexUsage.MissingIndexes)
+fmt.Printf("Table scan: %v\n", result.IndexUsage.TableScan)
+```
+
+**Issue Detection**:
+- `missing_index`: Fields that may benefit from indexes
+- `offset_pagination`: OFFSET usage in large datasets
+- `full_table_scan`: Queries without WHERE clauses
+- `like_prefix`: LIKE patterns starting with wildcards
+- `duplicate_join`: Same table joined multiple times
+- `select_all`: SELECT * usage
+
+**Benefits**:
+- Proactive performance issue detection
+- Actionable optimization suggestions
+- Index strategy recommendations
+- Query complexity analysis
+
+### 2. IndexAnalyzer
+
+Analyzes index usage patterns and suggests optimal indexing strategies.
+
+```go
+analyzer := performance.NewIndexAnalyzer(db)
+
+// Analyze index usage for a table
+usage := analyzer.AnalyzeIndexUsage("store_accounts", []string{"store_id", "account_date"})
+
+fmt.Printf("Potential indexes: %v\n", usage.PotentialIndexes)
+fmt.Printf("Table scan detected: %v\n", usage.TableScan)
+```
+
+**Benefits**:
+- Identifies missing indexes
+- Suggests composite indexes
+- Detects full table scans
+- Provides index recommendations
+
+### 3. JoinDeduplicator
+
+Detects and prevents duplicate JOIN operations in queries.
+
+```go
+deduplicator := performance.NewJoinDeduplicator()
+
+// Add tables to track
+if deduplicator.Add("users") {
+    // First time joining users table
+}
+
+if !deduplicator.Add("users") {
+    // Duplicate JOIN detected!
+}
+
+// Reset for next query
+deduplicator.Reset()
+```
+
+**Benefits**:
+- Prevents redundant JOINs
+- Reduces query complexity
+- Improves query performance
+
+### 4. TypeConverter
 
 Provides fast type conversions using type switches instead of reflection.
 
@@ -28,7 +122,7 @@ num, err := converter.ToInt(someInterface)
 - Zero memory allocations
 - Type-safe with proper error handling
 
-### 2. ConcurrentCache
+### 5. ConcurrentCache
 
 Thread-safe cache using `sync.Map` optimized for read-heavy workloads.
 
@@ -66,7 +160,7 @@ cache.Clear()
 - No lock contention for read operations
 - Atomic operations for consistency
 
-### 3. RegexCache
+### 6. RegexCache
 
 Cache for pre-compiled regular expressions to avoid repeated compilation.
 
@@ -94,7 +188,7 @@ cache.Precompile(patterns)
 - Thread-safe using sync.Map
 - Automatic caching on first use
 
-### 4. OptimizedValidator
+### 7. OptimizedValidator
 
 Validation utilities with pre-compiled regex patterns.
 
@@ -123,7 +217,7 @@ clean := validator.SanitizeInput(userInput)
 - Faster than compiling regex on each validation
 - Consistent validation logic
 
-### 5. OptimizedSessionManager
+### 8. OptimizedSessionManager
 
 WebSocket session manager using sync.Map for better concurrent performance.
 
@@ -154,7 +248,7 @@ count := manager.Broadcast(userID, message)
 - Supports single sign-on and multi-device strategies
 - Thread-safe operations
 
-### 6. ContextExtractor
+### 9. ContextExtractor
 
 Optimized context value extraction using type switches.
 
@@ -211,6 +305,9 @@ Pre-compile regex patterns when:
 
 | Operation | Time | Allocations | vs Alternative |
 |-----------|------|-------------|----------------|
+| Query Analysis | ~100 μs | Minimal | Prevents slow queries |
+| Index Analysis | O(n) | Minimal | Identifies missing indexes |
+| JOIN Deduplication | O(1) | 0 | Prevents redundant JOINs |
 | Type Switch (ToUint) | ~2.7 ns | 0 | 10-100x faster than reflection |
 | sync.Map Read | ~3.1 ns | 0 | 9x faster than mutex map |
 | sync.Map Write | ~40 ns | 2 | 1.8x faster than mutex map |
@@ -235,8 +332,10 @@ go test -bench=. -benchmem ./pkg/performance/...
 
 The package includes property-based tests that verify:
 
-1. **Property 34**: Type switch performance - Type switches correctly convert all numeric types
-2. **Property 35**: sync.Map concurrent performance - Concurrent operations are thread-safe and performant
+1. **Property 5**: Automatic index strategy - Query optimizer detects performance issues
+2. **Property 7**: JOIN deduplication - Duplicate JOINs are detected and prevented
+3. **Property 34**: Type switch performance - Type switches correctly convert all numeric types
+4. **Property 35**: sync.Map concurrent performance - Concurrent operations are thread-safe and performant
 
 These tests run 100+ iterations with random inputs to ensure correctness across all scenarios.
 
@@ -247,7 +346,11 @@ To use these optimizations in your code:
 ```go
 import "github.com/Kevin-Jii/tower-go/pkg/performance"
 
-// Use global instances
+// Query optimization
+optimizer := performance.NewQueryOptimizer(db)
+result, _ := optimizer.Analyze(sqlQuery)
+
+// Use global instances for hot path operations
 converter := performance.GetTypeConverter()
 cache := performance.NewConcurrentCache()
 validator := performance.GetOptimizedValidator()
@@ -256,13 +359,15 @@ extractor := performance.GetContextExtractor()
 
 ## Best Practices
 
-1. **Reuse instances**: Create cache and validator instances once and reuse them
-2. **Pre-compile patterns**: Use `Precompile()` for known regex patterns at startup
-3. **Profile first**: Use benchmarks to verify optimizations help your specific use case
-4. **Test thoroughly**: Property-based tests help catch edge cases
+1. **Analyze queries early**: Use QueryOptimizer during development to catch issues
+2. **Monitor index usage**: Regularly check IndexAnalyzer recommendations
+3. **Reuse instances**: Create cache and validator instances once and reuse them
+4. **Pre-compile patterns**: Use `Precompile()` for known regex patterns at startup
+5. **Profile first**: Use benchmarks to verify optimizations help your specific use case
+6. **Test thoroughly**: Property-based tests help catch edge cases
 
 ## References
 
-- Requirements: 8.1 (Type switch optimization), 8.2 (sync.Map usage)
-- Design: Hot Path Optimization section
-- Properties: 34 (Type switch performance), 35 (sync.Map concurrent performance)
+- Requirements: 2.1 (Automatic index strategy), 2.3 (JOIN deduplication), 8.1 (Type switch optimization), 8.2 (sync.Map usage)
+- Design: Query Builder Enhancement, Hot Path Optimization sections
+- Properties: 5 (Automatic index strategy), 7 (JOIN deduplication), 34 (Type switch performance), 35 (sync.Map concurrent performance)

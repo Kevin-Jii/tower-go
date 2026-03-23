@@ -185,3 +185,143 @@ func CacheSet(key string, value interface{}, ttl time.Duration) error {
 func InvalidateMenuCache() {
 	CacheDeleteByPattern(fmt.Sprintf("%smenu:*", CachePrefix))
 }
+
+// BatchGet 批量获取缓存
+// 使用 Redis Pipeline 批量获取多个键的值，减少网络往返次数
+func BatchGet(keys []string) (map[string]interface{}, error) {
+	if !IsRedisEnabled() {
+		return nil, fmt.Errorf("redis is not enabled")
+	}
+
+	if len(keys) == 0 {
+		return make(map[string]interface{}), nil
+	}
+
+	ctx := context.Background()
+	pipe := redisClient.Pipeline()
+
+	// 批量添加 GET 命令到 Pipeline
+	cmds := make(map[string]*redis.StringCmd, len(keys))
+	for _, key := range keys {
+		cmds[key] = pipe.Get(ctx, key)
+	}
+
+	// 执行 Pipeline
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		// 如果不是 redis.Nil 错误，记录日志
+		logging.LogError("Failed to execute pipeline batch get", zap.Error(err))
+	}
+
+	// 收集结果
+	result := make(map[string]interface{}, len(keys))
+	for key, cmd := range cmds {
+		data, err := cmd.Bytes()
+		if err == redis.Nil {
+			// 键不存在，跳过
+			continue
+		}
+		if err != nil {
+			logging.LogError("Failed to get value from pipeline", zap.String("key", key), zap.Error(err))
+			continue
+		}
+
+		// 尝试反序列化 JSON
+		var value interface{}
+		if err := json.Unmarshal(data, &value); err != nil {
+			// 如果不是 JSON，直接存储字符串
+			result[key] = string(data)
+		} else {
+			result[key] = value
+		}
+	}
+
+	return result, nil
+}
+
+// BatchSet 批量设置缓存
+// 使用 Redis Pipeline 批量设置多个键值对，减少网络往返次数
+func BatchSet(items map[string]interface{}, ttl time.Duration) error {
+	if !IsRedisEnabled() {
+		return nil
+	}
+
+	if len(items) == 0 {
+		return nil
+	}
+
+	ctx := context.Background()
+	pipe := redisClient.Pipeline()
+
+	// 批量添加 SET 命令到 Pipeline
+	for key, value := range items {
+		jsonData, err := json.Marshal(value)
+		if err != nil {
+			logging.LogError("Failed to marshal value for batch set", zap.String("key", key), zap.Error(err))
+			continue
+		}
+		pipe.Set(ctx, key, jsonData, ttl)
+	}
+
+	// 执行 Pipeline
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		logging.LogError("Failed to execute pipeline batch set", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+// BatchGetTyped 批量获取缓存并反序列化到指定类型
+// 使用 Redis Pipeline 批量获取多个键的值，并反序列化到 map[string]T
+func BatchGetTyped(keys []string, destMap interface{}) error {
+	if !IsRedisEnabled() {
+		return fmt.Errorf("redis is not enabled")
+	}
+
+	if len(keys) == 0 {
+		return nil
+	}
+
+	ctx := context.Background()
+	pipe := redisClient.Pipeline()
+
+	// 批量添加 GET 命令到 Pipeline
+	cmds := make(map[string]*redis.StringCmd, len(keys))
+	for _, key := range keys {
+		cmds[key] = pipe.Get(ctx, key)
+	}
+
+	// 执行 Pipeline
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		logging.LogError("Failed to execute pipeline batch get typed", zap.Error(err))
+	}
+
+	// 收集结果并反序列化
+	results := make(map[string]json.RawMessage, len(keys))
+	for key, cmd := range cmds {
+		data, err := cmd.Bytes()
+		if err == redis.Nil {
+			// 键不存在，跳过
+			continue
+		}
+		if err != nil {
+			logging.LogError("Failed to get value from pipeline", zap.String("key", key), zap.Error(err))
+			continue
+		}
+		results[key] = data
+	}
+
+	// 将结果序列化为 JSON 并反序列化到目标 map
+	if len(results) > 0 {
+		jsonData, err := json.Marshal(results)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(jsonData, destMap)
+	}
+
+	return nil
+}

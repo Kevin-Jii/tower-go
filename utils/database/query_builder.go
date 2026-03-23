@@ -1,13 +1,29 @@
 package database
 
 import (
+	"context"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
+
+// QueryCache 查询缓存接口
+type QueryCache interface {
+	// Get 获取缓存的查询结果
+	Get(ctx context.Context, key string, dest interface{}) error
+
+	// Set 设置查询结果缓存
+	Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+
+	// Invalidate 失效缓存
+	Invalidate(ctx context.Context, pattern string) error
+}
 
 // QueryBuilder 查询构造器
 type QueryBuilder struct {
@@ -17,6 +33,9 @@ type QueryBuilder struct {
 	orders     []string
 	limit      int
 	offset     int
+	cache      QueryCache
+	cacheKey   string
+	cacheTTL   time.Duration
 }
 
 // NewQueryBuilder 创建查询构造器
@@ -276,7 +295,147 @@ func (qb *QueryBuilder) Reset() *QueryBuilder {
 	qb.orders = make([]string, 0)
 	qb.limit = 0
 	qb.offset = 0
+	qb.cacheKey = ""
+	qb.cacheTTL = 0
 	return qb
+}
+
+// WithCache 启用查询缓存
+// cache: 缓存实现
+// ttl: 缓存过期时间
+func (qb *QueryBuilder) WithCache(cache QueryCache, ttl time.Duration) *QueryBuilder {
+	qb.cache = cache
+	qb.cacheTTL = ttl
+	return qb
+}
+
+// WithCacheKey 设置自定义缓存键
+func (qb *QueryBuilder) WithCacheKey(key string) *QueryBuilder {
+	qb.cacheKey = key
+	return qb
+}
+
+// generateCacheKey 生成缓存键（基于查询SQL和参数）
+func (qb *QueryBuilder) generateCacheKey() string {
+	// 如果已设置自定义缓存键，直接使用
+	if qb.cacheKey != "" {
+		return qb.cacheKey
+	}
+
+	// 如果没有任何条件，返回空字符串（不缓存）
+	if len(qb.conditions) == 0 && len(qb.orders) == 0 && qb.limit == 0 && qb.offset == 0 {
+		return ""
+	}
+
+	// 构建查询字符串
+	var queryParts []string
+
+	// 添加条件
+	if len(qb.conditions) > 0 {
+		queryParts = append(queryParts, "WHERE:"+strings.Join(qb.conditions, " AND "))
+	}
+
+	// 添加参数
+	if len(qb.args) > 0 {
+		argsJSON, _ := json.Marshal(qb.args)
+		queryParts = append(queryParts, "ARGS:"+string(argsJSON))
+	}
+
+	// 添加排序
+	if len(qb.orders) > 0 {
+		queryParts = append(queryParts, "ORDER:"+strings.Join(qb.orders, ","))
+	}
+
+	// 添加分页
+	if qb.limit > 0 {
+		queryParts = append(queryParts, fmt.Sprintf("LIMIT:%d", qb.limit))
+	}
+	if qb.offset > 0 {
+		queryParts = append(queryParts, fmt.Sprintf("OFFSET:%d", qb.offset))
+	}
+
+	// 生成MD5哈希作为缓存键
+	queryString := strings.Join(queryParts, "|")
+	hash := md5.Sum([]byte(queryString))
+	return "query:" + hex.EncodeToString(hash[:])
+}
+
+// FindWithCache 执行查询并使用缓存
+func (qb *QueryBuilder) FindWithCache(ctx context.Context, dest interface{}) error {
+	// 如果未启用缓存，直接查询
+	if qb.cache == nil {
+		return qb.Find(dest)
+	}
+
+	// 生成缓存键
+	cacheKey := qb.generateCacheKey()
+
+	// 如果缓存键为空（无条件查询），不使用缓存
+	if cacheKey == "" {
+		return qb.Find(dest)
+	}
+
+	// 尝试从缓存获取
+	err := qb.cache.Get(ctx, cacheKey, dest)
+	if err == nil {
+		// 缓存命中
+		return nil
+	}
+
+	// 缓存未命中，执行查询
+	if err := qb.Find(dest); err != nil {
+		return err
+	}
+
+	// 将结果写入缓存
+	if qb.cacheTTL > 0 {
+		_ = qb.cache.Set(ctx, cacheKey, dest, qb.cacheTTL)
+	}
+
+	return nil
+}
+
+// FirstWithCache 查询第一条记录并使用缓存
+func (qb *QueryBuilder) FirstWithCache(ctx context.Context, dest interface{}) error {
+	// 如果未启用缓存，直接查询
+	if qb.cache == nil {
+		return qb.First(dest)
+	}
+
+	// 生成缓存键
+	cacheKey := qb.generateCacheKey()
+
+	// 如果缓存键为空（无条件查询），不使用缓存
+	if cacheKey == "" {
+		return qb.First(dest)
+	}
+
+	// 尝试从缓存获取
+	err := qb.cache.Get(ctx, cacheKey, dest)
+	if err == nil {
+		// 缓存命中
+		return nil
+	}
+
+	// 缓存未命中，执行查询
+	if err := qb.First(dest); err != nil {
+		return err
+	}
+
+	// 将结果写入缓存
+	if qb.cacheTTL > 0 {
+		_ = qb.cache.Set(ctx, cacheKey, dest, qb.cacheTTL)
+	}
+
+	return nil
+}
+
+// InvalidateCache 失效缓存
+func (qb *QueryBuilder) InvalidateCache(ctx context.Context, pattern string) error {
+	if qb.cache == nil {
+		return nil
+	}
+	return qb.cache.Invalidate(ctx, pattern)
 }
 
 // CursorPaginator 游标分页器接口

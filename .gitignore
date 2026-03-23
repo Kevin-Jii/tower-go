@@ -101,3 +101,7 @@ docs/*.md.bak
 
 # Windows 特殊文件
 nul
+
+# 本地开发文件
+.claude/
+.kiro/

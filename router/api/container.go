@@ -102,6 +102,7 @@ func BuildControllers() *Controllers {
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, supplierProductModule, storeModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 	memberService := service.NewMemberService(memberModule)
+	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
 
 	// 初始化默认消息模板
 	if err := messageTemplateService.InitDefaultTemplates(); err != nil {

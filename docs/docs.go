@@ -3698,7 +3698,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "创建会员充值订单",
+                "description": "创建会员充值订单（自动完成支付）",
                 "consumes": [
                     "application/json"
                 ],

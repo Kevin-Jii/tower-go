@@ -3906,7 +3906,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 创建会员充值订单
+      description: 创建会员充值订单（自动完成支付）
       parameters:
       - description: 充值信息
         in: body

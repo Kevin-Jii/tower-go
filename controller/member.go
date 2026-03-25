@@ -185,7 +185,12 @@ func (c *MemberController) AdjustBalance(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	member, err := c.service.AdjustBalance(uint(id), req.Amount, req.Type, req.Remark, req.Version)
+
+	// 获取当前用户的门店ID和用户ID
+	storeID := middleware.GetStoreID(ctx)
+	userID := middleware.GetUserID(ctx)
+
+	member, err := c.service.AdjustBalance(uint(id), req.Amount, req.Type, req.Remark, req.Version, storeID, userID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -259,7 +264,7 @@ func (c *MemberController) ListWalletLogs(ctx *gin.Context) {
 
 // CreateRechargeOrder 创建充值单
 // @Summary 创建充值单
-// @Description 创建会员充值订单
+// @Description 创建会员充值订单（自动完成支付）
 // @Tags 充值管理
 // @Accept json
 // @Produce json
@@ -273,7 +278,12 @@ func (c *MemberController) CreateRechargeOrder(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	order, err := c.service.CreateRechargeOrder(&req)
+
+	// 获取当前用户的门店ID和用户ID
+	storeID := middleware.GetStoreID(ctx)
+	userID := middleware.GetUserID(ctx)
+
+	order, err := c.service.CreateRechargeOrder(&req, storeID, userID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -365,7 +375,12 @@ func (c *MemberController) PayRechargeOrder(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	order, err := c.service.PayRechargeOrder(req.OrderNo)
+
+	// 获取当前用户的门店ID和用户ID
+	storeID := middleware.GetStoreID(ctx)
+	userID := middleware.GetUserID(ctx)
+
+	order, err := c.service.PayRechargeOrder(req.OrderNo, storeID, userID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return

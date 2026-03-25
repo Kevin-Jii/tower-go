@@ -123,7 +123,7 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int) ([]model.
 
 	query := m.db.Model(&model.Member{})
 	if keyword != "" {
-		query = query.Where("phone LIKE ? OR uid LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+		query = query.Where("phone LIKE ? OR uid LIKE ? OR name LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
 
 	// 统计总数
@@ -356,6 +356,9 @@ func (m *MemberModule) PayRechargeOrder(orderNo string) (*model.RechargeOrder, e
 	if err := m.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&member, order.MemberID).Error; err != nil {
 		return nil, err
 	}
+
+	// 设置会员名称到订单中（用于通知）
+	order.MemberName = member.Name
 
 	// 计算新余额
 	newBalance := member.Balance.Add(order.TotalAmount)

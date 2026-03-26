@@ -41,6 +41,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterStatisticsRoutes(v1, c)
 	api.RegisterMessageTemplateRoutes(v1, c)
 	api.RegisterMemberRoutes(v1, c)
+	api.RegisterPrinterRoutes(v1, c)
 
 	// WebSocket
 	r.GET("/ws", controller.WebSocketHandler)

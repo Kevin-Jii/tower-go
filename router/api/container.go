@@ -29,6 +29,7 @@ type Controllers struct {
 	Statistics        *controller.StatisticsController
 	MessageTemplate   *controller.MessageTemplateController
 	Member            *controller.MemberController
+	Printer           *controller.PrinterController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 }
 
@@ -104,6 +105,17 @@ func BuildControllers() *Controllers {
 	memberService := service.NewMemberService(memberModule)
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
 
+	// 初始化打印机模块
+	printerModule := userModulePkg.NewPrinterModule(database.DB)
+	printerService := service.NewPrinterService(printerModule, storeModule)
+
+	// 从配置初始化芯烨云客户端（如果配置了）
+	xpyunConfig := config.GetConfig().Xpyun
+	if xpyunConfig.User != "" && xpyunConfig.UserKey != "" {
+		printerService.InitXpyunClient(xpyunConfig.User, xpyunConfig.UserKey)
+		logging.LogInfo("芯烨云打印机客户端已初始化")
+	}
+
 	// 初始化默认消息模板
 	if err := messageTemplateService.InitDefaultTemplates(); err != nil {
 		logging.LogWarn("初始化消息模板失败: " + err.Error())
@@ -138,6 +150,7 @@ func BuildControllers() *Controllers {
 		Statistics:        controller.NewStatisticsController(statisticsService),
 		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
 		Member:            controller.NewMemberController(memberService),
+		Printer:           controller.NewPrinterController(printerService),
 		DingTalkBotModule: dingTalkBotModule,
 	}
 }

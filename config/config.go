@@ -15,7 +15,14 @@ type Config struct {
 	Redis       RedisConfig
 	DingTalk    DingTalkConfig
 	RustFS      RustFSConfig
+	Xpyun       XpyunConfig
 	Performance PerformanceConfig
+}
+
+// XpyunConfig 芯烨云打印机配置
+type XpyunConfig struct {
+	User   string
+	UserKey string
 }
 
 // RustFSConfig RustFS对象存储配置（S3兼容）
@@ -87,6 +94,7 @@ func InitConfig() {
 		Redis:       loadRedisConfig(),
 		DingTalk:    loadDingTalkConfig(),
 		RustFS:      loadRustFSConfig(),
+		Xpyun:       loadXpyunConfig(),
 		Performance: loadPerformanceConfig(),
 	}
 }
@@ -292,4 +300,17 @@ func loadRustFSConfig() RustFSConfig {
 // GetRustFSConfig 获取RustFS配置
 func GetRustFSConfig() RustFSConfig {
 	return GetConfig().RustFS
+}
+
+// loadXpyunConfig 加载芯烨云配置
+func loadXpyunConfig() XpyunConfig {
+	return XpyunConfig{
+		User:   getAppString("XPYUN_USER", ""),
+		UserKey: getAppString("XPYUN_USER_KEY", ""),
+	}
+}
+
+// GetXpyunConfig 获取芯烨云配置
+func GetXpyunConfig() XpyunConfig {
+	return GetConfig().Xpyun
 }

@@ -3172,6 +3172,376 @@
                 }
             }
         },
+        "/printers": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取指定门店的打印机列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "门店打印机列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.Printer"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/printers/all": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取所有打印机（仅管理员）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "所有打印机列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/printers/bind": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "将打印机绑定到指定门店，同时推送到芯烨云",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "绑定打印机到门店",
+                "parameters": [
+                    {
+                        "description": "打印机信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.BindPrinterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/printers/default": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取指定门店的默认打印机",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "获取门店默认打印机",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Printer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/printers/status": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "查询指定打印机的在线状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "查询打印机在线状态",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "打印机SN",
+                        "name": "sn",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/printers/status/batch": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "批量查询指定门店下所有打印机的状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "批量查询打印机状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/printers/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取打印机详细信息及在线状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "获取打印机详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打印机ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.PrinterResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "更新打印机信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "更新打印机信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打印机ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "打印机信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePrinterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "从门店解绑打印机，同时从芯烨云移除",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "解绑打印机",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打印机ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/purchase-orders": {
             "get": {
                 "security": [
@@ -6216,6 +6586,33 @@
                 }
             }
         },
+        "model.BindPrinterReq": {
+            "type": "object",
+            "required": [
+                "sn",
+                "store_id"
+            ],
+            "properties": {
+                "is_default": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "sn": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.ChangeTypeEnum": {
             "type": "integer",
             "enum": [
@@ -7419,6 +7816,116 @@
                 "PayStatusRefunded"
             ]
         },
+        "model.Printer": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "description": "是否为默认打印机：0=否，1=是",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "打印机名称",
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "备注",
+                    "type": "string"
+                },
+                "sn": {
+                    "description": "打印机SN号",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态：1=正常，2=停用",
+                    "type": "integer"
+                },
+                "store_id": {
+                    "description": "关联门店ID",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "打印机类型：1=小票，2=标签",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.PrinterType"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PrinterResp": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "online": {
+                    "description": "在线状态：0=离线，1=在线",
+                    "type": "integer"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "sn": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "status_name": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "store_name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "integer"
+                },
+                "type_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PrinterType": {
+            "type": "integer",
+            "enum": [
+                1,
+                2
+            ],
+            "x-enum-comments": {
+                "PrinterTypeLabel": "标签打印机",
+                "PrinterTypeReceipt": "小票打印机"
+            },
+            "x-enum-descriptions": [
+                "小票打印机",
+                "标签打印机"
+            ],
+            "x-enum-varnames": [
+                "PrinterTypeReceipt",
+                "PrinterTypeLabel"
+            ]
+        },
         "model.PurchaseOrder": {
             "type": "object",
             "properties": {
@@ -8133,6 +8640,26 @@
                 },
                 "variables": {
                     "type": "string"
+                }
+            }
+        },
+        "model.UpdatePrinterReq": {
+            "type": "object",
+            "properties": {
+                "is_default": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "type": {
+                    "$ref": "#/definitions/model.PrinterType"
                 }
             }
         },

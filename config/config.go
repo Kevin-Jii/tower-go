@@ -21,8 +21,9 @@ type Config struct {
 
 // XpyunConfig 芯烨云打印机配置
 type XpyunConfig struct {
-	User   string
-	UserKey string
+	User     string
+	UserKey  string
+	BaseURL  string
 }
 
 // RustFSConfig RustFS对象存储配置（S3兼容）
@@ -305,8 +306,9 @@ func GetRustFSConfig() RustFSConfig {
 // loadXpyunConfig 加载芯烨云配置
 func loadXpyunConfig() XpyunConfig {
 	return XpyunConfig{
-		User:   getAppString("XPYUN_USER", ""),
+		User:    getAppString("XPYUN_USER", ""),
 		UserKey: getAppString("XPYUN_USER_KEY", ""),
+		BaseURL: getAppString("XPYUN_BASE_URL", "https://open.xpyun.net/api/openapi"),
 	}
 }
 

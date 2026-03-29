@@ -8,8 +8,9 @@ import (
 
 // Config 芯烨云配置
 type Config struct {
-	User   string
+	User    string
 	UserKey string
+	BaseURL string
 }
 
 // Client 芯烨云客户端
@@ -19,10 +20,16 @@ type Client struct {
 
 // NewClient 创建芯烨云客户端
 func NewClient(user, userKey string) *Client {
+	return NewClientWithBaseURL(user, userKey, "https://open.xpyun.net/api/openapi")
+}
+
+// NewClientWithBaseURL 创建芯烨云客户端（带自定义API地址）
+func NewClientWithBaseURL(user, userKey, baseURL string) *Client {
 	return &Client{
 		config: &Config{
-			User:   user,
+			User:    user,
 			UserKey: userKey,
+			BaseURL: baseURL,
 		},
 	}
 }
@@ -42,7 +49,7 @@ func (c *Client) AddPrinter(sn, name string) *model.XPYunResp {
 	}
 
 	request.Items = []*model.AddPrinterRequestItem{&requestItem}
-	return service.XpYunAddPrinters(&request)
+	return service.XpYunAddPrintersWithURL(&request, c.config.BaseURL)
 }
 
 // DelPrinter 删除打印机
@@ -53,7 +60,7 @@ func (c *Client) DelPrinter(snList []string) *model.XPYunResp {
 	request.Timestamp = util.GetMillisecond()
 	request.GenerateSign()
 	request.SnList = snList
-	return service.XpYunDelPrinters(&request)
+	return service.XpYunDelPrintersWithURL(&request, c.config.BaseURL)
 }
 
 // UpdatePrinter 更新打印机信息
@@ -65,7 +72,7 @@ func (c *Client) UpdatePrinter(sn, name string) *model.XPYunResp {
 	request.GenerateSign()
 	request.Sn = sn
 	request.Name = name
-	return service.XpYunUpdatePrinter(&request)
+	return service.XpYunUpdatePrinterWithURL(&request, c.config.BaseURL)
 }
 
 // PrintReceipt 打印小票
@@ -81,7 +88,7 @@ func (c *Client) PrintReceipt(sn, content string, copies int) *model.XPYunResp {
 	request.Copies = copies
 	request.Mode = 1 // 不检查打印机是否在线
 	request.Voice = 2 // 来单播放模式
-	return service.XpYunPrint(&request)
+	return service.XpYunPrintWithURL(&request, c.config.BaseURL)
 }
 
 // PrintLabel 打印标签
@@ -95,7 +102,7 @@ func (c *Client) PrintLabel(sn, content string, copies int) *model.XPYunResp {
 	request.Content = content
 	request.Copies = copies
 	request.Mode = 1
-	return service.XpYunPrintLabel(&request)
+	return service.XpYunPrintLabelWithURL(&request, c.config.BaseURL)
 }
 
 // QueryPrinterStatus 查询打印机状态
@@ -107,7 +114,7 @@ func (c *Client) QueryPrinterStatus(sn string) *model.XPYunResp {
 	request.Timestamp = util.GetMillisecond()
 	request.GenerateSign()
 	request.Sn = sn
-	return service.XpYunQueryPrinterStatus(&request)
+	return service.XpYunQueryPrinterStatusWithURL(&request, c.config.BaseURL)
 }
 
 // QueryOrderState 查询订单状态
@@ -118,7 +125,7 @@ func (c *Client) QueryOrderState(orderId string) *model.XPYunResp {
 	request.Timestamp = util.GetMillisecond()
 	request.GenerateSign()
 	request.OrderId = orderId
-	return service.XpYunQueryOrderState(&request)
+	return service.XpYunQueryOrderStateWithURL(&request, c.config.BaseURL)
 }
 
 // ClearPrintQueue 清空打印队列
@@ -129,7 +136,7 @@ func (c *Client) ClearPrintQueue(sn string) *model.XPYunResp {
 	request.Timestamp = util.GetMillisecond()
 	request.GenerateSign()
 	request.Sn = sn
-	return service.XpYunDelPrinterQueue(&request)
+	return service.XpYunDelPrinterQueueWithURL(&request, c.config.BaseURL)
 }
 
 // PlayVoice 金额播报
@@ -143,7 +150,7 @@ func (c *Client) PlayVoice(sn string, payType, payMode int, money float64) *mode
 	request.PayType = payType
 	request.PayMode = payMode
 	request.Money = money
-	return service.XpYunPlayVoice(&request)
+	return service.XpYunPlayVoiceWithURL(&request, c.config.BaseURL)
 }
 
 // GetPrinterInfo 获取打印机信息
@@ -154,5 +161,5 @@ func (c *Client) GetPrinterInfo(sn string) *model.XPYunResp {
 	request.Timestamp = util.GetMillisecond()
 	request.GenerateSign()
 	request.Sn = sn
-	return service.XpYunPrinterInfo(&request)
+	return service.XpYunPrinterInfoWithURL(&request, c.config.BaseURL)
 }

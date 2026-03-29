@@ -42,6 +42,13 @@ func Run() {
 	fmt.Println("🔧 正在初始化控制器...")
 	controllers := BuildControllers()
 	fmt.Println("🔧 控制器初始化完成")
+
+	// 启动定时任务
+	fmt.Println("🔧 正在启动定时任务...")
+	if err := controllers.StartCronJobs(); err != nil {
+		logging.LogWarn("定时任务启动失败: " + err.Error())
+	}
+
 	RegisterRoutes(r, controllers)
 
 	// 初始化 Stream 客户端

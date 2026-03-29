@@ -3544,6 +3544,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/printers/{id}/test": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "向指定打印机发送测试打印",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "测试打印",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打印机ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "打印内容",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.TestPrintReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/purchase-orders": {
             "get": {
                 "security": [
@@ -6486,6 +6532,20 @@ const docTemplate = `{
                 }
             }
         },
+        "controller.TestPrintReq": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "copies": {
+                    "type": "integer"
+                }
+            }
+        },
         "http.Response": {
             "type": "object",
             "properties": {
@@ -7831,9 +7891,17 @@ const docTemplate = `{
                     "description": "是否为默认打印机：0=否，1=是",
                     "type": "integer"
                 },
+                "last_heartbeat": {
+                    "description": "最后心跳时间（可为空）",
+                    "type": "string"
+                },
                 "name": {
                     "description": "打印机名称",
                     "type": "string"
+                },
+                "online": {
+                    "description": "在线状态：0=离线，1=在线，2=异常",
+                    "type": "integer"
                 },
                 "remark": {
                     "description": "备注",
@@ -7876,11 +7944,15 @@ const docTemplate = `{
                 "is_default": {
                     "type": "integer"
                 },
+                "last_heartbeat": {
+                    "description": "最后心跳时间",
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "online": {
-                    "description": "在线状态：0=离线，1=在线",
+                    "description": "在线状态：0=离线，1=在线，2=异常",
                     "type": "integer"
                 },
                 "remark": {

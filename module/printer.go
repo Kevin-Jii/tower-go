@@ -108,3 +108,39 @@ func (m *PrinterModule) BindStore(printer *model.Printer) error {
 		return tx.Create(printer).Error
 	})
 }
+
+// UpdateOnlineStatus 更新打印机在线状态
+func (m *PrinterModule) UpdateOnlineStatus(sn string, online int) error {
+	return m.db.Model(&model.Printer{}).
+		Where("sn = ?", sn).
+		Updates(map[string]interface{}{
+			"online":          online,
+			"last_heartbeat": gorm.Expr("NOW()"),
+		}).Error
+}
+
+// BatchUpdateOnlineStatus 批量更新打印机在线状态
+func (m *PrinterModule) BatchUpdateOnlineStatus(statuses map[string]int) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		for sn, online := range statuses {
+			if err := tx.Model(&model.Printer{}).
+				Where("sn = ?", sn).
+				Updates(map[string]interface{}{
+					"online":          online,
+					"last_heartbeat": gorm.Expr("NOW()"),
+				}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// ListAllSn 获取所有打印机的SN列表
+func (m *PrinterModule) ListAllSn() ([]string, error) {
+	var sns []string
+	if err := m.db.Model(&model.Printer{}).Pluck("sn", &sns).Error; err != nil {
+		return nil, err
+	}
+	return sns, nil
+}

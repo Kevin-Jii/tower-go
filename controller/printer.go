@@ -264,3 +264,48 @@ func (c *PrinterController) BatchQueryStatus(ctx *gin.Context) {
 
 	http.Success(ctx, statuses)
 }
+
+// TestPrintReq 测试打印请求
+type TestPrintReq struct {
+	Content string `json:"content" binding:"required"`
+	Copies  int    `json:"copies"`
+}
+
+// TestPrint godoc
+// @Summary 测试打印
+// @Description 向指定打印机发送测试打印
+// @Tags 打印机管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "打印机ID"
+// @Param body body TestPrintReq true "打印内容"
+// @Success 200 {object} http.Response
+// @Router /printers/{id}/test [post]
+func (c *PrinterController) TestPrint(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	var req TestPrintReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+
+	if req.Copies <= 0 {
+		req.Copies = 1
+	}
+
+	orderId, err := c.printerService.TestPrint(id, req.Content, req.Copies)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	http.Success(ctx, gin.H{"order_id": orderId})
+}

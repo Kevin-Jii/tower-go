@@ -6,9 +6,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/Kevin-Jii/tower-go/pkg/xpyun/model"
 )
+
+// httpClient HTTP客户端（带超时设置）
+var httpClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
 
 // HttpPostJson 发送HTTP POST JSON请求
 func HttpPostJson(url string, data interface{}) *model.XPYunResp {
@@ -20,7 +26,7 @@ func HttpPostJson(url string, data interface{}) *model.XPYunResp {
 		return &result
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	resp, err := httpClient.Post(url, "application/json", bytes.NewBuffer(b))
 	if err != nil {
 		fmt.Printf("http post error: %v\n", err)
 		result := model.XPYunResp{

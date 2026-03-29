@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/controller"
+	"github.com/Kevin-Jii/tower-go/cron"
 	userModulePkg "github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/database"
@@ -31,6 +32,7 @@ type Controllers struct {
 	Member            *controller.MemberController
 	Printer           *controller.PrinterController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
+	PrinterService    *service.PrinterService
 }
 
 // BuildControllers 构建所有控制器及其依赖
@@ -112,7 +114,8 @@ func BuildControllers() *Controllers {
 	// 从配置初始化芯烨云客户端（如果配置了）
 	xpyunConfig := config.GetConfig().Xpyun
 	if xpyunConfig.User != "" && xpyunConfig.UserKey != "" {
-		printerService.InitXpyunClient(xpyunConfig.User, xpyunConfig.UserKey)
+		printerService.InitXpyunClient(xpyunConfig.User, xpyunConfig.UserKey, xpyunConfig.BaseURL)
+		fmt.Printf(">>>>>> 芯烨云配置: BaseURL=%s, User=%s\n", xpyunConfig.BaseURL, xpyunConfig.User)
 		logging.LogInfo("芯烨云打印机客户端已初始化")
 	}
 
@@ -152,5 +155,13 @@ func BuildControllers() *Controllers {
 		Member:            controller.NewMemberController(memberService),
 		Printer:           controller.NewPrinterController(printerService),
 		DingTalkBotModule: dingTalkBotModule,
+		PrinterService:    printerService,
 	}
+}
+
+// StartCronJobs 启动定时任务
+func (c *Controllers) StartCronJobs() error {
+	// 启动打印机状态同步任务
+	_, err := cron.StartPrinterSync(c.PrinterService)
+	return err
 }

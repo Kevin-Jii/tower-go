@@ -3,10 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/xpyun"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 )
 
@@ -24,8 +26,9 @@ func NewPrinterService(printerModule *module.PrinterModule, storeModule *module.
 }
 
 // InitXpyunClient 初始化芯烨云客户端（需要在应用启动时调用）
-func (s *PrinterService) InitXpyunClient(user, userKey string) {
-	s.xpyunClient = xpyun.NewClient(user, userKey)
+func (s *PrinterService) InitXpyunClient(user, userKey, baseURL string) {
+	s.xpyunClient = xpyun.NewClientWithBaseURL(user, userKey, baseURL)
+	fmt.Printf(">>>>>> InitXpyunClient called: user=%s, baseURL=%s, xpyunClient=%v\n", user, baseURL, s.xpyunClient)
 }
 
 // BindPrinter 绑定打印机到门店
@@ -36,10 +39,18 @@ func (s *PrinterService) BindPrinter(req *model.BindPrinterReq) error {
 		return errors.New("store not found")
 	}
 
-	// 检查SN是否已被绑定
+	// 检查SN是否已被本地绑定
 	existing, err := s.printerModule.GetBySn(req.Sn)
 	if err == nil && existing != nil {
 		return fmt.Errorf("printer sn %s already bound to store %d", req.Sn, existing.StoreID)
+	}
+
+	// 推送到芯烨云（如果未存在会自动添加）
+	if s.xpyunClient != nil {
+		resp := s.xpyunClient.AddPrinter(req.Sn, req.Name)
+		if resp.Content != nil && !resp.Content.IsSuccess() {
+			return fmt.Errorf("push to xpyun failed: %s", resp.Content.Msg)
+		}
 	}
 
 	// 构建打印机名称
@@ -61,15 +72,6 @@ func (s *PrinterService) BindPrinter(req *model.BindPrinterReq) error {
 	// 绑定到数据库
 	if err := s.printerModule.BindStore(printer); err != nil {
 		return err
-	}
-
-	// 推送到芯烨云
-	if s.xpyunClient != nil {
-		resp := s.xpyunClient.AddPrinter(req.Sn, name)
-		if resp.Content != nil && !resp.Content.IsSuccess() {
-			// 推送失败，但本地已绑定，记录日志即可
-			fmt.Printf("push printer to xpyun failed: %s\n", resp.Content.Msg)
-		}
 	}
 
 	return nil
@@ -159,11 +161,15 @@ func (s *PrinterService) QueryPrinterStatus(sn string) (int, error) {
 
 // PrintReceipt 打印小票
 func (s *PrinterService) PrintReceipt(sn, content string, copies int) (string, error) {
+	fmt.Printf(">>>>>> PrintReceipt called: xpyunClient=%v, sn=%s\n", s.xpyunClient, sn)
 	if s.xpyunClient == nil {
 		return "", errors.New("xpyun client not initialized")
 	}
 
 	resp := s.xpyunClient.PrintReceipt(sn, content, copies)
+	fmt.Printf(">>>>>> PrintReceipt resp: httpStatus=%d, code=%d, msg=%s, orderId=%s\n",
+		resp.HttpStatusCode, resp.Content.Code, resp.Content.Msg, resp.Content.OrderId)
+
 	if resp.Content == nil {
 		return "", errors.New("print failed")
 	}
@@ -175,6 +181,25 @@ func (s *PrinterService) PrintReceipt(sn, content string, copies int) (string, e
 	return resp.Content.OrderId, nil
 }
 
+// TestPrint 测试打印
+func (s *PrinterService) TestPrint(printerID uint, content string, copies int) (string, error) {
+	logging.LogInfo(fmt.Sprintf("[TestPrint] printerID=%d, copies=%d", printerID, copies))
+
+	printer, err := s.printerModule.GetByID(printerID)
+	if err != nil {
+		return "", errors.New("printer not found")
+	}
+
+	// 如果没有提供内容，使用默认测试内容
+	if content == "" {
+		content = "<C>测试打印</C><BR>----------------<BR>这是一张测试小票<BR>打印机: " + printer.Name + "<BR>SN: " + printer.Sn + "<BR>时间: " + time.Now().Format("2006-01-02 15:04:05") + "<BR>----------------<BR>"
+	}
+
+	logging.LogInfo(fmt.Sprintf("[TestPrint] printer found, sn=%s, calling PrintReceipt...", printer.Sn))
+
+	return s.PrintReceipt(printer.Sn, content, copies)
+}
+
 // GetPrinterWithStatus 获取打印机信息及在线状态
 func (s *PrinterService) GetPrinterWithStatus(id uint) (*model.PrinterResp, error) {
 	printer, err := s.printerModule.GetByID(id)
@@ -183,16 +208,17 @@ func (s *PrinterService) GetPrinterWithStatus(id uint) (*model.PrinterResp, erro
 	}
 
 	resp := &model.PrinterResp{
-		ID:         printer.ID,
-		StoreID:    printer.StoreID,
-		Sn:         printer.Sn,
-		Name:       printer.Name,
-		Type:       int(printer.Type),
-		Status:     printer.Status,
-		IsDefault:  printer.IsDefault,
-		Remark:     printer.Remark,
-		CreatedAt:  printer.CreatedAt,
-		Online:     0, // 默认离线
+		ID:            printer.ID,
+		StoreID:       printer.StoreID,
+		Sn:            printer.Sn,
+		Name:          printer.Name,
+		Type:          int(printer.Type),
+		Status:        printer.Status,
+		IsDefault:     printer.IsDefault,
+		Online:        printer.Online,
+		LastHeartbeat: printer.LastHeartbeat,
+		Remark:        printer.Remark,
+		CreatedAt:     printer.CreatedAt,
 	}
 
 	// 设置类型名称
@@ -207,18 +233,6 @@ func (s *PrinterService) GetPrinterWithStatus(id uint) (*model.PrinterResp, erro
 		resp.StatusName = "正常"
 	} else {
 		resp.StatusName = "停用"
-	}
-
-	// 查询在线状态
-	if s.xpyunClient != nil {
-		statusResp := s.xpyunClient.QueryPrinterStatus(printer.Sn)
-		if statusResp.Content != nil && statusResp.Content.IsSuccess() {
-			if data, ok := statusResp.Content.Data.(map[string]interface{}); ok {
-				if status, ok := data["status"].(float64); ok {
-					resp.Online = int(status)
-				}
-			}
-		}
 	}
 
 	// 获取门店名称
@@ -259,4 +273,33 @@ func (s *PrinterService) BatchQueryStatus(storeID uint) ([]*model.PrinterStatus,
 	}
 
 	return results, nil
+}
+
+// SyncAllPrinterStatus 同步所有打印机状态（定时任务调用）
+func (s *PrinterService) SyncAllPrinterStatus() error {
+	if s.xpyunClient == nil {
+		return errors.New("xpyun client not initialized")
+	}
+
+	sns, err := s.printerModule.ListAllSn()
+	if err != nil {
+		return err
+	}
+
+	statuses := make(map[string]int)
+	for _, sn := range sns {
+		resp := s.xpyunClient.QueryPrinterStatus(sn)
+		if resp.Content != nil && resp.Content.IsSuccess() {
+			if data, ok := resp.Content.Data.(map[string]interface{}); ok {
+				if status, ok := data["status"].(float64); ok {
+					statuses[sn] = int(status)
+				}
+			}
+		} else {
+			// 查询失败默认为离线
+			statuses[sn] = 0
+		}
+	}
+
+	return s.printerModule.BatchUpdateOnlineStatus(statuses)
 }

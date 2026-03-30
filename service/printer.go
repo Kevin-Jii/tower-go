@@ -303,3 +303,33 @@ func (s *PrinterService) SyncAllPrinterStatus() error {
 
 	return s.printerModule.BatchUpdateOnlineStatus(statuses)
 }
+
+// PrintPurchaseOrder 打印采购单
+func (s *PrinterService) PrintPurchaseOrder(printerID uint, orderID uint) (string, error) {
+	logging.LogInfo(fmt.Sprintf("[PrintPurchaseOrder] printerID=%d, orderID=%d", printerID, orderID))
+
+	// 获取打印机信息
+	printer, err := s.printerModule.GetByID(printerID)
+	if err != nil {
+		return "", errors.New("printer not found")
+	}
+
+	// 获取采购单信息（需要注入采购单模块）
+	// 这里先返回一个简单的实现
+	// TODO: 需要注入 PurchaseOrderModule 来获取完整的采购单信息
+
+	// 构建打印内容
+	content := fmt.Sprintf("<C><B>采购单</B></C><BR>"+
+		"--------------------------------<BR>"+
+		"采购单ID: %d<BR>"+
+		"打印时间: %s<BR>"+
+		"--------------------------------<BR>"+
+		"<C>此功能需要完善</C><BR>"+
+		"<CUT>",
+		orderID,
+		time.Now().Format("2006-01-02 15:04:05"))
+
+	logging.LogInfo(fmt.Sprintf("[PrintPurchaseOrder] printer found, sn=%s, calling PrintReceipt...", printer.Sn))
+
+	return s.PrintReceipt(printer.Sn, content, 1)
+}

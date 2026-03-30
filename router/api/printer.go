@@ -26,6 +26,9 @@ func RegisterPrinterRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		// 测试打印
 		printers.POST("/:id/test", c.Printer.TestPrint)
 
+		// 打印采购单
+		printers.POST("/:id/print/purchase-order", c.Printer.PrintPurchaseOrder)
+
 		// 状态查询
 		printers.GET("/status", c.Printer.QueryPrinterStatus)
 		printers.GET("/status/batch", c.Printer.BatchQueryStatus)

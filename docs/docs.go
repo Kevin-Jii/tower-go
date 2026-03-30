@@ -6534,11 +6534,9 @@ const docTemplate = `{
         },
         "controller.TestPrintReq": {
             "type": "object",
-            "required": [
-                "content"
-            ],
             "properties": {
                 "content": {
+                    "description": "移除required，允许为空",
                     "type": "string"
                 },
                 "copies": {

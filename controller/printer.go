@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
@@ -38,11 +40,23 @@ func (c *PrinterController) BindPrinter(ctx *gin.Context) {
 		return
 	}
 
+	// 打印前端请求参数
+	fmt.Printf("\n========== 绑定打印机请求参数 ==========\n")
+	fmt.Printf("门店ID: %d\n", req.StoreID)
+	fmt.Printf("打印机SN: %s\n", req.Sn)
+	fmt.Printf("打印机名称: %s\n", req.Name)
+	fmt.Printf("打印机类型: %d\n", req.Type)
+	fmt.Printf("是否默认: %d\n", req.IsDefault)
+	fmt.Printf("备注: %s\n", req.Remark)
+	fmt.Printf("======================================\n\n")
+
 	if err := c.printerService.BindPrinter(&req); err != nil {
+		fmt.Printf("❌ 绑定失败: %v\n\n", err)
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
+	fmt.Printf("✅ 打印机绑定成功\n\n")
 	http.Success(ctx, nil)
 }
 
@@ -267,7 +281,7 @@ func (c *PrinterController) BatchQueryStatus(ctx *gin.Context) {
 
 // TestPrintReq 测试打印请求
 type TestPrintReq struct {
-	Content string `json:"content" binding:"required"`
+	Content string `json:"content"` // 移除required，允许为空
 	Copies  int    `json:"copies"`
 }
 
@@ -303,9 +317,59 @@ func (c *PrinterController) TestPrint(ctx *gin.Context) {
 
 	orderId, err := c.printerService.TestPrint(id, req.Content, req.Copies)
 	if err != nil {
+		fmt.Printf("❌ 打印失败: %v\n", err)
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
+	fmt.Printf("✅ 打印成功，订单ID: %s\n\n", orderId)
+	http.Success(ctx, gin.H{"order_id": orderId})
+}
+
+// PrintPurchaseOrderReq 打印采购单请求
+type PrintPurchaseOrderReq struct {
+	OrderID uint `json:"order_id" binding:"required"`
+}
+
+// PrintPurchaseOrder godoc
+// @Summary 打印采购单
+// @Description 打印指定采购单到打印机
+// @Tags 打印机管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "打印机ID"
+// @Param body body PrintPurchaseOrderReq true "采购单ID"
+// @Success 200 {object} http.Response
+// @Router /printers/{id}/print/purchase-order [post]
+func (c *PrinterController) PrintPurchaseOrder(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	var req PrintPurchaseOrderReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+
+	// 打印前端请求参数
+	fmt.Printf("\n========== 打印采购单请求参数 ==========\n")
+	fmt.Printf("打印机ID: %d\n", id)
+	fmt.Printf("采购单ID: %d\n", req.OrderID)
+	fmt.Printf("======================================\n\n")
+
+	orderId, err := c.printerService.PrintPurchaseOrder(id, req.OrderID)
+	if err != nil {
+		fmt.Printf("❌ 打印失败: %v\n\n", err)
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	fmt.Printf("✅ 采购单打印成功，订单ID: %s\n\n", orderId)
 	http.Success(ctx, gin.H{"order_id": orderId})
 }

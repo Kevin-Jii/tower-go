@@ -69,11 +69,10 @@ definitions:
   controller.TestPrintReq:
     properties:
       content:
+        description: 移除required，允许为空
         type: string
       copies:
         type: integer
-    required:
-    - content
     type: object
   http.Response:
     properties:

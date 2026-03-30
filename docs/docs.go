@@ -3544,6 +3544,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/printers/{id}/print/purchase-order": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "打印指定采购单到打印机",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打印机管理"
+                ],
+                "summary": "打印采购单",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打印机ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "采购单ID",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.PrintPurchaseOrderReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/printers/{id}/test": {
             "post": {
                 "security": [
@@ -6529,6 +6575,17 @@ const docTemplate = `{
                 },
                 "user_info": {
                     "$ref": "#/definitions/model.User"
+                }
+            }
+        },
+        "controller.PrintPurchaseOrderReq": {
+            "type": "object",
+            "required": [
+                "order_id"
+            ],
+            "properties": {
+                "order_id": {
+                    "type": "integer"
                 }
             }
         },

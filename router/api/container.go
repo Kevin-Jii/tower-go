@@ -109,7 +109,7 @@ func BuildControllers() *Controllers {
 
 	// 初始化打印机模块
 	printerModule := userModulePkg.NewPrinterModule(database.DB)
-	printerService := service.NewPrinterService(printerModule, storeModule)
+	printerService := service.NewPrinterService(printerModule, storeModule, purchaseOrderModule)
 
 	// 从配置初始化芯烨云客户端（如果配置了）
 	xpyunConfig := config.GetConfig().Xpyun

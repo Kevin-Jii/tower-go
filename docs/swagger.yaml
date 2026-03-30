@@ -66,6 +66,13 @@ definitions:
       user_info:
         $ref: '#/definitions/model.User'
     type: object
+  controller.PrintPurchaseOrderReq:
+    properties:
+      order_id:
+        type: integer
+    required:
+    - order_id
+    type: object
   controller.TestPrintReq:
     properties:
       content:
@@ -3819,6 +3826,35 @@ paths:
       security:
       - Bearer: []
       summary: 更新打印机信息
+      tags:
+      - 打印机管理
+  /printers/{id}/print/purchase-order:
+    post:
+      consumes:
+      - application/json
+      description: 打印指定采购单到打印机
+      parameters:
+      - description: 打印机ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 采购单ID
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller.PrintPurchaseOrderReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 打印采购单
       tags:
       - 打印机管理
   /printers/{id}/test:

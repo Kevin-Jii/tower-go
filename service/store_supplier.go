@@ -43,3 +43,8 @@ func (s *StoreSupplierService) ListSuppliersByStoreID(storeID uint) ([]*model.St
 func (s *StoreSupplierService) ListProductsByStoreID(storeID, supplierID, categoryID uint, keyword string) ([]*model.SupplierProduct, error) {
 	return s.storeSupplierModule.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
 }
+
+// ListCategoriesByStoreID 获取门店绑定供应商下的分类列表
+func (s *StoreSupplierService) ListCategoriesByStoreID(storeID, supplierID uint) ([]*model.SupplierCategory, error) {
+	return s.storeSupplierModule.ListCategoriesByStoreID(storeID, supplierID)
+}

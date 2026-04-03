@@ -47,5 +47,6 @@ func RegisterSupplierRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		storeSuppliers.DELETE("", c.StoreSupplier.UnbindSuppliers)        // 解绑供应商
 		storeSuppliers.GET("", c.StoreSupplier.ListSuppliers)             // 获取绑定的供应商列表
 		storeSuppliers.GET("/products", c.StoreSupplier.ListProducts)     // 获取可采购的商品列表
+		storeSuppliers.GET("/categories", c.StoreSupplier.ListCategories) // 获取绑定供应商的分类列表
 	}
 }

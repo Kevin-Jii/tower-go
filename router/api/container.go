@@ -31,6 +31,7 @@ type Controllers struct {
 	MessageTemplate   *controller.MessageTemplateController
 	Member            *controller.MemberController
 	Printer           *controller.PrinterController
+	PriceList         *controller.PriceListController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 	PrinterService    *service.PrinterService
 }
@@ -57,6 +58,7 @@ func BuildControllers() *Controllers {
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
 	memberModule := userModulePkg.NewMemberModule(database.DB)
+	priceListModule := userModulePkg.NewPriceListModule(database.DB)
 
 	userModulePkg.SetDB(database.DB)
 
@@ -98,7 +100,7 @@ func BuildControllers() *Controllers {
 	supplierService := service.NewSupplierService(supplierModule)
 	supplierProductService := service.NewSupplierProductService(supplierProductModule, supplierCategoryModule, supplierModule)
 	storeSupplierService := service.NewStoreSupplierService(storeSupplierModule)
-	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule)
+	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule, storeModule, dingTalkBotModule, dingTalkService)
 	dictService := service.NewDictService(dictModule)
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
 	inventoryService := service.NewInventoryService(inventoryModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
@@ -106,6 +108,7 @@ func BuildControllers() *Controllers {
 	statisticsService := service.NewStatisticsService(statisticsModule)
 	memberService := service.NewMemberService(memberModule)
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
+	priceListService := service.NewPriceListService(priceListModule, storeModule, supplierProductModule)
 
 	// 初始化打印机模块
 	printerModule := userModulePkg.NewPrinterModule(database.DB)
@@ -154,6 +157,7 @@ func BuildControllers() *Controllers {
 		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
 		Member:            controller.NewMemberController(memberService),
 		Printer:           controller.NewPrinterController(printerService),
+		PriceList:         controller.NewPriceListController(priceListService),
 		DingTalkBotModule: dingTalkBotModule,
 		PrinterService:    printerService,
 	}

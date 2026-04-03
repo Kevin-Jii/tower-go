@@ -2,18 +2,25 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/statemachine"
 	"github.com/Kevin-Jii/tower-go/utils"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
 type PurchaseOrderService struct {
 	orderModule         *module.PurchaseOrderModule
 	productModule       *module.SupplierProductModule
 	storeSupplierModule *module.StoreSupplierModule
+	storeModule         *module.StoreModule
+	botModule           *module.DingTalkBotModule
+	dingTalkService     *DingTalkService
 	stateMachine        *statemachine.StateMachine
 }
 
@@ -21,6 +28,9 @@ func NewPurchaseOrderService(
 	orderModule *module.PurchaseOrderModule,
 	productModule *module.SupplierProductModule,
 	storeSupplierModule *module.StoreSupplierModule,
+	storeModule *module.StoreModule,
+	botModule *module.DingTalkBotModule,
+	dingTalkService *DingTalkService,
 ) *PurchaseOrderService {
 	// 创建状态机并注册钩子
 	sm := statemachine.NewOrderStateMachine()
@@ -56,6 +66,9 @@ func NewPurchaseOrderService(
 		orderModule:         orderModule,
 		productModule:       productModule,
 		storeSupplierModule: storeSupplierModule,
+		storeModule:         storeModule,
+		botModule:           botModule,
+		dingTalkService:     dingTalkService,
 		stateMachine:        sm,
 	}
 }
@@ -143,6 +156,9 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 
 	// 发布订单创建事件
 	utils.GlobalEventBus.Publish(utils.EventOrderCreated, order)
+
+	// 异步推送钉钉通知
+	go s.sendDingTalkNotification(order)
 
 	return order, nil
 }
@@ -292,4 +308,98 @@ func (s *PurchaseOrderService) GetOrdersBySupplier(orderID uint) ([]model.Suppli
 	}
 
 	return result, nil
+}
+
+// sendDingTalkNotification 采购单创建后异步推送钉钉通知
+func (s *PurchaseOrderService) sendDingTalkNotification(order *model.PurchaseOrder) {
+	if s.dingTalkService == nil || s.storeModule == nil || s.botModule == nil {
+		return
+	}
+
+	// 获取门店信息
+	store, err := s.storeModule.GetByID(order.StoreID)
+	if err != nil || store == nil {
+		logging.LogWarn(fmt.Sprintf("[PurchaseOrder] 推送钉钉失败，获取门店信息错误: storeID=%d, err=%v", order.StoreID, err))
+		return
+	}
+
+	if store.Phone == "" {
+		logging.LogWarn(fmt.Sprintf("[PurchaseOrder] 门店无联系电话，跳过推送: storeID=%d", order.StoreID))
+		return
+	}
+
+	// 获取门店绑定的机器人
+	bot, err := s.botModule.GetByStoreID(order.StoreID)
+	if err != nil || bot == nil {
+		logging.LogWarn(fmt.Sprintf("[PurchaseOrder] 未找到门店绑定的机器人: storeID=%d, err=%v", order.StoreID, err))
+		return
+	}
+
+	if !bot.IsEnabled || bot.BotType != "stream" {
+		return
+	}
+
+	// 获取完整采购单（含明细）
+	fullOrder, err := s.orderModule.GetByIDWithDetails(order.ID)
+	if err != nil || fullOrder == nil {
+		fullOrder = order
+	}
+
+	// 构建商品明细（按供应商分组）
+	supplierItems := make(map[uint][]string)
+	supplierNames := make(map[uint]string)
+	for _, item := range fullOrder.Items {
+		supplierName := "未知供应商"
+		if item.Supplier != nil {
+			supplierName = item.Supplier.SupplierName
+		}
+		productName := "未知商品"
+		unit := ""
+		if item.Product != nil {
+			productName = item.Product.Name
+			unit = item.Product.Unit
+		}
+		qty := strconv.FormatFloat(item.Quantity, 'f', -1, 64)
+		line := fmt.Sprintf("- %s &nbsp; %s%s &nbsp; ¥%.2f", productName, qty, unit, item.UnitPrice)
+		supplierItems[item.SupplierID] = append(supplierItems[item.SupplierID], line)
+		supplierNames[item.SupplierID] = supplierName
+	}
+
+	var supplierBlocks []string
+	for sid, lines := range supplierItems {
+		block := fmt.Sprintf("**【%s】**\n\n%s", supplierNames[sid], strings.Join(lines, "\n\n"))
+		supplierBlocks = append(supplierBlocks, block)
+	}
+
+	creatorName := ""
+	if fullOrder.Creator != nil {
+		creatorName = fullOrder.Creator.Username
+	}
+
+	title := fmt.Sprintf("📋 新采购单 - %s", store.Name)
+	text := fmt.Sprintf("## %s\n\n"+
+		"**单号：** %s\n\n"+
+		"**门店：** %s\n\n"+
+		"**报菜日期：** %s\n\n"+
+		"**制单人：** %s\n\n"+
+		"### 采购明细\n\n"+
+		"%s\n\n"+
+		"---\n\n"+
+		"**合计：** ¥%.2f\n\n"+
+		"%s",
+		title,
+		fullOrder.OrderNo,
+		store.Name,
+		fullOrder.OrderDate.Format("2006-01-02"),
+		creatorName,
+		strings.Join(supplierBlocks, "\n\n"),
+		fullOrder.TotalAmount,
+		time.Now().Format("2006-01-02 15:04:05"),
+	)
+
+	if err := s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone); err != nil {
+		logging.LogWarn(fmt.Sprintf("[PurchaseOrder] 钉钉推送失败: orderNo=%s, err=%v", order.OrderNo, err))
+	} else {
+		logging.LogInfo(fmt.Sprintf("[PurchaseOrder] 钉钉推送成功: orderNo=%s, store=%s", order.OrderNo, store.Name))
+	}
 }

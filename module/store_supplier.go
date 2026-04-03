@@ -87,6 +87,34 @@ func (m *StoreSupplierModule) ListProductsByStoreID(storeID, supplierID, categor
 	return products, nil
 }
 
+// ListCategoriesByStoreID 获取门店绑定供应商下的所有分类（可按供应商筛选）
+func (m *StoreSupplierModule) ListCategoriesByStoreID(storeID, supplierID uint) ([]*model.SupplierCategory, error) {
+	// 获取门店绑定的供应商ID列表
+	var supplierIDs []uint
+	if err := m.db.Model(&model.StoreSupplier{}).
+		Where("store_id = ? AND status = 1", storeID).
+		Pluck("supplier_id", &supplierIDs).Error; err != nil {
+		return nil, err
+	}
+
+	if len(supplierIDs) == 0 {
+		return []*model.SupplierCategory{}, nil
+	}
+
+	query := m.db.Preload("Supplier").Where("supplier_id IN ? AND status = 1", supplierIDs)
+
+	if supplierID > 0 {
+		query = query.Where("supplier_id = ?", supplierID)
+	}
+
+	var categories []*model.SupplierCategory
+	if err := query.Order("supplier_id, sort ASC, id ASC").Find(&categories).Error; err != nil {
+		return nil, err
+	}
+
+	return categories, nil
+}
+
 // ValidateStoreProducts 验证商品是否属于门店绑定的供应商
 // 返回不可用的商品ID列表
 func (m *StoreSupplierModule) ValidateStoreProducts(storeID uint, productIDs []uint) ([]uint, error) {

@@ -609,3 +609,55 @@ INSERT INTO `t_recharge_order` (order_no, member_id, pay_amount, gift_amount, to
 -- 默认账号: 13082848180
 -- 默认密码: Admin@123456 (请立即修改!)
 -- ============================================
+
+-- =============================================
+-- 价目单模块表结构
+-- =============================================
+
+-- 创建价目单表
+CREATE TABLE IF NOT EXISTS `price_lists` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned NOT NULL COMMENT '门店ID',
+  `name` varchar(200) NOT NULL COMMENT '价目单名称',
+  `logo` varchar(500) DEFAULT NULL COMMENT '品牌LOGO URL',
+  `description` varchar(500) DEFAULT NULL COMMENT '描述',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态 1=启用 0=禁用',
+  `is_default` tinyint NOT NULL DEFAULT '0' COMMENT '是否默认 1=是 0=否',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_store_id` (`store_id`),
+  KEY `idx_is_default` (`is_default`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='价目单表';
+
+-- 创建价目单分类表
+CREATE TABLE IF NOT EXISTS `price_list_categories` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `price_list_id` bigint unsigned NOT NULL COMMENT '价目单ID',
+  `main_title` varchar(100) NOT NULL COMMENT '主标题',
+  `sub_title` varchar(100) DEFAULT NULL COMMENT '副标题',
+  `sort` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_price_list_id` (`price_list_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='价目单分类表';
+
+-- 创建价目单商品表
+CREATE TABLE IF NOT EXISTS `price_list_items` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `category_id` bigint unsigned NOT NULL COMMENT '价目单分类ID',
+  `product_id` bigint unsigned NOT NULL COMMENT '供应商商品ID',
+  `display_name` varchar(200) DEFAULT NULL COMMENT '显示名称（可覆盖商品名称）',
+  `price` decimal(10,2) NOT NULL COMMENT '价格',
+  `unit` varchar(20) DEFAULT NULL COMMENT '单位',
+  `spec` varchar(100) DEFAULT NULL COMMENT '规格说明',
+  `sort` int NOT NULL DEFAULT '0' COMMENT '排序',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态 1=显示 0=隐藏',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_category_id` (`category_id`),
+  KEY `idx_product_id` (`product_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='价目单商品表';

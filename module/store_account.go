@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type StoreAccountModule struct {
@@ -19,6 +20,60 @@ func NewStoreAccountModule(db *gorm.DB) *StoreAccountModule {
 // Create 创建记账（含明细）
 func (m *StoreAccountModule) Create(account *model.StoreAccount) error {
 	return m.db.Create(account).Error
+}
+
+// CreateWithInventoryOut 创建记账并自动出库（同事务）
+func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount, outOrder *model.InventoryOrder) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		// 先锁库存并做充足性校验，避免并发下出现负库存
+		for _, item := range account.Items {
+			var inv model.Inventory
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where("store_id = ? AND product_id = ?", account.StoreID, item.ProductID).
+				First(&inv).Error; err != nil {
+				name := item.ProductName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return fmt.Errorf("商品【%s】库存不存在，无法出库", name)
+			}
+			if inv.Quantity < item.Quantity {
+				name := item.ProductName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，需出库: %.2f", name, inv.Quantity, item.Quantity)
+			}
+		}
+
+		if err := tx.Create(account).Error; err != nil {
+			return err
+		}
+
+		if outOrder != nil {
+			if err := tx.Create(outOrder).Error; err != nil {
+				return err
+			}
+		}
+
+		for _, item := range account.Items {
+			res := tx.Model(&model.Inventory{}).
+				Where("store_id = ? AND product_id = ? AND quantity >= ?", account.StoreID, item.ProductID, item.Quantity).
+				Update("quantity", gorm.Expr("quantity - ?", item.Quantity))
+			if res.Error != nil {
+				return res.Error
+			}
+			if res.RowsAffected == 0 {
+				name := item.ProductName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return fmt.Errorf("商品【%s】库存不足，出库失败", name)
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetByID 根据ID获取记账（含明细）

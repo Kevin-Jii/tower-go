@@ -28,22 +28,22 @@ func (Inventory) TableName() string {
 
 // InventoryOrder 出入库单（主表）
 type InventoryOrder struct {
-	ID            uint                  `json:"id" gorm:"primaryKey;autoIncrement"`
-	OrderNo       string                `json:"order_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:单据编号"`
-	Type          int8                  `json:"type" gorm:"not null;comment:类型 1=入库 2=出库"`
-	StoreID       uint                  `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	StoreName     string                `json:"store_name" gorm:"type:varchar(100);comment:门店名称"`
-	Reason        string                `json:"reason" gorm:"type:varchar(100);comment:原因"`
-	Remark        string                `json:"remark" gorm:"type:text;comment:备注"`
-	TotalQuantity float64               `json:"total_quantity" gorm:"type:decimal(10,2);comment:总数量"`
-	ItemCount     int                   `json:"item_count" gorm:"comment:商品种类数"`
-	OperatorID    uint                  `json:"operator_id" gorm:"not null;comment:操作人ID"`
-	OperatorName  string                `json:"operator_name" gorm:"type:varchar(50);comment:操作人姓名"`
-	OperatorPhone string                `json:"operator_phone" gorm:"type:varchar(20);comment:操作人手机号"`
-	CreatedAt     time.Time             `json:"created_at"`
-	UpdatedAt     time.Time             `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt        `json:"-" gorm:"index"`
-	Items         []InventoryOrderItem  `json:"items,omitempty" gorm:"foreignKey:OrderID"`
+	ID            uint                 `json:"id" gorm:"primaryKey;autoIncrement"`
+	OrderNo       string               `json:"order_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:单据编号"`
+	Type          int8                 `json:"type" gorm:"not null;comment:类型 1=入库 2=出库"`
+	StoreID       uint                 `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	StoreName     string               `json:"store_name" gorm:"type:varchar(100);comment:门店名称"`
+	Reason        string               `json:"reason" gorm:"type:varchar(100);comment:原因"`
+	Remark        string               `json:"remark" gorm:"type:text;comment:备注"`
+	TotalQuantity float64              `json:"total_quantity" gorm:"type:decimal(10,2);comment:总数量"`
+	ItemCount     int                  `json:"item_count" gorm:"comment:商品种类数"`
+	OperatorID    uint                 `json:"operator_id" gorm:"not null;comment:操作人ID"`
+	OperatorName  string               `json:"operator_name" gorm:"type:varchar(50);comment:操作人姓名"`
+	OperatorPhone string               `json:"operator_phone" gorm:"type:varchar(20);comment:操作人手机号"`
+	CreatedAt     time.Time            `json:"created_at"`
+	UpdatedAt     time.Time            `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt       `json:"-" gorm:"index"`
+	Items         []InventoryOrderItem `json:"items,omitempty" gorm:"foreignKey:OrderID"`
 }
 
 func (InventoryOrder) TableName() string {
@@ -129,6 +129,7 @@ type InventoryWithProduct struct {
 	StoreName   string  `json:"store_name"`
 	ProductID   uint    `json:"product_id"`
 	ProductName string  `json:"product_name"`
+	Price       float64 `json:"price"`
 	Quantity    float64 `json:"quantity"`
 	Unit        string  `json:"unit"`
 }

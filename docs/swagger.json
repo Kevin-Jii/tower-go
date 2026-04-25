@@ -2519,8 +2519,7 @@
                                         "data": {
                                             "type": "object",
                                             "additionalProperties": {
-                                                "type": "integer",
-                                                "format": "int32"
+                                                "type": "integer"
                                             }
                                         }
                                     }
@@ -2697,8 +2696,7 @@
                                         "data": {
                                             "type": "object",
                                             "additionalProperties": {
-                                                "type": "integer",
-                                                "format": "int32"
+                                                "type": "integer"
                                             }
                                         }
                                     }
@@ -3167,6 +3165,450 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "获取价目单列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.PriceList"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "创建价目单",
+                "parameters": [
+                    {
+                        "description": "价目单信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreatePriceListReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/categories": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "创建价目单分类",
+                "parameters": [
+                    {
+                        "description": "分类信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreatePriceListCategoryReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/categories/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "更新价目单分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "分类信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePriceListCategoryReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "删除价目单分类",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分类ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/items": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "添加价目单商品",
+                "parameters": [
+                    {
+                        "description": "商品信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AddPriceListItemReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/items/batch": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "批量添加商品到价目单分类",
+                "parameters": [
+                    {
+                        "description": "批量商品信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.BatchAddPriceListItemsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/items/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "更新价目单商品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "商品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "商品信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePriceListItemReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "删除价目单商品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "商品ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/{id}": {
+            "get": {
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "获取价目单详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "价目单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.PriceList"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "更新价目单",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "价目单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "价目单信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePriceListReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "删除价目单",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "价目单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/price-lists/{id}/details": {
+            "get": {
+                "tags": [
+                    "价目单"
+                ],
+                "summary": "获取价目单完整结构（含分类和商品）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "价目单ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.PriceListResp"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -5174,6 +5616,56 @@
                 }
             }
         },
+        "/store-suppliers/categories": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "门店供应商"
+                ],
+                "summary": "获取门店绑定供应商的分类列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID（管理员可选）",
+                        "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "供应商ID（可选，不传则返回所有绑定供应商的分类）",
+                        "name": "supplier_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.SupplierCategory"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/stores": {
             "get": {
                 "security": [
@@ -6614,6 +7106,41 @@
                 }
             }
         },
+        "model.AddPriceListItemReq": {
+            "type": "object",
+            "required": [
+                "category_id",
+                "price",
+                "product_id"
+            ],
+            "properties": {
+                "category_id": {
+                    "type": "integer"
+                },
+                "display_name": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "spec": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            }
+        },
         "model.AdjustBalanceReq": {
             "type": "object",
             "required": [
@@ -6662,8 +7189,7 @@
                     "description": "菜单ID -\u003e 权限位映射",
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer",
-                        "format": "int32"
+                        "type": "integer"
                     }
                 },
                 "role_id": {
@@ -6689,8 +7215,7 @@
                     "description": "菜单ID -\u003e 权限位映射",
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer",
-                        "format": "int32"
+                        "type": "integer"
                     }
                 },
                 "role_id": {
@@ -6698,6 +7223,55 @@
                 },
                 "store_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "model.BatchAddItemEntry": {
+            "type": "object",
+            "required": [
+                "product_id"
+            ],
+            "properties": {
+                "display_name": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "spec": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            }
+        },
+        "model.BatchAddPriceListItemsReq": {
+            "type": "object",
+            "required": [
+                "category_id",
+                "products"
+            ],
+            "properties": {
+                "category_id": {
+                    "type": "integer"
+                },
+                "products": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.BatchAddItemEntry"
+                    }
                 }
             }
         },
@@ -6744,13 +7318,6 @@
                 "ChangeTypeRecharge": "充值",
                 "ChangeTypeRefund": "退款"
             },
-            "x-enum-descriptions": [
-                "充值",
-                "消费",
-                "退款",
-                "调增",
-                "调减"
-            ],
             "x-enum-varnames": [
                 "ChangeTypeRecharge",
                 "ChangeTypeConsume",
@@ -7111,6 +7678,56 @@
                 }
             }
         },
+        "model.CreatePriceListCategoryReq": {
+            "type": "object",
+            "required": [
+                "main_title",
+                "price_list_id"
+            ],
+            "properties": {
+                "main_title": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "price_list_id": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "sub_title": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "model.CreatePriceListReq": {
+            "type": "object",
+            "required": [
+                "name",
+                "store_id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "is_default": {
+                    "type": "integer"
+                },
+                "logo": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "store_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.CreatePurchaseOrderItemReq": {
             "type": "object",
             "required": [
@@ -7242,6 +7859,10 @@
                 "order_no": {
                     "type": "string",
                     "maxLength": 100
+                },
+                "other_expense_amount": {
+                    "type": "number",
+                    "minimum": 0
                 },
                 "remark": {
                     "type": "string",
@@ -7918,18 +8539,208 @@
                 "PayStatusPending": "待支付",
                 "PayStatusRefunded": "已退款"
             },
-            "x-enum-descriptions": [
-                "待支付",
-                "已支付",
-                "已取消",
-                "已退款"
-            ],
             "x-enum-varnames": [
                 "PayStatusPending",
                 "PayStatusPaid",
                 "PayStatusCancelled",
                 "PayStatusRefunded"
             ]
+        },
+        "model.PriceList": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "type": "integer"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "store": {
+                    "$ref": "#/definitions/model.Store"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PriceListCategory": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "main_title": {
+                    "type": "string"
+                },
+                "price_list": {
+                    "$ref": "#/definitions/model.PriceList"
+                },
+                "price_list_id": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "sub_title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PriceListCategoryResp": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.PriceListItemResp"
+                    }
+                },
+                "main_title": {
+                    "type": "string"
+                },
+                "price_list": {
+                    "$ref": "#/definitions/model.PriceList"
+                },
+                "price_list_id": {
+                    "type": "integer"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "sub_title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PriceListItemResp": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/definitions/model.PriceListCategory"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product": {
+                    "$ref": "#/definitions/model.SupplierProduct"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "product_image": {
+                    "description": "商品图片",
+                    "type": "string"
+                },
+                "product_name": {
+                    "description": "原商品名称",
+                    "type": "string"
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "spec": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "supplier_name": {
+                    "description": "供应商名称",
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PriceListResp": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.PriceListCategoryResp"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "type": "integer"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "store": {
+                    "$ref": "#/definitions/model.Store"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
         },
         "model.Printer": {
             "type": "object",
@@ -8044,10 +8855,6 @@
                 "PrinterTypeLabel": "标签打印机",
                 "PrinterTypeReceipt": "小票打印机"
             },
-            "x-enum-descriptions": [
-                "小票打印机",
-                "标签打印机"
-            ],
             "x-enum-varnames": [
                 "PrinterTypeReceipt",
                 "PrinterTypeLabel"
@@ -8351,6 +9158,9 @@
                         "$ref": "#/definitions/model.StoreAccountItem"
                     }
                 },
+                "net_income_amount": {
+                    "type": "number"
+                },
                 "operator": {
                     "$ref": "#/definitions/model.User"
                 },
@@ -8359,6 +9169,9 @@
                 },
                 "order_no": {
                     "type": "string"
+                },
+                "other_expense_amount": {
+                    "type": "number"
                 },
                 "remark": {
                     "type": "string"
@@ -8770,6 +9583,84 @@
                 }
             }
         },
+        "model.UpdatePriceListCategoryReq": {
+            "type": "object",
+            "properties": {
+                "main_title": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "sub_title": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "model.UpdatePriceListItemReq": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "sort": {
+                    "type": "integer"
+                },
+                "spec": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "status": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            }
+        },
+        "model.UpdatePriceListReq": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "is_default": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "logo": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "status": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                }
+            }
+        },
         "model.UpdatePrinterReq": {
             "type": "object",
             "properties": {
@@ -8842,6 +9733,10 @@
                 "order_no": {
                     "type": "string",
                     "maxLength": 100
+                },
+                "other_expense_amount": {
+                    "type": "number",
+                    "minimum": 0
                 },
                 "remark": {
                     "type": "string",

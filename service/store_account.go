@@ -12,6 +12,7 @@ import (
 
 type StoreAccountService struct {
 	storeAccountModule    *module.StoreAccountModule
+	inventoryModule       *module.InventoryModule
 	productModule         *module.SupplierProductModule
 	storeModule           *module.StoreModule
 	userModule            *module.UserModule
@@ -24,6 +25,7 @@ type StoreAccountService struct {
 
 func NewStoreAccountService(
 	storeAccountModule *module.StoreAccountModule,
+	inventoryModule *module.InventoryModule,
 	productModule *module.SupplierProductModule,
 	storeModule *module.StoreModule,
 	userModule *module.UserModule,
@@ -35,6 +37,7 @@ func NewStoreAccountService(
 ) *StoreAccountService {
 	return &StoreAccountService{
 		storeAccountModule:    storeAccountModule,
+		inventoryModule:       inventoryModule,
 		productModule:         productModule,
 		storeModule:           storeModule,
 		userModule:            userModule,
@@ -96,21 +99,54 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	}
 
 	account := &model.StoreAccount{
-		AccountNo:   accountNo,
-		StoreID:     storeID,
-		Channel:     req.Channel,
-		OrderNo:     req.OrderNo,
-		TotalAmount: totalAmount,
-		ItemCount:   len(items),
-		TagCode:     req.TagCode,
-		TagName:     req.TagName,
-		Remark:      req.Remark,
-		OperatorID:  operatorID,
-		AccountDate: accountDate,
-		Items:       items,
+		AccountNo:          accountNo,
+		StoreID:            storeID,
+		Channel:            req.Channel,
+		OrderNo:            req.OrderNo,
+		TotalAmount:        totalAmount,
+		OtherExpenseAmount: req.OtherExpenseAmount,
+		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount,
+		ItemCount:          len(items),
+		TagCode:            req.TagCode,
+		TagName:            req.TagName,
+		Remark:             req.Remark,
+		OperatorID:         operatorID,
+		AccountDate:        accountDate,
+		Items:              items,
 	}
 
-	if err := s.storeAccountModule.Create(account); err != nil {
+	inventoryOutOrder := &model.InventoryOrder{
+		OrderNo:       s.inventoryModule.GenerateOrderNo(model.InventoryTypeOut),
+		Type:          model.InventoryTypeOut,
+		StoreID:       storeID,
+		Reason:        model.ReasonSale,
+		Remark:        fmt.Sprintf("记账自动出库，记账单号:%s", accountNo),
+		TotalQuantity: 0,
+		ItemCount:     len(items),
+		OperatorID:    operatorID,
+	}
+	for _, item := range items {
+		inventoryOutOrder.TotalQuantity += item.Quantity
+		inventoryOutOrder.Items = append(inventoryOutOrder.Items, model.InventoryOrderItem{
+			ProductID:   item.ProductID,
+			ProductName: item.ProductName,
+			Quantity:    item.Quantity,
+			Unit:        item.Unit,
+			Remark:      "记账自动出库",
+		})
+	}
+	if store, err := s.storeModule.GetByID(storeID); err == nil && store != nil {
+		inventoryOutOrder.StoreName = store.Name
+	}
+	if user, err := s.userModule.GetByID(operatorID); err == nil && user != nil {
+		inventoryOutOrder.OperatorName = user.Nickname
+		if inventoryOutOrder.OperatorName == "" {
+			inventoryOutOrder.OperatorName = user.Username
+		}
+		inventoryOutOrder.OperatorPhone = user.Phone
+	}
+
+	if err := s.storeAccountModule.CreateWithInventoryOut(account, inventoryOutOrder); err != nil {
 		return nil, err
 	}
 
@@ -333,6 +369,12 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	if req.AccountDate != "" {
 		if t, err := time.Parse("2006-01-02", req.AccountDate); err == nil {
 			updates["account_date"] = t
+		}
+	}
+	if req.OtherExpenseAmount != nil {
+		updates["other_expense_amount"] = *req.OtherExpenseAmount
+		if account, err := s.storeAccountModule.GetByID(id); err == nil && account != nil {
+			updates["net_income_amount"] = account.TotalAmount - *req.OtherExpenseAmount
 		}
 	}
 

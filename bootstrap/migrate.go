@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
@@ -48,6 +49,7 @@ func AutoMigrateAndSeeds() {
 		&model.InventoryOrderItem{},
 		&model.Gallery{},
 		&model.StoreAccount{},
+		&model.StoreAccountItem{},
 		&model.DingTalkUser{},
 		&model.MessageTemplate{},
 		&model.Member{},
@@ -76,11 +78,28 @@ func AutoMigrateAndSeeds() {
 
 // shouldSkipMigration 检查是否应该跳过迁移
 func shouldSkipMigration() bool {
+	// 如果数据库关键表不存在，则不允许跳过（避免本地标记文件误导导致线上缺表）
+	db := database.GetDB()
+	if db == nil {
+		return false
+	}
+	migrator := db.Migrator()
+	// 选取几个核心表做校验：users、menus、message_templates
+	// 任意一个不存在，都认为需要执行迁移
+	if !migrator.HasTable(&model.User{}) || !migrator.HasTable(&model.Menu{}) || !migrator.HasTable(&model.MessageTemplate{}) {
+		return false
+	}
+
+	// 记账主表已存在但明细表缺失时仍需迁移（历史版本只 AutoMigrate 了主表）
+	if migrator.HasTable(&model.StoreAccount{}) && !migrator.HasTable(&model.StoreAccountItem{}) {
+		return false
+	}
+
 	// 检查标记文件
 	if _, err := os.Stat(migrationVersionFile); err == nil {
 		// 文件存在，读取版本
 		data, err := os.ReadFile(migrationVersionFile)
-		if err == nil && string(data) == currentMigrationVersion {
+		if err == nil && strings.TrimSpace(string(data)) == currentMigrationVersion {
 			return true
 		}
 	}

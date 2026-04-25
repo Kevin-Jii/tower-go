@@ -49,3 +49,53 @@ type TopProductItem struct {
 	Quantity    float64 `json:"quantity"`
 	Amount      float64 `json:"amount"`
 }
+
+// BusinessOverviewReq 经营统计查询
+type BusinessOverviewReq struct {
+	StartDate string `form:"start_date" binding:"required"`
+	EndDate   string `form:"end_date" binding:"required"`
+	StoreID   uint   `form:"store_id"`
+}
+
+// CategoryAmountItem 品类金额统计
+type CategoryAmountItem struct {
+	CategoryID   uint    `json:"category_id"`
+	CategoryName string  `json:"category_name"`
+	InAmount     float64 `json:"in_amount"`
+	OutAmount    float64 `json:"out_amount"`
+	NetAmount    float64 `json:"net_amount"`
+}
+
+// BusinessOverviewStats 经营汇总统计
+type BusinessOverviewStats struct {
+	StartDate          string               `json:"start_date"`
+	EndDate            string               `json:"end_date"`
+	StoreID            uint                 `json:"store_id"`
+	InboundAmount      float64              `json:"inbound_amount"`
+	OutboundAmount     float64              `json:"outbound_amount"`
+	AllCategoryAmount  float64              `json:"all_category_amount"`
+	SalesAmount        float64              `json:"sales_amount"`
+	OtherExpenseAmount float64              `json:"other_expense_amount"`
+	GrossProfitAmount  float64              `json:"gross_profit_amount"`
+	NetProfitAmount    float64              `json:"net_profit_amount"`
+	SalesOrderCount    int64                `json:"sales_order_count"`
+	InventoryInCount   int64                `json:"inventory_in_count"`
+	InventoryOutCount  int64                `json:"inventory_out_count"`
+	Categories         []CategoryAmountItem `json:"categories"`
+}
+
+// RadarMetricItem 雷达图指标
+type RadarMetricItem struct {
+	Name  string  `json:"name"`
+	Value float64 `json:"value"`
+}
+
+// HomeChartsStats 首页图表统计
+type HomeChartsStats struct {
+	StartDate string                `json:"start_date"`
+	EndDate   string                `json:"end_date"`
+	Line      []SalesTrendItem      `json:"line"`     // 折线图：销售趋势
+	Pie       []ChannelStatsItem    `json:"pie"`      // 扇形图：渠道占比
+	Radar     []RadarMetricItem     `json:"radar"`    // 雷达图：经营指标
+	Overview  BusinessOverviewStats `json:"overview"` // 汇总卡片
+}

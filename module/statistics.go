@@ -8,6 +8,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type categoryAmountRow struct {
+	CategoryID   uint
+	CategoryName string
+	InAmount     float64
+	OutAmount    float64
+}
+
 type StatisticsModule struct {
 	db *gorm.DB
 }
@@ -158,6 +165,30 @@ func (m *StatisticsModule) GetSalesTrend(storeID uint, startDate, endDate, perio
 	return results, nil
 }
 
+// GetSalesTrendByGranularity 按粒度获取销售趋势
+func (m *StatisticsModule) GetSalesTrendByGranularity(storeID uint, startDate, endDate, granularity string) ([]model.SalesTrendItem, error) {
+	var results []model.SalesTrendItem
+	dateFormat := "%Y-%m-%d"
+	if granularity == "month" {
+		dateFormat = "%Y-%m"
+	}
+
+	query := m.db.Model(&model.StoreAccount{}).
+		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders", dateFormat).
+		Where("deleted_at IS NULL")
+	if storeID > 0 {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if startDate != "" {
+		query = query.Where("account_date >= ?", startDate)
+	}
+	if endDate != "" {
+		query = query.Where("account_date <= ?", endDate)
+	}
+	query.Group("date").Order("date ASC").Scan(&results)
+	return results, nil
+}
+
 // GetChannelStats 获取渠道统计
 func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate string) ([]model.ChannelStatsItem, error) {
 	var results []model.ChannelStatsItem
@@ -213,4 +244,81 @@ func (m *StatisticsModule) getChannelNameMap() map[string]string {
 	}
 
 	return channelMap
+}
+
+// GetBusinessOverview 获取经营总览统计（按日期）
+func (m *StatisticsModule) GetBusinessOverview(storeID uint, startDate, endDate string) (*model.BusinessOverviewStats, error) {
+	stats := &model.BusinessOverviewStats{
+		StartDate: startDate,
+		EndDate:   endDate,
+		StoreID:   storeID,
+	}
+
+	var categoryRows []categoryAmountRow
+	categorySQL := `
+SELECT
+	COALESCE(sp.category_id, 0) AS category_id,
+	COALESCE(sc.name, '未分类') AS category_name,
+	COALESCE(SUM(CASE WHEN io.type = 1 THEN ioi.quantity * COALESCE(sp.price, 0) ELSE 0 END), 0) AS in_amount,
+	COALESCE(SUM(CASE WHEN io.type = 2 THEN ioi.quantity * COALESCE(sp.price, 0) ELSE 0 END), 0) AS out_amount
+FROM inventory_order_items ioi
+JOIN inventory_orders io ON io.id = ioi.order_id AND io.deleted_at IS NULL
+LEFT JOIN supplier_products sp ON sp.id = ioi.product_id
+LEFT JOIN supplier_categories sc ON sc.id = sp.category_id
+WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
+`
+	args := []interface{}{startDate, endDate}
+	if storeID > 0 {
+		categorySQL += " AND io.store_id = ?"
+		args = append(args, storeID)
+	}
+	categorySQL += " GROUP BY COALESCE(sp.category_id, 0), COALESCE(sc.name, '未分类') ORDER BY in_amount DESC, out_amount DESC"
+	if err := m.db.Raw(categorySQL, args...).Scan(&categoryRows).Error; err != nil {
+		return nil, err
+	}
+
+	stats.Categories = make([]model.CategoryAmountItem, 0, len(categoryRows))
+	for _, row := range categoryRows {
+		item := model.CategoryAmountItem{
+			CategoryID:   row.CategoryID,
+			CategoryName: row.CategoryName,
+			InAmount:     row.InAmount,
+			OutAmount:    row.OutAmount,
+			NetAmount:    row.OutAmount - row.InAmount,
+		}
+		stats.Categories = append(stats.Categories, item)
+		stats.InboundAmount += row.InAmount
+		stats.OutboundAmount += row.OutAmount
+	}
+	stats.AllCategoryAmount = stats.InboundAmount
+
+	salesQuery := m.db.Model(&model.StoreAccount{}).
+		Where("deleted_at IS NULL AND account_date >= ? AND account_date <= ?", startDate, endDate)
+	if storeID > 0 {
+		salesQuery = salesQuery.Where("store_id = ?", storeID)
+	}
+	if err := salesQuery.Count(&stats.SalesOrderCount).Error; err != nil {
+		return nil, err
+	}
+	if err := salesQuery.Select("COALESCE(SUM(total_amount), 0), COALESCE(SUM(other_expense_amount), 0)").
+		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount); err != nil {
+		return nil, err
+	}
+
+	inOutQuery := m.db.Model(&model.InventoryOrder{}).
+		Where("deleted_at IS NULL AND DATE(created_at) >= ? AND DATE(created_at) <= ?", startDate, endDate)
+	if storeID > 0 {
+		inOutQuery = inOutQuery.Where("store_id = ?", storeID)
+	}
+	if err := inOutQuery.Where("type = ?", model.InventoryTypeIn).Count(&stats.InventoryInCount).Error; err != nil {
+		return nil, err
+	}
+	if err := inOutQuery.Where("type = ?", model.InventoryTypeOut).Count(&stats.InventoryOutCount).Error; err != nil {
+		return nil, err
+	}
+
+	stats.GrossProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount
+	stats.NetProfitAmount = stats.GrossProfitAmount - stats.OutboundAmount
+
+	return stats, nil
 }

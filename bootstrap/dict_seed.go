@@ -1,31 +1,16 @@
 package bootstrap
 
 import (
-	"os"
-
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
-const dictSeedFile = ".dict_seed_executed"
-
 // InitDefaultDicts 初始化默认字典数据
 func InitDefaultDicts() {
-	// 检查是否已经执行过字典初始化
-	if _, err := os.Stat(dictSeedFile); err == nil {
-		logging.LogInfo("字典数据已初始化，跳过")
-		return
-	}
-
 	initSalesChannel()
 	initOrderSource()
 	initInventoryReason()
-
-	// 创建标记文件
-	if err := os.WriteFile(dictSeedFile, []byte("executed"), 0644); err != nil {
-		logging.LogWarn("创建字典初始化标记文件失败: " + err.Error())
-	}
 
 	logging.LogInfo("字典数据初始化完成")
 }

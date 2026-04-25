@@ -190,3 +190,75 @@ func (c *StatisticsController) ChannelStats(ctx *gin.Context) {
 
 	http.Success(ctx, stats)
 }
+
+// BusinessOverview godoc
+// @Summary 经营总览统计
+// @Tags 统计分析
+// @Produce json
+// @Security Bearer
+// @Param start_date query string true "开始日期 YYYY-MM-DD"
+// @Param end_date query string true "结束日期 YYYY-MM-DD"
+// @Param store_id query int false "门店ID"
+// @Success 200 {object} http.Response{data=model.BusinessOverviewStats}
+// @Router /statistics/business-overview [get]
+func (c *StatisticsController) BusinessOverview(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+	roleCode := middleware.GetRoleCode(ctx)
+
+	queryStoreID := storeID
+	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
+		queryStoreID = 0
+		if id := ctx.Query("store_id"); id != "" {
+			var sid uint
+			http.ParseUint(id, &sid)
+			queryStoreID = sid
+		}
+	}
+
+	startDate := ctx.Query("start_date")
+	endDate := ctx.Query("end_date")
+	stats, err := c.statisticsService.GetBusinessOverview(queryStoreID, startDate, endDate)
+	if err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+
+	http.Success(ctx, stats)
+}
+
+// HomeCharts godoc
+// @Summary 首页图表统计
+// @Tags 统计分析
+// @Produce json
+// @Security Bearer
+// @Param start_date query string true "开始日期 YYYY-MM-DD"
+// @Param end_date query string true "结束日期 YYYY-MM-DD"
+// @Param granularity query string false "折线粒度 day/month" default(day)
+// @Param store_id query int false "门店ID"
+// @Success 200 {object} http.Response{data=model.HomeChartsStats}
+// @Router /statistics/home-charts [get]
+func (c *StatisticsController) HomeCharts(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+	roleCode := middleware.GetRoleCode(ctx)
+
+	queryStoreID := storeID
+	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
+		queryStoreID = 0
+		if id := ctx.Query("store_id"); id != "" {
+			var sid uint
+			http.ParseUint(id, &sid)
+			queryStoreID = sid
+		}
+	}
+
+	startDate := ctx.Query("start_date")
+	endDate := ctx.Query("end_date")
+	granularity := ctx.DefaultQuery("granularity", "day")
+	stats, err := c.statisticsService.GetHomeChartsStats(queryStoreID, startDate, endDate, granularity)
+	if err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+
+	http.Success(ctx, stats)
+}

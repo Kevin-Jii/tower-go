@@ -285,6 +285,15 @@ func (s *PrinterService) SyncAllPrinterStatus() error {
 		return errors.New("xpyun client not initialized")
 	}
 
+	total, err := s.printerModule.CountAll()
+	if err != nil {
+		return err
+	}
+	if total == 0 {
+		// 没有任何打印机，跳过同步（避免无意义的定时任务执行）
+		return nil
+	}
+
 	sns, err := s.printerModule.ListAllSn()
 	if err != nil {
 		return err

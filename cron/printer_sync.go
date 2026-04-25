@@ -23,6 +23,16 @@ func NewPrinterSyncJob(printerService *service.PrinterService) *PrinterSyncJob {
 // Run 执行同步任务
 func (j *PrinterSyncJob) Run() {
 	start := time.Now()
+
+	// 如果没有任何打印机，直接跳过，避免每次定时任务都做无意义工作
+	if printers, total, err := j.printerService.ListAllPrinters(); err == nil {
+		_ = printers
+		if total == 0 {
+			fmt.Printf("[PrinterSync] 打印机列表为空，跳过同步\n")
+			return
+		}
+	}
+
 	fmt.Printf("[PrinterSync] 开始同步打印机状态...\n")
 
 	if err := j.printerService.SyncAllPrinterStatus(); err != nil {

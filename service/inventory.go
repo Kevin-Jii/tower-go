@@ -57,28 +57,6 @@ func (s *InventoryService) ListInventory(req *model.ListInventoryReq) ([]*model.
 
 // CreateOrder 创建出入库单
 func (s *InventoryService) CreateOrder(storeID, operatorID uint, req *model.CreateInventoryOrderReq) (*model.InventoryOrder, error) {
-	// 出库时校验库存
-	if req.Type == model.InventoryTypeOut {
-		for _, item := range req.Items {
-			inv, err := s.inventoryModule.GetByStoreAndProduct(storeID, item.ProductID)
-			if err != nil {
-				// 获取商品名称用于错误提示
-				productName := "未知商品"
-				if product, _ := s.productModule.GetByID(item.ProductID); product != nil {
-					productName = product.Name
-				}
-				return nil, fmt.Errorf("商品【%s】不在库存中，无法出库", productName)
-			}
-			if inv.Quantity < item.Quantity {
-				productName := "未知商品"
-				if product, _ := s.productModule.GetByID(item.ProductID); product != nil {
-					productName = product.Name
-				}
-				return nil, fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，出库数量: %.2f", productName, inv.Quantity, item.Quantity)
-			}
-		}
-	}
-
 	// 生成单据编号
 	orderNo := s.inventoryModule.GenerateOrderNo(req.Type)
 
@@ -154,26 +132,8 @@ func (s *InventoryService) CreateOrder(storeID, operatorID uint, req *model.Crea
 		Items:         items,
 	}
 
-	if err := s.inventoryModule.CreateOrder(order); err != nil {
+	if err := s.inventoryModule.CreateOrderWithStockApply(order); err != nil {
 		return nil, err
-	}
-
-	// 更新库存
-	for _, item := range req.Items {
-		unit := ""
-		if product, err := s.productModule.GetByID(item.ProductID); err == nil && product != nil {
-			unit = product.Unit
-		}
-
-		if req.Type == model.InventoryTypeIn {
-			if err := s.inventoryModule.AddQuantity(storeID, item.ProductID, item.Quantity, unit); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := s.inventoryModule.SubQuantity(storeID, item.ProductID, item.Quantity); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	// 异步发送钉钉通知（仅入库）

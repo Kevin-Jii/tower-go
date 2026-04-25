@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"text/template"
+	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
@@ -128,7 +129,15 @@ func (s *MessageTemplateService) Delete(id uint) error {
 func (s *MessageTemplateService) InitDefaultTemplates() error {
 	// 模板已迁移到 init_seed_data.sql，这里只做兼容处理
 	// 如果数据库中没有模板，才初始化
-	list, _ := s.templateModule.List()
+	list, err := s.templateModule.List()
+	if err != nil {
+		// 表不存在通常发生在禁用自动迁移且未执行结构SQL的情况下；
+		// 为避免启动阶段报错，这里直接跳过（由迁移/seed补齐表结构与数据）。
+		if strings.Contains(err.Error(), "doesn't exist") || strings.Contains(err.Error(), "Error 1146") {
+			return nil
+		}
+		return err
+	}
 	if len(list) > 0 {
 		return nil // 已有模板，跳过
 	}

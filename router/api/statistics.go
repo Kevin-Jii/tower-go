@@ -15,5 +15,7 @@ func RegisterStatisticsRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		stats.GET("/sales", c.Statistics.SalesStats)
 		stats.GET("/sales-trend", c.Statistics.SalesTrend)
 		stats.GET("/channel", c.Statistics.ChannelStats)
+		stats.GET("/business-overview", c.Statistics.BusinessOverview)
+		stats.GET("/home-charts", c.Statistics.HomeCharts)
 	}
 }

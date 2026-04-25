@@ -144,3 +144,12 @@ func (m *PrinterModule) ListAllSn() ([]string, error) {
 	}
 	return sns, nil
 }
+
+// CountAll 获取打印机总数
+func (m *PrinterModule) CountAll() (int64, error) {
+	var total int64
+	if err := m.db.Model(&model.Printer{}).Count(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}

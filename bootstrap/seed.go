@@ -18,21 +18,6 @@ func RunSeedSQL() {
 		return
 	}
 
-	// 检查数据库是否有数据（用户表为空则需要初始化）
-	var userCount int64
-	database.GetDB().Raw("SELECT COUNT(*) FROM users").Scan(&userCount)
-	
-	seedMarkerFile := ".seed_executed"
-	if userCount > 0 {
-		// 数据库有数据，确保标记文件存在
-		os.WriteFile(seedMarkerFile, []byte("executed"), 0644)
-		logging.LogInfo("数据库已有数据，跳过种子数据初始化")
-		return
-	}
-	
-	// 数据库为空，删除旧标记文件（如果存在）
-	os.Remove(seedMarkerFile)
-
 	// 读取 SQL 文件
 	sqlFile := "migrations/init_seed_data.sql"
 	content, err := os.ReadFile(sqlFile)
@@ -67,9 +52,6 @@ func RunSeedSQL() {
 	logging.LogInfo("种子数据初始化完成",
 		zap.Int("success", successCount),
 		zap.Int("skipped", skipCount))
-
-	// 创建标记文件
-	os.WriteFile(seedMarkerFile, []byte("executed"), 0644)
 }
 
 // splitSQLStatements 分割 SQL 语句（处理多行语句）

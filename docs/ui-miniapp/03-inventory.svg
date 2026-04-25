@@ -1,0 +1,77 @@
+<svg width="1290" height="2796" viewBox="0 0 1290 2796" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1290" height="2796" rx="96" fill="#F4F6FA"/>
+  <rect x="35" y="35" width="1220" height="2726" rx="82" fill="none" stroke="#D7DCE5" stroke-width="10"/>
+  <rect x="555" y="110" width="180" height="36" rx="18" fill="#111214"/>
+  <text x="120" y="150" fill="#0F1115" font-size="42" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-weight="600">9:41</text>
+  <text x="1050" y="150" fill="#0F1115" font-size="34" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-weight="600">5G   96%</text>
+
+  <text x="120" y="300" fill="#101216" font-size="80" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-weight="700">库存</text>
+  <text x="120" y="368" fill="#7A8392" font-size="32" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">按照商品与门店维度快速筛选和补货</text>
+
+  <rect x="120" y="430" width="1050" height="108" rx="32" fill="#FFFFFF"/>
+  <text x="170" y="498" fill="#A0A7B3" font-size="34" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">搜索商品 / 分类 / SKU</text>
+
+  <rect x="120" y="590" width="210" height="72" rx="28" fill="#111418"/>
+  <text x="185" y="636" fill="#FFFFFF" font-size="28" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">全部库存</text>
+  <rect x="350" y="590" width="180" height="72" rx="28" fill="#FFFFFF"/>
+  <text x="410" y="636" fill="#66707F" font-size="28" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">预警</text>
+  <rect x="550" y="590" width="180" height="72" rx="28" fill="#FFFFFF"/>
+  <text x="610" y="636" fill="#66707F" font-size="28" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">已补货</text>
+
+  <rect x="120" y="720" width="1050" height="228" rx="42" fill="#111418"/>
+  <text x="170" y="800" fill="#BFC9D7" font-size="28" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">低库存提醒</text>
+  <text x="170" y="884" fill="#FFFFFF" font-size="64" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-weight="700">8 个商品低于安全库存</text>
+  <text x="170" y="930" fill="#D7DDE6" font-size="28" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">建议优先处理牛奶、咖啡豆、纸杯、糖浆</text>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">
+    <rect x="120" y="1010" width="1050" height="1010" rx="42" fill="#FFFFFF"/>
+
+    <rect x="162" y="1072" width="966" height="166" rx="28" fill="#F7F8FB"/>
+    <text x="204" y="1140" fill="#101216" font-size="36" font-weight="600">全脂牛奶 1L</text>
+    <text x="204" y="1188" fill="#7A8392" font-size="24">SKU MLK-1001 · 乳制品</text>
+    <text x="912" y="1138" fill="#D06C4A" font-size="30" font-weight="600">12 盒</text>
+    <text x="882" y="1188" fill="#A0A7B3" font-size="22">安全线 30</text>
+    <rect x="952" y="1088" width="132" height="48" rx="24" fill="#FFE7DE"/>
+    <text x="986" y="1120" fill="#C46241" font-size="22">预警</text>
+
+    <rect x="162" y="1260" width="966" height="166" rx="28" fill="#F7F8FB"/>
+    <text x="204" y="1328" fill="#101216" font-size="36" font-weight="600">咖啡豆 深烘拼配</text>
+    <text x="204" y="1376" fill="#7A8392" font-size="24">SKU CFE-3020 · 原料</text>
+    <text x="912" y="1326" fill="#D06C4A" font-size="30" font-weight="600">6 袋</text>
+    <text x="882" y="1376" fill="#A0A7B3" font-size="22">安全线 18</text>
+    <rect x="952" y="1276" width="132" height="48" rx="24" fill="#FFE7DE"/>
+    <text x="986" y="1308" fill="#C46241" font-size="22">预警</text>
+
+    <rect x="162" y="1448" width="966" height="166" rx="28" fill="#F7F8FB"/>
+    <text x="204" y="1516" fill="#101216" font-size="36" font-weight="600">加厚纸杯 16oz</text>
+    <text x="204" y="1564" fill="#7A8392" font-size="24">SKU CUP-1648 · 包材</text>
+    <text x="912" y="1514" fill="#101216" font-size="30" font-weight="600">42 包</text>
+    <text x="882" y="1564" fill="#A0A7B3" font-size="22">安全线 40</text>
+    <rect x="952" y="1464" width="132" height="48" rx="24" fill="#E8F4EA"/>
+    <text x="986" y="1496" fill="#4E8A59" font-size="22">正常</text>
+
+    <rect x="162" y="1636" width="966" height="166" rx="28" fill="#F7F8FB"/>
+    <text x="204" y="1704" fill="#101216" font-size="36" font-weight="600">香草糖浆</text>
+    <text x="204" y="1752" fill="#7A8392" font-size="24">SKU SYR-2201 · 辅料</text>
+    <text x="912" y="1702" fill="#D06C4A" font-size="30" font-weight="600">5 瓶</text>
+    <text x="882" y="1752" fill="#A0A7B3" font-size="22">安全线 12</text>
+    <rect x="952" y="1652" width="132" height="48" rx="24" fill="#FFE7DE"/>
+    <text x="986" y="1684" fill="#C46241" font-size="22">预警</text>
+  </g>
+
+  <rect x="120" y="2070" width="1050" height="180" rx="40" fill="#FFFFFF"/>
+  <text x="170" y="2150" fill="#101216" font-size="34" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-weight="600">一键生成补货建议</text>
+  <text x="170" y="2200" fill="#7A8392" font-size="24" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">结合安全库存、销售趋势和供应商周期生成补货单</text>
+  <rect x="930" y="2120" width="180" height="64" rx="30" fill="#111418"/>
+  <text x="965" y="2162" fill="#FFFFFF" font-size="26" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif">立即生成</text>
+
+  <rect x="100" y="2365" width="1090" height="168" rx="48" fill="#FFFFFF" fill-opacity="0.94"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="24">
+    <text x="182" y="2470" fill="#8B93A0">首页</text>
+    <text x="430" y="2470" fill="#8B93A0">采购</text>
+    <text x="650" y="2470" fill="#111418" font-weight="600">库存</text>
+    <text x="875" y="2470" fill="#8B93A0">记账</text>
+    <text x="1080" y="2470" fill="#8B93A0">我的</text>
+  </g>
+  <rect x="450" y="2620" width="390" height="14" rx="7" fill="#121316"/>
+</svg>

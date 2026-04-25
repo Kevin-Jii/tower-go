@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type InventoryModule struct {
@@ -84,7 +85,7 @@ func (m *InventoryModule) List(req *model.ListInventoryReq) ([]*model.InventoryW
 	var total int64
 
 	query := m.db.Table("inventories i").
-		Select("i.id, i.store_id, s.name as store_name, i.product_id, sp.name as product_name, i.quantity, i.unit").
+		Select("i.id, i.store_id, s.name as store_name, i.product_id, sp.name as product_name, COALESCE(sp.price, 0) as price, i.quantity, i.unit").
 		Joins("LEFT JOIN stores s ON s.id = i.store_id").
 		Joins("LEFT JOIN supplier_products sp ON sp.id = i.product_id").
 		Where("i.deleted_at IS NULL")
@@ -114,6 +115,79 @@ func (m *InventoryModule) List(req *model.ListInventoryReq) ([]*model.InventoryW
 // CreateOrder 创建出入库单
 func (m *InventoryModule) CreateOrder(order *model.InventoryOrder) error {
 	return m.db.Create(order).Error
+}
+
+// CreateOrderWithStockApply 创建出入库单并更新库存（同事务）
+func (m *InventoryModule) CreateOrderWithStockApply(order *model.InventoryOrder) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if order.Type == model.InventoryTypeOut {
+			for _, item := range order.Items {
+				var inv model.Inventory
+				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+					Where("store_id = ? AND product_id = ?", order.StoreID, item.ProductID).
+					First(&inv).Error; err != nil {
+					name := item.ProductName
+					if name == "" {
+						name = fmt.Sprintf("商品ID:%d", item.ProductID)
+					}
+					return fmt.Errorf("商品【%s】不在库存中，无法出库", name)
+				}
+				if inv.Quantity < item.Quantity {
+					name := item.ProductName
+					if name == "" {
+						name = fmt.Sprintf("商品ID:%d", item.ProductID)
+					}
+					return fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，出库数量: %.2f", name, inv.Quantity, item.Quantity)
+				}
+			}
+		}
+
+		if err := tx.Create(order).Error; err != nil {
+			return err
+		}
+
+		for _, item := range order.Items {
+			if order.Type == model.InventoryTypeIn {
+				var inv model.Inventory
+				err := tx.Where("store_id = ? AND product_id = ?", order.StoreID, item.ProductID).First(&inv).Error
+				if err == gorm.ErrRecordNotFound {
+					inv = model.Inventory{
+						StoreID:   order.StoreID,
+						ProductID: item.ProductID,
+						Quantity:  item.Quantity,
+						Unit:      item.Unit,
+					}
+					if err := tx.Create(&inv).Error; err != nil {
+						return err
+					}
+					continue
+				}
+				if err != nil {
+					return err
+				}
+				if err := tx.Model(&inv).Update("quantity", gorm.Expr("quantity + ?", item.Quantity)).Error; err != nil {
+					return err
+				}
+				continue
+			}
+
+			res := tx.Model(&model.Inventory{}).
+				Where("store_id = ? AND product_id = ? AND quantity >= ?", order.StoreID, item.ProductID, item.Quantity).
+				Update("quantity", gorm.Expr("quantity - ?", item.Quantity))
+			if res.Error != nil {
+				return res.Error
+			}
+			if res.RowsAffected == 0 {
+				name := item.ProductName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return fmt.Errorf("商品【%s】库存不足，出库失败", name)
+			}
+		}
+
+		return nil
+	})
 }
 
 // GetOrderByNo 根据单号获取出入库单

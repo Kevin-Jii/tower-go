@@ -91,6 +91,31 @@ definitions:
       message:
         type: string
     type: object
+  model.AddPriceListItemReq:
+    properties:
+      category_id:
+        type: integer
+      display_name:
+        maxLength: 200
+        type: string
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      sort:
+        type: integer
+      spec:
+        maxLength: 100
+        type: string
+      unit:
+        maxLength: 20
+        type: string
+    required:
+    - category_id
+    - price
+    - product_id
+    type: object
   model.AdjustBalanceReq:
     properties:
       amount:
@@ -119,7 +144,6 @@ definitions:
         type: array
       perms:
         additionalProperties:
-          format: int32
           type: integer
         description: 菜单ID -> 权限位映射
         type: object
@@ -137,7 +161,6 @@ definitions:
         type: array
       perms:
         additionalProperties:
-          format: int32
           type: integer
         description: 菜单ID -> 权限位映射
         type: object
@@ -149,6 +172,40 @@ definitions:
     - menu_ids
     - role_id
     - store_id
+    type: object
+  model.BatchAddItemEntry:
+    properties:
+      display_name:
+        maxLength: 200
+        type: string
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      sort:
+        type: integer
+      spec:
+        maxLength: 100
+        type: string
+      unit:
+        maxLength: 20
+        type: string
+    required:
+    - product_id
+    type: object
+  model.BatchAddPriceListItemsReq:
+    properties:
+      category_id:
+        type: integer
+      products:
+        items:
+          $ref: '#/definitions/model.BatchAddItemEntry'
+        minItems: 1
+        type: array
+    required:
+    - category_id
+    - products
     type: object
   model.BindPrinterReq:
     properties:
@@ -182,12 +239,6 @@ definitions:
       ChangeTypeConsume: 消费
       ChangeTypeRecharge: 充值
       ChangeTypeRefund: 退款
-    x-enum-descriptions:
-    - 充值
-    - 消费
-    - 退款
-    - 调增
-    - 调减
     x-enum-varnames:
     - ChangeTypeRecharge
     - ChangeTypeConsume
@@ -444,6 +495,41 @@ definitions:
     - content
     - name
     type: object
+  model.CreatePriceListCategoryReq:
+    properties:
+      main_title:
+        maxLength: 100
+        type: string
+      price_list_id:
+        type: integer
+      sort:
+        type: integer
+      sub_title:
+        maxLength: 100
+        type: string
+    required:
+    - main_title
+    - price_list_id
+    type: object
+  model.CreatePriceListReq:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      is_default:
+        type: integer
+      logo:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 200
+        type: string
+      store_id:
+        type: integer
+    required:
+    - name
+    - store_id
+    type: object
   model.CreatePurchaseOrderItemReq:
     properties:
       product_id:
@@ -534,6 +620,9 @@ definitions:
       order_no:
         maxLength: 100
         type: string
+      other_expense_amount:
+        minimum: 0
+        type: number
       remark:
         maxLength: 500
         type: string
@@ -997,16 +1086,141 @@ definitions:
       PayStatusPaid: 已支付
       PayStatusPending: 待支付
       PayStatusRefunded: 已退款
-    x-enum-descriptions:
-    - 待支付
-    - 已支付
-    - 已取消
-    - 已退款
     x-enum-varnames:
     - PayStatusPending
     - PayStatusPaid
     - PayStatusCancelled
     - PayStatusRefunded
+  model.PriceList:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: integer
+      logo:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+      store:
+        $ref: '#/definitions/model.Store'
+      store_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.PriceListCategory:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      main_title:
+        type: string
+      price_list:
+        $ref: '#/definitions/model.PriceList'
+      price_list_id:
+        type: integer
+      sort:
+        type: integer
+      sub_title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.PriceListCategoryResp:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/model.PriceListItemResp'
+        type: array
+      main_title:
+        type: string
+      price_list:
+        $ref: '#/definitions/model.PriceList'
+      price_list_id:
+        type: integer
+      sort:
+        type: integer
+      sub_title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.PriceListItemResp:
+    properties:
+      category:
+        $ref: '#/definitions/model.PriceListCategory'
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: integer
+      price:
+        type: number
+      product:
+        $ref: '#/definitions/model.SupplierProduct'
+      product_id:
+        type: integer
+      product_image:
+        description: 商品图片
+        type: string
+      product_name:
+        description: 原商品名称
+        type: string
+      sort:
+        type: integer
+      spec:
+        type: string
+      status:
+        type: integer
+      supplier_name:
+        description: 供应商名称
+        type: string
+      unit:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.PriceListResp:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/model.PriceListCategoryResp'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: integer
+      logo:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+      store:
+        $ref: '#/definitions/model.Store'
+      store_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   model.Printer:
     properties:
       created_at:
@@ -1085,9 +1299,6 @@ definitions:
     x-enum-comments:
       PrinterTypeLabel: 标签打印机
       PrinterTypeReceipt: 小票打印机
-    x-enum-descriptions:
-    - 小票打印机
-    - 标签打印机
     x-enum-varnames:
     - PrinterTypeReceipt
     - PrinterTypeLabel
@@ -1296,12 +1507,16 @@ definitions:
         items:
           $ref: '#/definitions/model.StoreAccountItem'
         type: array
+      net_income_amount:
+        type: number
       operator:
         $ref: '#/definitions/model.User'
       operator_id:
         type: integer
       order_no:
         type: string
+      other_expense_amount:
+        type: number
       remark:
         type: string
       store:
@@ -1577,6 +1792,61 @@ definitions:
       variables:
         type: string
     type: object
+  model.UpdatePriceListCategoryReq:
+    properties:
+      main_title:
+        maxLength: 100
+        type: string
+      sort:
+        type: integer
+      sub_title:
+        maxLength: 100
+        type: string
+    type: object
+  model.UpdatePriceListItemReq:
+    properties:
+      display_name:
+        maxLength: 200
+        type: string
+      price:
+        minimum: 0
+        type: number
+      sort:
+        type: integer
+      spec:
+        maxLength: 100
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      unit:
+        maxLength: 20
+        type: string
+    type: object
+  model.UpdatePriceListReq:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      is_default:
+        enum:
+        - 0
+        - 1
+        type: integer
+      logo:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 200
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
   model.UpdatePrinterReq:
     properties:
       is_default:
@@ -1628,6 +1898,9 @@ definitions:
       order_no:
         maxLength: 100
         type: string
+      other_expense_amount:
+        minimum: 0
+        type: number
       remark:
         maxLength: 500
         type: string
@@ -3414,7 +3687,6 @@ paths:
             - properties:
                 data:
                   additionalProperties:
-                    format: int32
                     type: integer
                   type: object
               type: object
@@ -3520,7 +3792,6 @@ paths:
             - properties:
                 data:
                   additionalProperties:
-                    format: int32
                     type: integer
                   type: object
               type: object
@@ -3720,6 +3991,270 @@ paths:
       summary: 更新消息模板
       tags:
       - 消息模板
+  /price-lists:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.PriceList'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取价目单列表
+      tags:
+      - 价目单
+    post:
+      parameters:
+      - description: 价目单信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreatePriceListReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建价目单
+      tags:
+      - 价目单
+  /price-lists/{id}:
+    delete:
+      parameters:
+      - description: 价目单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除价目单
+      tags:
+      - 价目单
+    get:
+      parameters:
+      - description: 价目单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.PriceList'
+              type: object
+      summary: 获取价目单详情
+      tags:
+      - 价目单
+    put:
+      parameters:
+      - description: 价目单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 价目单信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdatePriceListReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新价目单
+      tags:
+      - 价目单
+  /price-lists/{id}/details:
+    get:
+      parameters:
+      - description: 价目单ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.PriceListResp'
+              type: object
+      summary: 获取价目单完整结构（含分类和商品）
+      tags:
+      - 价目单
+  /price-lists/categories:
+    post:
+      parameters:
+      - description: 分类信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreatePriceListCategoryReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建价目单分类
+      tags:
+      - 价目单
+  /price-lists/categories/{id}:
+    delete:
+      parameters:
+      - description: 分类ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除价目单分类
+      tags:
+      - 价目单
+    put:
+      parameters:
+      - description: 分类ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分类信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdatePriceListCategoryReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新价目单分类
+      tags:
+      - 价目单
+  /price-lists/items:
+    post:
+      parameters:
+      - description: 商品信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddPriceListItemReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 添加价目单商品
+      tags:
+      - 价目单
+  /price-lists/items/{id}:
+    delete:
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除价目单商品
+      tags:
+      - 价目单
+    put:
+      parameters:
+      - description: 商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 商品信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdatePriceListItemReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新价目单商品
+      tags:
+      - 价目单
+  /price-lists/items/batch:
+    post:
+      parameters:
+      - description: 批量商品信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.BatchAddPriceListItemsReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 批量添加商品到价目单分类
+      tags:
+      - 价目单
   /printers:
     get:
       consumes:
@@ -4920,6 +5455,34 @@ paths:
       summary: 记账统计
       tags:
       - 门店记账
+  /store-suppliers/categories:
+    get:
+      parameters:
+      - description: 门店ID（管理员可选）
+        in: query
+        name: store_id
+        type: integer
+      - description: 供应商ID（可选，不传则返回所有绑定供应商的分类）
+        in: query
+        name: supplier_id
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.SupplierCategory'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取门店绑定供应商的分类列表
+      tags:
+      - 门店供应商
   /stores:
     get:
       consumes:

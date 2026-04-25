@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -59,6 +60,69 @@ func (s *StatisticsService) GetSalesTrend(storeID uint, period string) ([]model.
 func (s *StatisticsService) GetChannelStats(storeID uint, period string) ([]model.ChannelStatsItem, error) {
 	startDate, endDate := s.getPeriodRange(period)
 	return s.statisticsModule.GetChannelStats(storeID, startDate, endDate)
+}
+
+// GetBusinessOverview 获取经营总览（按日期范围）
+func (s *StatisticsService) GetBusinessOverview(storeID uint, startDate, endDate string) (*model.BusinessOverviewStats, error) {
+	if startDate == "" || endDate == "" {
+		return nil, fmt.Errorf("start_date 和 end_date 不能为空")
+	}
+	if _, err := time.Parse("2006-01-02", startDate); err != nil {
+		return nil, fmt.Errorf("start_date 格式错误，应为 YYYY-MM-DD")
+	}
+	if _, err := time.Parse("2006-01-02", endDate); err != nil {
+		return nil, fmt.Errorf("end_date 格式错误，应为 YYYY-MM-DD")
+	}
+	return s.statisticsModule.GetBusinessOverview(storeID, startDate, endDate)
+}
+
+// GetHomeChartsStats 获取首页图表数据（折线/扇形/雷达）
+func (s *StatisticsService) GetHomeChartsStats(storeID uint, startDate, endDate, granularity string) (*model.HomeChartsStats, error) {
+	if startDate == "" || endDate == "" {
+		return nil, fmt.Errorf("start_date 和 end_date 不能为空")
+	}
+	if _, err := time.Parse("2006-01-02", startDate); err != nil {
+		return nil, fmt.Errorf("start_date 格式错误，应为 YYYY-MM-DD")
+	}
+	if _, err := time.Parse("2006-01-02", endDate); err != nil {
+		return nil, fmt.Errorf("end_date 格式错误，应为 YYYY-MM-DD")
+	}
+	if granularity == "" {
+		granularity = "day"
+	}
+	if granularity != "day" && granularity != "month" {
+		return nil, fmt.Errorf("granularity 仅支持 day/month")
+	}
+
+	line, err := s.statisticsModule.GetSalesTrendByGranularity(storeID, startDate, endDate, granularity)
+	if err != nil {
+		return nil, err
+	}
+	pie, err := s.statisticsModule.GetChannelStats(storeID, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	overview, err := s.statisticsModule.GetBusinessOverview(storeID, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	radar := []model.RadarMetricItem{
+		{Name: "销售金额", Value: overview.SalesAmount},
+		{Name: "入库金额", Value: overview.InboundAmount},
+		{Name: "出库成本", Value: overview.OutboundAmount},
+		{Name: "其他支出", Value: overview.OtherExpenseAmount},
+		{Name: "净利润", Value: overview.NetProfitAmount},
+	}
+
+	return &model.HomeChartsStats{
+		StartDate: startDate,
+		EndDate:   endDate,
+		Line:      line,
+		Pie:       pie,
+		Radar:     radar,
+		Overview:  *overview,
+	}, nil
 }
 
 // getPeriodRange 获取周期的日期范围

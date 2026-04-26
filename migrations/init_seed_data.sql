@@ -1,162 +1,12 @@
 -- ============================================
--- Tower Go 种子数据（幂等/可重复执行）
+-- Tower Go 业务种子数据（仅 INSERT / 幂等数据写入）
+-- 表结构、列补丁、CREATE TABLE 等见 migrations/init.sql
 -- 说明：
--- - 该文件仅包含「基础种子数据」，可在 dev/prod 重复执行以增量补齐缺失数据
+-- - 可在 dev/prod 重复执行以增量补齐缺失数据
 -- - 尽量使用 ON DUPLICATE KEY UPDATE / NOT EXISTS 保证幂等
--- - Mock/演示数据请放到单独文件，避免污染生产
+-- - 文末含「演示模拟数据」供应商/商品/会员等，按需导入
+-- - 应用启动若设置 SKIP_SEED_DATA=1，则不会自动执行本文件（请 mysql 手工 source）
 -- ============================================
-
--- 结构补丁：store_accounts 新增金额字段（幂等）
--- 说明：用于历史库补齐字段，避免业务查询时报 Unknown column
-SET @db_name = DATABASE();
-
-SET @sql_add_other_expense_amount = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = @db_name
-        AND TABLE_NAME = 'store_accounts'
-        AND COLUMN_NAME = 'other_expense_amount'
-    ),
-    'SELECT ''skip add other_expense_amount''',
-    'ALTER TABLE store_accounts ADD COLUMN other_expense_amount DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''其他支出金额'' AFTER total_amount'
-  )
-);
-PREPARE stmt_add_other_expense_amount FROM @sql_add_other_expense_amount;
-EXECUTE stmt_add_other_expense_amount;
-DEALLOCATE PREPARE stmt_add_other_expense_amount;
-
-SET @sql_add_net_income_amount = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = @db_name
-        AND TABLE_NAME = 'store_accounts'
-        AND COLUMN_NAME = 'net_income_amount'
-    ),
-    'SELECT ''skip add net_income_amount''',
-    'ALTER TABLE store_accounts ADD COLUMN net_income_amount DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''净收入金额'' AFTER other_expense_amount'
-  )
-);
-PREPARE stmt_add_net_income_amount FROM @sql_add_net_income_amount;
-EXECUTE stmt_add_net_income_amount;
-DEALLOCATE PREPARE stmt_add_net_income_amount;
-
--- 结构补丁：supplier_products 新增双价格字段（幂等）
-SET @sql_add_bottle_price = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = @db_name
-        AND TABLE_NAME = 'supplier_products'
-        AND COLUMN_NAME = 'bottle_price'
-    ),
-    'SELECT ''skip add bottle_price''',
-    'ALTER TABLE supplier_products ADD COLUMN bottle_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''单瓶价格'' AFTER price'
-  )
-);
-PREPARE stmt_add_bottle_price FROM @sql_add_bottle_price;
-EXECUTE stmt_add_bottle_price;
-DEALLOCATE PREPARE stmt_add_bottle_price;
-
-SET @sql_add_case_price = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = @db_name
-        AND TABLE_NAME = 'supplier_products'
-        AND COLUMN_NAME = 'case_price'
-    ),
-    'SELECT ''skip add case_price''',
-    'ALTER TABLE supplier_products ADD COLUMN case_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''整箱价格'' AFTER bottle_price'
-  )
-);
-PREPARE stmt_add_case_price FROM @sql_add_case_price;
-EXECUTE stmt_add_case_price;
-DEALLOCATE PREPARE stmt_add_case_price;
-
-SET @sql_add_bottles_per_case = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = @db_name
-        AND TABLE_NAME = 'supplier_products'
-        AND COLUMN_NAME = 'bottles_per_case'
-    ),
-    'SELECT ''skip add bottles_per_case''',
-    'ALTER TABLE supplier_products ADD COLUMN bottles_per_case INT NOT NULL DEFAULT 1 COMMENT ''每箱瓶数'' AFTER case_price'
-  )
-);
-PREPARE stmt_add_bottles_per_case FROM @sql_add_bottles_per_case;
-EXECUTE stmt_add_bottles_per_case;
-DEALLOCATE PREPARE stmt_add_bottles_per_case;
-
--- 历史数据回填：默认将旧单价同步为单瓶价，整箱价若为空则保持0
-UPDATE supplier_products
-SET bottle_price = price
-WHERE (bottle_price IS NULL OR bottle_price = 0) AND price > 0;
-
-UPDATE supplier_products
-SET bottles_per_case = 1
-WHERE bottles_per_case IS NULL OR bottles_per_case <= 0;
-
--- 结构补丁：product_unit_specs 多单位换算与价格配置表
-CREATE TABLE IF NOT EXISTS product_unit_specs (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  product_id BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
-  unit_code VARCHAR(50) NOT NULL COMMENT '单位编码，如 bottle/case/barrel/liter',
-  unit_name VARCHAR(50) NOT NULL COMMENT '单位名称，如 瓶/箱/桶/L',
-  factor_to_base DECIMAL(12,6) NOT NULL DEFAULT 1 COMMENT '换算到基础单位L的系数',
-  precision INT NOT NULL DEFAULT 0 COMMENT '数量精度(小数位)',
-  cost_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '单位成本价',
-  sale_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '单位售价',
-  is_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
-  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
-  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-  PRIMARY KEY (id),
-  KEY idx_product_unit_specs_product_id (product_id),
-  UNIQUE KEY uk_product_unit_specs_product_unit (product_id, unit_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品多单位换算与价格表';
-
-SET @sql_add_product_unit_precision = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'product_unit_specs'
-        AND COLUMN_NAME = 'precision'
-    ),
-    'SELECT ''skip add product_unit_specs.precision''',
-    'ALTER TABLE product_unit_specs ADD COLUMN precision INT NOT NULL DEFAULT 0 COMMENT ''数量精度(小数位)'' AFTER factor_to_base'
-  )
-);
-PREPARE stmt_add_product_unit_precision FROM @sql_add_product_unit_precision;
-EXECUTE stmt_add_product_unit_precision;
-DEALLOCATE PREPARE stmt_add_product_unit_precision;
-
--- 结构补丁：roles 增加 data_scope（数据权限）
-SET @sql_add_roles_data_scope = (
-  SELECT IF(
-    EXISTS(
-      SELECT 1
-      FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = @db_name
-        AND TABLE_NAME = 'roles'
-        AND COLUMN_NAME = 'data_scope'
-    ),
-    'SELECT ''skip add roles.data_scope''',
-    'ALTER TABLE roles ADD COLUMN data_scope TINYINT NOT NULL DEFAULT 3 COMMENT ''数据范围 1=全部 2=租户 3=门店 4=仅本人'' AFTER code'
-  )
-);
-PREPARE stmt_add_roles_data_scope FROM @sql_add_roles_data_scope;
-EXECUTE stmt_add_roles_data_scope;
-DEALLOCATE PREPARE stmt_add_roles_data_scope;
 
 -- 角色数据（使用主键 id 幂等）
 INSERT INTO roles (id, name, code, data_scope, description, created_at, updated_at) VALUES
@@ -558,6 +408,28 @@ ON DUPLICATE KEY UPDATE
   status=VALUES(status),
   updated_at=NOW();
 
+-- 字典数据 - 出入库原因（与 bootstrap/dict_seed.go 保持一致，便于纯 SQL 初始化库）
+INSERT INTO dict_types (code, name, remark, status, created_at, updated_at) VALUES
+('inventory_reason', '出入库原因', '库存管理-出入库原因', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE name=VALUES(name), remark=VALUES(remark), status=VALUES(status), updated_at=NOW();
+SET @inventory_reason_type_id = (SELECT id FROM dict_types WHERE code = 'inventory_reason' ORDER BY id LIMIT 1);
+
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at) VALUES
+(@inventory_reason_type_id, 'inventory_reason', '采购入库', 'purchase_in', 1, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '退货入库', 'return_in', 2, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '调拨入库', 'transfer_in', 3, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '盘盈入库', 'inventory_in', 4, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '销售出库', 'sale_out', 10, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '报损出库', 'loss_out', 11, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '调拨出库', 'transfer_out', 12, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '盘亏出库', 'inventory_out', 13, 1, NOW(), NOW()),
+(@inventory_reason_type_id, 'inventory_reason', '其他', 'other', 99, 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+  label=VALUES(label),
+  sort=VALUES(sort),
+  status=VALUES(status),
+  updated_at=NOW();
+
 -- 消息模板数据（code 有唯一索引）
 INSERT INTO message_templates (code, name, title, content, description, variables, is_enabled, created_at, updated_at) VALUES
 ('store_account_created', '记账通知', '📝 新记账通知 - {{.StoreName}}',
@@ -638,4 +510,82 @@ ON DUPLICATE KEY UPDATE permissions=15;
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 2, id, 15 FROM menus WHERE permission IN ('statistics:dashboard', 'price:list', 'price:add', 'price:edit', 'price:delete')
 ON DUPLICATE KEY UPDATE permissions=15;
+
+-- ============================================
+-- 演示模拟数据（供应商 / 分类 / 商品 / 门店绑定 / 库存 / 会员）
+-- 依赖：stores 已有 id=1、2；与业务种子独立，按编码/手机号幂等
+-- ============================================
+
+INSERT INTO suppliers (supplier_code, supplier_name, contact_person, contact_phone, supplier_address, remark, status, created_at, updated_at)
+SELECT 'SEED_DEMO_A', '演示供应商·清泉配送', '张敏', '13800138001', '杭州市余杭区物流园A区', 'init_seed_data 模拟', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM suppliers WHERE supplier_code = 'SEED_DEMO_A');
+INSERT INTO suppliers (supplier_code, supplier_name, contact_person, contact_phone, supplier_address, remark, status, created_at, updated_at)
+SELECT 'SEED_DEMO_B', '演示供应商·鲜达农贸', '李强', '13800138002', '上海市嘉定区江桥市场', 'init_seed_data 模拟', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM suppliers WHERE supplier_code = 'SEED_DEMO_B');
+
+SET @seed_sup_a = (SELECT id FROM suppliers WHERE supplier_code = 'SEED_DEMO_A' ORDER BY id LIMIT 1);
+SET @seed_sup_b = (SELECT id FROM suppliers WHERE supplier_code = 'SEED_DEMO_B' ORDER BY id LIMIT 1);
+
+INSERT INTO supplier_categories (supplier_id, name, sort, status, created_at, updated_at)
+SELECT @seed_sup_a, '桶装水', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_categories WHERE supplier_id = @seed_sup_a AND name = '桶装水');
+INSERT INTO supplier_categories (supplier_id, name, sort, status, created_at, updated_at)
+SELECT @seed_sup_a, '饮料', 2, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_categories WHERE supplier_id = @seed_sup_a AND name = '饮料');
+INSERT INTO supplier_categories (supplier_id, name, sort, status, created_at, updated_at)
+SELECT @seed_sup_b, '蔬菜', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_categories WHERE supplier_id = @seed_sup_b AND name = '蔬菜');
+INSERT INTO supplier_categories (supplier_id, name, sort, status, created_at, updated_at)
+SELECT @seed_sup_b, '豆制品', 2, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_categories WHERE supplier_id = @seed_sup_b AND name = '豆制品');
+
+SET @seed_cat_a_water = (SELECT id FROM supplier_categories WHERE supplier_id = @seed_sup_a AND name = '桶装水' ORDER BY id LIMIT 1);
+SET @seed_cat_a_drink = (SELECT id FROM supplier_categories WHERE supplier_id = @seed_sup_a AND name = '饮料' ORDER BY id LIMIT 1);
+SET @seed_cat_b_veg = (SELECT id FROM supplier_categories WHERE supplier_id = @seed_sup_b AND name = '蔬菜' ORDER BY id LIMIT 1);
+SET @seed_cat_b_tofu = (SELECT id FROM supplier_categories WHERE supplier_id = @seed_sup_b AND name = '豆制品' ORDER BY id LIMIT 1);
+
+INSERT INTO supplier_products (supplier_id, category_id, name, unit, price, bottle_price, case_price, bottles_per_case, spec, remark, status, created_at, updated_at)
+SELECT @seed_sup_a, @seed_cat_a_water, '农夫山泉 19L 桶装水', '桶', 25.00, 25.00, 140.00, 6, '19L', '模拟商品', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_products WHERE supplier_id = @seed_sup_a AND name = '农夫山泉 19L 桶装水');
+INSERT INTO supplier_products (supplier_id, category_id, name, unit, price, bottle_price, case_price, bottles_per_case, spec, remark, status, created_at, updated_at)
+SELECT @seed_sup_a, @seed_cat_a_water, '怡宝 18.9L 桶装水', '桶', 22.00, 22.00, 120.00, 6, '18.9L', '模拟商品', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_products WHERE supplier_id = @seed_sup_a AND name = '怡宝 18.9L 桶装水');
+INSERT INTO supplier_products (supplier_id, category_id, name, unit, price, bottle_price, case_price, bottles_per_case, spec, remark, status, created_at, updated_at)
+SELECT @seed_sup_a, @seed_cat_a_drink, '可乐 500ml', '瓶', 3.00, 3.00, 36.00, 12, '500ml', '模拟商品', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_products WHERE supplier_id = @seed_sup_a AND name = '可乐 500ml');
+INSERT INTO supplier_products (supplier_id, category_id, name, unit, price, bottle_price, case_price, bottles_per_case, spec, remark, status, created_at, updated_at)
+SELECT @seed_sup_b, @seed_cat_b_veg, '生菜', '斤', 4.50, 4.50, 0, 1, '新鲜', '模拟商品', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_products WHERE supplier_id = @seed_sup_b AND name = '生菜');
+INSERT INTO supplier_products (supplier_id, category_id, name, unit, price, bottle_price, case_price, bottles_per_case, spec, remark, status, created_at, updated_at)
+SELECT @seed_sup_b, @seed_cat_b_tofu, '嫩豆腐', '盒', 3.20, 3.20, 0, 1, '350g', '模拟商品', 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM supplier_products WHERE supplier_id = @seed_sup_b AND name = '嫩豆腐');
+
+SET @seed_prod_nfs = (SELECT id FROM supplier_products WHERE supplier_id = @seed_sup_a AND name = '农夫山泉 19L 桶装水' ORDER BY id LIMIT 1);
+
+INSERT INTO store_suppliers (store_id, supplier_id, status, created_at, updated_at)
+SELECT 1, @seed_sup_a, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM store_suppliers WHERE store_id = 1 AND supplier_id = @seed_sup_a);
+INSERT INTO store_suppliers (store_id, supplier_id, status, created_at, updated_at)
+SELECT 2, @seed_sup_a, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM store_suppliers WHERE store_id = 2 AND supplier_id = @seed_sup_a);
+INSERT INTO store_suppliers (store_id, supplier_id, status, created_at, updated_at)
+SELECT 1, @seed_sup_b, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM store_suppliers WHERE store_id = 1 AND supplier_id = @seed_sup_b);
+INSERT INTO store_suppliers (store_id, supplier_id, status, created_at, updated_at)
+SELECT 2, @seed_sup_b, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM store_suppliers WHERE store_id = 2 AND supplier_id = @seed_sup_b);
+
+INSERT INTO inventories (store_id, product_id, quantity, unit, created_at, updated_at)
+SELECT 1, @seed_prod_nfs, 120.00, '桶', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inventories WHERE store_id = 1 AND product_id = @seed_prod_nfs);
+INSERT INTO inventories (store_id, product_id, quantity, unit, created_at, updated_at)
+SELECT 2, @seed_prod_nfs, 48.00, '桶', NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM inventories WHERE store_id = 2 AND product_id = @seed_prod_nfs);
+
+INSERT INTO t_member (uid, name, phone, balance, points, level, version, created_at, updated_at)
+SELECT 'SEED-M-09001', '演示会员·阿林', '13900009001', 188.00, 50, 2, 0, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM t_member WHERE phone = '13900009001');
+INSERT INTO t_member (uid, name, phone, balance, points, level, version, created_at, updated_at)
+SELECT 'SEED-M-09002', '演示会员·周姐', '13900009002', 56.50, 10, 1, 0, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM t_member WHERE phone = '13900009002');
 

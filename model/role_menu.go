@@ -22,9 +22,9 @@ func (RoleMenu) TableName() string {
 
 // AssignMenusToRoleReq 为角色分配菜单请求
 type AssignMenusToRoleReq struct {
-	RoleID  uint                `json:"role_id" binding:"required"`
-	MenuIDs []uint              `json:"menu_ids" binding:"required"`
-	Perms   map[uint]uint8      `json:"perms"` // 菜单ID -> 权限位映射
+	RoleID  uint           `json:"role_id" binding:"required"`
+	MenuIDs []uint         `json:"menu_ids"` // 允许空数组：清空该角色全部菜单权限
+	Perms   map[uint]uint8 `json:"perms"`    // 菜单ID -> 权限位映射
 }
 
 // MenuPermission 菜单权限位常量

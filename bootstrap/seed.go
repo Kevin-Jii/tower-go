@@ -12,9 +12,9 @@ import (
 
 // RunSeedSQL 执行种子数据 SQL 文件
 func RunSeedSQL() {
-	// 检查是否跳过
+	// 检查是否跳过（与 InitDefaultDicts、InitDefaultTemplates 一致，便于清空库后仅手工执行 SQL）
 	if os.Getenv("SKIP_SEED_DATA") == "1" {
-		logging.LogInfo("跳过种子数据初始化（SKIP_SEED_DATA=1）")
+		logging.LogInfo("跳过种子数据 SQL（SKIP_SEED_DATA=1），不执行 migrations/init_seed_data.sql")
 		return
 	}
 

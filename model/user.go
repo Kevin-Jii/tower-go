@@ -35,6 +35,8 @@ type CreateUserReq struct {
 	Gender   int    `json:"gender" binding:"omitempty,oneof=1 2"` // 1男 2女，未传使用默认1
 	RoleID   uint   `json:"role_id,omitempty"`                    // 角色ID，不传默认普通员工
 	Nickname string `json:"nickname,omitempty"`
+	// StoreCode 仅总部管理员可用：与 Token 门店二选一，非空时按门店编码落库 store_id
+	StoreCode string `json:"store_code,omitempty"`
 	// StoreID 和 Status 由后端自动设置，不需要前端传递
 }
 
@@ -48,4 +50,6 @@ type UpdateUserReq struct {
 	Gender   *int   `json:"gender,omitempty" binding:"omitempty,oneof=1 2"` // 性别：1男 2女
 	RoleID   *uint  `json:"role_id,omitempty"`                              // 角色ID
 	StoreID  *uint  `json:"store_id,omitempty"`                             // 门店ID（仅管理员可修改）
+	// StoreCode 仅总部管理员：提交门店编码，服务端解析为 store_id 写入 users.store_id（不直接落库本字段）
+	StoreCode string `json:"store_code,omitempty"`
 }

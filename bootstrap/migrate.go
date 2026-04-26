@@ -15,6 +15,37 @@ import (
 const migrationVersionFile = ".migration_version"
 const currentMigrationVersion = "1"
 
+// autoMigrateModels 与下方 AutoMigrate 顺序一致；shouldSkipMigration 会校验每张表均存在后才允许跳过。
+var autoMigrateModels = []interface{}{
+	&model.Store{},
+	&model.Role{},
+	&model.Menu{},
+	&model.User{},
+	&model.RoleMenu{},
+	&model.StoreRoleMenu{},
+	&model.DingTalkBot{},
+	&model.Supplier{},
+	&model.SupplierCategory{},
+	&model.SupplierProduct{},
+	&model.ProductUnitSpec{},
+	&model.StoreSupplier{},
+	&model.PurchaseOrder{},
+	&model.PurchaseOrderItem{},
+	&model.DictType{},
+	&model.DictData{},
+	&model.Inventory{},
+	&model.InventoryOrder{},
+	&model.InventoryOrderItem{},
+	&model.Gallery{},
+	&model.StoreAccount{},
+	&model.StoreAccountItem{},
+	&model.DingTalkUser{},
+	&model.MessageTemplate{},
+	&model.Member{},
+	&model.WalletLog{},
+	&model.RechargeOrder{},
+}
+
 func AutoMigrateAndSeeds() {
 	if os.Getenv("SKIP_AUTO_MIGRATE") == "1" {
 		logging.LogInfo("跳过数据库迁移（SKIP_AUTO_MIGRATE=1）")
@@ -28,37 +59,7 @@ func AutoMigrateAndSeeds() {
 	}
 
 	// 执行迁移
-	migrateModels := []interface{}{
-		&model.Store{},
-		&model.Role{},
-		&model.Menu{},
-		&model.User{},
-		&model.RoleMenu{},
-		&model.StoreRoleMenu{},
-		&model.DingTalkBot{},
-		&model.Supplier{},
-		&model.SupplierCategory{},
-		&model.SupplierProduct{},
-		&model.ProductUnitSpec{},
-		&model.StoreSupplier{},
-		&model.PurchaseOrder{},
-		&model.PurchaseOrderItem{},
-		&model.DictType{},
-		&model.DictData{},
-		&model.Inventory{},
-		&model.InventoryOrder{},
-		&model.InventoryOrderItem{},
-		&model.Gallery{},
-		&model.StoreAccount{},
-		&model.StoreAccountItem{},
-		&model.DingTalkUser{},
-		&model.MessageTemplate{},
-		&model.Member{},
-		&model.WalletLog{},
-		&model.RechargeOrder{},
-	}
-
-	for _, m := range migrateModels {
+	for _, m := range autoMigrateModels {
 		if err := database.GetDB().AutoMigrate(m); err != nil {
 			logging.LogError("数据表迁移失败", zap.String("model", fmt.Sprintf("%T", m)), zap.Error(err))
 			logging.LogWarn("迁移失败，后续种子数据将跳过")
@@ -85,15 +86,11 @@ func shouldSkipMigration() bool {
 		return false
 	}
 	migrator := db.Migrator()
-	// 选取几个核心表做校验：users、menus、message_templates
-	// 任意一个不存在，都认为需要执行迁移
-	if !migrator.HasTable(&model.User{}) || !migrator.HasTable(&model.Menu{}) || !migrator.HasTable(&model.MessageTemplate{}) {
-		return false
-	}
-
-	// 记账主表已存在但明细表缺失时仍需迁移（历史版本只 AutoMigrate 了主表）
-	if migrator.HasTable(&model.StoreAccount{}) && !migrator.HasTable(&model.StoreAccountItem{}) {
-		return false
+	// 任意一张 AutoMigrate 目标表缺失，都必须执行迁移（避免仅有部分表 + .migration_version 时误跳过）
+	for _, m := range autoMigrateModels {
+		if !migrator.HasTable(m) {
+			return false
+		}
 	}
 
 	// 记账表新增字段后，若线上库未加列则仍需迁移（避免 .migration_version 导致永远不 AutoMigrate）
@@ -111,9 +108,6 @@ func shouldSkipMigration() bool {
 			!migrator.HasColumn(&model.SupplierProduct{}, "bottles_per_case") {
 			return false
 		}
-	}
-	if !migrator.HasTable(&model.ProductUnitSpec{}) {
-		return false
 	}
 
 	// roles 表 data_scope（数据权限）

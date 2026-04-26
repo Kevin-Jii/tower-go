@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/controller"
@@ -94,7 +95,7 @@ func BuildControllers() *Controllers {
 	}
 
 	// 初始化服务层
-	userService := service.NewUserService(userModule)
+	userService := service.NewUserService(userModule, storeModule)
 	storeService := service.NewStoreService(storeModule)
 	dingTalkService := service.NewDingTalkService(dingTalkBotModule, dingTalkUserModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
@@ -123,9 +124,13 @@ func BuildControllers() *Controllers {
 		logging.LogInfo("芯烨云打印机客户端已初始化")
 	}
 
-	// 初始化默认消息模板
-	if err := messageTemplateService.InitDefaultTemplates(); err != nil {
-		logging.LogWarn("初始化消息模板失败: " + err.Error())
+	// 初始化默认消息模板（SKIP_SEED_DATA=1 时跳过，由 SQL 手工导入）
+	if os.Getenv("SKIP_SEED_DATA") != "1" {
+		if err := messageTemplateService.InitDefaultTemplates(); err != nil {
+			logging.LogWarn("初始化消息模板失败: " + err.Error())
+		}
+	} else {
+		logging.LogInfo("跳过空库默认消息模板写入（SKIP_SEED_DATA=1）")
 	}
 
 	// 初始化钉钉命令处理器

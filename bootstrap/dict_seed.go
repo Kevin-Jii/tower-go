@@ -1,13 +1,19 @@
 package bootstrap
 
 import (
+	"os"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
-// InitDefaultDicts 初始化默认字典数据
+// InitDefaultDicts 初始化默认字典数据（与 RunSeedSQL 相同开关：SKIP_SEED_DATA=1 时跳过）
 func InitDefaultDicts() {
+	if os.Getenv("SKIP_SEED_DATA") == "1" {
+		logging.LogInfo("跳过内存字典种子（SKIP_SEED_DATA=1）")
+		return
+	}
 	initSalesChannel()
 	initOrderSource()
 	initInventoryReason()

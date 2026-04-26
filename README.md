@@ -162,8 +162,9 @@ copy .env.example .env
 CREATE DATABASE tower CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-5. **初始化种子数据**
+5. **初始化表结构与种子数据**（先结构、后数据）
 ```bash
+mysql -u用户名 -p密码 数据库名 < migrations/init.sql
 mysql -u用户名 -p密码 数据库名 < migrations/init_seed_data.sql
 ```
 

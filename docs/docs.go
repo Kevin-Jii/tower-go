@@ -7498,11 +7498,11 @@ const docTemplate = `{
         "model.AssignMenusToRoleReq": {
             "type": "object",
             "required": [
-                "menu_ids",
                 "role_id"
             ],
             "properties": {
                 "menu_ids": {
+                    "description": "允许空数组：清空该角色全部菜单权限",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -8542,6 +8542,10 @@ const docTemplate = `{
                 "role_id": {
                     "description": "角色ID，不传默认普通员工",
                     "type": "integer"
+                },
+                "store_code": {
+                    "description": "StoreCode 仅总部管理员可用：与 Token 门店二选一，非空时按门店编码落库 store_id",
+                    "type": "string"
                 },
                 "username": {
                     "description": "强制要求非空",
@@ -9617,6 +9621,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "data_scope": {
+                    "type": "integer"
+                },
                 "description": {
                     "description": "角色描述",
                     "type": "string"
@@ -10356,6 +10363,10 @@ const docTemplate = `{
                     "description": "角色代码（可选）",
                     "type": "string"
                 },
+                "data_scope": {
+                    "description": "数据范围（可选）",
+                    "type": "integer"
+                },
                 "description": {
                     "description": "允许清空描述",
                     "type": "string"
@@ -10567,6 +10578,10 @@ const docTemplate = `{
                 "status": {
                     "description": "账号状态：1=正常，2=禁用",
                     "type": "integer"
+                },
+                "store_code": {
+                    "description": "StoreCode 仅总部管理员：提交门店编码，服务端解析为 store_id 写入 users.store_id（不直接落库本字段）",
+                    "type": "string"
                 },
                 "store_id": {
                     "description": "门店ID（仅管理员可修改）",

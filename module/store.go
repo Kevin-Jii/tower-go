@@ -1,6 +1,9 @@
 package module
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 
@@ -32,6 +35,19 @@ func (m *StoreModule) GetByID(id uint) (*model.Store, error) {
 		return nil, err
 	}
 	return &store, nil
+}
+
+// GetIDByStoreCode 按门店编码（store_code）解析门店主键
+func (m *StoreModule) GetIDByStoreCode(code string) (uint, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return 0, errors.New("门店编码不能为空")
+	}
+	var store model.Store
+	if err := m.db.Where("store_code = ?", code).First(&store).Error; err != nil {
+		return 0, err
+	}
+	return store.ID, nil
 }
 
 // List 获取门店列表（全部数据，不分页）

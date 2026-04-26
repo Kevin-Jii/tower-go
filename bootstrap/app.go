@@ -28,7 +28,7 @@ func Run() {
 
 	AutoMigrateAndSeeds()
 	RunSeedSQL()
-	InitDefaultDicts()
+	InitDefaultDicts() // 与 RunSeedSQL 共用 SKIP_SEED_DATA=1
 
 	// 初始化事件订阅
 	InitEventSubscribers()

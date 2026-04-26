@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 	"log"
+	"strings"
 	"time"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/utils"
@@ -11,11 +13,12 @@ import (
 )
 
 type UserService struct {
-	userModule *module.UserModule
+	userModule  *module.UserModule
+	storeModule *module.StoreModule
 }
 
-func NewUserService(userModule *module.UserModule) *UserService {
-	return &UserService{userModule: userModule}
+func NewUserService(userModule *module.UserModule, storeModule *module.StoreModule) *UserService {
+	return &UserService{userModule: userModule, storeModule: storeModule}
 }
 
 // --- 用户管理接口 (需要 StoreID 隔离) ---
@@ -47,6 +50,15 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 		return err
 	}
 
+	targetStoreID := storeID
+	if (roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin) && strings.TrimSpace(req.StoreCode) != "" {
+		sid, err := s.storeModule.GetIDByStoreCode(req.StoreCode)
+		if err != nil {
+			return errors.New("无效门店编码: " + err.Error())
+		}
+		targetStoreID = sid
+	}
+
 	user := &model.User{
 		Phone:      req.Phone,
 		Password:   hashedPassword,
@@ -55,7 +67,7 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 		EmployeeNo: employeeNo,
 		Status:     1, // 默认启用
 		Gender:     1, // 默认男
-		StoreID:    storeID,
+		StoreID:    targetStoreID,
 		Nickname:   req.Nickname,
 		RoleID:     3, // 默认普通员工
 	}
@@ -148,10 +160,16 @@ func (s *UserService) GetUser(id uint) (*model.User, error) {
 	return s.userModule.GetByID(id)
 }
 
-// UpdateUser 更新用户（用于 Profile 接口）
+// UpdateUser 更新用户（管理员全量更新 / 个人资料等）
 func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
-	// Profile 接口访问的是用户自己的信息，直接使用 ID 即可
-	// 实际操作中，最好在 UpdateUser Module 层再次校验 StoreID，以防万一
+	if strings.TrimSpace(req.StoreCode) != "" {
+		sid, err := s.storeModule.GetIDByStoreCode(req.StoreCode)
+		if err != nil {
+			return errors.New("无效门店编码: " + err.Error())
+		}
+		req.StoreID = &sid
+		req.StoreCode = ""
+	}
 	return s.userModule.UpdateByID(id, req)
 }
 

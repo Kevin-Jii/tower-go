@@ -7,6 +7,12 @@ import (
 
 // RegisterSupplierRoutes 注册供应商相关路由
 func RegisterSupplierRoutes(v1 *gin.RouterGroup, c *Controllers) {
+	// 公开供应商档案（无需登录）
+	publicSuppliers := v1.Group("/public/suppliers")
+	{
+		publicSuppliers.GET("/:id", c.Supplier.GetSupplierPublic)
+	}
+
 	// 供应商管理
 	suppliers := v1.Group("/suppliers")
 	suppliers.Use(middleware.AuthMiddleware())

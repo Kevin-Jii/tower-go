@@ -16,6 +16,11 @@ export async function getSupplier(id: number): Promise<Supplier> {
   return unwrap(res)
 }
 
+export async function getPublicSupplier(id: number): Promise<Supplier> {
+  const res = await http.get<import('./types').ApiEnvelope<Supplier>>(`/public/suppliers/${id}`)
+  return unwrap(res)
+}
+
 export async function createSupplier(body: Record<string, unknown>): Promise<void> {
   await http.post<import('./types').ApiEnvelope<unknown>>('/suppliers', body)
 }

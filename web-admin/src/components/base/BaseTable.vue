@@ -1,6 +1,6 @@
 <template>
   <div
-    class="base-table-wrap min-w-0 overflow-hidden rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
+    class="base-table-wrap min-w-0 overflow-x-auto rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
     :style="wrapStyle"
   >
     <a-table
@@ -40,7 +40,7 @@ const props = withDefaults(
   }>(),
   {
     loading: false,
-    minWidth: '640px',
+    minWidth: '',
     rowKey: 'id',
     treeDefaultExpandAll: true,
     rowClickable: false,
@@ -118,11 +118,17 @@ function parseSize(w?: string): number | undefined {
 }
 
 const arcoColumns = computed<TableColumnData[]>(() =>
-  props.columns.map((col) => ({
+  props.columns.map((col) => {
+    const w = parseSize(col.width)
+    const mw = parseSize(col.minWidth)
+    /** 操作列：保证至少宽度，避免 link 按钮被压成竖排（table-layout:fixed 下常见） */
+    const minW =
+      col.key === 'actions' ? Math.max(mw ?? 0, w ?? 0, 168) : mw !== undefined ? mw : undefined
+    return {
     title: col.label,
     dataIndex: col.prop || col.key,
-    width: parseSize(col.width),
-    minWidth: parseSize(col.minWidth),
+    width: w,
+    minWidth: minW,
     fixed: col.fixed,
     align: col.align,
     ellipsis: col.ellipsis,
@@ -134,7 +140,9 @@ const arcoColumns = computed<TableColumnData[]>(() =>
       if (slot) return slot({ row, value: val }) as unknown as string
       return formatCell(val)
     },
-  })),
+    }
+  }
+  )
 )
 
 function rowClassFn(record: TableData): string | string[] {

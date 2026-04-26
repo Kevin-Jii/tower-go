@@ -60,6 +60,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/error/404.vue'),
     meta: { title: '未找到', public: true },
   },
+  {
+    path: '/public/supplier/:id',
+    name: 'PublicSupplierProfile',
+    component: () => import('@/views/public/supplier-profile.vue'),
+    meta: { title: '供应商档案', public: true },
+  },
 ]
 
 const router = createRouter({

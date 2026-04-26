@@ -7,7 +7,7 @@ const WHITE = new Set(['/login', '/404'])
 
 export function setupRouterGuard(router: Router): void {
   router.beforeEach(async (to, _from, next) => {
-    if (WHITE.has(to.path)) {
+    if (WHITE.has(to.path) || to.meta?.public) {
       next()
       return
     }

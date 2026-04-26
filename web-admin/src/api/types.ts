@@ -120,13 +120,50 @@ export interface Supplier {
   updated_at?: string
 }
 
-/** 门店可采购商品（/store-suppliers/products） */
-export interface StorePurchasableProduct {
+/** 门店-供应商绑定记录 */
+export interface StoreSupplierBinding {
+  id: number
+  store_id: number
+  supplier_id: number
+  status: number
+  supplier?: Supplier
+}
+
+export interface SupplierCategory {
   id: number
   supplier_id: number
   name: string
+  sort?: number
+  status?: number
+}
+
+/** 门店可采购商品（/store-suppliers/products，结构与 SupplierProduct 对齐） */
+export interface StorePurchasableProduct {
+  id: number
+  supplier_id: number
+  category_id?: number
+  name: string
   unit: string
-  supplier?: { supplier_name?: string }
+  price?: number
+  bottle_price?: number
+  case_price?: number
+  bottles_per_case?: number
+  spec?: string
+  status?: number
+  supplier?: { supplier_name?: string; supplier_code?: string }
+  category?: { name?: string }
+}
+
+export interface ProductUnitSpec {
+  id: number
+  product_id: number
+  unit_code: string
+  unit_name: string
+  factor_to_base: number
+  precision: number
+  cost_price: number
+  sale_price: number
+  is_enabled: boolean
 }
 
 export interface PurchaseOrderItem {

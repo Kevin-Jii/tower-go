@@ -24,7 +24,7 @@
           {{ (row as DictType).status === 1 ? '启用' : '停用' }}
         </template>
         <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-2 shrink-0" @click.stop>
+          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
             <BaseButton v-permission="'system:dict:type:edit'" variant="link" size="sm" @click="openType(row as DictType)">编辑</BaseButton>
             <BaseButton v-permission="'system:dict:type:delete'" variant="link" size="sm" @click="delType(row as DictType)">删除</BaseButton>
           </div>
@@ -48,19 +48,18 @@
           </BaseButton>
         </div>
       </template>
-      <div class="min-w-0 overflow-x-auto">
+      <div class=" overflow-x-auto">
         <BaseTable
           :columns="dataColumns"
           :data="(dataList as unknown) as Record<string, unknown>[]"
           :loading="dataLoading"
-          min-width="600px"
           height="360px"
         >
         <template #cell-style="{ row }">
           <DictTag v-if="currentType" :type="currentType.code" :value="(row as DictData).value" />
         </template>
         <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-2 shrink-0" @click.stop>
+          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
             <BaseButton v-permission="'system:dict:data:edit'" variant="link" size="sm" @click="openData(row as DictData)">编辑</BaseButton>
             <BaseButton v-permission="'system:dict:data:delete'" variant="link" size="sm" @click="delData(row as DictData)">删除</BaseButton>
           </div>

@@ -4274,6 +4274,50 @@
                 }
             }
         },
+        "/public/suppliers/{id}": {
+            "get": {
+                "description": "无需认证，供供应商档案公共页面展示",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "供应商管理"
+                ],
+                "summary": "公开获取供应商档案",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "供应商ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.Supplier"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/purchase-orders": {
             "get": {
                 "security": [

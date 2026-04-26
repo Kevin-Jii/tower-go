@@ -9,17 +9,20 @@
       </div>
     </div>
 
-    <BaseTable :columns="columns" :data="(pagedRows as unknown) as Record<string, unknown>[]" :loading="loading" min-width="960px">
+    <div class="min-w-0 overflow-x-auto">
+      <BaseTable :columns="columns" :data="(pagedRows as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1080px">
       <template #cell-status="{ row }">
         {{ statusLabel((row as Store).status) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-wrap gap-1 justify-end" @click.stop>
+        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton v-permission="'store:edit'" variant="link" size="sm" @click="openEdit(row as Store)">编辑</BaseButton>
+          <BaseButton v-permission="'store:menu'" variant="link" size="sm" @click="openBindSupplier(row as Store)">绑定供应商</BaseButton>
           <BaseButton v-permission="'store:delete'" variant="link" size="sm" @click="onDelete(row as Store)">删除</BaseButton>
         </div>
       </template>
-    </BaseTable>
+      </BaseTable>
+    </div>
 
     <div class="flex justify-end">
       <BasePagination
@@ -70,6 +73,44 @@
         <BaseButton variant="primary" :loading="saving" @click="save">保存</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="bindDlg" title="绑定供应商" max-width="min(520px, 96vw)">
+      <div class="space-y-4">
+        <p class="m-0 text-sm text-slate-600">
+          当前门店：<span class="font-medium text-slate-900">{{ bindStore?.name || '-' }}</span>
+        </p>
+        <BaseFormItem label="新增绑定">
+          <div class="flex gap-2">
+            <BaseSelect v-model="bindSupplierId" class="flex-1" :options="supplierOptions" placeholder="请选择供应商" />
+            <BaseButton variant="primary" :loading="bindSaving" @click="onBindSupplier">绑定</BaseButton>
+          </div>
+        </BaseFormItem>
+        <BaseFormItem label="已绑定供应商">
+          <div class="min-h-14 rounded border border-[var(--color-border-2)] p-3">
+            <div v-if="boundSuppliers.length" class="flex flex-wrap gap-2">
+              <span
+                v-for="b in boundSuppliers"
+                :key="b.id"
+                class="inline-flex items-center gap-2 rounded bg-[var(--color-fill-2)] px-2 py-1 text-xs"
+              >
+                {{ b.supplier?.supplier_name || `供应商#${b.supplier_id}` }}
+                <button
+                  v-permission="'store:menu'"
+                  class="cursor-pointer border-none bg-transparent p-0 text-[var(--color-danger-6)]"
+                  @click="onUnbindSupplier(b.supplier_id)"
+                >
+                  解绑
+                </button>
+              </span>
+            </div>
+            <p v-else class="m-0 text-xs text-slate-400">暂无已绑定供应商</p>
+          </div>
+        </BaseFormItem>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="bindDlg = false">关闭</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -88,7 +129,10 @@ import {
 } from '@/components/base'
 import type { BaseTableColumn } from '@/components/base/types'
 import { createStore, deleteStore, listStores, updateStore } from '@/api/store'
-import type { Store } from '@/api/types'
+import { bindStoreSuppliers, listStoreBoundSuppliers, unbindStoreSuppliers } from '@/api/storeSupplier'
+import { listSuppliers } from '@/api/supplier'
+import type { Store, StoreSupplierBinding } from '@/api/types'
+import type { BaseSelectOption } from '@/components/base/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 
@@ -98,12 +142,12 @@ const columns: BaseTableColumn[] = [
   { key: 'id', label: 'ID', prop: 'id', width: '72px' },
   { key: 'store_code', label: '编码', prop: 'store_code', width: '100px' },
   { key: 'name', label: '名称', prop: 'name', minWidth: '120px' },
-  { key: 'phone', label: '电话', prop: 'phone', width: '120px' },
+  { key: 'phone', label: '电话', prop: 'phone', minWidth: '132px', width: '132px', ellipsis: true },
   { key: 'address', label: '地址', prop: 'address', minWidth: '160px', ellipsis: true },
   { key: 'business_hours', label: '营业时间', prop: 'business_hours', width: '120px' },
   { key: 'contact_person', label: '联系人', prop: 'contact_person', width: '100px' },
   { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '140px', fixed: 'right' },
+  { key: 'actions', label: '操作', width: '240px', align: 'right' },
 ]
 
 const { data: pageData, isLoading: loading } = useQuery({
@@ -236,6 +280,74 @@ async function onDelete(row: Store): Promise<void> {
     await qc.invalidateQueries({ queryKey: ['stores'] })
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
+  }
+}
+
+const bindDlg = ref(false)
+const bindSaving = ref(false)
+const bindStore = ref<Store | null>(null)
+const bindSupplierId = ref<number | undefined>(undefined)
+const boundSuppliers = ref<StoreSupplierBinding[]>([])
+const supplierOptions = ref<BaseSelectOption[]>([])
+
+async function loadSupplierOptions(): Promise<void> {
+  const pageData = await listSuppliers({ page: 1, page_size: 200 })
+  supplierOptions.value = (pageData.list ?? []).map((s) => ({
+    label: `${s.supplier_name}（${s.supplier_code}）`,
+    value: s.id,
+  }))
+}
+
+async function loadBoundSuppliers(): Promise<void> {
+  if (!bindStore.value?.id) return
+  boundSuppliers.value = await listStoreBoundSuppliers({ store_id: bindStore.value.id })
+}
+
+async function openBindSupplier(row: Store): Promise<void> {
+  bindStore.value = row
+  bindSupplierId.value = undefined
+  bindDlg.value = true
+  try {
+    await Promise.all([loadSupplierOptions(), loadBoundSuppliers()])
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载绑定信息失败')
+  }
+}
+
+async function onBindSupplier(): Promise<void> {
+  if (!bindStore.value?.id || !bindSupplierId.value) {
+    toast.warning('请选择要绑定的供应商')
+    return
+  }
+  bindSaving.value = true
+  try {
+    await bindStoreSuppliers({
+      store_id: bindStore.value.id,
+      supplier_ids: [bindSupplierId.value],
+    })
+    toast.success('绑定成功')
+    bindSupplierId.value = undefined
+    await loadBoundSuppliers()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '绑定失败')
+  } finally {
+    bindSaving.value = false
+  }
+}
+
+async function onUnbindSupplier(supplierId: number): Promise<void> {
+  if (!bindStore.value?.id) return
+  const ok = await confirmDialog({ message: '确认解绑该供应商？' })
+  if (!ok) return
+  try {
+    await unbindStoreSuppliers({
+      store_id: bindStore.value.id,
+      supplier_ids: [supplierId],
+    })
+    toast.success('已解绑')
+    await loadBoundSuppliers()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '解绑失败')
   }
 }
 </script>

@@ -4901,6 +4901,32 @@ paths:
       summary: 批量保存商品单位配置
       tags:
       - 商品单位配置
+  /public/suppliers/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 无需认证，供供应商档案公共页面展示
+      parameters:
+      - description: 供应商ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Supplier'
+              type: object
+      summary: 公开获取供应商档案
+      tags:
+      - 供应商管理
   /purchase-orders:
     get:
       parameters:

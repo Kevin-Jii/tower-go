@@ -10,7 +10,7 @@
         </div>
       </div>
     </div>
-    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="800px">
+    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1040px">
       <template #cell-role="{ row }">
         {{ (row as User).role?.name || '-' }}
       </template>
@@ -21,7 +21,7 @@
         {{ (row as User).status === 1 ? '正常' : '禁用' }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-wrap gap-1 justify-end" @click.stop>
+        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton v-permission="'system:user:edit'" variant="link" size="sm" @click="openEdit(row as User)">编辑</BaseButton>
           <BaseButton v-permission="'system:user:edit'" variant="link" size="sm" @click="openRole(row as User)">角色</BaseButton>
           <BaseButton v-permission="'system:user:delete'" variant="link" size="sm" @click="onDelete(row as User)">删除</BaseButton>
@@ -122,7 +122,7 @@ const columns: BaseTableColumn[] = [
   { key: 'role', label: '角色', minWidth: '100px' },
   { key: 'store', label: '门店', minWidth: '120px' },
   { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '200px', fixed: 'right' },
+  { key: 'actions', label: '操作', width: '240px', align: 'right' },
 ]
 
 const keyword = ref('')

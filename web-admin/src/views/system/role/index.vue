@@ -4,7 +4,7 @@
       <h2 class="page-title">角色管理</h2>
       <BaseButton v-permission="'system:role:add'" variant="primary" @click="openCreate">新增角色</BaseButton>
     </div>
-    <BaseTable :columns="columns" :data="(roles as unknown) as Record<string, unknown>[]" :loading="loading" min-width="720px">
+    <BaseTable :columns="columns" :data="(roles as unknown) as Record<string, unknown>[]" :loading="loading" min-width="960px">
       <template #cell-data_scope="{ row }">
         {{ scopeLabel(Number((row as Role).data_scope)) }}
       </template>
@@ -12,7 +12,7 @@
         {{ (row as Role).status === 1 ? '启用' : '禁用' }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-wrap gap-1 justify-end" @click.stop>
+        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton v-permission="'system:role:menu'" variant="link" size="sm" @click="openAssign(row as Role)">分配菜单</BaseButton>
           <BaseButton v-permission="'system:role:edit'" variant="link" size="sm" @click="openEdit(row as Role)">编辑</BaseButton>
           <BaseButton v-permission="'system:role:delete'" variant="link" size="sm" @click="onDelete(row as Role)">删除</BaseButton>
@@ -91,7 +91,7 @@ const columns: BaseTableColumn[] = [
   { key: 'description', label: '描述', prop: 'description', minWidth: '160px', ellipsis: true },
   { key: 'data_scope', label: '数据范围', width: '100px' },
   { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '220px', fixed: 'right' },
+  { key: 'actions', label: '操作', width: '280px', align: 'right' },
 ]
 
 const { data: rawMenuTree } = useQuery({

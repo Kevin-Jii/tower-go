@@ -72,6 +72,30 @@ func (c *SupplierController) GetSupplier(ctx *gin.Context) {
 	http.Success(ctx, supplier)
 }
 
+// GetSupplierPublic godoc
+// @Summary 公开获取供应商档案
+// @Description 无需认证，供供应商档案公共页面展示
+// @Tags 供应商管理
+// @Accept json
+// @Produce json
+// @Param id path int true "供应商ID"
+// @Success 200 {object} http.Response{data=model.Supplier}
+// @Router /public/suppliers/{id} [get]
+func (c *SupplierController) GetSupplierPublic(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	supplier, err := c.supplierService.GetSupplier(id)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	http.Success(ctx, supplier)
+}
+
 // ListSuppliers godoc
 // @Summary 供应商列表
 // @Description 获取供应商列表（支持分页和搜索）

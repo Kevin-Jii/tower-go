@@ -1,16 +1,7 @@
 import { http, unwrap } from './http'
-import type { Paginated, PurchaseOrder, StorePurchasableProduct } from './types'
+import type { Paginated, PurchaseOrder } from './types'
 
-export async function listPurchasableProducts(params?: {
-  keyword?: string
-  supplier_id?: number
-  category_id?: number
-}): Promise<StorePurchasableProduct[]> {
-  const res = await http.get<import('./types').ApiEnvelope<StorePurchasableProduct[]>>('/store-suppliers/products', {
-    params,
-  })
-  return unwrap(res)
-}
+export { listPurchasableProducts } from './storeSupplier'
 
 export async function listPurchaseOrders(params?: {
   page?: number

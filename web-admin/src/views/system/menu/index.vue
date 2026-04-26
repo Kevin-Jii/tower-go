@@ -8,7 +8,7 @@
       :columns="columns"
       :data="(tree as unknown) as Record<string, unknown>[]"
       :loading="loading"
-      min-width="720px"
+      min-width="960px"
       row-key="id"
       tree-children-key="children"
       :tree-default-expand-all="true"
@@ -17,7 +17,7 @@
         {{ typeLabel(Number((row as Menu).type)) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-wrap gap-1 justify-end" @click.stop>
+        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton v-permission="'system:menu:edit'" variant="link" size="sm" @click="openEdit(row as Menu)">编辑</BaseButton>
           <BaseButton v-permission="'system:menu:delete'" variant="link" size="sm" @click="onDelete(row as Menu)">删除</BaseButton>
         </div>
@@ -112,7 +112,7 @@ const columns: BaseTableColumn[] = [
   { key: 'component', label: '组件路径', prop: 'component', minWidth: '160px', ellipsis: true },
   { key: 'permission', label: '权限码', prop: 'permission', minWidth: '140px', ellipsis: true },
   { key: 'type', label: '类型', width: '80px' },
-  { key: 'actions', label: '操作', width: '160px', fixed: 'right' },
+  { key: 'actions', label: '操作', width: '200px', align: 'right' },
 ]
 
 const visible = ref(false)

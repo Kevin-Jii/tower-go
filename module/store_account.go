@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/datascope"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -25,8 +26,21 @@ func (m *StoreAccountModule) Create(account *model.StoreAccount) error {
 // CreateWithInventoryOut 创建记账并自动出库（同事务）
 func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount, outOrder *model.InventoryOrder) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
+		deductItems := account.Items
+		if outOrder != nil && len(outOrder.Items) > 0 {
+			deductItems = make([]model.StoreAccountItem, 0, len(outOrder.Items))
+			for _, item := range outOrder.Items {
+				deductItems = append(deductItems, model.StoreAccountItem{
+					ProductID:   item.ProductID,
+					ProductName: item.ProductName,
+					Quantity:    item.Quantity,
+					Unit:        item.Unit,
+				})
+			}
+		}
+
 		// 先锁库存并做充足性校验，避免并发下出现负库存
-		for _, item := range account.Items {
+		for _, item := range deductItems {
 			var inv model.Inventory
 			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("store_id = ? AND product_id = ?", account.StoreID, item.ProductID).
@@ -56,7 +70,7 @@ func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount,
 			}
 		}
 
-		for _, item := range account.Items {
+		for _, item := range deductItems {
 			res := tx.Model(&model.Inventory{}).
 				Where("store_id = ? AND product_id = ? AND quantity >= ?", account.StoreID, item.ProductID, item.Quantity).
 				Update("quantity", gorm.Expr("quantity - ?", item.Quantity))
@@ -91,11 +105,7 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	accounts := make([]*model.StoreAccount, 0) // 初始化为空数组，避免返回null
 	var total int64
 
-	query := m.db.Model(&model.StoreAccount{})
-
-	if req.StoreID > 0 {
-		query = query.Where("store_id = ?", req.StoreID)
-	}
+	query := datascope.ApplyStoreAccountsList(m.db.Model(&model.StoreAccount{}), req)
 	if req.Channel != "" {
 		query = query.Where("channel = ?", req.Channel)
 	}

@@ -1,14 +1,14 @@
 package controller
 
 import (
-	"log"
-	"strconv"
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/auth"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/Kevin-Jii/tower-go/utils/session"
+	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +30,11 @@ type LoginResponse struct {
 
 // ResetPasswordRequest 重置密码请求（可后续扩展指定密码，当前固定无需 body）
 type ResetPasswordRequest struct{}
+
+type AssignUserRoleRequest struct {
+	UserID uint `json:"user_id" binding:"required"`
+	RoleID uint `json:"role_id" binding:"required"`
+}
 
 type UserController struct {
 	userService *service.UserService
@@ -330,6 +335,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 		http.Error(ctx, 500, "Failed to generate token")
 		return
 	}
+	_, _ = service.BuildUserPermissionCache(user.ID, user.StoreID, roleID, roleCode)
 
 	// 如果会话管理器策略为 single，则登录时踢出旧会话（可选增强）
 	strategy := ""
@@ -348,6 +354,37 @@ func (c *UserController) Login(ctx *gin.Context) {
 		UserInfo:  user,
 		Strategy:  strategy,
 	})
+}
+
+// AssignUserRole 为用户分配角色
+func (c *UserController) AssignUserRole(ctx *gin.Context) {
+	var req AssignUserRoleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+
+	updateReq := &model.UpdateUserReq{
+		RoleID: &req.RoleID,
+	}
+	if err := c.userService.UpdateUser(req.UserID, updateReq); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	user, err := c.userService.GetUser(req.UserID)
+	if err == nil && user != nil {
+		roleCode := ""
+		if user.Role != nil {
+			roleCode = user.Role.Code
+		}
+		service.InvalidateUserPermissionCache(user.ID)
+		_, _ = service.BuildUserPermissionCache(user.ID, user.StoreID, user.RoleID, roleCode)
+	} else {
+		service.InvalidateUserPermissionCache(req.UserID)
+	}
+
+	http.Success(ctx, nil)
 }
 
 // GetProfile godoc

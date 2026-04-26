@@ -10,11 +10,11 @@ func RegisterStoreRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	stores := v1.Group("/stores")
 	stores.Use(middleware.AuthMiddleware())
 	{
-		stores.POST("", c.Store.CreateStore)
-		stores.GET("", c.Store.ListStores)
-		stores.GET("/all", c.Store.ListAllStores)
-		stores.GET("/:id", c.Store.GetStore)
-		stores.PUT("/:id", c.Store.UpdateStore)
-		stores.DELETE("/:id", c.Store.DeleteStore)
+		stores.POST("", middleware.Permission("store:add"), c.Store.CreateStore)
+		stores.GET("", middleware.Permission("store:list"), c.Store.ListStores)
+		stores.GET("/all", middleware.Permission("store:list"), c.Store.ListAllStores)
+		stores.GET("/:id", middleware.Permission("store:list"), c.Store.GetStore)
+		stores.PUT("/:id", middleware.Permission("store:edit"), c.Store.UpdateStore)
+		stores.DELETE("/:id", middleware.Permission("store:delete"), c.Store.DeleteStore)
 	}
 }

@@ -13,12 +13,12 @@ func RegisterUserRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		users.GET("/profile", c.User.GetProfile)
 		users.PUT("/profile", c.User.UpdateProfile)
-		users.POST("", c.User.CreateUser)
-		users.GET("", c.User.ListUsers)
-		users.GET("/:id", c.User.GetUser)
-		users.PUT("/:id", c.User.UpdateUser)
-		users.DELETE("/:id", c.User.DeleteUser)
-		users.POST(":id/reset-password", c.User.ResetUserPassword)
+		users.POST("", middleware.Permission("system:user:add"), c.User.CreateUser)
+		users.GET("", middleware.Permission("system:user:list"), c.User.ListUsers)
+		users.GET("/:id", middleware.Permission("system:user:list"), c.User.GetUser)
+		users.PUT("/:id", middleware.Permission("system:user:edit"), c.User.UpdateUser)
+		users.DELETE("/:id", middleware.Permission("system:user:delete"), c.User.DeleteUser)
+		users.POST(":id/reset-password", middleware.Permission("system:user:edit"), c.User.ResetUserPassword)
 	}
 }
 
@@ -27,10 +27,10 @@ func RegisterRoleRoutes(v1 *gin.RouterGroup) {
 	roles := v1.Group("/roles")
 	roles.Use(middleware.AuthMiddleware())
 	{
-		roles.POST("", controller.CreateRole)
-		roles.GET("", controller.ListRoles)
-		roles.GET("/:id", controller.GetRole)
-		roles.PUT("/:id", controller.UpdateRole)
-		roles.DELETE("/:id", controller.DeleteRole)
+		roles.POST("", middleware.Permission("system:role:add"), controller.CreateRole)
+		roles.GET("", middleware.Permission("system:role:list"), controller.ListRoles)
+		roles.GET("/:id", middleware.Permission("system:role:list"), controller.GetRole)
+		roles.PUT("/:id", middleware.Permission("system:role:edit"), controller.UpdateRole)
+		roles.DELETE("/:id", middleware.Permission("system:role:delete"), controller.DeleteRole)
 	}
 }

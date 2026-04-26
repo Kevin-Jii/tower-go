@@ -242,3 +242,125 @@ func (c *SupplierProductController) DeleteCategory(ctx *gin.Context) {
 	}
 	http.Success(ctx, nil)
 }
+
+// CreateProductUnitSpec godoc
+// @Summary 创建商品单位配置
+// @Tags 商品单位配置
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param body body model.CreateProductUnitSpecReq true "单位配置"
+// @Success 200 {object} http.Response
+// @Router /product-unit-specs [post]
+func (c *SupplierProductController) CreateProductUnitSpec(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+	var req model.CreateProductUnitSpecReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	if err := c.productService.CreateUnitSpec(&req); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+// ListProductUnitSpecs godoc
+// @Summary 商品单位配置列表
+// @Tags 商品单位配置
+// @Produce json
+// @Security Bearer
+// @Param product_id query int true "商品ID"
+// @Success 200 {object} http.Response{data=[]model.ProductUnitSpec}
+// @Router /product-unit-specs [get]
+func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
+	productID, ok := http.ParseUintQuery(ctx, "product_id")
+	if !ok {
+		http.Error(ctx, 400, "product_id is required")
+		return
+	}
+	specs, err := c.productService.ListUnitSpecs(productID)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, specs)
+}
+
+// UpdateProductUnitSpec godoc
+// @Summary 更新商品单位配置
+// @Tags 商品单位配置
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "单位配置ID"
+// @Param body body model.UpdateProductUnitSpecReq true "单位配置"
+// @Success 200 {object} http.Response
+// @Router /product-unit-specs/{id} [put]
+func (c *SupplierProductController) UpdateProductUnitSpec(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req model.UpdateProductUnitSpecReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	if err := c.productService.UpdateUnitSpec(id, &req); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+// DeleteProductUnitSpec godoc
+// @Summary 删除商品单位配置
+// @Tags 商品单位配置
+// @Produce json
+// @Security Bearer
+// @Param id path int true "单位配置ID"
+// @Success 200 {object} http.Response
+// @Router /product-unit-specs/{id} [delete]
+func (c *SupplierProductController) DeleteProductUnitSpec(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	if err := c.productService.DeleteUnitSpec(id); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+// BatchUpsertProductUnitSpecs godoc
+// @Summary 批量保存商品单位配置
+// @Tags 商品单位配置
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param body body model.BatchUpsertProductUnitSpecsReq true "批量单位配置"
+// @Success 200 {object} http.Response
+// @Router /product-unit-specs/batch [post]
+func (c *SupplierProductController) BatchUpsertProductUnitSpecs(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+	var req model.BatchUpsertProductUnitSpecsReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	if err := c.productService.BatchUpsertUnitSpecs(&req); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}

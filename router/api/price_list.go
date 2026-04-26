@@ -12,21 +12,21 @@ func RegisterPriceListRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		// 需要认证的管理接口
 		priceLists.Use(middleware.AuthMiddleware())
-		priceLists.POST("", c.PriceList.CreatePriceList)
-		priceLists.PUT("/:id", c.PriceList.UpdatePriceList)
-		priceLists.DELETE("/:id", c.PriceList.DeletePriceList)
-		priceLists.GET("", c.PriceList.ListPriceLists)
+		priceLists.POST("", middleware.Permission("price:add"), c.PriceList.CreatePriceList)
+		priceLists.PUT("/:id", middleware.Permission("price:edit"), c.PriceList.UpdatePriceList)
+		priceLists.DELETE("/:id", middleware.Permission("price:delete"), c.PriceList.DeletePriceList)
+		priceLists.GET("", middleware.Permission("price:list"), c.PriceList.ListPriceLists)
 
 		// 价目单分类管理
-		priceLists.POST("/categories", c.PriceList.CreateCategory)
-		priceLists.PUT("/categories/:id", c.PriceList.UpdateCategory)
-		priceLists.DELETE("/categories/:id", c.PriceList.DeleteCategory)
+		priceLists.POST("/categories", middleware.Permission("price:edit"), c.PriceList.CreateCategory)
+		priceLists.PUT("/categories/:id", middleware.Permission("price:edit"), c.PriceList.UpdateCategory)
+		priceLists.DELETE("/categories/:id", middleware.Permission("price:delete"), c.PriceList.DeleteCategory)
 
 		// 价目单商品管理
-		priceLists.POST("/items", c.PriceList.AddItem)
-		priceLists.POST("/items/batch", c.PriceList.BatchAddItems) // 批量添加商品
-		priceLists.PUT("/items/:id", c.PriceList.UpdateItem)
-		priceLists.DELETE("/items/:id", c.PriceList.DeleteItem)
+		priceLists.POST("/items", middleware.Permission("price:edit"), c.PriceList.AddItem)
+		priceLists.POST("/items/batch", middleware.Permission("price:edit"), c.PriceList.BatchAddItems) // 批量添加商品
+		priceLists.PUT("/items/:id", middleware.Permission("price:edit"), c.PriceList.UpdateItem)
+		priceLists.DELETE("/items/:id", middleware.Permission("price:delete"), c.PriceList.DeleteItem)
 	}
 
 	// 公开接口（不需要认证）

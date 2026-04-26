@@ -11,26 +11,26 @@ func RegisterPrinterRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	printers.Use(middleware.AuthMiddleware())
 	{
 		// 绑定/解绑
-		printers.POST("/bind", c.Printer.BindPrinter)
-		printers.DELETE("/:id", c.Printer.UnbindPrinter)
+		printers.POST("/bind", middleware.Permission("printer:bind"), c.Printer.BindPrinter)
+		printers.DELETE("/:id", middleware.Permission("printer:unbind"), c.Printer.UnbindPrinter)
 
 		// 查询
-		printers.GET("", c.Printer.ListPrinters)
-		printers.GET("/all", c.Printer.ListAllPrinters)
-		printers.GET("/:id", c.Printer.GetPrinter)
-		printers.GET("/default", c.Printer.GetStoreDefaultPrinter)
+		printers.GET("", middleware.Permission("printer:list"), c.Printer.ListPrinters)
+		printers.GET("/all", middleware.Permission("printer:list"), c.Printer.ListAllPrinters)
+		printers.GET("/:id", middleware.Permission("printer:list"), c.Printer.GetPrinter)
+		printers.GET("/default", middleware.Permission("printer:list"), c.Printer.GetStoreDefaultPrinter)
 
 		// 更新
-		printers.PUT("/:id", c.Printer.UpdatePrinter)
+		printers.PUT("/:id", middleware.Permission("printer:edit"), c.Printer.UpdatePrinter)
 
 		// 测试打印
-		printers.POST("/:id/test", c.Printer.TestPrint)
+		printers.POST("/:id/test", middleware.Permission("printer:query"), c.Printer.TestPrint)
 
 		// 打印采购单
-		printers.POST("/:id/print/purchase-order", c.Printer.PrintPurchaseOrder)
+		printers.POST("/:id/print/purchase-order", middleware.Permission("printer:query"), c.Printer.PrintPurchaseOrder)
 
 		// 状态查询
-		printers.GET("/status", c.Printer.QueryPrinterStatus)
-		printers.GET("/status/batch", c.Printer.BatchQueryStatus)
+		printers.GET("/status", middleware.Permission("printer:query"), c.Printer.QueryPrinterStatus)
+		printers.GET("/status/batch", middleware.Permission("printer:query"), c.Printer.BatchQueryStatus)
 	}
 }

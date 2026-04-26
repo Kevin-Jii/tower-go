@@ -12,13 +12,13 @@ func RegisterDingTalkRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		robots := dingtalk.Group("/robots")
 		{
-			robots.POST("", c.DingTalkBot.CreateBot)
-			robots.GET("", c.DingTalkBot.ListBots)
-			robots.GET("/:id", c.DingTalkBot.GetBot)
-			robots.PUT("/:id", c.DingTalkBot.UpdateBot)
-			robots.DELETE("/:id", c.DingTalkBot.DeleteBot)
-			robots.POST("/:id/test", c.DingTalkBot.TestBot)
-			robots.POST("/:id/test-callback", c.DingTalkBot.TestStreamBotCallback)
+			robots.POST("", middleware.Permission("dingtalk:robot:add"), c.DingTalkBot.CreateBot)
+			robots.GET("", middleware.Permission("dingtalk:robot:list"), c.DingTalkBot.ListBots)
+			robots.GET("/:id", middleware.Permission("dingtalk:robot:list"), c.DingTalkBot.GetBot)
+			robots.PUT("/:id", middleware.Permission("dingtalk:robot:edit"), c.DingTalkBot.UpdateBot)
+			robots.DELETE("/:id", middleware.Permission("dingtalk:robot:delete"), c.DingTalkBot.DeleteBot)
+			robots.POST("/:id/test", middleware.Permission("dingtalk:robot:test"), c.DingTalkBot.TestBot)
+			robots.POST("/:id/test-callback", middleware.Permission("dingtalk:robot:test"), c.DingTalkBot.TestStreamBotCallback)
 		}
 	}
 

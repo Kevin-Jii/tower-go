@@ -4,19 +4,19 @@ import "time"
 
 // PurchaseOrder 采购单（报菜单）
 type PurchaseOrder struct {
-	ID          uint                 `json:"id" gorm:"primaryKey;autoIncrement"`
-	OrderNo     string               `json:"order_no" gorm:"uniqueIndex;type:varchar(32);not null;comment:订单编号"`
-	StoreID     uint                 `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	Store       *Store               `json:"store,omitempty" gorm:"foreignKey:StoreID"`
-	TotalAmount float64              `json:"total_amount" gorm:"type:decimal(12,2);not null;default:0;comment:总金额"`
-	Status      int8                 `json:"status" gorm:"not null;default:1;comment:状态 1=待确认 2=已确认 3=已完成 4=已取消"`
-	Remark      string               `json:"remark" gorm:"type:varchar(500);comment:备注"`
-	OrderDate   time.Time            `json:"order_date" gorm:"type:date;not null;comment:报菜日期"`
-	CreatedBy   uint                 `json:"created_by" gorm:"not null;comment:创建人ID"`
-	Creator     *User                `json:"creator,omitempty" gorm:"foreignKey:CreatedBy"`
-	Items       []PurchaseOrderItem  `json:"items,omitempty" gorm:"foreignKey:OrderID"`
-	CreatedAt   time.Time            `json:"created_at"`
-	UpdatedAt   time.Time            `json:"updated_at"`
+	ID          uint                `json:"id" gorm:"primaryKey;autoIncrement"`
+	OrderNo     string              `json:"order_no" gorm:"uniqueIndex;type:varchar(32);not null;comment:订单编号"`
+	StoreID     uint                `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	Store       *Store              `json:"store,omitempty" gorm:"foreignKey:StoreID"`
+	TotalAmount float64             `json:"total_amount" gorm:"type:decimal(12,2);not null;default:0;comment:总金额"`
+	Status      int8                `json:"status" gorm:"not null;default:1;comment:状态 1=待确认 2=已确认 3=已完成 4=已取消"`
+	Remark      string              `json:"remark" gorm:"type:varchar(500);comment:备注"`
+	OrderDate   time.Time           `json:"order_date" gorm:"type:date;not null;comment:报菜日期"`
+	CreatedBy   uint                `json:"created_by" gorm:"not null;comment:创建人ID"`
+	Creator     *User               `json:"creator,omitempty" gorm:"foreignKey:CreatedBy"`
+	Items       []PurchaseOrderItem `json:"items,omitempty" gorm:"foreignKey:OrderID"`
+	CreatedAt   time.Time           `json:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at"`
 }
 
 func (PurchaseOrder) TableName() string {
@@ -71,6 +71,11 @@ type ListPurchaseOrderReq struct {
 	Date       string `form:"date"` // 格式: 2024-01-01
 	Page       int    `form:"page,default=1" binding:"min=1"`
 	PageSize   int    `form:"page_size,default=20" binding:"min=1,max=100"`
+
+	// 由 Controller 注入（数据权限）
+	DataScope int8   `json:"-"`
+	UserID    uint   `json:"-"`
+	RoleCode  string `json:"-"`
 }
 
 // PurchaseOrderStatus 采购单状态

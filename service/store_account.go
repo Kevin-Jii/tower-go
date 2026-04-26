@@ -10,10 +10,104 @@ import (
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
+func isLargePackUnit(unit string) bool {
+	u := strings.ToLower(strings.TrimSpace(unit))
+	if u == "" {
+		return false
+	}
+	return strings.Contains(u, "箱") ||
+		strings.Contains(u, "桶") ||
+		strings.Contains(u, "case") ||
+		strings.Contains(u, "barrel")
+}
+
+func resolveUnitPrice(unit string, product *model.SupplierProduct) float64 {
+	if product == nil {
+		return 0
+	}
+	if isLargePackUnit(unit) {
+		if product.CasePrice > 0 {
+			return product.CasePrice
+		}
+		if product.BottlePrice > 0 {
+			return product.BottlePrice
+		}
+		if product.Price > 0 {
+			return product.Price
+		}
+		return 0
+	}
+
+	if product.BottlePrice > 0 {
+		return product.BottlePrice
+	}
+	if product.Price > 0 {
+		return product.Price
+	}
+	return product.CasePrice
+}
+
+func resolveUnitPriceFromSpecs(unit string, specs []*model.ProductUnitSpec) float64 {
+	if len(specs) == 0 {
+		return 0
+	}
+	normalized := strings.ToLower(strings.TrimSpace(unit))
+
+	// 1) 精确匹配（unit_code / unit_name）
+	for _, spec := range specs {
+		if spec == nil || !spec.IsEnabled || spec.SalePrice <= 0 {
+			continue
+		}
+		if normalized == strings.ToLower(strings.TrimSpace(spec.UnitCode)) ||
+			normalized == strings.ToLower(strings.TrimSpace(spec.UnitName)) {
+			return spec.SalePrice
+		}
+	}
+
+	// 2) 模糊包含匹配（兼容“L/瓶”“箱/桶”这类展示名）
+	if normalized != "" {
+		for _, spec := range specs {
+			if spec == nil || !spec.IsEnabled || spec.SalePrice <= 0 {
+				continue
+			}
+			code := strings.ToLower(strings.TrimSpace(spec.UnitCode))
+			name := strings.ToLower(strings.TrimSpace(spec.UnitName))
+			if strings.Contains(code, normalized) || strings.Contains(name, normalized) ||
+				strings.Contains(normalized, code) || strings.Contains(normalized, name) {
+				return spec.SalePrice
+			}
+		}
+	}
+
+	// 3) 兜底：按小/大规格选择
+	needLarge := isLargePackUnit(unit)
+	for _, spec := range specs {
+		if spec == nil || !spec.IsEnabled || spec.SalePrice <= 0 {
+			continue
+		}
+		if needLarge && spec.FactorToBase > 1 {
+			return spec.SalePrice
+		}
+		if !needLarge && spec.FactorToBase <= 1 {
+			return spec.SalePrice
+		}
+	}
+	return 0
+}
+
+func tryResolveUnitSpecSalePrice(unit string, specs []*model.ProductUnitSpec) (float64, bool) {
+	price := resolveUnitPriceFromSpecs(unit, specs)
+	if price > 0 {
+		return price, true
+	}
+	return 0, false
+}
+
 type StoreAccountService struct {
 	storeAccountModule    *module.StoreAccountModule
 	inventoryModule       *module.InventoryModule
 	productModule         *module.SupplierProductModule
+	unitSpecModule        *module.ProductUnitSpecModule
 	storeModule           *module.StoreModule
 	userModule            *module.UserModule
 	dictModule            *module.DictModule
@@ -27,6 +121,7 @@ func NewStoreAccountService(
 	storeAccountModule *module.StoreAccountModule,
 	inventoryModule *module.InventoryModule,
 	productModule *module.SupplierProductModule,
+	unitSpecModule *module.ProductUnitSpecModule,
 	storeModule *module.StoreModule,
 	userModule *module.UserModule,
 	dictModule *module.DictModule,
@@ -39,6 +134,7 @@ func NewStoreAccountService(
 		storeAccountModule:    storeAccountModule,
 		inventoryModule:       inventoryModule,
 		productModule:         productModule,
+		unitSpecModule:        unitSpecModule,
 		storeModule:           storeModule,
 		userModule:            userModule,
 		dictModule:            dictModule,
@@ -64,24 +160,52 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	// 构建明细
 	var items []model.StoreAccountItem
 	var totalAmount float64
+	productMap := make(map[uint]*model.SupplierProduct)
 
 	for _, item := range req.Items {
 		// 获取商品名称
 		productName := ""
 		unit := item.Unit
+		price := item.Price
+		var productUnitSpecs []*model.ProductUnitSpec
+		var product *model.SupplierProduct
 		if s.productModule != nil {
-			if product, err := s.productModule.GetByID(item.ProductID); err == nil && product != nil {
-				productName = product.Name
+			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
+				product = p
+				productMap[item.ProductID] = p
+				productName = p.Name
 				if unit == "" {
-					unit = product.Unit
+					unit = p.Unit
 				}
 			}
+		}
+		if s.unitSpecModule != nil {
+			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
+				productUnitSpecs = specs
+			}
+		}
+
+		// 严格模式：启用规格表后，单位必须匹配到规格售价
+		if s.unitSpecModule != nil {
+			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)
+			if !matched {
+				name := productName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return nil, fmt.Errorf("商品【%s】单位【%s】未配置售价，请先在商品单位配置中维护该单位售价", name, unit)
+			}
+			price = specPrice
+		} else if price <= 0 && product != nil {
+			// 兼容兜底：未启用规格模块时，沿用旧逻辑
+			price = resolveUnitPrice(unit, product)
 		}
 
 		// 计算金额
 		amount := item.Amount
-		if amount == 0 && item.Price > 0 && item.Quantity > 0 {
-			amount = item.Price * item.Quantity
+		// 只要能确定单价，就由后端统一重算金额，避免前端旧金额污染
+		if price > 0 && item.Quantity > 0 {
+			amount = price * item.Quantity
 		}
 
 		items = append(items, model.StoreAccountItem{
@@ -90,7 +214,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 			Spec:        item.Spec,
 			Quantity:    item.Quantity,
 			Unit:        unit,
-			Price:       item.Price,
+			Price:       price,
 			Amount:      amount,
 			Remark:      item.Remark,
 		})
@@ -126,13 +250,20 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		OperatorID:    operatorID,
 	}
 	for _, item := range items {
-		inventoryOutOrder.TotalQuantity += item.Quantity
+		var product *model.SupplierProduct
+		if s.productModule != nil {
+			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
+				product = p
+			}
+		}
+		baseQuantity, baseUnit := convertToBaseQuantity(s.unitSpecModule, product, item.ProductID, item.Quantity, item.Unit)
+		inventoryOutOrder.TotalQuantity += baseQuantity
 		inventoryOutOrder.Items = append(inventoryOutOrder.Items, model.InventoryOrderItem{
 			ProductID:   item.ProductID,
 			ProductName: item.ProductName,
-			Quantity:    item.Quantity,
-			Unit:        item.Unit,
-			Remark:      "记账自动出库",
+			Quantity:    baseQuantity,
+			Unit:        baseUnit,
+			Remark:      fmt.Sprintf("记账自动出库(原始: %.2f%s)", item.Quantity, item.Unit),
 		})
 	}
 	if store, err := s.storeModule.GetByID(storeID); err == nil && store != nil {
@@ -144,6 +275,55 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 			inventoryOutOrder.OperatorName = user.Username
 		}
 		inventoryOutOrder.OperatorPhone = user.Phone
+	}
+
+	// 兼容历史库存：若库存仍是“箱/桶”等旧单位，先换算到基础单位再扣减
+	for _, outItem := range inventoryOutOrder.Items {
+		inv, err := s.inventoryModule.GetByStoreAndProduct(storeID, outItem.ProductID)
+		if err != nil || inv == nil {
+			continue
+		}
+		product := productMap[outItem.ProductID]
+		invUnit := strings.TrimSpace(inv.Unit)
+		outUnit := strings.TrimSpace(outItem.Unit)
+
+		// 场景1：单位不同，直接按库存当前单位换算为基础单位
+		if invUnit != outUnit {
+			convertedQty, baseUnit := convertToBaseQuantity(s.unitSpecModule, product, outItem.ProductID, inv.Quantity, inv.Unit)
+			if convertedQty <= 0 {
+				continue
+			}
+			if err := s.inventoryModule.UpdateQuantityAndUnit(inv.ID, convertedQty, baseUnit); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		// 场景2：单位相同但库存明显偏小（历史把“箱数”写进了“瓶单位”）
+		if inv.Quantity < outItem.Quantity && s.unitSpecModule != nil {
+			specs, err := s.unitSpecModule.ListByProductID(outItem.ProductID)
+			if err != nil {
+				continue
+			}
+			legacyFixed := false
+			for _, spec := range specs {
+				if spec == nil || !spec.IsEnabled || spec.FactorToBase <= 1 {
+					continue
+				}
+				// 若“库存数量 * 大规格系数”能覆盖本次出库，按历史箱数纠偏一次
+				candidate := inv.Quantity * spec.FactorToBase
+				if candidate >= outItem.Quantity {
+					if err := s.inventoryModule.UpdateQuantityAndUnit(inv.ID, candidate, outUnit); err != nil {
+						return nil, err
+					}
+					legacyFixed = true
+					break
+				}
+			}
+			if legacyFixed {
+				continue
+			}
+		}
 	}
 
 	if err := s.storeAccountModule.CreateWithInventoryOut(account, inventoryOutOrder); err != nil {

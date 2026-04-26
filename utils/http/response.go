@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -41,6 +42,11 @@ func printResponse(c *gin.Context, resp Response) {
 	fmt.Println(strings.Repeat("-", 60))
 	fmt.Println(string(jsonData))
 	fmt.Println(strings.Repeat("=", 60))
+}
+
+// ErrorApp 使用统一错误码结构响应（推荐新业务与鉴权链路使用）
+func ErrorApp(c *gin.Context, co apicode.Code) {
+	Error(c, co.Num, co.Msg)
 }
 
 // Error 错误响应

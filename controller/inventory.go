@@ -30,7 +30,6 @@ func NewInventoryController(inventoryService *service.InventoryService) *Invento
 // @Router /inventories [get]
 func (c *InventoryController) ListInventory(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 
 	var req model.ListInventoryReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -38,8 +37,8 @@ func (c *InventoryController) ListInventory(ctx *gin.Context) {
 		return
 	}
 
-	// 非管理员只能查看自己门店
-	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
+	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
+	if !middleware.IsAdmin(ctx) {
 		req.StoreID = storeID
 	}
 
@@ -94,7 +93,6 @@ func (c *InventoryController) CreateOrder(ctx *gin.Context) {
 // @Router /inventory-orders [get]
 func (c *InventoryController) ListOrders(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 
 	var req model.ListInventoryOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -102,8 +100,8 @@ func (c *InventoryController) ListOrders(ctx *gin.Context) {
 		return
 	}
 
-	// 非管理员只能查看自己门店
-	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
+	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
+	if !middleware.IsAdmin(ctx) {
 		req.StoreID = storeID
 	}
 

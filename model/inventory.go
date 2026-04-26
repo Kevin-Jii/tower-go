@@ -98,8 +98,9 @@ type CreateInventoryOrderReq struct {
 type CreateInventoryOrderItemReq struct {
 	ProductID      uint    `json:"product_id" binding:"required"`
 	Quantity       float64 `json:"quantity" binding:"required,gt=0"`
-	ProductionDate string  `json:"production_date"` // 生产日期
-	ExpiryDate     string  `json:"expiry_date"`     // 截止日期
+	Unit           string  `json:"unit" binding:"max=20"` // 单位（瓶/箱），用于按每箱瓶数换算库存数量
+	ProductionDate string  `json:"production_date"`       // 生产日期
+	ExpiryDate     string  `json:"expiry_date"`           // 截止日期
 	Remark         string  `json:"remark" binding:"max=500"`
 }
 
@@ -110,6 +111,10 @@ type ListInventoryReq struct {
 	Keyword   string `form:"keyword"`
 	Page      int    `form:"page,default=1" binding:"min=1"`
 	PageSize  int    `form:"page_size,default=20" binding:"min=1,max=100"`
+
+	DataScope int8   `json:"-"`
+	UserID    uint   `json:"-"`
+	RoleCode  string `json:"-"`
 }
 
 // ListInventoryOrderReq 出入库单列表查询
@@ -120,6 +125,10 @@ type ListInventoryOrderReq struct {
 	Date     string `form:"date"`
 	Page     int    `form:"page,default=1" binding:"min=1"`
 	PageSize int    `form:"page_size,default=20" binding:"min=1,max=100"`
+
+	DataScope int8   `json:"-"`
+	UserID    uint   `json:"-"`
+	RoleCode  string `json:"-"`
 }
 
 // InventoryWithProduct 带商品信息的库存

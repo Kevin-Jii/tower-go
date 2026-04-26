@@ -39,6 +39,7 @@ func AutoMigrateAndSeeds() {
 		&model.Supplier{},
 		&model.SupplierCategory{},
 		&model.SupplierProduct{},
+		&model.ProductUnitSpec{},
 		&model.StoreSupplier{},
 		&model.PurchaseOrder{},
 		&model.PurchaseOrderItem{},
@@ -92,6 +93,31 @@ func shouldSkipMigration() bool {
 
 	// 记账主表已存在但明细表缺失时仍需迁移（历史版本只 AutoMigrate 了主表）
 	if migrator.HasTable(&model.StoreAccount{}) && !migrator.HasTable(&model.StoreAccountItem{}) {
+		return false
+	}
+
+	// 记账表新增字段后，若线上库未加列则仍需迁移（避免 .migration_version 导致永远不 AutoMigrate）
+	if migrator.HasTable(&model.StoreAccount{}) {
+		if !migrator.HasColumn(&model.StoreAccount{}, "other_expense_amount") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "net_income_amount") {
+			return false
+		}
+	}
+
+	// 供应商商品新增双价格字段后，若线上库未加列则仍需迁移
+	if migrator.HasTable(&model.SupplierProduct{}) {
+		if !migrator.HasColumn(&model.SupplierProduct{}, "bottle_price") ||
+			!migrator.HasColumn(&model.SupplierProduct{}, "case_price") ||
+			!migrator.HasColumn(&model.SupplierProduct{}, "bottles_per_case") {
+			return false
+		}
+	}
+	if !migrator.HasTable(&model.ProductUnitSpec{}) {
+		return false
+	}
+
+	// roles 表 data_scope（数据权限）
+	if migrator.HasTable(&model.Role{}) && !migrator.HasColumn(&model.Role{}, "data_scope") {
 		return false
 	}
 

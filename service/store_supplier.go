@@ -8,10 +8,17 @@ import (
 
 type StoreSupplierService struct {
 	storeSupplierModule *module.StoreSupplierModule
+	unitSpecModule      *module.ProductUnitSpecModule
 }
 
-func NewStoreSupplierService(storeSupplierModule *module.StoreSupplierModule) *StoreSupplierService {
-	return &StoreSupplierService{storeSupplierModule: storeSupplierModule}
+func NewStoreSupplierService(
+	storeSupplierModule *module.StoreSupplierModule,
+	unitSpecModule *module.ProductUnitSpecModule,
+) *StoreSupplierService {
+	return &StoreSupplierService{
+		storeSupplierModule: storeSupplierModule,
+		unitSpecModule:      unitSpecModule,
+	}
 }
 
 // BindSuppliers 门店绑定供应商
@@ -41,7 +48,41 @@ func (s *StoreSupplierService) ListSuppliersByStoreID(storeID uint) ([]*model.St
 
 // ListProductsByStoreID 获取门店可采购的商品列表（绑定供应商的所有商品）
 func (s *StoreSupplierService) ListProductsByStoreID(storeID, supplierID, categoryID uint, keyword string) ([]*model.SupplierProduct, error) {
-	return s.storeSupplierModule.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
+	products, err := s.storeSupplierModule.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
+	if err != nil {
+		return nil, err
+	}
+	if s.unitSpecModule == nil || len(products) == 0 {
+		return products, nil
+	}
+	ids := make([]uint, 0, len(products))
+	for _, p := range products {
+		if p != nil {
+			ids = append(ids, p.ID)
+		}
+	}
+	specs, err := s.unitSpecModule.ListByProductIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+	byProduct := make(map[uint][]*model.ProductUnitSpec)
+	for _, sp := range specs {
+		if sp == nil {
+			continue
+		}
+		byProduct[sp.ProductID] = append(byProduct[sp.ProductID], sp)
+	}
+	for _, p := range products {
+		if p == nil {
+			continue
+		}
+		if v, ok := byProduct[p.ID]; ok {
+			p.UnitSpecs = v
+		} else {
+			p.UnitSpecs = []*model.ProductUnitSpec{}
+		}
+	}
+	return products, nil
 }
 
 // ListCategoriesByStoreID 获取门店绑定供应商下的分类列表

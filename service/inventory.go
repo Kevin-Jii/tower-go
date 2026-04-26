@@ -17,6 +17,7 @@ func parseDate(s string) (time.Time, error) {
 
 type InventoryService struct {
 	inventoryModule *module.InventoryModule
+	unitSpecModule  *module.ProductUnitSpecModule
 	userModule      *module.UserModule
 	storeModule     *module.StoreModule
 	productModule   *module.SupplierProductModule
@@ -27,6 +28,7 @@ type InventoryService struct {
 
 func NewInventoryService(
 	inventoryModule *module.InventoryModule,
+	unitSpecModule *module.ProductUnitSpecModule,
 	userModule *module.UserModule,
 	storeModule *module.StoreModule,
 	productModule *module.SupplierProductModule,
@@ -36,6 +38,7 @@ func NewInventoryService(
 ) *InventoryService {
 	return &InventoryService{
 		inventoryModule: inventoryModule,
+		unitSpecModule:  unitSpecModule,
 		userModule:      userModule,
 		storeModule:     storeModule,
 		productModule:   productModule,
@@ -84,17 +87,22 @@ func (s *InventoryService) CreateOrder(storeID, operatorID uint, req *model.Crea
 	for _, item := range req.Items {
 		// 获取商品信息
 		productName := ""
-		unit := ""
-		if product, err := s.productModule.GetByID(item.ProductID); err == nil && product != nil {
-			productName = product.Name
-			unit = product.Unit
+		unit := item.Unit
+		var product *model.SupplierProduct
+		if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
+			productName = p.Name
+			product = p
+			if unit == "" {
+				unit = p.Unit
+			}
 		}
+		baseQuantity, baseUnit := convertToBaseQuantity(s.unitSpecModule, product, item.ProductID, item.Quantity, unit)
 
 		orderItem := model.InventoryOrderItem{
 			ProductID:   item.ProductID,
 			ProductName: productName,
-			Quantity:    item.Quantity,
-			Unit:        unit,
+			Quantity:    baseQuantity,
+			Unit:        baseUnit,
 			Remark:      item.Remark,
 		}
 
@@ -113,7 +121,7 @@ func (s *InventoryService) CreateOrder(storeID, operatorID uint, req *model.Crea
 		}
 
 		items = append(items, orderItem)
-		totalQuantity += item.Quantity
+		totalQuantity += baseQuantity
 	}
 
 	// 创建出入库单

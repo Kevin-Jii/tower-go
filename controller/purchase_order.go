@@ -78,7 +78,6 @@ func (c *PurchaseOrderController) GetOrder(ctx *gin.Context) {
 // @Router /purchase-orders [get]
 func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 
 	var req model.ListPurchaseOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -86,8 +85,9 @@ func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 		return
 	}
 
-	// 非管理员只能查看自己门店的采购单
-	if roleCode != model.RoleCodeAdmin {
+	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
+	// 非管理员只能查看自己门店的采购单；管理员可按 query 传 store_id
+	if !middleware.IsAdmin(ctx) {
 		req.StoreID = storeID
 	}
 

@@ -74,9 +74,9 @@ type CreateStoreAccountItemReq struct {
 	ProductID uint    `json:"product_id" binding:"required"`
 	Spec      string  `json:"spec" binding:"max=100"`
 	Quantity  float64 `json:"quantity" binding:"required,gt=0"`
-	Unit      string  `json:"unit" binding:"max=20"`
-	Price     float64 `json:"price" binding:"gte=0"`
-	Amount    float64 `json:"amount" binding:"gte=0"`
+	Unit      string  `json:"unit" binding:"max=20"`  // 单位（如“瓶”“箱”），用于自动选价
+	Price     float64 `json:"price" binding:"gte=0"`  // 可选：不传或传0时，后端按单位自动取价（瓶->bottle_price，箱->case_price）
+	Amount    float64 `json:"amount" binding:"gte=0"` // 可选：不传或传0时，后端按 price*quantity 自动计算
 	Remark    string  `json:"remark" binding:"max=500"`
 }
 
@@ -101,4 +101,8 @@ type ListStoreAccountReq struct {
 	EndDate   string `form:"end_date"`
 	Page      int    `form:"page,default=1" binding:"min=1"`
 	PageSize  int    `form:"page_size,default=20" binding:"min=1,max=100"`
+
+	DataScope int8   `json:"-"`
+	UserID    uint   `json:"-"`
+	RoleCode  string `json:"-"`
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,7 @@ func NewStoreAccountController(storeAccountService *service.StoreAccountService)
 
 // Create godoc
 // @Summary 创建记账
-// @Description 创建记账单，支持多个商品
+// @Description 创建记账单，支持多个商品；items.price 不传或传0时，后端按 items.unit 自动选价（单位含“瓶”取 bottle_price，含“箱”取 case_price）；items.amount 不传或传0时自动按 price*quantity 计算
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -58,7 +59,7 @@ func (c *StoreAccountController) Create(ctx *gin.Context) {
 func (c *StoreAccountController) Get(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
 
@@ -88,7 +89,6 @@ func (c *StoreAccountController) Get(ctx *gin.Context) {
 // @Router /store-accounts [get]
 func (c *StoreAccountController) List(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 
 	var req model.ListStoreAccountReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -96,8 +96,9 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 		return
 	}
 
-	// 非管理员只能查看自己门店
-	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
+	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
+	// 非管理员只能查看自己门店；管理员可按 query 传 store_id
+	if !middleware.IsAdmin(ctx) {
 		req.StoreID = storeID
 	}
 
@@ -124,14 +125,14 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 func (c *StoreAccountController) Update(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
 
 	// 获取记账记录
 	account, err := c.storeAccountService.Get(uint(id))
 	if err != nil {
-		http.Error(ctx, 404, "记账记录不存在")
+		http.ErrorApp(ctx, apicode.StoreAccountGone)
 		return
 	}
 
@@ -139,7 +140,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 	roleCode := middleware.GetRoleCode(ctx)
 	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
 		if time.Since(account.CreatedAt) > 24*time.Hour {
-			http.Error(ctx, 403, "账单创建超过24小时，无法修改")
+			http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
 			return
 		}
 	}
@@ -168,7 +169,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 func (c *StoreAccountController) Delete(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
 

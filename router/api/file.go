@@ -15,10 +15,10 @@ func RegisterFileRoutes(v1 *gin.RouterGroup, fileController *controller.FileCont
 	files := v1.Group("/files")
 	files.Use(middleware.AuthMiddleware())
 	{
-		files.POST("/upload", fileController.Upload)
-		files.POST("/upload-image", fileController.UploadImage)
-		files.GET("/list", fileController.List)
-		files.POST("/delete", fileController.Delete)
-		files.GET("/presigned-url", fileController.GetPresignedURL)
+		files.POST("/upload", middleware.Permission("system:gallery:upload"), fileController.Upload)
+		files.POST("/upload-image", middleware.Permission("system:gallery:upload"), fileController.UploadImage)
+		files.GET("/list", middleware.Permission("system:gallery:list"), fileController.List)
+		files.POST("/delete", middleware.Permission("system:gallery:delete"), fileController.Delete)
+		files.GET("/presigned-url", middleware.Permission("system:gallery:list"), fileController.GetPresignedURL)
 	}
 }

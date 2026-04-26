@@ -207,6 +207,19 @@ definitions:
     - category_id
     - products
     type: object
+  model.BatchUpsertProductUnitSpecsReq:
+    properties:
+      product_id:
+        type: integer
+      units:
+        items:
+          $ref: '#/definitions/model.CreateProductUnitSpecUnitItem'
+        minItems: 1
+        type: array
+    required:
+    - product_id
+    - units
+    type: object
   model.BindPrinterReq:
     properties:
       is_default:
@@ -224,6 +237,52 @@ definitions:
     required:
     - sn
     - store_id
+    type: object
+  model.BusinessOverviewStats:
+    properties:
+      all_category_amount:
+        type: number
+      categories:
+        items:
+          $ref: '#/definitions/model.CategoryAmountItem'
+        type: array
+      end_date:
+        type: string
+      gross_profit_amount:
+        type: number
+      inbound_amount:
+        type: number
+      inventory_in_count:
+        type: integer
+      inventory_out_count:
+        type: integer
+      net_profit_amount:
+        type: number
+      other_expense_amount:
+        type: number
+      outbound_amount:
+        type: number
+      sales_amount:
+        type: number
+      sales_order_count:
+        type: integer
+      start_date:
+        type: string
+      store_id:
+        type: integer
+    type: object
+  model.CategoryAmountItem:
+    properties:
+      category_id:
+        type: integer
+      category_name:
+        type: string
+      in_amount:
+        type: number
+      net_amount:
+        type: number
+      out_amount:
+        type: number
     type: object
   model.ChangeTypeEnum:
     enum:
@@ -383,6 +442,10 @@ definitions:
       remark:
         maxLength: 500
         type: string
+      unit:
+        description: 单位（瓶/箱），用于按每箱瓶数换算库存数量
+        maxLength: 20
+        type: string
     required:
     - product_id
     - quantity
@@ -530,6 +593,61 @@ definitions:
     - name
     - store_id
     type: object
+  model.CreateProductUnitSpecReq:
+    properties:
+      cost_price:
+        minimum: 0
+        type: number
+      factor_to_base:
+        type: number
+      is_enabled:
+        type: boolean
+      precision:
+        maximum: 6
+        minimum: 0
+        type: integer
+      product_id:
+        type: integer
+      sale_price:
+        minimum: 0
+        type: number
+      unit_code:
+        maxLength: 50
+        type: string
+      unit_name:
+        maxLength: 50
+        type: string
+    required:
+    - factor_to_base
+    - product_id
+    - unit_code
+    type: object
+  model.CreateProductUnitSpecUnitItem:
+    properties:
+      cost_price:
+        minimum: 0
+        type: number
+      factor_to_base:
+        type: number
+      is_enabled:
+        type: boolean
+      precision:
+        maximum: 6
+        minimum: 0
+        type: integer
+      sale_price:
+        minimum: 0
+        type: number
+      unit_code:
+        maxLength: 50
+        type: string
+      unit_name:
+        maxLength: 50
+        type: string
+    required:
+    - factor_to_base
+    - unit_code
+    type: object
   model.CreatePurchaseOrderItemReq:
     properties:
       product_id:
@@ -580,9 +698,11 @@ definitions:
   model.CreateStoreAccountItemReq:
     properties:
       amount:
+        description: 可选：不传或传0时，后端按 price*quantity 自动计算
         minimum: 0
         type: number
       price:
+        description: 可选：不传或传0时，后端按单位自动取价（瓶->bottle_price，箱->case_price）
         minimum: 0
         type: number
       product_id:
@@ -596,6 +716,7 @@ definitions:
         maxLength: 100
         type: string
       unit:
+        description: 单位（如“瓶”“箱”），用于自动选价
         maxLength: 20
         type: string
     required:
@@ -668,12 +789,22 @@ definitions:
     type: object
   model.CreateSupplierProductReq:
     properties:
+      bottle_price:
+        minimum: 0
+        type: number
+      bottles_per_case:
+        minimum: 1
+        type: integer
+      case_price:
+        minimum: 0
+        type: number
       category_id:
         type: integer
       name:
         maxLength: 200
         type: string
       price:
+        description: 兼容旧字段
         minimum: 0
         type: number
       remark:
@@ -688,6 +819,7 @@ definitions:
         maxLength: 20
         type: string
     required:
+    - bottles_per_case
     - category_id
     - name
     - supplier_id
@@ -887,6 +1019,32 @@ definitions:
       url:
         type: string
     type: object
+  model.HomeChartsStats:
+    properties:
+      end_date:
+        type: string
+      line:
+        description: 折线图：销售趋势
+        items:
+          $ref: '#/definitions/model.SalesTrendItem'
+        type: array
+      overview:
+        allOf:
+        - $ref: '#/definitions/model.BusinessOverviewStats'
+        description: 汇总卡片
+      pie:
+        description: 扇形图：渠道占比
+        items:
+          $ref: '#/definitions/model.ChannelStatsItem'
+        type: array
+      radar:
+        description: 雷达图：经营指标
+        items:
+          $ref: '#/definitions/model.RadarMetricItem'
+        type: array
+      start_date:
+        type: string
+    type: object
   model.InventoryOrder:
     properties:
       created_at:
@@ -967,6 +1125,8 @@ definitions:
     properties:
       id:
         type: integer
+      price:
+        type: number
       product_id:
         type: integer
       product_name:
@@ -1302,6 +1462,31 @@ definitions:
     x-enum-varnames:
     - PrinterTypeReceipt
     - PrinterTypeLabel
+  model.ProductUnitSpec:
+    properties:
+      cost_price:
+        type: number
+      created_at:
+        type: string
+      factor_to_base:
+        type: number
+      id:
+        type: integer
+      is_enabled:
+        type: boolean
+      precision:
+        type: integer
+      product_id:
+        type: integer
+      sale_price:
+        type: number
+      unit_code:
+        type: string
+      unit_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
   model.PurchaseOrder:
     properties:
       created_at:
@@ -1359,6 +1544,13 @@ definitions:
         type: number
       updated_at:
         type: string
+    type: object
+  model.RadarMetricItem:
+    properties:
+      name:
+        type: string
+      value:
+        type: number
     type: object
   model.RechargeOrder:
     properties:
@@ -1605,6 +1797,12 @@ definitions:
     type: object
   model.SupplierProduct:
     properties:
+      bottle_price:
+        type: number
+      bottles_per_case:
+        type: integer
+      case_price:
+        type: number
       category:
         $ref: '#/definitions/model.SupplierCategory'
       category_id:
@@ -1629,6 +1827,11 @@ definitions:
         type: integer
       unit:
         type: string
+      unit_specs:
+        description: UnitSpecs 商品单位规格（来自 product_unit_specs，仅接口返回用，不落库）
+        items:
+          $ref: '#/definitions/model.ProductUnitSpec'
+        type: array
       updated_at:
         type: string
     type: object
@@ -1860,6 +2063,29 @@ definitions:
       type:
         $ref: '#/definitions/model.PrinterType'
     type: object
+  model.UpdateProductUnitSpecReq:
+    properties:
+      cost_price:
+        minimum: 0
+        type: number
+      factor_to_base:
+        type: number
+      is_enabled:
+        type: boolean
+      precision:
+        maximum: 6
+        minimum: 0
+        type: integer
+      sale_price:
+        minimum: 0
+        type: number
+      unit_code:
+        maxLength: 50
+        type: string
+      unit_name:
+        maxLength: 50
+        type: string
+    type: object
   model.UpdatePurchaseOrderReq:
     properties:
       remark:
@@ -1950,6 +2176,15 @@ definitions:
     type: object
   model.UpdateSupplierProductReq:
     properties:
+      bottle_price:
+        minimum: 0
+        type: number
+      bottles_per_case:
+        minimum: 1
+        type: integer
+      case_price:
+        minimum: 0
+        type: number
       category_id:
         type: integer
       name:
@@ -4536,6 +4771,125 @@ paths:
       summary: 批量查询打印机状态
       tags:
       - 打印机管理
+  /product-unit-specs:
+    get:
+      parameters:
+      - description: 商品ID
+        in: query
+        name: product_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.ProductUnitSpec'
+                  type: array
+              type: object
+      security:
+      - Bearer: []
+      summary: 商品单位配置列表
+      tags:
+      - 商品单位配置
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 单位配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateProductUnitSpecReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 创建商品单位配置
+      tags:
+      - 商品单位配置
+  /product-unit-specs/{id}:
+    delete:
+      parameters:
+      - description: 单位配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 删除商品单位配置
+      tags:
+      - 商品单位配置
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 单位配置ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 单位配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateProductUnitSpecReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 更新商品单位配置
+      tags:
+      - 商品单位配置
+  /product-unit-specs/batch:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 批量单位配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.BatchUpsertProductUnitSpecsReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 批量保存商品单位配置
+      tags:
+      - 商品单位配置
   /purchase-orders:
     get:
       parameters:
@@ -5129,6 +5483,40 @@ paths:
       summary: 更新角色
       tags:
       - 角色管理
+  /statistics/business-overview:
+    get:
+      parameters:
+      - description: 开始日期 YYYY-MM-DD
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: 结束日期 YYYY-MM-DD
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.BusinessOverviewStats'
+              type: object
+      security:
+      - Bearer: []
+      summary: 经营总览统计
+      tags:
+      - 统计分析
   /statistics/channel:
     get:
       parameters:
@@ -5188,6 +5576,45 @@ paths:
       security:
       - Bearer: []
       summary: 统计面板数据
+      tags:
+      - 统计分析
+  /statistics/home-charts:
+    get:
+      parameters:
+      - description: 开始日期 YYYY-MM-DD
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: 结束日期 YYYY-MM-DD
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - default: day
+        description: 折线粒度 day/month
+        in: query
+        name: granularity
+        type: string
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.HomeChartsStats'
+              type: object
+      security:
+      - Bearer: []
+      summary: 首页图表统计
       tags:
       - 统计分析
   /statistics/inventory:
@@ -5331,7 +5758,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: 创建记账单，支持多个商品
+      description: 创建记账单，支持多个商品；items.price 不传或传0时，后端按 items.unit 自动选价（单位含“瓶”取 bottle_price，含“箱”取
+        case_price）；items.amount 不传或传0时自动按 price*quantity 计算
       parameters:
       - description: 记账信息
         in: body

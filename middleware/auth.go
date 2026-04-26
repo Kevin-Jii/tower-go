@@ -4,7 +4,9 @@ import (
 	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +16,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			http.Error(c, 401, "Authorization header is required")
+			http.ErrorApp(c, apicode.AuthHeaderRequired)
 			c.Abort()
 			return
 		}
@@ -22,7 +24,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Bearer token
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			http.Error(c, 401, "Invalid authorization header format")
+			http.ErrorApp(c, apicode.AuthHeaderFormat)
 			c.Abort()
 			return
 		}
@@ -30,7 +32,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 解析token
 		claims, err := auth.ParseToken(parts[1])
 		if err != nil {
-			http.Error(c, 401, "Invalid token")
+			http.ErrorApp(c, apicode.TokenInvalid)
 			c.Abort()
 			return
 		}
@@ -41,6 +43,14 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("storeID", claims.StoreID)
 		c.Set("roleCode", claims.RoleCode)
 		c.Set("roleID", claims.RoleID)
+
+		// 加载角色（数据权限 data_scope）
+		if claims.RoleID > 0 && database.DB != nil {
+			var role model.Role
+			if err := database.DB.First(&role, claims.RoleID).Error; err == nil {
+				c.Set("roleModel", &role)
+			}
+		}
 
 		// 同时保存请求头中的值（供日志或特殊场景使用）
 		c.Set("headerUserID", c.GetHeader("X-User-Id"))
@@ -91,4 +101,33 @@ func GetRoleID(c *gin.Context) uint {
 func IsAdmin(c *gin.Context) bool {
 	roleCode := GetRoleCode(c)
 	return roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin
+}
+
+// GetRoleModel 已加载的角色（可能为 nil）
+func GetRoleModel(c *gin.Context) *model.Role {
+	if v, ok := c.Get("roleModel"); ok {
+		if r, ok := v.(*model.Role); ok {
+			return r
+		}
+	}
+	return nil
+}
+
+// GetDataScope 当前请求的数据范围（管理员视为全部）
+func GetDataScope(c *gin.Context) int8 {
+	if IsAdmin(c) {
+		return model.DataScopeAll
+	}
+	if r := GetRoleModel(c); r != nil {
+		return r.DataScope
+	}
+	return model.DataScopeStore
+}
+
+// ListRBAC 列表接口注入：数据范围、当前用户、角色码（门店 ID 由调用方按是否管理员自行处理）
+func ListRBAC(c *gin.Context) (dataScope int8, userID uint, roleCode string) {
+	userID = GetUserID(c)
+	roleCode = GetRoleCode(c)
+	dataScope = GetDataScope(c)
+	return dataScope, userID, roleCode
 }

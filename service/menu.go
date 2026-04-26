@@ -43,8 +43,9 @@ func (s *MenuService) CreateMenu(req *model.CreateMenuReq) error {
 		Remark:     req.Remark,
 	}
 
-	// 创建菜单后使缓存失效
+	// 菜单变更后清理菜单缓存和权限缓存
 	defer s.InvalidateMenuCache()
+	defer InvalidateAllPermissionCache()
 
 	return s.menuModule.Create(menu)
 }
@@ -102,8 +103,9 @@ func (s *MenuService) UpdateMenu(id uint, req *model.UpdateMenuReq) error {
 		}
 	}
 
-	// 更新菜单后使缓存失效
+	// 菜单变更后清理菜单缓存和权限缓存
 	defer s.InvalidateMenuCache()
+	defer InvalidateAllPermissionCache()
 
 	return s.menuModule.Update(id, req)
 }
@@ -146,15 +148,20 @@ func (s *MenuService) DeleteMenu(id uint) error {
 	_ = s.roleMenuModule.DeleteByMenuID(id)
 	_ = s.storeRoleMenuModule.DeleteByMenuID(id)
 
-	// 删除菜单后使缓存失效
+	// 菜单变更后清理菜单缓存和权限缓存
 	defer s.InvalidateMenuCache()
+	defer InvalidateAllPermissionCache()
 
 	return s.menuModule.Delete(id)
 }
 
 // AssignMenusToRole 为角色分配菜单（支持权限位）
 func (s *MenuService) AssignMenusToRole(req *model.AssignMenusToRoleReq) error {
-	return s.roleMenuModule.AssignMenusToRole(req.RoleID, req.MenuIDs, req.Perms)
+	if err := s.roleMenuModule.AssignMenusToRole(req.RoleID, req.MenuIDs, req.Perms); err != nil {
+		return err
+	}
+	InvalidateRolePermissionCache(req.RoleID)
+	return nil
 }
 
 // GetRoleMenus 获取角色的菜单列表
@@ -180,7 +187,11 @@ func (s *MenuService) GetRoleMenuIDs(roleID uint) ([]uint, error) {
 
 // AssignMenusToStoreRole 为门店角色分配菜单（支持权限位）
 func (s *MenuService) AssignMenusToStoreRole(req *model.AssignStoreMenusReq) error {
-	return s.storeRoleMenuModule.AssignMenusToStoreRole(req.StoreID, req.RoleID, req.MenuIDs, req.Perms)
+	if err := s.storeRoleMenuModule.AssignMenusToStoreRole(req.StoreID, req.RoleID, req.MenuIDs, req.Perms); err != nil {
+		return err
+	}
+	InvalidateRolePermissionCache(req.RoleID)
+	return nil
 }
 
 // GetStoreRoleMenus 获取门店角色的菜单列表
@@ -206,7 +217,11 @@ func (s *MenuService) GetStoreRoleMenuIDs(storeID uint, roleID uint) ([]uint, er
 
 // CopyStoreMenus 复制门店菜单权限
 func (s *MenuService) CopyStoreMenus(req *model.CopyStoreMenusReq) error {
-	return s.storeRoleMenuModule.CopyStoreMenus(req.FromStoreID, req.ToStoreID, req.RoleID)
+	if err := s.storeRoleMenuModule.CopyStoreMenus(req.FromStoreID, req.ToStoreID, req.RoleID); err != nil {
+		return err
+	}
+	InvalidateRolePermissionCache(req.RoleID)
+	return nil
 }
 
 // GetUserMenus 获取用户的菜单（根据用户的门店和角色）

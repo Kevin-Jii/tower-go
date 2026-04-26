@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/datascope"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -69,6 +70,14 @@ func (m *InventoryModule) UpdateQuantity(id uint, quantity float64) error {
 	return m.db.Model(&model.Inventory{}).Where("id = ?", id).Update("quantity", quantity).Error
 }
 
+// UpdateQuantityAndUnit 同时更新库存数量和单位
+func (m *InventoryModule) UpdateQuantityAndUnit(id uint, quantity float64, unit string) error {
+	return m.db.Model(&model.Inventory{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"quantity": quantity,
+		"unit":     unit,
+	}).Error
+}
+
 // GetByID 根据ID获取库存
 func (m *InventoryModule) GetByID(id uint) (*model.Inventory, error) {
 	var inv model.Inventory
@@ -84,15 +93,11 @@ func (m *InventoryModule) List(req *model.ListInventoryReq) ([]*model.InventoryW
 	var results []*model.InventoryWithProduct
 	var total int64
 
-	query := m.db.Table("inventories i").
+	query := datascope.ApplyInventoriesList(m.db.Table("inventories i").
 		Select("i.id, i.store_id, s.name as store_name, i.product_id, sp.name as product_name, COALESCE(sp.price, 0) as price, i.quantity, i.unit").
 		Joins("LEFT JOIN stores s ON s.id = i.store_id").
 		Joins("LEFT JOIN supplier_products sp ON sp.id = i.product_id").
-		Where("i.deleted_at IS NULL")
-
-	if req.StoreID > 0 {
-		query = query.Where("i.store_id = ?", req.StoreID)
-	}
+		Where("i.deleted_at IS NULL"), req)
 	if req.ProductID > 0 {
 		query = query.Where("i.product_id = ?", req.ProductID)
 	}
@@ -215,11 +220,7 @@ func (m *InventoryModule) ListOrders(req *model.ListInventoryOrderReq) ([]*model
 	var orders []*model.InventoryOrder
 	var total int64
 
-	query := m.db.Model(&model.InventoryOrder{})
-
-	if req.StoreID > 0 {
-		query = query.Where("store_id = ?", req.StoreID)
-	}
+	query := datascope.ApplyInventoryOrdersList(m.db.Model(&model.InventoryOrder{}), req)
 	if req.Type != nil {
 		query = query.Where("type = ?", *req.Type)
 	}

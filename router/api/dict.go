@@ -11,24 +11,24 @@ func RegisterDictRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	dictTypes := v1.Group("/dict-types")
 	dictTypes.Use(middleware.AuthMiddleware())
 	{
-		dictTypes.POST("", c.Dict.CreateType)
-		dictTypes.GET("", c.Dict.ListTypes)
-		dictTypes.GET("/:id", c.Dict.GetType)
-		dictTypes.PUT("/:id", c.Dict.UpdateType)
-		dictTypes.DELETE("/:id", c.Dict.DeleteType)
+		dictTypes.POST("", middleware.Permission("system:dict:type:add"), c.Dict.CreateType)
+		dictTypes.GET("", middleware.Permission("system:dict:list"), c.Dict.ListTypes)
+		dictTypes.GET("/:id", middleware.Permission("system:dict:list"), c.Dict.GetType)
+		dictTypes.PUT("/:id", middleware.Permission("system:dict:type:edit"), c.Dict.UpdateType)
+		dictTypes.DELETE("/:id", middleware.Permission("system:dict:type:delete"), c.Dict.DeleteType)
 	}
 
 	// 字典数据
 	dictData := v1.Group("/dict-data")
 	dictData.Use(middleware.AuthMiddleware())
 	{
-		dictData.POST("", c.Dict.CreateData)
-		dictData.GET("", c.Dict.ListDataByType)
-		dictData.GET("/:id", c.Dict.GetData)
-		dictData.PUT("/:id", c.Dict.UpdateData)
-		dictData.DELETE("/:id", c.Dict.DeleteData)
+		dictData.POST("", middleware.Permission("system:dict:data:add"), c.Dict.CreateData)
+		dictData.GET("", middleware.Permission("system:dict:list"), c.Dict.ListDataByType)
+		dictData.GET("/:id", middleware.Permission("system:dict:list"), c.Dict.GetData)
+		dictData.PUT("/:id", middleware.Permission("system:dict:data:edit"), c.Dict.UpdateData)
+		dictData.DELETE("/:id", middleware.Permission("system:dict:data:delete"), c.Dict.DeleteData)
 	}
 
 	// 获取所有字典（用于前端缓存）
-	v1.GET("/dicts", middleware.AuthMiddleware(), c.Dict.GetAllDict)
+	v1.GET("/dicts", middleware.AuthMiddleware(), middleware.Permission("system:dict:list"), c.Dict.GetAllDict)
 }

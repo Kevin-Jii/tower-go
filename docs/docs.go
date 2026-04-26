@@ -4078,6 +4078,204 @@ const docTemplate = `{
                 }
             }
         },
+        "/product-unit-specs": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "商品单位配置"
+                ],
+                "summary": "商品单位配置列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "商品ID",
+                        "name": "product_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.ProductUnitSpec"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "商品单位配置"
+                ],
+                "summary": "创建商品单位配置",
+                "parameters": [
+                    {
+                        "description": "单位配置",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateProductUnitSpecReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/product-unit-specs/batch": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "商品单位配置"
+                ],
+                "summary": "批量保存商品单位配置",
+                "parameters": [
+                    {
+                        "description": "批量单位配置",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.BatchUpsertProductUnitSpecsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/product-unit-specs/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "商品单位配置"
+                ],
+                "summary": "更新商品单位配置",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "单位配置ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "单位配置",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateProductUnitSpecReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "商品单位配置"
+                ],
+                "summary": "删除商品单位配置",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "单位配置ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/purchase-orders": {
             "get": {
                 "security": [
@@ -5061,6 +5259,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/statistics/business-overview": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "统计分析"
+                ],
+                "summary": "经营总览统计",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始日期 YYYY-MM-DD",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期 YYYY-MM-DD",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.BusinessOverviewStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/statistics/channel": {
             "get": {
                 "security": [
@@ -5158,6 +5414,71 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/model.DashboardStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/home-charts": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "统计分析"
+                ],
+                "summary": "首页图表统计",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "开始日期 YYYY-MM-DD",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期 YYYY-MM-DD",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "day",
+                        "description": "折线粒度 day/month",
+                        "name": "granularity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.HomeChartsStats"
                                         }
                                     }
                                 }
@@ -5410,7 +5731,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "创建记账单，支持多个商品",
+                "description": "创建记账单，支持多个商品；items.price 不传或传0时，后端按 items.unit 自动选价（单位含“瓶”取 bottle_price，含“箱”取 case_price）；items.amount 不传或传0时自动按 price*quantity 计算",
                 "consumes": [
                     "application/json"
                 ],
@@ -7277,6 +7598,25 @@ const docTemplate = `{
                 }
             }
         },
+        "model.BatchUpsertProductUnitSpecsReq": {
+            "type": "object",
+            "required": [
+                "product_id",
+                "units"
+            ],
+            "properties": {
+                "product_id": {
+                    "type": "integer"
+                },
+                "units": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.CreateProductUnitSpecUnitItem"
+                    }
+                }
+            }
+        },
         "model.BindPrinterReq": {
             "type": "object",
             "required": [
@@ -7301,6 +7641,76 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "integer"
+                }
+            }
+        },
+        "model.BusinessOverviewStats": {
+            "type": "object",
+            "properties": {
+                "all_category_amount": {
+                    "type": "number"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CategoryAmountItem"
+                    }
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "gross_profit_amount": {
+                    "type": "number"
+                },
+                "inbound_amount": {
+                    "type": "number"
+                },
+                "inventory_in_count": {
+                    "type": "integer"
+                },
+                "inventory_out_count": {
+                    "type": "integer"
+                },
+                "net_profit_amount": {
+                    "type": "number"
+                },
+                "other_expense_amount": {
+                    "type": "number"
+                },
+                "outbound_amount": {
+                    "type": "number"
+                },
+                "sales_amount": {
+                    "type": "number"
+                },
+                "sales_order_count": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.CategoryAmountItem": {
+            "type": "object",
+            "properties": {
+                "category_id": {
+                    "type": "integer"
+                },
+                "category_name": {
+                    "type": "string"
+                },
+                "in_amount": {
+                    "type": "number"
+                },
+                "net_amount": {
+                    "type": "number"
+                },
+                "out_amount": {
+                    "type": "number"
                 }
             }
         },
@@ -7524,6 +7934,11 @@ const docTemplate = `{
                 "remark": {
                     "type": "string",
                     "maxLength": 500
+                },
+                "unit": {
+                    "description": "单位（瓶/箱），用于按每箱瓶数换算库存数量",
+                    "type": "string",
+                    "maxLength": 20
                 }
             }
         },
@@ -7730,6 +8145,82 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CreateProductUnitSpecReq": {
+            "type": "object",
+            "required": [
+                "factor_to_base",
+                "product_id",
+                "unit_code"
+            ],
+            "properties": {
+                "cost_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "factor_to_base": {
+                    "type": "number"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "precision": {
+                    "type": "integer",
+                    "maximum": 6,
+                    "minimum": 0
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "sale_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "unit_code": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "unit_name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
+        "model.CreateProductUnitSpecUnitItem": {
+            "type": "object",
+            "required": [
+                "factor_to_base",
+                "unit_code"
+            ],
+            "properties": {
+                "cost_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "factor_to_base": {
+                    "type": "number"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "precision": {
+                    "type": "integer",
+                    "maximum": 6,
+                    "minimum": 0
+                },
+                "sale_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "unit_code": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "unit_name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
         "model.CreatePurchaseOrderItemReq": {
             "type": "object",
             "required": [
@@ -7806,10 +8297,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "amount": {
+                    "description": "可选：不传或传0时，后端按 price*quantity 自动计算",
                     "type": "number",
                     "minimum": 0
                 },
                 "price": {
+                    "description": "可选：不传或传0时，后端按单位自动取价（瓶-\u003ebottle_price，箱-\u003ecase_price）",
                     "type": "number",
                     "minimum": 0
                 },
@@ -7828,6 +8321,7 @@ const docTemplate = `{
                     "maxLength": 100
                 },
                 "unit": {
+                    "description": "单位（如“瓶”“箱”），用于自动选价",
                     "type": "string",
                     "maxLength": 20
                 }
@@ -7928,12 +8422,25 @@ const docTemplate = `{
         "model.CreateSupplierProductReq": {
             "type": "object",
             "required": [
+                "bottles_per_case",
                 "category_id",
                 "name",
                 "supplier_id",
                 "unit"
             ],
             "properties": {
+                "bottle_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "bottles_per_case": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "case_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "category_id": {
                     "type": "integer"
                 },
@@ -7942,6 +8449,7 @@ const docTemplate = `{
                     "maxLength": 200
                 },
                 "price": {
+                    "description": "兼容旧字段",
                     "type": "number",
                     "minimum": 0
                 },
@@ -8246,6 +8754,46 @@ const docTemplate = `{
                 }
             }
         },
+        "model.HomeChartsStats": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "line": {
+                    "description": "折线图：销售趋势",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SalesTrendItem"
+                    }
+                },
+                "overview": {
+                    "description": "汇总卡片",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.BusinessOverviewStats"
+                        }
+                    ]
+                },
+                "pie": {
+                    "description": "扇形图：渠道占比",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ChannelStatsItem"
+                    }
+                },
+                "radar": {
+                    "description": "雷达图：经营指标",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RadarMetricItem"
+                    }
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
         "model.InventoryOrder": {
             "type": "object",
             "properties": {
@@ -8364,6 +8912,9 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                },
+                "price": {
+                    "type": "number"
                 },
                 "product_id": {
                     "type": "integer"
@@ -8862,6 +9413,44 @@ const docTemplate = `{
                 "PrinterTypeLabel"
             ]
         },
+        "model.ProductUnitSpec": {
+            "type": "object",
+            "properties": {
+                "cost_price": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "factor_to_base": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "precision": {
+                    "type": "integer"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "sale_price": {
+                    "type": "number"
+                },
+                "unit_code": {
+                    "type": "string"
+                },
+                "unit_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.PurchaseOrder": {
             "type": "object",
             "properties": {
@@ -8947,6 +9536,17 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "model.RadarMetricItem": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
                 }
             }
         },
@@ -9311,6 +9911,15 @@ const docTemplate = `{
         "model.SupplierProduct": {
             "type": "object",
             "properties": {
+                "bottle_price": {
+                    "type": "number"
+                },
+                "bottles_per_case": {
+                    "type": "integer"
+                },
+                "case_price": {
+                    "type": "number"
+                },
                 "category": {
                     "$ref": "#/definitions/model.SupplierCategory"
                 },
@@ -9346,6 +9955,13 @@ const docTemplate = `{
                 },
                 "unit": {
                     "type": "string"
+                },
+                "unit_specs": {
+                    "description": "UnitSpecs 商品单位规格（来自 product_unit_specs，仅接口返回用，不落库）",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ProductUnitSpec"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -9683,6 +10299,38 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UpdateProductUnitSpecReq": {
+            "type": "object",
+            "properties": {
+                "cost_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "factor_to_base": {
+                    "type": "number"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "precision": {
+                    "type": "integer",
+                    "maximum": 6,
+                    "minimum": 0
+                },
+                "sale_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "unit_code": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "unit_name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
         "model.UpdatePurchaseOrderReq": {
             "type": "object",
             "properties": {
@@ -9809,6 +10457,18 @@ const docTemplate = `{
         "model.UpdateSupplierProductReq": {
             "type": "object",
             "properties": {
+                "bottle_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "bottles_per_case": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "case_price": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "category_id": {
                     "type": "integer"
                 },

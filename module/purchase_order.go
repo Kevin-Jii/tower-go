@@ -5,29 +5,17 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
-	"github.com/Kevin-Jii/tower-go/pkg/tenant"
+	"github.com/Kevin-Jii/tower-go/pkg/datascope"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 	"gorm.io/gorm"
 )
 
 type PurchaseOrderModule struct {
-	db       *gorm.DB
-	strategy tenant.IsolationStrategy
+	db *gorm.DB
 }
 
 func NewPurchaseOrderModule(db *gorm.DB) *PurchaseOrderModule {
-	return &PurchaseOrderModule{
-		db:       db,
-		strategy: tenant.NewStoreIsolationStrategy(),
-	}
-}
-
-// withTenant 应用租户隔离
-func (m *PurchaseOrderModule) withTenant(storeID uint) func(*gorm.DB) *gorm.DB {
-	if storeID == 0 {
-		return tenant.AdminScope()
-	}
-	return tenant.StoreScope(storeID)
+	return &PurchaseOrderModule{db: db}
 }
 
 func (m *PurchaseOrderModule) GetDB() *gorm.DB {
@@ -64,15 +52,14 @@ func (m *PurchaseOrderModule) List(req *model.ListPurchaseOrderReq) ([]*model.Pu
 	var orders []*model.PurchaseOrder
 	var total int64
 
-	// 使用租户隔离策略
-	query := m.db.Model(&model.PurchaseOrder{}).Scopes(m.withTenant(req.StoreID))
+	query := datascope.ApplyPurchaseOrdersList(m.db.Model(&model.PurchaseOrder{}), req)
 
 	// 其他过滤条件
 	if req.Status != nil {
-		query = query.Where("status = ?", *req.Status)
+		query = query.Where("purchase_orders.status = ?", *req.Status)
 	}
 	if req.Date != "" {
-		query = query.Where("DATE(order_date) = ?", req.Date)
+		query = query.Where("DATE(purchase_orders.order_date) = ?", req.Date)
 	}
 
 	// 如果指定了供应商，需要关联查询

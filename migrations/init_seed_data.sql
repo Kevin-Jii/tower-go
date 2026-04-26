@@ -6,15 +6,168 @@
 -- - Mock/演示数据请放到单独文件，避免污染生产
 -- ============================================
 
+-- 结构补丁：store_accounts 新增金额字段（幂等）
+-- 说明：用于历史库补齐字段，避免业务查询时报 Unknown column
+SET @db_name = DATABASE();
+
+SET @sql_add_other_expense_amount = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'other_expense_amount'
+    ),
+    'SELECT ''skip add other_expense_amount''',
+    'ALTER TABLE store_accounts ADD COLUMN other_expense_amount DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''其他支出金额'' AFTER total_amount'
+  )
+);
+PREPARE stmt_add_other_expense_amount FROM @sql_add_other_expense_amount;
+EXECUTE stmt_add_other_expense_amount;
+DEALLOCATE PREPARE stmt_add_other_expense_amount;
+
+SET @sql_add_net_income_amount = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'net_income_amount'
+    ),
+    'SELECT ''skip add net_income_amount''',
+    'ALTER TABLE store_accounts ADD COLUMN net_income_amount DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''净收入金额'' AFTER other_expense_amount'
+  )
+);
+PREPARE stmt_add_net_income_amount FROM @sql_add_net_income_amount;
+EXECUTE stmt_add_net_income_amount;
+DEALLOCATE PREPARE stmt_add_net_income_amount;
+
+-- 结构补丁：supplier_products 新增双价格字段（幂等）
+SET @sql_add_bottle_price = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'supplier_products'
+        AND COLUMN_NAME = 'bottle_price'
+    ),
+    'SELECT ''skip add bottle_price''',
+    'ALTER TABLE supplier_products ADD COLUMN bottle_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''单瓶价格'' AFTER price'
+  )
+);
+PREPARE stmt_add_bottle_price FROM @sql_add_bottle_price;
+EXECUTE stmt_add_bottle_price;
+DEALLOCATE PREPARE stmt_add_bottle_price;
+
+SET @sql_add_case_price = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'supplier_products'
+        AND COLUMN_NAME = 'case_price'
+    ),
+    'SELECT ''skip add case_price''',
+    'ALTER TABLE supplier_products ADD COLUMN case_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''整箱价格'' AFTER bottle_price'
+  )
+);
+PREPARE stmt_add_case_price FROM @sql_add_case_price;
+EXECUTE stmt_add_case_price;
+DEALLOCATE PREPARE stmt_add_case_price;
+
+SET @sql_add_bottles_per_case = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'supplier_products'
+        AND COLUMN_NAME = 'bottles_per_case'
+    ),
+    'SELECT ''skip add bottles_per_case''',
+    'ALTER TABLE supplier_products ADD COLUMN bottles_per_case INT NOT NULL DEFAULT 1 COMMENT ''每箱瓶数'' AFTER case_price'
+  )
+);
+PREPARE stmt_add_bottles_per_case FROM @sql_add_bottles_per_case;
+EXECUTE stmt_add_bottles_per_case;
+DEALLOCATE PREPARE stmt_add_bottles_per_case;
+
+-- 历史数据回填：默认将旧单价同步为单瓶价，整箱价若为空则保持0
+UPDATE supplier_products
+SET bottle_price = price
+WHERE (bottle_price IS NULL OR bottle_price = 0) AND price > 0;
+
+UPDATE supplier_products
+SET bottles_per_case = 1
+WHERE bottles_per_case IS NULL OR bottles_per_case <= 0;
+
+-- 结构补丁：product_unit_specs 多单位换算与价格配置表
+CREATE TABLE IF NOT EXISTS product_unit_specs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  product_id BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
+  unit_code VARCHAR(50) NOT NULL COMMENT '单位编码，如 bottle/case/barrel/liter',
+  unit_name VARCHAR(50) NOT NULL COMMENT '单位名称，如 瓶/箱/桶/L',
+  factor_to_base DECIMAL(12,6) NOT NULL DEFAULT 1 COMMENT '换算到基础单位L的系数',
+  precision INT NOT NULL DEFAULT 0 COMMENT '数量精度(小数位)',
+  cost_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '单位成本价',
+  sale_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '单位售价',
+  is_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_product_unit_specs_product_id (product_id),
+  UNIQUE KEY uk_product_unit_specs_product_unit (product_id, unit_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品多单位换算与价格表';
+
+SET @sql_add_product_unit_precision = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'product_unit_specs'
+        AND COLUMN_NAME = 'precision'
+    ),
+    'SELECT ''skip add product_unit_specs.precision''',
+    'ALTER TABLE product_unit_specs ADD COLUMN precision INT NOT NULL DEFAULT 0 COMMENT ''数量精度(小数位)'' AFTER factor_to_base'
+  )
+);
+PREPARE stmt_add_product_unit_precision FROM @sql_add_product_unit_precision;
+EXECUTE stmt_add_product_unit_precision;
+DEALLOCATE PREPARE stmt_add_product_unit_precision;
+
+-- 结构补丁：roles 增加 data_scope（数据权限）
+SET @sql_add_roles_data_scope = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'roles'
+        AND COLUMN_NAME = 'data_scope'
+    ),
+    'SELECT ''skip add roles.data_scope''',
+    'ALTER TABLE roles ADD COLUMN data_scope TINYINT NOT NULL DEFAULT 3 COMMENT ''数据范围 1=全部 2=租户 3=门店 4=仅本人'' AFTER code'
+  )
+);
+PREPARE stmt_add_roles_data_scope FROM @sql_add_roles_data_scope;
+EXECUTE stmt_add_roles_data_scope;
+DEALLOCATE PREPARE stmt_add_roles_data_scope;
+
 -- 角色数据（使用主键 id 幂等）
-INSERT INTO roles (id, name, code, description, created_at, updated_at) VALUES
-(1, '总部管理员', 'admin', '系统最高权限角色', NOW(), NOW()),
-(2, '门店管理员', 'store_admin', '门店维度管理权限角色', NOW(), NOW()),
-(3, '普通员工', 'staff', '基础操作权限角色', NOW(), NOW()),
-(999, '超级管理员', 'super_admin', '系统最高权限，不可删除', NOW(), NOW())
+INSERT INTO roles (id, name, code, data_scope, description, created_at, updated_at) VALUES
+(1, '总部管理员', 'admin', 1, '系统最高权限角色', NOW(), NOW()),
+(2, '门店管理员', 'store_admin', 3, '门店维度管理权限角色', NOW(), NOW()),
+(3, '普通员工', 'staff', 4, '基础操作权限角色', NOW(), NOW()),
+(999, '超级管理员', 'super_admin', 1, '系统最高权限，不可删除', NOW(), NOW())
 ON DUPLICATE KEY UPDATE
   name=VALUES(name),
   code=VALUES(code),
+  data_scope=VALUES(data_scope),
   description=VALUES(description),
   updated_at=NOW();
 
@@ -119,6 +272,22 @@ WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@gallery_id AND name='gall
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @gallery_id, 'gallery-edit', '编辑图片', '', '', '', 3, 3, 'system:gallery:edit', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@gallery_id AND name='gallery-edit' AND type=3);
+
+-- 消息模板（系统管理下）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @system_id, 'message-template', '消息模板', 'Message', '/system/message-template', 'system/message-template/index', 2, 6, 'message:template:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@system_id AND name='message-template' AND type=2);
+SET @msg_tpl_id = (SELECT id FROM menus WHERE parent_id=@system_id AND name='message-template' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @msg_tpl_id, 'message-template-add', '新增模板', '', '', '', 3, 1, 'message:template:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@msg_tpl_id AND name='message-template-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @msg_tpl_id, 'message-template-edit', '编辑模板', '', '', '', 3, 2, 'message:template:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@msg_tpl_id AND name='message-template-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @msg_tpl_id, 'message-template-delete', '删除模板', '', '', '', 3, 3, 'message:template:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@msg_tpl_id AND name='message-template-delete' AND type=3);
 
 -- 门店管理（目录）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
@@ -250,6 +419,27 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @printer_id, 'printer-query', '查询状态', '', '', '', 3, 4, 'printer:query', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@printer_id AND name='printer-query' AND type=3);
 
+-- 数据统计（门店下）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'statistics-dash', '数据统计', 'DataBoard', '/store/statistics', 'store/statistics/index', 2, 9, 'statistics:dashboard', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='statistics-dash' AND type=2);
+
+-- 价目单（门店下）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'price-list', '价目单', 'Tickets', '/store/price-list', 'store/price-list/index', 2, 10, 'price:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='price-list' AND type=2);
+SET @price_list_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='price-list' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @price_list_id, 'price-add', '新增价目单', '', '', '', 3, 1, 'price:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@price_list_id AND name='price-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @price_list_id, 'price-edit', '编辑价目单', '', '', '', 3, 2, 'price:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@price_list_id AND name='price-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @price_list_id, 'price-delete', '删除价目单', '', '', '', 3, 3, 'price:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@price_list_id AND name='price-delete' AND type=3);
+
 -- 钉钉管理（目录）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT 0, 'dingtalk', '钉钉管理', 'link', '', '', 1, 50, '', 1, 1, NOW(), NOW()
@@ -325,6 +515,24 @@ INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_a
 (@channel_type_id, 'sales_channel', '小红书', 'xiaohongshu', 5, 1, NOW(), NOW()),
 (@channel_type_id, 'sales_channel', '微信小程序', 'wechat_mini', 6, 1, NOW(), NOW()),
 (@channel_type_id, 'sales_channel', '其他', 'other', 99, 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+  label=VALUES(label),
+  sort=VALUES(sort),
+  status=VALUES(status),
+  updated_at=NOW();
+
+-- 字典数据 - 商品单位（用于商品规格换算）
+INSERT INTO dict_types (code, name, remark, status, created_at, updated_at) VALUES
+('product_unit', '商品单位', '商品规格单位（瓶/箱/桶/L等）', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE name=VALUES(name), remark=VALUES(remark), status=VALUES(status), updated_at=NOW();
+SET @product_unit_type_id = (SELECT id FROM dict_types WHERE code = 'product_unit' ORDER BY id LIMIT 1);
+
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at) VALUES
+(@product_unit_type_id, 'product_unit', '瓶', 'bottle', 1, 1, NOW(), NOW()),
+(@product_unit_type_id, 'product_unit', '箱', 'case', 2, 1, NOW(), NOW()),
+(@product_unit_type_id, 'product_unit', '桶', 'barrel', 3, 1, NOW(), NOW()),
+(@product_unit_type_id, 'product_unit', '升', 'L', 4, 1, NOW(), NOW()),
+(@product_unit_type_id, 'product_unit', '毫升', 'ml', 5, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
   label=VALUES(label),
   sort=VALUES(sort),
@@ -424,5 +632,10 @@ ON DUPLICATE KEY UPDATE permissions=15;
 -- 门店管理员赋予会员管理权限
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 2, id, 15 FROM menus WHERE name IN ('store-member', 'store-member-add', 'store-member-edit', 'store-member-delete', 'store-member-balance')
+ON DUPLICATE KEY UPDATE permissions=15;
+
+-- 门店管理员：数据统计、价目单
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE permission IN ('statistics:dashboard', 'price:list', 'price:add', 'price:edit', 'price:delete')
 ON DUPLICATE KEY UPDATE permissions=15;
 

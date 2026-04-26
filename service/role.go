@@ -7,17 +7,29 @@ import (
 
 // CreateRole 创建角色
 func CreateRole(req *model.Role) (*model.Role, error) {
-	return module.CreateRole(req)
+	role, err := module.CreateRole(req)
+	if err == nil {
+		InvalidateAllPermissionCache()
+	}
+	return role, err
 }
 
 // UpdateRole 更新角色
 func UpdateRole(id uint, req *model.UpdateRoleReq) (*model.Role, error) {
-	return module.UpdateRole(id, req)
+	role, err := module.UpdateRole(id, req)
+	if err == nil {
+		InvalidateRolePermissionCache(id)
+	}
+	return role, err
 }
 
 // DeleteRole 删除角色
 func DeleteRole(id uint) error {
-	return module.DeleteRole(id)
+	err := module.DeleteRole(id)
+	if err == nil {
+		InvalidateRolePermissionCache(id)
+	}
+	return err
 }
 
 // GetRole 获取单个角色

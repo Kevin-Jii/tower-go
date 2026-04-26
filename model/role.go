@@ -7,8 +7,9 @@ type Role struct {
 	ID          uint      `json:"id" gorm:"primarykey"`
 	Name        string    `json:"name" gorm:"uniqueIndex;not null;type:varchar(50)"` // 角色名称
 	Code        string    `json:"code" gorm:"uniqueIndex;not null;type:varchar(50)"` // 角色代码：admin(总部管理员), store_admin(门店管理员), staff(普通员工)
-	Status      int8      `json:"status" gorm:"type:tinyint(1);not null;default:1"`  // 状态：1=启用 0=禁用
-	Description string    `json:"description" gorm:"type:varchar(255)"`              // 角色描述
+	DataScope   int8      `json:"data_scope" gorm:"type:tinyint;not null;default:3;comment:数据范围 1=全部 2=租户 3=门店 4=仅本人"`
+	Status      int8      `json:"status" gorm:"type:tinyint(1);not null;default:1"` // 状态：1=启用 0=禁用
+	Description string    `json:"description" gorm:"type:varchar(255)"`             // 角色描述
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -17,6 +18,7 @@ type Role struct {
 type UpdateRoleReq struct {
 	Name        *string `json:"name"`                       // 角色名称（可选）
 	Code        *string `json:"code"`                       // 角色代码（可选）
+	DataScope   *int8   `json:"data_scope"`                 // 数据范围（可选）
 	Status      *int8   `json:"status" patch:"allowZero"`   // 允许更新为0（禁用）
 	Description *string `json:"description" patch:"always"` // 允许清空描述
 }
@@ -26,4 +28,12 @@ const (
 	RoleCodeAdmin      = "admin"       // 总部管理员
 	RoleCodeStoreAdmin = "store_admin" // 门店管理员
 	RoleCodeStaff      = "staff"       // 普通员工
+)
+
+// 数据范围（与角色 data_scope 一致）
+const (
+	DataScopeAll    int8 = 1 // 全部（总部）
+	DataScopeTenant int8 = 2 // 租户/公司（预留）
+	DataScopeStore  int8 = 3 // 本门店
+	DataScopeSelf   int8 = 4 // 仅本人
 )

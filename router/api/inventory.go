@@ -10,16 +10,16 @@ func RegisterInventoryRoutes(r *gin.RouterGroup, c *Controllers) {
 	// 库存管理
 	inventories := r.Group("/inventories").Use(middleware.AuthMiddleware())
 	{
-		inventories.GET("", c.Inventory.ListInventory)
-		inventories.PUT("/:id", c.Inventory.UpdateInventory)
+		inventories.GET("", middleware.Permission("inventory:list"), c.Inventory.ListInventory)
+		inventories.PUT("/:id", middleware.PermissionAny("inventory:in", "inventory:out"), c.Inventory.UpdateInventory)
 	}
 
 	// 出入库单
 	orders := r.Group("/inventory-orders").Use(middleware.AuthMiddleware())
 	{
-		orders.POST("", c.Inventory.CreateOrder)
-		orders.GET("", c.Inventory.ListOrders)
-		orders.GET("/no/:order_no", c.Inventory.GetOrderByNo)
-		orders.GET("/:id", c.Inventory.GetOrderByID)
+		orders.POST("", middleware.PermissionAny("inventory:in", "inventory:out"), c.Inventory.CreateOrder)
+		orders.GET("", middleware.Permission("inventory:record"), c.Inventory.ListOrders)
+		orders.GET("/no/:order_no", middleware.Permission("inventory:record"), c.Inventory.GetOrderByNo)
+		orders.GET("/:id", middleware.Permission("inventory:record"), c.Inventory.GetOrderByID)
 	}
 }

@@ -75,10 +75,15 @@ func NewPurchaseOrderService(
 
 // CreateOrder 创建采购单
 func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.CreatePurchaseOrderReq) (*model.PurchaseOrder, error) {
-	// 解析日期
-	orderDate, err := time.Parse("2006-01-02", req.OrderDate)
-	if err != nil {
-		return nil, errors.New("invalid order date format")
+	// 解析报菜日期：前端不传时自动取当天
+	now := time.Now()
+	orderDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if strings.TrimSpace(req.OrderDate) != "" {
+		parsedDate, err := time.Parse("2006-01-02", req.OrderDate)
+		if err != nil {
+			return nil, errors.New("invalid order date format")
+		}
+		orderDate = parsedDate
 	}
 
 	// 获取商品信息
@@ -148,6 +153,8 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 		if err := s.orderModule.CreateItems(items); err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, errors.New("no valid purchase items")
 	}
 
 	// 更新总金额

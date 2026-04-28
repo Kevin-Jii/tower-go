@@ -105,6 +105,35 @@ export interface DictData {
   status: number
 }
 
+export interface Gallery {
+  id: number
+  name: string
+  path: string
+  url: string
+  size: number
+  mime_type?: string
+  category?: string
+  store_id?: number
+  upload_by?: number
+  upload_by_name?: string
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface MessageTemplate {
+  id: number
+  code: string
+  name: string
+  title?: string
+  content: string
+  description?: string
+  variables?: string
+  is_enabled: boolean
+  created_at?: string
+  updated_at?: string
+}
+
 /** 供应商 */
 export interface Supplier {
   id: number

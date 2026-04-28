@@ -24,33 +24,72 @@
 
     <template v-if="tab === 'stock'">
       <div class="flex flex-col sm:flex-row gap-2">
-        <BaseInput v-model="stockKeyword" class="w-full sm:w-56" placeholder="商品名称" clearable @enter="reloadStock" />
+        <BaseInput v-model="stockKeyword" class="w-full sm:w-56" placeholder="分类 / 商品名称" clearable @enter="reloadStock" />
         <BaseButton variant="primary" @click="reloadStock">查询</BaseButton>
         <BaseButton v-permission="'inventory:in'" variant="secondary" @click="openOrderDlg(1)">入库登记</BaseButton>
         <BaseButton v-permission="'inventory:out'" variant="secondary" @click="openOrderDlg(2)">出库登记</BaseButton>
       </div>
-      <BaseTable :columns="stockCols" :data="(stockList as unknown) as Record<string, unknown>[]" :loading="stockLoading" min-width="880px">
-        <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-            <BaseButton
-              v-permission="['inventory:in', 'inventory:out']"
-              variant="link"
-              size="sm"
-              @click="openQty(row as InventoryRow)"
-            >
-              改数量
-            </BaseButton>
+
+      <div v-if="stockLoading || productLoading" class="rounded border border-[var(--color-border-2)] p-6 text-center text-slate-500">
+        库存数据加载中...
+      </div>
+      <div v-else-if="groupedStockCards.length === 0" class="rounded border border-[var(--color-border-2)] p-6 text-center text-slate-400">
+        暂无库存商品
+      </div>
+      <div v-else class="space-y-4">
+        <div class="flex flex-wrap gap-2">
+          <BaseButton
+            size="sm"
+            :variant="activeCategory === '' ? 'primary' : 'ghost'"
+            @click="activeCategory = ''"
+          >
+            全部分类
+          </BaseButton>
+          <BaseButton
+            v-for="c in categoryTabs"
+            :key="c"
+            size="sm"
+            :variant="activeCategory === c ? 'primary' : 'ghost'"
+            @click="activeCategory = c"
+          >
+            {{ c }}
+          </BaseButton>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+          <div
+            v-for="item in displayStockCards"
+            :key="item.product_id"
+            :class="[
+              'rounded-xl border px-4 py-3 transition shadow-sm cursor-pointer select-none',
+              item.low
+                ? 'border-rose-200 bg-rose-50 hover:bg-rose-100'
+                : 'border-[var(--color-border-2)] bg-[var(--color-bg-2)] hover:bg-[var(--color-fill-1)]',
+            ]"
+            @dblclick="openQtyFromCard(item)"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <p class="m-0 text-sm font-semibold text-slate-800 truncate">{{ item.product_name }}</p>
+              <span class="text-xs text-slate-500">{{ item.category }}</span>
+            </div>
+            <div class="mt-3 flex items-end justify-between">
+              <div class="space-y-1">
+                <p class="m-0 text-xs text-slate-500">
+                  小规格（{{ item.small_unit }}）：<span class="font-semibold">{{ item.small_qty }}</span>
+                </p>
+                <p v-if="item.large_unit && item.large_qty !== undefined" class="m-0 text-xs text-slate-500">
+                  大规格（{{ item.large_unit }}）：<span class="font-semibold">{{ item.large_qty }}</span>
+                </p>
+              </div>
+              <p :class="['m-0 text-xl leading-none font-bold', item.low ? 'text-rose-600' : 'text-slate-800']">
+                {{ item.small_qty }}
+              </p>
+            </div>
+            <p class="m-0 mt-2 text-[11px]" :class="item.low ? 'text-rose-600' : 'text-slate-400'">
+              {{ item.low ? '库存偏低，请及时补货（双击可改数量）' : '双击卡片可修改库存数量' }}
+            </p>
           </div>
-        </template>
-      </BaseTable>
-      <div class="flex justify-end">
-        <BasePagination
-          :page="stockPage"
-          :page-size="stockPageSize"
-          :total="stockTotal"
-          @update:page="(p) => (stockPage = p)"
-          @update:page-size="(s) => (stockPageSize = s)"
-        />
+        </div>
       </div>
     </template>
 
@@ -114,15 +153,39 @@
         <BaseFormItem label="备注">
           <BaseInput v-model="orderForm.remark" />
         </BaseFormItem>
-        <BaseFormItem label="商品ID" required>
-          <BaseNumberInput v-model="orderForm.product_id" :min="1" :step="1" />
-        </BaseFormItem>
-        <BaseFormItem label="数量" required>
-          <BaseNumberInput v-model="orderForm.quantity" :min="0.01" :step="0.01" />
-        </BaseFormItem>
-        <BaseFormItem label="单位">
-          <BaseInput v-model="orderForm.unit" placeholder="瓶 / 箱" />
-        </BaseFormItem>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm font-medium text-slate-700">商品明细</span>
+          <BaseButton variant="secondary" size="sm" @click="addOrderLine">加一行</BaseButton>
+        </div>
+        <div
+          v-for="(line, idx) in orderLines"
+          :key="idx"
+          class="rounded border border-[var(--color-border-2)] p-3 flex flex-wrap items-end gap-2"
+        >
+          <BaseFormItem label="商品" required class="min-w-[220px] flex-1">
+            <a-cascader
+              v-model="line.product_path"
+              :options="productCascaderOptions"
+              placeholder="先选分类，再选商品"
+              allow-clear
+              :path-mode="true"
+              :check-strictly="false"
+              @change="onOrderLineProductChange(idx)"
+            />
+          </BaseFormItem>
+          <BaseFormItem label="数量" required class="w-28">
+            <BaseNumberInput v-model="line.quantity" :min="0.01" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="单位" class="w-28">
+            <BaseSelect
+              v-model="line.unit"
+              :options="lineUnitOptions(line)"
+              :disabled="lineUnitDisabled(line)"
+              placeholder="单位"
+            />
+          </BaseFormItem>
+          <BaseButton variant="ghost" size="sm" @click="removeOrderLine(idx)">移除</BaseButton>
+        </div>
       </div>
       <template #footer>
         <BaseButton variant="ghost" @click="orderDlg = false">取消</BaseButton>
@@ -148,53 +211,184 @@ import {
   BaseFormItem,
   BaseInput,
   BaseNumberInput,
-  BasePagination,
   BaseSelect,
   BaseTable,
 } from '@/components/base'
 import type { BaseTableColumn } from '@/components/base/types'
 import { createInventoryOrder, getInventoryOrder, listInventories, listInventoryOrders, updateInventoryQuantity } from '@/api/inventory'
-import type { InventoryOrder, InventoryRow } from '@/api/types'
+import { listPurchasableProducts } from '@/api/storeSupplier'
+import { listDictDataByTypeCode } from '@/api/dict'
+import { listProductUnitSpecs } from '@/api/supplierProduct'
+import type { DictData, InventoryOrder, InventoryRow, ProductUnitSpec } from '@/api/types'
 import { toast } from '@/feedback/toast'
+import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
 const tab = ref<'stock' | 'orders'>('stock')
+const userStore = useUserStore()
+const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
 
 const stockKeyword = ref('')
-const stockPage = ref(1)
-const stockPageSize = ref(10)
-const stockKey = computed(
-  () => ['inventories', stockPage.value, stockPageSize.value, stockKeyword.value] as const,
-)
+const LOW_STOCK_THRESHOLD = 5
+const stockKey = computed(() => ['inventories', stockKeyword.value] as const)
 const { data: stockData, isLoading: stockLoading } = useQuery({
   queryKey: stockKey,
   queryFn: () =>
     listInventories({
-      page: stockPage.value,
-      page_size: stockPageSize.value,
+      page: 1,
+      page_size: 100,
+      store_id: tenantStoreId.value,
       keyword: stockKeyword.value.trim() || undefined,
     }),
   enabled: computed(() => tab.value === 'stock'),
 })
 const stockList = computed(() => stockData.value?.list ?? [])
-const stockTotal = computed(() => stockData.value?.total ?? 0)
 
-function reloadStock(): void {
-  stockPage.value = 1
-  void qc.invalidateQueries({ queryKey: ['inventories'] })
-}
+const { data: productData, isLoading: productLoading } = useQuery({
+  queryKey: computed(() => ['store-products', stockKeyword.value] as const),
+  queryFn: () =>
+    listPurchasableProducts({
+      store_id: tenantStoreId.value,
+      keyword: stockKeyword.value.trim() || undefined,
+    }),
+  enabled: computed(() => tab.value === 'stock'),
+})
+const productList = computed(() => productData.value ?? [])
+const productIdsKey = computed(() =>
+  productList.value
+    .map((p) => p.id)
+    .sort((a, b) => a - b)
+    .join(','),
+)
+const { data: unitSpecsData } = useQuery({
+  queryKey: computed(() => ['product-unit-specs', productIdsKey.value] as const),
+  queryFn: async () => {
+    const ids = productList.value.map((p) => p.id)
+    if (!ids.length) return [] as ProductUnitSpec[]
+    const rows = await Promise.all(ids.map((id) => listProductUnitSpecs(id)))
+    return rows.flat()
+  },
+  enabled: computed(() => productList.value.length > 0 && tab.value === 'stock'),
+})
+const specsByProduct = computed(() => {
+  const map = new Map<number, ProductUnitSpec[]>()
+  for (const s of unitSpecsData.value ?? []) {
+    if (!s.is_enabled) continue
+    if (!map.has(s.product_id)) map.set(s.product_id, [])
+    map.get(s.product_id)!.push(s)
+  }
+  for (const [, arr] of map.entries()) {
+    arr.sort((a, b) => Number(a.factor_to_base) - Number(b.factor_to_base))
+  }
+  return map
+})
+const unitDict = ref<DictData[]>([])
 
-watch([stockPage, stockPageSize], () => {
-  if (tab.value === 'stock') void qc.invalidateQueries({ queryKey: ['inventories'] })
+const { data: unitData } = useQuery({
+  queryKey: ['dict-data', 'product_unit'],
+  queryFn: () => listDictDataByTypeCode('product_unit'),
 })
 
-const stockCols: BaseTableColumn[] = [
-  { key: 'product_name', label: '商品', prop: 'product_name', minWidth: '160px', ellipsis: true },
-  { key: 'quantity', label: '数量', prop: 'quantity', width: '96px' },
-  { key: 'unit', label: '单位', prop: 'unit', width: '72px' },
-  { key: 'store_name', label: '门店', prop: 'store_name', width: '120px', ellipsis: true },
-  { key: 'actions', label: '操作', width: '120px', align: 'right' },
-]
+watch(unitData, (v) => {
+  unitDict.value = v ?? []
+})
+
+const unitOptions = computed(() =>
+  unitDict.value.map((d) => ({
+    label: d.label,
+    value: d.value,
+  })),
+)
+
+const productCascaderOptions = computed(() => {
+  const grouped = new Map<string, { id: number; name: string }[]>()
+  for (const p of productList.value) {
+    const cat = p.category?.name?.trim() || '未分类'
+    if (!grouped.has(cat)) grouped.set(cat, [])
+    grouped.get(cat)!.push({ id: p.id, name: p.name })
+  }
+  let idx = 0
+  return Array.from(grouped.entries()).map(([cat, products]) => {
+    idx += 1
+    return {
+      label: cat,
+      value: `cat-${idx}`,
+      children: products.map((p) => ({
+        label: `${p.name}（#${p.id}）`,
+        value: p.id,
+      })),
+    }
+  })
+})
+
+interface StockCardItem {
+  inventory_id: number
+  product_id: number
+  category: string
+  product_name: string
+  small_unit: string
+  large_unit?: string
+  small_qty: number
+  large_qty?: number
+  quantity: number
+  low: boolean
+}
+
+const groupedStockCards = computed(() => {
+  const invMap = new Map<number, InventoryRow>()
+  for (const inv of stockList.value) invMap.set(inv.product_id, inv)
+
+  const grouped = new Map<string, StockCardItem[]>()
+  for (const p of productList.value) {
+    const inv = invMap.get(p.id)
+    const qty = Number(inv?.quantity ?? 0)
+    const category = p.category?.name?.trim() || '未分类'
+    const specs = specsByProduct.value.get(p.id) ?? []
+    const smallSpec = specs[0]
+    const largeSpec = specs.length > 1 ? specs[specs.length - 1] : undefined
+    const smallFactor = Number(smallSpec?.factor_to_base || 1)
+    const largeFactor = Number(largeSpec?.factor_to_base || 0)
+    const smallQty = Number((qty / (smallFactor > 0 ? smallFactor : 1)).toFixed(2))
+    const largeQty = largeFactor > smallFactor ? Number((qty / largeFactor).toFixed(2)) : undefined
+    const item: StockCardItem = {
+      inventory_id: Number(inv?.id ?? 0),
+      product_id: p.id,
+      category,
+      product_name: p.name,
+      small_unit: smallSpec?.unit_name || p.unit || '件',
+      large_unit: largeSpec?.unit_name,
+      small_qty: smallQty,
+      large_qty: largeQty,
+      quantity: qty,
+      low: smallQty <= LOW_STOCK_THRESHOLD,
+    }
+    if (!grouped.has(category)) grouped.set(category, [])
+    grouped.get(category)!.push(item)
+  }
+
+  return Array.from(grouped.entries())
+    .map(([category, items]) => ({ category, items }))
+    .filter((g) => g.items.length > 0)
+})
+
+const activeCategory = ref('')
+
+const categoryTabs = computed(() => groupedStockCards.value.map((g) => g.category))
+
+const displayStockCards = computed(() => {
+  const all = groupedStockCards.value.flatMap((g) => g.items)
+  if (!activeCategory.value) return all
+  return all.filter((x) => x.category === activeCategory.value)
+})
+
+watch(groupedStockCards, (groups) => {
+  if (!groups.some((g) => g.category === activeCategory.value)) activeCategory.value = ''
+})
+
+function reloadStock(): void {
+  void qc.invalidateQueries({ queryKey: ['inventories'] })
+  void qc.invalidateQueries({ queryKey: ['store-products'] })
+}
 
 const orderNo = ref('')
 const orderDate = ref('')
@@ -210,6 +404,7 @@ const { data: orderData, isLoading: orderLoading } = useQuery({
     listInventoryOrders({
       page: orderPage.value,
       page_size: orderPageSize.value,
+      store_id: tenantStoreId.value,
       order_no: orderNo.value.trim() || undefined,
       date: orderDate.value || undefined,
       ...(orderType.value === '' ? {} : { type: orderType.value as number }),
@@ -229,7 +424,10 @@ watch([orderPage, orderPageSize], () => {
 })
 
 watch(tab, (t) => {
-  if (t === 'stock') void qc.invalidateQueries({ queryKey: ['inventories'] })
+  if (t === 'stock') {
+    void qc.invalidateQueries({ queryKey: ['inventories'] })
+    void qc.invalidateQueries({ queryKey: ['store-products'] })
+  }
   else void qc.invalidateQueries({ queryKey: ['inventory-orders'] })
 })
 
@@ -253,6 +451,26 @@ function openQty(row: InventoryRow): void {
   qtyForm.quantity = row.quantity
   qtyForm.remark = ''
   qtyDlg.value = true
+}
+
+function openQtyFromCard(item: StockCardItem): void {
+  if (!item.inventory_id) {
+    orderTypeForm.value = 1
+    orderForm.reason = '采购入库'
+    orderForm.remark = ''
+    orderLines.value = [makeOrderLine([item.product_id])]
+    orderDlg.value = true
+    toast.warning('该商品暂无库存记录，请先入库后再改数量')
+    return
+  }
+  openQty({
+    id: item.inventory_id,
+    store_id: 0,
+    product_id: item.product_id,
+    product_name: item.product_name,
+    quantity: item.small_qty,
+    unit: item.small_unit,
+  })
 }
 
 async function saveQty(): Promise<void> {
@@ -279,18 +497,74 @@ const orderTypeForm = ref<1 | 2>(1)
 const orderForm = reactive({
   reason: '',
   remark: '',
-  product_id: 1,
-  quantity: 1,
-  unit: '瓶',
 })
+
+interface OrderLine {
+  product_path: Array<string | number> | string | number | undefined
+  quantity: number
+  unit: string
+}
+
+const orderLines = ref<OrderLine[]>([])
+
+function makeOrderLine(productPath?: Array<string | number> | string | number): OrderLine {
+  return {
+    product_path: productPath ?? [],
+    quantity: 1,
+    unit: String(unitOptions.value[0]?.value || '瓶'),
+  }
+}
+
+function getProductId(path: Array<string | number> | string | number | undefined): number | null {
+  if (Array.isArray(path)) {
+    const leaf = path[path.length - 1]
+    const id = Number(leaf)
+    return Number.isFinite(id) && id > 0 ? id : null
+  }
+  if (typeof path === 'number' || typeof path === 'string') {
+    const id = Number(path)
+    return Number.isFinite(id) && id > 0 ? id : null
+  }
+  return null
+}
+
+function lineUnitOptions(line: OrderLine): Array<{ label: string; value: string | number }> {
+  const pid = getProductId(line.product_path)
+  if (!pid) return unitOptions.value
+  const specs = specsByProduct.value.get(pid) ?? []
+  if (!specs.length) return unitOptions.value
+  return specs.map((s) => ({
+    label: s.unit_name,
+    value: s.unit_code,
+  }))
+}
+
+function lineUnitDisabled(line: OrderLine): boolean {
+  return lineUnitOptions(line).length <= 1
+}
+
+function onOrderLineProductChange(idx: number): void {
+  const line = orderLines.value[idx]
+  if (!line) return
+  const options = lineUnitOptions(line)
+  if (!options.length) return
+  line.unit = String(options[0].value)
+}
+
+function addOrderLine(): void {
+  orderLines.value.push(makeOrderLine())
+}
+
+function removeOrderLine(i: number): void {
+  orderLines.value = orderLines.value.filter((_, idx) => idx !== i)
+  if (orderLines.value.length === 0) orderLines.value.push(makeOrderLine())
+}
 
 function openOrderDlg(type: 1 | 2): void {
   orderTypeForm.value = type
   orderForm.reason = type === 1 ? '采购入库' : '销售出库'
   orderForm.remark = ''
-  orderForm.product_id = 1
-  orderForm.quantity = 1
-  orderForm.unit = '瓶'
+  orderLines.value = [makeOrderLine()]
   orderDlg.value = true
 }
 
@@ -299,26 +573,38 @@ async function submitOrder(): Promise<void> {
     toast.warning('请填写原因')
     return
   }
+  const items = orderLines.value
+    .map((line) => ({
+      product_id: getProductId(line.product_path),
+      quantity: line.quantity,
+      unit: line.unit.trim(),
+    }))
+    .filter((line) => line.product_id && line.quantity > 0 && line.unit)
+    .map((line) => ({
+      product_id: line.product_id as number,
+      quantity: line.quantity,
+      unit: line.unit,
+      production_date: '',
+      expiry_date: '',
+      remark: '',
+    }))
+  if (!items.length) {
+    toast.warning('请至少选择一条有效商品明细')
+    return
+  }
   orderSaving.value = true
   try {
     await createInventoryOrder({
       type: orderTypeForm.value,
+      store_id: tenantStoreId.value,
       reason: orderForm.reason.trim(),
       remark: orderForm.remark.trim(),
-      items: [
-        {
-          product_id: orderForm.product_id,
-          quantity: orderForm.quantity,
-          unit: orderForm.unit.trim() || '瓶',
-          production_date: '',
-          expiry_date: '',
-          remark: '',
-        },
-      ],
+      items,
     })
     toast.success('已提交')
     orderDlg.value = false
     await qc.invalidateQueries({ queryKey: ['inventories'] })
+    await qc.invalidateQueries({ queryKey: ['store-products'] })
     await qc.invalidateQueries({ queryKey: ['inventory-orders'] })
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '失败')

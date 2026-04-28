@@ -8287,8 +8287,7 @@ const docTemplate = `{
         "model.CreatePurchaseOrderReq": {
             "type": "object",
             "required": [
-                "items",
-                "order_date"
+                "items"
             ],
             "properties": {
                 "items": {
@@ -8299,7 +8298,7 @@ const docTemplate = `{
                     }
                 },
                 "order_date": {
-                    "description": "格式: 2024-01-01",
+                    "description": "可选，空时后端自动使用当天日期",
                     "type": "string"
                 },
                 "remark": {

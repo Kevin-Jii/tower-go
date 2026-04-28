@@ -47,9 +47,13 @@ var autoMigrateModels = []interface{}{
 }
 
 func AutoMigrateAndSeeds() {
-	if os.Getenv("SKIP_AUTO_MIGRATE") == "1" {
-		logging.LogInfo("跳过数据库迁移（SKIP_AUTO_MIGRATE=1）")
+	skipAuto := os.Getenv("SKIP_AUTO_MIGRATE") == "1"
+	if skipAuto && shouldSkipMigration() {
+		logging.LogInfo("跳过数据库迁移（SKIP_AUTO_MIGRATE=1 且表结构完整）")
 		return
+	}
+	if skipAuto {
+		logging.LogWarn("检测到缺失表/字段，忽略 SKIP_AUTO_MIGRATE=1 并执行自动迁移")
 	}
 
 	// 检查迁移版本，避免重复迁移

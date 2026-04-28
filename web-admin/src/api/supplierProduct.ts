@@ -27,11 +27,24 @@ export async function createSupplierProduct(body: {
   await http.post<import('./types').ApiEnvelope<unknown>>('/supplier-products', body)
 }
 
+export async function updateSupplierProduct(id: number, body: Record<string, unknown>): Promise<void> {
+  await http.put<import('./types').ApiEnvelope<unknown>>(`/supplier-products/${id}`, body)
+}
+
+export async function getSupplierProduct(id: number): Promise<StorePurchasableProduct> {
+  const res = await http.get<import('./types').ApiEnvelope<StorePurchasableProduct>>(`/supplier-products/${id}`)
+  return unwrap(res)
+}
+
 export async function listSupplierCategories(supplierId: number): Promise<SupplierCategory[]> {
   const res = await http.get<import('./types').ApiEnvelope<SupplierCategory[]>>('/supplier-categories', {
     params: { supplier_id: supplierId },
   })
   return unwrap(res)
+}
+
+export async function createSupplierCategory(body: { supplier_id: number; name: string; sort?: number }): Promise<void> {
+  await http.post<import('./types').ApiEnvelope<unknown>>('/supplier-categories', body)
 }
 
 export async function batchUpsertProductUnitSpecs(body: {

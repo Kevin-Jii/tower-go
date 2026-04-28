@@ -163,7 +163,7 @@ const dataColumns: BaseTableColumn[] = [
   { key: 'label', label: '标签', prop: 'label', minWidth: '100px', ellipsis: true },
   { key: 'value', label: '值', prop: 'value', width: '96px', ellipsis: true },
   { key: 'style', label: '样式', width: '100px' },
-  { key: 'list_class', label: 'list_class', prop: 'list_class', minWidth: '100px', width: '120px', ellipsis: true },
+  // { key: 'list_class', label: 'list_class', prop: 'list_class', minWidth: '100px', width: '120px', ellipsis: true },
   { key: 'actions', label: '操作', width: '148px', align: 'right' },
 ]
 

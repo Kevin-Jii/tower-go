@@ -45,7 +45,7 @@ func (PurchaseOrderItem) TableName() string {
 
 // CreatePurchaseOrderReq 创建采购单请求
 type CreatePurchaseOrderReq struct {
-	OrderDate string                       `json:"order_date" binding:"required"` // 格式: 2024-01-01
+	OrderDate string                       `json:"order_date"` // 可选，空时后端自动使用当天日期
 	Remark    string                       `json:"remark" binding:"max=500"`
 	Items     []CreatePurchaseOrderItemReq `json:"items" binding:"required,min=1,dive"`
 }

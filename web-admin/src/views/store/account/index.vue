@@ -55,14 +55,27 @@
         <BaseFormItem label="订单号">
           <BaseInput v-model="cForm.order_no" />
         </BaseFormItem>
-        <BaseFormItem label="商品ID" required>
-          <BaseNumberInput v-model="cForm.product_id" :min="1" :step="1" />
+        <BaseFormItem label="商品" required>
+          <a-cascader
+            v-model="cForm.product_path"
+            :options="productCascaderOptions"
+            placeholder="先选分类，再选商品"
+            allow-clear
+            :path-mode="true"
+            :check-strictly="false"
+            @change="onCreateProductChange"
+          />
         </BaseFormItem>
         <BaseFormItem label="数量" required>
           <BaseNumberInput v-model="cForm.quantity" :min="0.01" :step="0.01" />
         </BaseFormItem>
         <BaseFormItem label="单位">
-          <BaseInput v-model="cForm.unit" placeholder="瓶 / 箱" />
+          <BaseSelect
+            v-model="cForm.unit"
+            :options="createUnitOptions"
+            :disabled="createUnitOptions.length <= 1"
+            placeholder="单位"
+          />
         </BaseFormItem>
         <BaseFormItem label="备注">
           <BaseTextarea v-model="cForm.remark" :rows="2" />
@@ -118,6 +131,7 @@ import {
   BaseInput,
   BaseNumberInput,
   BasePagination,
+  BaseSelect,
   BaseTable,
   BaseTextarea,
 } from '@/components/base'
@@ -130,11 +144,17 @@ import {
   listStoreAccounts,
   updateStoreAccount,
 } from '@/api/storeAccount'
-import type { StoreAccount } from '@/api/types'
+import { listDictDataByTypeCode } from '@/api/dict'
+import { listProductUnitSpecs } from '@/api/supplierProduct'
+import { listPurchasableProducts } from '@/api/storeSupplier'
+import type { DictData, ProductUnitSpec, StoreAccount } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
+const userStore = useUserStore()
+const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
 
 function monthRange(): { start: string; end: string } {
   const t = new Date()
@@ -155,6 +175,7 @@ const statsCount = computed(() => String(stats.value.count ?? 0))
 async function loadStats(): Promise<void> {
   try {
     stats.value = await getStoreAccountStats({
+      store_id: tenantStoreId.value,
       start_date: rangeStart.value,
       end_date: rangeEnd.value,
     })
@@ -169,7 +190,9 @@ onMounted(() => {
 
 const page = ref(1)
 const pageSize = ref(10)
-const listKey = computed(() => ['store-accounts', page.value, pageSize.value, rangeStart.value, rangeEnd.value] as const)
+const listKey = computed(
+  () => ['store-accounts', tenantStoreId.value, page.value, pageSize.value, rangeStart.value, rangeEnd.value] as const,
+)
 
 const { data: pageData, isLoading: loading } = useQuery({
   queryKey: listKey,
@@ -177,6 +200,7 @@ const { data: pageData, isLoading: loading } = useQuery({
     listStoreAccounts({
       page: page.value,
       page_size: pageSize.value,
+      store_id: tenantStoreId.value,
       start_date: rangeStart.value,
       end_date: rangeEnd.value,
     }),
@@ -184,6 +208,74 @@ const { data: pageData, isLoading: loading } = useQuery({
 
 const list = computed(() => pageData.value?.list ?? [])
 const total = computed(() => pageData.value?.total ?? 0)
+
+const { data: productData } = useQuery({
+  queryKey: computed(() => ['store-account-products', tenantStoreId.value] as const),
+  queryFn: () =>
+    listPurchasableProducts({
+      store_id: tenantStoreId.value,
+    }),
+})
+const productList = computed(() => productData.value ?? [])
+const productById = computed(() => {
+  const map = new Map<number, (typeof productList.value)[number]>()
+  for (const p of productList.value) map.set(p.id, p)
+  return map
+})
+const productIdsKey = computed(() =>
+  productList.value
+    .map((p) => p.id)
+    .sort((a, b) => a - b)
+    .join(','),
+)
+const { data: unitSpecsData } = useQuery({
+  queryKey: computed(() => ['store-account-product-unit-specs', productIdsKey.value] as const),
+  queryFn: async () => {
+    const ids = productList.value.map((p) => p.id)
+    if (!ids.length) return [] as ProductUnitSpec[]
+    const rows = await Promise.all(ids.map((id) => listProductUnitSpecs(id)))
+    return rows.flat()
+  },
+  enabled: computed(() => productList.value.length > 0),
+})
+const specsByProduct = computed(() => {
+  const map = new Map<number, ProductUnitSpec[]>()
+  for (const s of unitSpecsData.value ?? []) {
+    if (!s.is_enabled) continue
+    if (!map.has(s.product_id)) map.set(s.product_id, [])
+    map.get(s.product_id)!.push(s)
+  }
+  for (const [, arr] of map.entries()) {
+    arr.sort((a, b) => Number(a.factor_to_base) - Number(b.factor_to_base))
+  }
+  return map
+})
+const { data: unitData } = useQuery({
+  queryKey: ['dict-data', 'product_unit'],
+  queryFn: () => listDictDataByTypeCode('product_unit'),
+})
+const unitDict = computed(() => unitData.value ?? ([] as DictData[]))
+
+const productCascaderOptions = computed(() => {
+  const grouped = new Map<string, { id: number; name: string }[]>()
+  for (const p of productList.value) {
+    const cat = p.category?.name?.trim() || '未分类'
+    if (!grouped.has(cat)) grouped.set(cat, [])
+    grouped.get(cat)!.push({ id: p.id, name: p.name })
+  }
+  let idx = 0
+  return Array.from(grouped.entries()).map(([cat, products]) => {
+    idx += 1
+    return {
+      label: cat,
+      value: `cat-${idx}`,
+      children: products.map((p) => ({
+        label: `${p.name}（#${p.id}）`,
+        value: p.id,
+      })),
+    }
+  })
+})
 
 function reloadAll(): void {
   page.value = 1
@@ -194,6 +286,14 @@ function reloadAll(): void {
 watch([page, pageSize], () => {
   void qc.invalidateQueries({ queryKey: ['store-accounts'] })
 })
+
+watch(
+  () => tenantStoreId.value,
+  () => {
+    void loadStats()
+    void qc.invalidateQueries({ queryKey: ['store-accounts'] })
+  },
+)
 
 const columns: BaseTableColumn[] = [
   { key: 'account_no', label: '记账编号', prop: 'account_no', minWidth: '140px', ellipsis: true },
@@ -215,9 +315,9 @@ const cForm = reactive({
   channel: '',
   account_date: '',
   order_no: '',
-  product_id: 1,
+  product_path: [] as Array<string | number>,
   quantity: 1,
-  unit: '瓶',
+  unit: '',
   remark: '',
 })
 
@@ -226,11 +326,44 @@ function openCreate(): void {
   cForm.channel = ''
   cForm.account_date = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
   cForm.order_no = ''
-  cForm.product_id = 1
+  cForm.product_path = []
   cForm.quantity = 1
-  cForm.unit = '瓶'
+  cForm.unit = ''
   cForm.remark = ''
   createDlg.value = true
+}
+
+function getProductId(path: Array<string | number> | string | number | undefined): number | null {
+  if (Array.isArray(path)) {
+    const leaf = path[path.length - 1]
+    const id = Number(leaf)
+    return Number.isFinite(id) && id > 0 ? id : null
+  }
+  if (typeof path === 'number' || typeof path === 'string') {
+    const id = Number(path)
+    return Number.isFinite(id) && id > 0 ? id : null
+  }
+  return null
+}
+
+const createUnitOptions = computed(() => {
+  const pid = getProductId(cForm.product_path)
+  if (!pid) return []
+  const specs = specsByProduct.value.get(pid) ?? []
+  if (specs.length > 0) {
+    return specs.map((s) => ({
+      label: s.unit_name,
+      value: s.unit_code,
+    }))
+  }
+  const product = productById.value.get(pid)
+  const defaultUnit = product?.unit || unitDict.value[0]?.value || '件'
+  return [{ label: defaultUnit, value: defaultUnit }]
+})
+
+function onCreateProductChange(): void {
+  const options = createUnitOptions.value
+  cForm.unit = String(options[0]?.value || '')
 }
 
 async function submitCreate(): Promise<void> {
@@ -238,9 +371,23 @@ async function submitCreate(): Promise<void> {
     toast.warning('请填写渠道')
     return
   }
+  const productId = getProductId(cForm.product_path)
+  if (!productId) {
+    toast.warning('请选择商品')
+    return
+  }
+  if (cForm.quantity <= 0) {
+    toast.warning('数量必须大于0')
+    return
+  }
+  if (!cForm.unit.trim()) {
+    toast.warning('请选择单位')
+    return
+  }
   saving.value = true
   try {
     await createStoreAccount({
+      store_id: tenantStoreId.value,
       channel: cForm.channel.trim(),
       order_no: cForm.order_no.trim(),
       remark: cForm.remark.trim(),
@@ -248,9 +395,9 @@ async function submitCreate(): Promise<void> {
       other_expense_amount: 0,
       items: [
         {
-          product_id: cForm.product_id,
+          product_id: productId,
           quantity: cForm.quantity,
-          unit: cForm.unit.trim() || '瓶',
+          unit: cForm.unit.trim(),
           spec: '',
           price: 0,
           amount: 0,

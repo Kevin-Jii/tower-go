@@ -3,13 +3,12 @@
     <span class="text-xs text-[var(--color-text-3)] hidden md:inline whitespace-nowrap">租户</span>
     <a-select
       :model-value="userStore.tenantId"
+      :options="selectOptions"
       size="small"
       class="!min-w-[7.5rem]"
       placeholder="门店"
       @change="onChange"
-    >
-      <a-option v-for="s in options" :key="s.id" :value="s.id">{{ s.name }}</a-option>
-    </a-select>
+    />
   </div>
 </template>
 
@@ -41,6 +40,13 @@ const options = computed(() => {
   if (sid) return [{ id: sid, name: `门店 #${sid}` }]
   return []
 })
+
+const selectOptions = computed(() =>
+  options.value.map((s) => ({
+    label: s.name || `门店 #${s.id}`,
+    value: s.id,
+  })),
+)
 
 function onChange(v: string | number | boolean | Record<string, unknown> | unknown[]): void {
   if (v === undefined || v === null || typeof v === 'boolean' || Array.isArray(v) || typeof v === 'object')

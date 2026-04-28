@@ -3,7 +3,6 @@
     <BaseCard class="min-w-0">
       <template #header>
         <div class="flex items-center justify-between gap-2 flex-wrap w-full">
-          <span class="font-semibold text-slate-800">供应商档案</span>
           <div class="flex flex-wrap items-center gap-2">
             <BaseInput v-model="keyword" class="w-44" placeholder="供应商名称" clearable @enter="reload" />
             <BaseButton variant="primary" size="sm" @click="reload">查询</BaseButton>
@@ -12,7 +11,7 @@
         </div>
       </template>
       <BaseTable
-        :columns="columns"
+        :columns="supplierColumns"
         :data="(list as unknown) as Record<string, unknown>[]"
         :loading="loading"
         min-width="420px"
@@ -44,34 +43,41 @@
     <BaseCard class="min-w-0">
       <template #header>
         <div class="flex flex-col gap-2 w-full">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <span class="font-semibold text-slate-800">已绑定供应商商品</span>
-            <div class="flex items-center gap-2">
-              <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openProductCreate">新增供应商商品</BaseButton>
-              <BaseButton variant="secondary" size="sm" @click="reloadProducts">刷新</BaseButton>
-            </div>
-          </div>
           <div class="flex gap-2 items-center">
             <BaseInput v-model="productKeywordInput" class="w-56" placeholder="商品名称" clearable @enter="applyProductKeyword" />
             <BaseButton variant="primary" size="sm" @click="applyProductKeyword">查询</BaseButton>
+            <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openCategoryCreate">新增供应商分类</BaseButton>
+            <BaseButton variant="secondary" size="sm" @click="reloadProducts">刷新</BaseButton>
           </div>
         </div>
       </template>
       <BaseTable
-        :columns="productColumns"
-        :data="(productRows as unknown) as Record<string, unknown>[]"
-        :loading="productsLoading"
-        min-width="860px"
+        :columns="productTreeColumns"
+        :data="(productTreeRows as unknown) as Record<string, unknown>[]"
+        :loading="productsLoading || categoriesLoading"
+        min-width="760px"
         height="calc(100vh - 290px)"
+        row-key="id"
+        tree-children-key="children"
+        :tree-default-expand-all="true"
       >
-        <template #cell-supplier_name="{ row }">
-          {{ supplierCell(row as StorePurchasableProduct) }}
+        <template #cell-name="{ row }">
+          <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name }}</span>
+          <span v-else>{{ (row as TreeRow).name }}</span>
         </template>
-        <template #cell-category="{ row }">
-          {{ (row as StorePurchasableProduct).category?.name ?? '-' }}
+        <template #cell-sale_price="{ row }">
+          <span v-if="!(row as TreeRow).isCategory">{{ (row as TreeRow).sale_price ?? '-' }}</span>
+          <span v-else class="text-slate-400">-</span>
         </template>
-        <template #cell-spec_pair="{ row }">
-          基础: {{ (row as StorePurchasableProduct).unit || '-' }} / 大规格x{{ (row as StorePurchasableProduct).bottles_per_case ?? 1 }}
+        <template #cell-actions="{ row }">
+          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+            <template v-if="(row as TreeRow).isCategory">
+              <BaseButton v-permission="'supplier:add'" variant="link" size="sm" @click="openProductCreate((row as TreeRow).categoryId)">新增商品</BaseButton>
+            </template>
+            <template v-else>
+              <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看</BaseButton>
+            </template>
+          </div>
         </template>
       </BaseTable>
     </BaseCard>
@@ -112,24 +118,37 @@
       </template>
     </BaseDialog>
 
+    <BaseDialog v-model="categoryDlg" title="新增供应商分类" max-width="min(420px, 96vw)">
+      <div class="space-y-4">
+        <BaseFormItem label="分类名称" required>
+          <BaseInput v-model="categoryForm.name" />
+        </BaseFormItem>
+        <BaseFormItem label="排序">
+          <BaseNumberInput v-model="categoryForm.sort" :min="1" :step="1" />
+        </BaseFormItem>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="categoryDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="categorySaving" @click="submitCategory">保存</BaseButton>
+      </template>
+    </BaseDialog>
+
     <BaseDialog v-model="productDlg" title="新增供应商商品（大/小规格）" max-width="min(720px, 96vw)">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+        <p class="m-0 text-sm text-slate-600">
+          供应商：<span class="font-medium">{{ currentSupplierName || '-' }}</span>
+        </p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <BaseFormItem label="供应商" required>
-            <BaseSelect v-model="productForm.supplier_id" :options="supplierSelectOptions" placeholder="请选择供应商" />
-          </BaseFormItem>
           <BaseFormItem label="分类" required>
             <BaseSelect v-model="productForm.category_id" :options="categoryOptions" placeholder="请选择分类" />
           </BaseFormItem>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <BaseFormItem label="商品名称" required>
             <BaseInput v-model="productForm.name" />
           </BaseFormItem>
-          <BaseFormItem label="规格描述">
-            <BaseInput v-model="productForm.spec" placeholder="如 500ml*24" />
-          </BaseFormItem>
         </div>
+        <BaseFormItem label="规格描述">
+          <BaseInput v-model="productForm.spec" placeholder="如 500ml*24" />
+        </BaseFormItem>
 
         <div class="rounded border border-[var(--color-border-2)] p-3">
           <h4 class="m-0 mb-3 text-sm font-semibold">基础单位（小规格）</h4>
@@ -181,6 +200,55 @@
         <BaseButton variant="primary" :loading="productSaving" @click="submitCreateProduct">保存商品配置</BaseButton>
       </template>
     </BaseDialog>
+
+    <a-drawer :visible="productDrawer" placement="right" :width="560" :mask-closable="true" @cancel="productDrawer = false">
+      <template #title>商品详情与编辑</template>
+      <div class="space-y-4">
+        <BaseFormItem label="商品名称">
+          <BaseInput v-model="productEdit.name" />
+        </BaseFormItem>
+        <BaseFormItem label="规格描述">
+          <BaseInput v-model="productEdit.spec" />
+        </BaseFormItem>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <BaseFormItem label="单价(瓶)">
+            <BaseNumberInput v-model="productEdit.bottle_price" :min="0" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="单价(箱)">
+            <BaseNumberInput v-model="productEdit.case_price" :min="0" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="每箱瓶数">
+            <BaseNumberInput v-model="productEdit.bottles_per_case" :min="1" :step="1" />
+          </BaseFormItem>
+          <BaseFormItem label="单位显示">
+            <BaseInput v-model="productEdit.unit" />
+          </BaseFormItem>
+        </div>
+        <div class="rounded border border-[var(--color-border-2)] p-3">
+          <h4 class="m-0 mb-3 text-sm font-semibold">单位配置</h4>
+          <div v-for="(u, idx) in editUnits" :key="idx" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <BaseFormItem label="单位编码">
+              <BaseSelect v-model="u.unit_code" :options="unitOptions" />
+            </BaseFormItem>
+            <BaseFormItem label="换算系数">
+              <BaseNumberInput v-model="u.factor_to_base" :min="1" :step="1" />
+            </BaseFormItem>
+            <BaseFormItem label="成本价">
+              <BaseNumberInput v-model="u.cost_price" :min="0" :step="0.01" />
+            </BaseFormItem>
+            <BaseFormItem label="销售价">
+              <BaseNumberInput v-model="u.sale_price" :min="0" :step="0.01" />
+            </BaseFormItem>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <BaseButton variant="ghost" @click="productDrawer = false">取消</BaseButton>
+          <BaseButton variant="primary" :loading="productEditSaving" @click="submitEditProduct">保存</BaseButton>
+        </div>
+      </template>
+    </a-drawer>
   </div>
 </template>
 
@@ -203,12 +271,31 @@ import {
 } from '@/components/base'
 import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
 import { createSupplier, deleteSupplier, listSuppliers, updateSupplier } from '@/api/supplier'
-import { listPurchasableProducts, listStoreBoundSuppliers } from '@/api/storeSupplier'
-import { batchUpsertProductUnitSpecs, createSupplierProduct, listSupplierCategories, listSupplierProducts } from '@/api/supplierProduct'
+import { listPurchasableProducts } from '@/api/storeSupplier'
+import {
+  batchUpsertProductUnitSpecs,
+  createSupplierCategory,
+  createSupplierProduct,
+  getSupplierProduct,
+  listProductUnitSpecs,
+  listSupplierCategories,
+  updateSupplierProduct,
+} from '@/api/supplierProduct'
 import { listDictDataByTypeCode } from '@/api/dict'
-import type { DictData, StorePurchasableProduct, Supplier, SupplierCategory } from '@/api/types'
+import type { DictData, ProductUnitSpec, StorePurchasableProduct, Supplier } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+
+interface TreeRow {
+  id: string | number
+  isCategory: boolean
+  categoryId?: number
+  productId?: number
+  name: string
+  sale_price?: number | string
+  children?: TreeRow[]
+  raw?: StorePurchasableProduct
+}
 
 const qc = useQueryClient()
 const router = useRouter()
@@ -229,6 +316,9 @@ const { data: pageData, isLoading: loading } = useQuery({
 
 const list = computed(() => pageData.value?.list ?? [])
 const total = computed(() => pageData.value?.total ?? 0)
+const currentSupplierName = computed(
+  () => list.value.find((s) => s.id === activeSupplierId.value)?.supplier_name ?? '',
+)
 
 function reload(): void {
   page.value = 1
@@ -239,7 +329,7 @@ watch([page, pageSize], () => {
   void qc.invalidateQueries({ queryKey: ['suppliers'] })
 })
 
-const columns: BaseTableColumn[] = [
+const supplierColumns: BaseTableColumn[] = [
   { key: 'supplier_name', label: '供应商名称', prop: 'supplier_name', minWidth: '160px', ellipsis: true },
   { key: 'actions', label: '操作', width: '220px', align: 'right' },
 ]
@@ -258,50 +348,78 @@ function openView(row: Supplier): void {
   void router.push(`/public/supplier/${row.id}`)
 }
 
-const { data: boundRows } = useQuery({
-  queryKey: ['store-suppliers', 'bound'],
-  queryFn: () => listStoreBoundSuppliers(),
-})
-
 function applyProductKeyword(): void {
   productKeyword.value = productKeywordInput.value.trim()
   void qc.invalidateQueries({ queryKey: ['store-supplier-products'] })
 }
 
-const productQueryKey = computed(() => ['store-supplier-products', activeSupplierId.value, productKeyword.value] as const)
+const categoriesQueryKey = computed(() => ['supplier-categories', activeSupplierId.value] as const)
+const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
+  queryKey: categoriesQueryKey,
+  queryFn: () => listSupplierCategories(activeSupplierId.value as number),
+  enabled: computed(() => activeSupplierId.value !== ''),
+})
 
+const productQueryKey = computed(() => ['store-supplier-products', activeSupplierId.value, productKeyword.value] as const)
 const { data: productsData, isLoading: productsLoading } = useQuery({
   queryKey: productQueryKey,
   queryFn: () =>
     listPurchasableProducts({
       keyword: productKeyword.value || undefined,
-      ...(activeSupplierId.value === '' ? {} : { supplier_id: activeSupplierId.value as number }),
+      supplier_id: activeSupplierId.value as number,
     }),
+  enabled: computed(() => activeSupplierId.value !== ''),
 })
 
-const productRows = computed(() => productsData.value ?? [])
+const categoryRows = computed(() => categoriesData.value ?? [])
+const productRowsRaw = computed(() => productsData.value ?? [])
+
+const productTreeRows = computed<TreeRow[]>(() => {
+  if (activeSupplierId.value === '') return []
+  const grouped = new Map<number, TreeRow>()
+  for (const c of categoryRows.value) {
+    grouped.set(c.id, {
+      id: `cat-${c.id}`,
+      isCategory: true,
+      categoryId: c.id,
+      name: c.name,
+      children: [],
+    })
+  }
+  for (const p of productRowsRaw.value) {
+    const cid = p.category_id ?? 0
+    if (!grouped.has(cid)) {
+      grouped.set(cid, {
+        id: `cat-${cid}`,
+        isCategory: true,
+        categoryId: cid,
+        name: p.category?.name ?? '未分类',
+        children: [],
+      })
+    }
+    grouped.get(cid)!.children!.push({
+      id: p.id,
+      isCategory: false,
+      productId: p.id,
+      categoryId: cid,
+      name: p.name,
+      sale_price: p.bottle_price ?? p.price ?? 0,
+      raw: p,
+    })
+  }
+  return Array.from(grouped.values())
+})
 
 function reloadProducts(): void {
-  activeSupplierId.value = ''
   void qc.invalidateQueries({ queryKey: ['store-supplier-products'] })
-  void qc.invalidateQueries({ queryKey: ['store-suppliers', 'bound'] })
+  void qc.invalidateQueries({ queryKey: ['supplier-categories'] })
 }
 
-const productColumns: BaseTableColumn[] = [
-  { key: 'id', label: 'ID', prop: 'id', width: '72px' },
-  { key: 'name', label: '商品名称', prop: 'name', minWidth: '140px', ellipsis: true },
-  { key: 'supplier_name', label: '供应商', minWidth: '120px', ellipsis: true },
-  { key: 'category', label: '分类', width: '100px', ellipsis: true },
-  { key: 'spec_pair', label: '规格', minWidth: '130px', ellipsis: true },
-  { key: 'unit', label: '单位', prop: 'unit', width: '64px' },
-  { key: 'bottle_price', label: '单价(瓶)', prop: 'bottle_price', width: '88px' },
-  { key: 'case_price', label: '单价(箱)', prop: 'case_price', width: '88px' },
-  { key: 'bottles_per_case', label: '每箱瓶数', prop: 'bottles_per_case', width: '92px' },
+const productTreeColumns: BaseTableColumn[] = [
+  { key: 'name', label: '商品/分类', minWidth: '220px', ellipsis: true },
+  { key: 'sale_price', label: '售价', width: '100px' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
-
-function supplierCell(p: StorePurchasableProduct): string {
-  return p.supplier?.supplier_name ?? '-'
-}
 
 const dlg = ref(false)
 const saving = ref(false)
@@ -374,7 +492,6 @@ async function save(): Promise<void> {
     toast.success('已保存')
     dlg.value = false
     await qc.invalidateQueries({ queryKey: ['suppliers'] })
-    await qc.invalidateQueries({ queryKey: ['store-suppliers', 'bound'] })
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '保存失败')
   } finally {
@@ -389,33 +506,63 @@ async function onDelete(row: Supplier): Promise<void> {
     await deleteSupplier(row.id)
     toast.success('已删除')
     await qc.invalidateQueries({ queryKey: ['suppliers'] })
-    await qc.invalidateQueries({ queryKey: ['store-suppliers', 'bound'] })
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
 
-const supplierSelectOptions = computed<BaseSelectOption[]>(() =>
-  (boundRows.value ?? []).map((b) => ({
-    label: b.supplier?.supplier_name ?? `供应商 #${b.supplier_id}`,
-    value: b.supplier_id,
+const categoryDlg = ref(false)
+const categorySaving = ref(false)
+const categoryForm = reactive({ name: '', sort: 1 })
+
+function openCategoryCreate(): void {
+  if (activeSupplierId.value === '') {
+    toast.warning('请先在左侧选择供应商')
+    return
+  }
+  categoryForm.name = ''
+  categoryForm.sort = 1
+  categoryDlg.value = true
+}
+
+async function submitCategory(): Promise<void> {
+  if (activeSupplierId.value === '' || !categoryForm.name.trim()) {
+    toast.warning('请先选择供应商并填写分类名称')
+    return
+  }
+  categorySaving.value = true
+  try {
+    await createSupplierCategory({
+      supplier_id: activeSupplierId.value as number,
+      name: categoryForm.name.trim(),
+      sort: categoryForm.sort,
+    })
+    toast.success('分类已创建')
+    categoryDlg.value = false
+    await qc.invalidateQueries({ queryKey: ['supplier-categories'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '创建分类失败')
+  } finally {
+    categorySaving.value = false
+  }
+}
+
+const unitDict = ref<DictData[]>([])
+const unitOptions = computed<BaseSelectOption[]>(() => unitDict.value.map((d) => ({ label: d.label, value: d.value })))
+const categoryOptions = computed<BaseSelectOption[]>(() =>
+  categoryRows.value.map((c) => ({
+    label: c.name,
+    value: c.id,
   })),
 )
 
 const productDlg = ref(false)
 const productSaving = ref(false)
 const productForm = reactive({
-  supplier_id: undefined as number | undefined,
   category_id: undefined as number | undefined,
   name: '',
   spec: '',
 })
-
-const categoryList = ref<SupplierCategory[]>([])
-const categoryOptions = computed<BaseSelectOption[]>(() => categoryList.value.map((c) => ({ label: c.name, value: c.id })))
-const unitDict = ref<DictData[]>([])
-const unitOptions = computed<BaseSelectOption[]>(() => unitDict.value.map((d) => ({ label: d.label, value: d.value })))
-
 const enableLargeSpec = ref(true)
 const smallSpec = reactive({
   unit_code: '',
@@ -432,9 +579,8 @@ const largeSpec = reactive({
   sale_price: 0,
 })
 
-function resetProductForm(): void {
-  productForm.supplier_id = activeSupplierId.value === '' ? undefined : (activeSupplierId.value as number)
-  productForm.category_id = undefined
+function resetProductForm(categoryId?: number): void {
+  productForm.category_id = categoryId
   productForm.name = ''
   productForm.spec = ''
   enableLargeSpec.value = true
@@ -450,17 +596,15 @@ function resetProductForm(): void {
   largeSpec.sale_price = 0
 }
 
-async function openProductCreate(): Promise<void> {
-  resetProductForm()
+async function openProductCreate(categoryId?: number): Promise<void> {
+  if (activeSupplierId.value === '') {
+    toast.warning('请先在左侧选择供应商')
+    return
+  }
+  resetProductForm(categoryId)
   try {
     if (!unitDict.value.length) {
       unitDict.value = await listDictDataByTypeCode('product_unit')
-    }
-    if (productForm.supplier_id) {
-      categoryList.value = await listSupplierCategories(productForm.supplier_id)
-      productForm.category_id = categoryList.value[0]?.id
-    } else {
-      categoryList.value = []
     }
     productDlg.value = true
   } catch (e: unknown) {
@@ -468,33 +612,13 @@ async function openProductCreate(): Promise<void> {
   }
 }
 
-watch(
-  () => productForm.supplier_id,
-  async (sid) => {
-    if (!sid) {
-      categoryList.value = []
-      productForm.category_id = undefined
-      return
-    }
-    try {
-      categoryList.value = await listSupplierCategories(sid)
-      if (!categoryList.value.find((c) => c.id === productForm.category_id)) {
-        productForm.category_id = categoryList.value[0]?.id
-      }
-    } catch {
-      categoryList.value = []
-      productForm.category_id = undefined
-    }
-  },
-)
-
 function unitNameByCode(code: string): string {
   return unitDict.value.find((d) => String(d.value) === code)?.label ?? code
 }
 
 async function submitCreateProduct(): Promise<void> {
-  if (!productForm.supplier_id || !productForm.category_id || !productForm.name.trim()) {
-    toast.warning('请完整填写供应商 / 分类 / 商品名称')
+  if (activeSupplierId.value === '' || !productForm.category_id || !productForm.name.trim()) {
+    toast.warning('请先选择供应商并填写分类/商品名称')
     return
   }
   if (!smallSpec.unit_code) {
@@ -509,7 +633,7 @@ async function submitCreateProduct(): Promise<void> {
   productSaving.value = true
   try {
     await createSupplierProduct({
-      supplier_id: productForm.supplier_id,
+      supplier_id: activeSupplierId.value as number,
       category_id: productForm.category_id,
       name: productForm.name.trim(),
       unit: unitNameByCode(smallSpec.unit_code),
@@ -520,17 +644,12 @@ async function submitCreateProduct(): Promise<void> {
       remark: '',
     })
 
-    const search = await listSupplierProducts({
-      supplier_id: productForm.supplier_id,
-      category_id: productForm.category_id,
+    const listRes = await listPurchasableProducts({
+      supplier_id: activeSupplierId.value as number,
       keyword: productForm.name.trim(),
-      page: 1,
-      page_size: 20,
     })
     const created =
-      search.list.find((p) => p.name === productForm.name.trim()) ??
-      search.list.find((p) => p.supplier_id === productForm.supplier_id) ??
-      search.list[0]
+      listRes.find((p) => p.name === productForm.name.trim() && p.category_id === productForm.category_id) ?? listRes[0]
     if (!created?.id) throw new Error('商品已创建，但未获取到商品ID')
 
     const units = [
@@ -555,10 +674,7 @@ async function submitCreateProduct(): Promise<void> {
         is_enabled: true,
       })
     }
-    await batchUpsertProductUnitSpecs({
-      product_id: created.id,
-      units,
-    })
+    await batchUpsertProductUnitSpecs({ product_id: created.id, units })
 
     toast.success('商品与规格配置已保存')
     productDlg.value = false
@@ -567,6 +683,87 @@ async function submitCreateProduct(): Promise<void> {
     toast.error(e instanceof Error ? e.message : '保存失败')
   } finally {
     productSaving.value = false
+  }
+}
+
+const productDrawer = ref(false)
+const productEditSaving = ref(false)
+const productEditingId = ref(0)
+const productEdit = reactive({
+  name: '',
+  spec: '',
+  bottle_price: 0,
+  case_price: 0,
+  bottles_per_case: 1,
+  unit: '',
+})
+const editUnits = ref<
+  Array<{
+    unit_code: string
+    factor_to_base: number
+    precision: number
+    cost_price: number
+    sale_price: number
+  }>
+>([])
+
+async function openProductDrawer(productId: number): Promise<void> {
+  try {
+    if (!unitDict.value.length) unitDict.value = await listDictDataByTypeCode('product_unit')
+    const p = await getSupplierProduct(productId)
+    const units = await listProductUnitSpecs(productId)
+    productEditingId.value = productId
+    productEdit.name = p.name ?? ''
+    productEdit.spec = p.spec ?? ''
+    productEdit.bottle_price = Number(p.bottle_price ?? 0)
+    productEdit.case_price = Number(p.case_price ?? 0)
+    productEdit.bottles_per_case = Number(p.bottles_per_case ?? 1)
+    productEdit.unit = p.unit ?? ''
+    editUnits.value =
+      units.map((u: ProductUnitSpec) => ({
+        unit_code: u.unit_code,
+        factor_to_base: Number(u.factor_to_base),
+        precision: Number(u.precision),
+        cost_price: Number(u.cost_price),
+        sale_price: Number(u.sale_price),
+      })) ?? []
+    productDrawer.value = true
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载商品详情失败')
+  }
+}
+
+async function submitEditProduct(): Promise<void> {
+  if (!productEditingId.value) return
+  productEditSaving.value = true
+  try {
+    await updateSupplierProduct(productEditingId.value, {
+      name: productEdit.name.trim(),
+      spec: productEdit.spec.trim(),
+      bottle_price: productEdit.bottle_price,
+      case_price: productEdit.case_price,
+      bottles_per_case: productEdit.bottles_per_case,
+      unit: productEdit.unit.trim(),
+    })
+    await batchUpsertProductUnitSpecs({
+      product_id: productEditingId.value,
+      units: editUnits.value.map((u) => ({
+        unit_code: u.unit_code,
+        unit_name: unitNameByCode(u.unit_code),
+        factor_to_base: u.factor_to_base,
+        precision: u.precision,
+        cost_price: u.cost_price,
+        sale_price: u.sale_price,
+        is_enabled: true,
+      })),
+    })
+    toast.success('商品已更新')
+    productDrawer.value = false
+    await qc.invalidateQueries({ queryKey: ['store-supplier-products'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '更新失败')
+  } finally {
+    productEditSaving.value = false
   }
 }
 </script>

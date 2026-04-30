@@ -12,12 +12,12 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <BaseCard>
-        <template #header><span class="font-semibold text-slate-800">区间内金额合计</span></template>
+        <template #header><span class="font-semibold text-slate-800">总销售额</span></template>
         <p class="text-2xl font-semibold text-indigo-700 m-0">{{ statsAmount }}</p>
       </BaseCard>
       <BaseCard>
-        <template #header><span class="font-semibold text-slate-800">记账笔数</span></template>
-        <p class="text-2xl font-semibold text-slate-800 m-0">{{ statsCount }}</p>
+        <template #header><span class="font-semibold text-slate-800">净利润</span></template>
+        <p class="text-2xl font-semibold text-emerald-700 m-0">{{ statsNetIncome }}</p>
       </BaseCard>
     </div>
 
@@ -28,6 +28,7 @@
       <template #cell-actions="{ row }">
         <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton v-permission="'store:account:list'" variant="link" size="sm" @click="openView(row as StoreAccount)">详情</BaseButton>
+          <BaseButton v-permission="'store:account:edit'" variant="link" size="sm" @click="openConsumableDlg(row as StoreAccount)">绑定消耗品</BaseButton>
           <BaseButton v-permission="'store:account:edit'" variant="link" size="sm" @click="openEdit(row as StoreAccount)">编辑</BaseButton>
           <BaseButton v-permission="'store:account:delete'" variant="link" size="sm" @click="onDelete(row as StoreAccount)">删除</BaseButton>
         </div>
@@ -44,39 +45,44 @@
       />
     </div>
 
-    <BaseDialog v-model="createDlg" title="快速记账（单商品）" max-width="min(480px, 96vw)">
+    <BaseDialog v-model="createDlg" title="快速记账（多商品）" max-width="min(720px, 96vw)">
       <div class="space-y-4">
         <BaseFormItem label="渠道" required>
-          <BaseInput v-model="cForm.channel" placeholder="字典 sales_channel 等" />
+          <BaseSelect v-model="cForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
         </BaseFormItem>
-        <BaseFormItem label="记账日期">
-          <BaseInput v-model="cForm.account_date" type="date" />
-        </BaseFormItem>
-        <BaseFormItem label="订单号">
-          <BaseInput v-model="cForm.order_no" />
-        </BaseFormItem>
-        <BaseFormItem label="商品" required>
-          <a-cascader
-            v-model="cForm.product_path"
-            :options="productCascaderOptions"
-            placeholder="先选分类，再选商品"
-            allow-clear
-            :path-mode="true"
-            :check-strictly="false"
-            @change="onCreateProductChange"
-          />
-        </BaseFormItem>
-        <BaseFormItem label="数量" required>
-          <BaseNumberInput v-model="cForm.quantity" :min="0.01" :step="0.01" />
-        </BaseFormItem>
-        <BaseFormItem label="单位">
-          <BaseSelect
-            v-model="cForm.unit"
-            :options="createUnitOptions"
-            :disabled="createUnitOptions.length <= 1"
-            placeholder="单位"
-          />
-        </BaseFormItem>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm font-medium text-slate-700">商品明细</span>
+          <BaseButton variant="secondary" size="sm" @click="addCreateLine">加一行</BaseButton>
+        </div>
+        <div
+          v-for="(line, idx) in cForm.lines"
+          :key="idx"
+          class="rounded border border-[var(--color-border-2)] p-3 flex flex-wrap items-end gap-2"
+        >
+          <BaseFormItem label="商品" required class="min-w-[220px] flex-1">
+            <a-cascader
+              v-model="line.product_path"
+              :options="productCascaderOptions"
+              placeholder="先选分类，再选商品"
+              allow-clear
+              :path-mode="true"
+              :check-strictly="false"
+              @change="onCreateProductChange(idx)"
+            />
+          </BaseFormItem>
+          <BaseFormItem label="数量" required class="w-28">
+            <BaseNumberInput v-model="line.quantity" :min="0.01" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="单位" class="w-28">
+            <BaseSelect
+              v-model="line.unit"
+              :options="lineUnitOptions(line)"
+              :disabled="lineUnitOptions(line).length <= 1"
+              placeholder="单位"
+            />
+          </BaseFormItem>
+          <BaseButton variant="ghost" size="sm" @click="removeCreateLine(idx)">移除</BaseButton>
+        </div>
         <BaseFormItem label="备注">
           <BaseTextarea v-model="cForm.remark" :rows="2" />
         </BaseFormItem>
@@ -90,10 +96,7 @@
     <BaseDialog v-model="editDlg" title="编辑记账" max-width="min(440px, 96vw)">
       <div class="space-y-4">
         <BaseFormItem label="渠道">
-          <BaseInput v-model="eForm.channel" />
-        </BaseFormItem>
-        <BaseFormItem label="订单号">
-          <BaseInput v-model="eForm.order_no" />
+          <BaseSelect v-model="eForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
         </BaseFormItem>
         <BaseFormItem label="标签编码">
           <BaseInput v-model="eForm.tag_code" />
@@ -111,10 +114,129 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="viewDlg" title="记账详情" max-width="min(560px, 96vw)">
-      <pre v-if="viewJson" class="text-xs overflow-auto max-h-[60vh] m-0 p-3 rounded bg-[var(--color-fill-2)]">{{ viewJson }}</pre>
+    <BaseDialog v-model="viewDlg" title="记账详情" max-width="min(720px, 96vw)">
+      <div v-if="viewAccount" class="max-h-[70vh] overflow-y-auto space-y-4 pr-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div><span class="text-[var(--color-text-3)]">单号</span>：{{ viewAccount.account_no }}</div>
+          <div><span class="text-[var(--color-text-3)]">记账日期</span>：{{ formatDate(viewAccount.account_date) }}</div>
+          <div><span class="text-[var(--color-text-3)]">渠道</span>：{{ viewAccount.channel || '-' }}</div>
+          <div><span class="text-[var(--color-text-3)]">订单号</span>：{{ viewAccount.order_no || '-' }}</div>
+          <div><span class="text-[var(--color-text-3)]">总金额</span>：{{ formatMoney(viewAccount.total_amount) }}</div>
+          <div><span class="text-[var(--color-text-3)]">其他支出</span>：{{ formatMoney(viewAccount.other_expense_amount) }}</div>
+          <div><span class="text-[var(--color-text-3)]">净收入</span>：{{ formatMoney(viewAccount.net_income_amount) }}</div>
+          <div><span class="text-[var(--color-text-3)]">明细条数</span>：{{ viewAccount.item_count ?? (viewAccount.items?.length ?? 0) }}</div>
+          <div class="sm:col-span-2">
+            <span class="text-[var(--color-text-3)]">标签</span>：{{ viewAccount.tag_name || viewAccount.tag_code || '-' }}
+          </div>
+          <div class="sm:col-span-2"><span class="text-[var(--color-text-3)]">备注</span>：{{ viewAccount.remark || '-' }}</div>
+          <div class="sm:col-span-2 text-xs text-[var(--color-text-3)]">
+            创建时间：{{ viewAccount.created_at ? formatDateTime(viewAccount.created_at) : '-' }}
+          </div>
+        </div>
+
+        <div>
+          <p class="m-0 mb-2 text-sm font-medium text-slate-800">商品明细</p>
+          <div v-if="(viewAccount.items?.length ?? 0) === 0" class="text-sm text-[var(--color-text-3)]">暂无商品明细</div>
+          <div v-else class="overflow-x-auto rounded border border-[var(--color-border-2)]">
+            <table class="w-full min-w-[560px] border-collapse text-sm">
+              <thead>
+                <tr class="bg-[var(--color-fill-2)]">
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-left font-medium">商品</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-left w-24">规格</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-right w-20">数量</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-center w-16">单位</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-right w-24">单价</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-right w-24">小计</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-left min-w-[80px]">备注</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="it in viewAccount.items" :key="it.id">
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ it.product_name || `商品#${it.product_id}` }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ it.spec || '-' }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ it.quantity }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-center">{{ it.unit || '-' }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(it.price) }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(it.amount) }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ it.remark || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="(viewAccount.consumables?.length ?? 0) > 0">
+          <p class="m-0 mb-2 text-sm font-medium text-slate-800">消耗品</p>
+          <div class="overflow-x-auto rounded border border-[var(--color-border-2)]">
+            <table class="w-full min-w-[480px] border-collapse text-sm">
+              <thead>
+                <tr class="bg-[var(--color-fill-2)]">
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-left font-medium">商品</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-right w-20">数量</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-center w-16">单位</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-right w-24">单价</th>
+                  <th class="border-b border-[var(--color-border-2)] px-2 py-2 text-right w-24">小计</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in viewAccount.consumables" :key="c.id">
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ c.product_name || `商品#${c.product_id}` }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ c.quantity }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-center">{{ c.unit || '-' }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(c.price) }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(c.amount) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p v-else class="m-0 text-sm text-[var(--color-text-3)]">加载中…</p>
       <template #footer>
         <BaseButton variant="ghost" @click="viewDlg = false">关闭</BaseButton>
+      </template>
+    </BaseDialog>
+
+    <BaseDialog v-model="consumableDlg" title="绑定消耗品" max-width="min(720px, 96vw)">
+      <div class="space-y-4">
+        <p class="m-0 text-sm text-slate-600">记账单：{{ consumableTarget?.account_no }}（绑定后会计入成本并扣减净利润）</p>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm font-medium text-slate-700">消耗品明细</span>
+          <BaseButton variant="secondary" size="sm" @click="addConsumableLine">加一行</BaseButton>
+        </div>
+        <div
+          v-for="(line, idx) in consumableLines"
+          :key="idx"
+          class="rounded border border-[var(--color-border-2)] p-3 flex flex-wrap items-end gap-2"
+        >
+          <BaseFormItem label="消耗品" required class="min-w-[220px] flex-1">
+            <a-cascader
+              v-model="line.product_path"
+              :options="productCascaderOptions"
+              placeholder="先选分类，再选商品"
+              allow-clear
+              :path-mode="true"
+              :check-strictly="false"
+              @change="onConsumableProductChange(idx)"
+            />
+          </BaseFormItem>
+          <BaseFormItem label="数量" required class="w-28">
+            <BaseNumberInput v-model="line.quantity" :min="0.01" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="单位" class="w-28">
+            <BaseSelect
+              v-model="line.unit"
+              :options="lineUnitOptions(line)"
+              :disabled="lineUnitOptions(line).length <= 1"
+              placeholder="单位"
+            />
+          </BaseFormItem>
+          <BaseButton variant="ghost" size="sm" @click="removeConsumableLine(idx)">移除</BaseButton>
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="consumableDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="consumableSaving" @click="submitConsumables">保存消耗品</BaseButton>
       </template>
     </BaseDialog>
   </div>
@@ -137,6 +259,7 @@ import {
 } from '@/components/base'
 import type { BaseTableColumn } from '@/components/base/types'
 import {
+  bindStoreAccountConsumables,
   createStoreAccount,
   deleteStoreAccount,
   getStoreAccount,
@@ -168,9 +291,9 @@ const r = monthRange()
 const rangeStart = ref(r.start)
 const rangeEnd = ref(r.end)
 
-const stats = ref<{ total_amount?: number; count?: number }>({})
+const stats = ref<{ total_amount?: number; net_income_amount?: number; count?: number }>({})
 const statsAmount = computed(() => (stats.value.total_amount ?? 0).toFixed(2))
-const statsCount = computed(() => String(stats.value.count ?? 0))
+const statsNetIncome = computed(() => (stats.value.net_income_amount ?? 0).toFixed(2))
 
 async function loadStats(): Promise<void> {
   try {
@@ -255,6 +378,11 @@ const { data: unitData } = useQuery({
   queryFn: () => listDictDataByTypeCode('product_unit'),
 })
 const unitDict = computed(() => unitData.value ?? ([] as DictData[]))
+const { data: channelData } = useQuery({
+  queryKey: ['dict-data', 'sales_channel'],
+  queryFn: () => listDictDataByTypeCode('sales_channel'),
+})
+const channelOptions = computed(() => (channelData.value ?? []).map((d) => ({ label: d.label, value: d.value })))
 
 const productCascaderOptions = computed(() => {
   const grouped = new Map<string, { id: number; name: string }[]>()
@@ -299,7 +427,8 @@ const columns: BaseTableColumn[] = [
   { key: 'account_no', label: '记账编号', prop: 'account_no', minWidth: '140px', ellipsis: true },
   { key: 'channel', label: '渠道', prop: 'channel', width: '100px' },
   { key: 'order_no', label: '订单号', prop: 'order_no', minWidth: '120px', ellipsis: true },
-  { key: 'total_amount', label: '金额', prop: 'total_amount', width: '96px' },
+  { key: 'total_amount', label: '销售额', prop: 'total_amount', width: '96px' },
+  { key: 'net_income_amount', label: '净利润', prop: 'net_income_amount', width: '96px' },
   { key: 'account_date', label: '日期', width: '120px' },
   { key: 'actions', label: '操作', width: '220px', align: 'right' },
 ]
@@ -311,26 +440,30 @@ function formatDate(v: string): string {
 
 const createDlg = ref(false)
 const saving = ref(false)
+interface AccountLine {
+  product_path: Array<string | number> | string | number | undefined
+  quantity: number
+  unit: string
+}
 const cForm = reactive({
   channel: '',
-  account_date: '',
-  order_no: '',
-  product_path: [] as Array<string | number>,
-  quantity: 1,
-  unit: '',
+  lines: [] as AccountLine[],
   remark: '',
 })
 
 function openCreate(): void {
-  const t = new Date()
   cForm.channel = ''
-  cForm.account_date = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
-  cForm.order_no = ''
-  cForm.product_path = []
-  cForm.quantity = 1
-  cForm.unit = ''
+  cForm.lines = [makeAccountLine()]
   cForm.remark = ''
   createDlg.value = true
+}
+
+function makeAccountLine(): AccountLine {
+  return {
+    product_path: [],
+    quantity: 1,
+    unit: '',
+  }
 }
 
 function getProductId(path: Array<string | number> | string | number | undefined): number | null {
@@ -346,8 +479,8 @@ function getProductId(path: Array<string | number> | string | number | undefined
   return null
 }
 
-const createUnitOptions = computed(() => {
-  const pid = getProductId(cForm.product_path)
+function lineUnitOptions(line: AccountLine): Array<{ label: string; value: string | number }> {
+  const pid = getProductId(line.product_path)
   if (!pid) return []
   const specs = specsByProduct.value.get(pid) ?? []
   if (specs.length > 0) {
@@ -359,29 +492,47 @@ const createUnitOptions = computed(() => {
   const product = productById.value.get(pid)
   const defaultUnit = product?.unit || unitDict.value[0]?.value || '件'
   return [{ label: defaultUnit, value: defaultUnit }]
-})
+}
 
-function onCreateProductChange(): void {
-  const options = createUnitOptions.value
-  cForm.unit = String(options[0]?.value || '')
+function onCreateProductChange(idx: number): void {
+  const line = cForm.lines[idx]
+  if (!line) return
+  const options = lineUnitOptions(line)
+  line.unit = String(options[0]?.value || '')
+}
+
+function addCreateLine(): void {
+  cForm.lines.push(makeAccountLine())
+}
+
+function removeCreateLine(idx: number): void {
+  cForm.lines = cForm.lines.filter((_, i) => i !== idx)
+  if (!cForm.lines.length) cForm.lines.push(makeAccountLine())
 }
 
 async function submitCreate(): Promise<void> {
   if (!cForm.channel.trim()) {
-    toast.warning('请填写渠道')
+    toast.warning('请选择渠道')
     return
   }
-  const productId = getProductId(cForm.product_path)
-  if (!productId) {
-    toast.warning('请选择商品')
-    return
-  }
-  if (cForm.quantity <= 0) {
-    toast.warning('数量必须大于0')
-    return
-  }
-  if (!cForm.unit.trim()) {
-    toast.warning('请选择单位')
+  const items = cForm.lines
+    .map((line) => ({
+      product_id: getProductId(line.product_path),
+      quantity: line.quantity,
+      unit: line.unit.trim(),
+    }))
+    .filter((line) => line.product_id && line.quantity > 0 && line.unit)
+    .map((line) => ({
+      product_id: line.product_id as number,
+      quantity: line.quantity,
+      unit: line.unit,
+      spec: '',
+      price: 0,
+      amount: 0,
+      remark: '',
+    }))
+  if (!items.length) {
+    toast.warning('请至少选择一条有效商品明细')
     return
   }
   saving.value = true
@@ -389,21 +540,9 @@ async function submitCreate(): Promise<void> {
     await createStoreAccount({
       store_id: tenantStoreId.value,
       channel: cForm.channel.trim(),
-      order_no: cForm.order_no.trim(),
       remark: cForm.remark.trim(),
-      account_date: cForm.account_date || undefined,
       other_expense_amount: 0,
-      items: [
-        {
-          product_id: productId,
-          quantity: cForm.quantity,
-          unit: cForm.unit.trim(),
-          spec: '',
-          price: 0,
-          amount: 0,
-          remark: '',
-        },
-      ],
+      items,
     })
     toast.success('已保存')
     createDlg.value = false
@@ -419,7 +558,6 @@ const editDlg = ref(false)
 const editId = ref(0)
 const eForm = reactive({
   channel: '',
-  order_no: '',
   tag_code: '',
   tag_name: '',
   remark: '',
@@ -428,7 +566,6 @@ const eForm = reactive({
 function openEdit(row: StoreAccount): void {
   editId.value = row.id
   eForm.channel = row.channel ?? ''
-  eForm.order_no = row.order_no ?? ''
   eForm.tag_code = row.tag_code ?? ''
   eForm.tag_name = row.tag_name ?? ''
   eForm.remark = row.remark ?? ''
@@ -440,7 +577,6 @@ async function submitEdit(): Promise<void> {
   try {
     await updateStoreAccount(editId.value, {
       channel: eForm.channel.trim(),
-      order_no: eForm.order_no.trim(),
       tag_code: eForm.tag_code.trim(),
       tag_name: eForm.tag_name.trim(),
       remark: eForm.remark.trim(),
@@ -456,14 +592,34 @@ async function submitEdit(): Promise<void> {
 }
 
 const viewDlg = ref(false)
-const viewJson = ref('')
+const viewAccount = ref<StoreAccount | null>(null)
+const consumableDlg = ref(false)
+const consumableSaving = ref(false)
+const consumableTarget = ref<StoreAccount | null>(null)
+const consumableLines = ref<AccountLine[]>([])
+
+function formatMoney(v: number | string | undefined | null): string {
+  const n = Number(v ?? 0)
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+
+function formatDateTime(v: string): string {
+  const s = String(v || '').trim()
+  if (!s) return '-'
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return s.slice(0, 19).replace('T', ' ')
+  const pad = (x: number) => String(x).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
 
 async function openView(row: StoreAccount): Promise<void> {
+  viewAccount.value = null
+  viewDlg.value = true
   try {
     const full = await getStoreAccount(row.id)
-    viewJson.value = JSON.stringify(full, null, 2)
-    viewDlg.value = true
+    viewAccount.value = full
   } catch (e: unknown) {
+    viewDlg.value = false
     toast.error(e instanceof Error ? e.message : '加载失败')
   }
 }
@@ -477,6 +633,82 @@ async function onDelete(row: StoreAccount): Promise<void> {
     await reloadAll()
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
+  }
+}
+
+function makeConsumableLine(): AccountLine {
+  return { product_path: [], quantity: 1, unit: '' }
+}
+
+function addConsumableLine(): void {
+  consumableLines.value.push(makeConsumableLine())
+}
+
+function removeConsumableLine(idx: number): void {
+  consumableLines.value = consumableLines.value.filter((_, i) => i !== idx)
+  if (!consumableLines.value.length) consumableLines.value.push(makeConsumableLine())
+}
+
+function onConsumableProductChange(idx: number): void {
+  const line = consumableLines.value[idx]
+  if (!line) return
+  const options = lineUnitOptions(line)
+  line.unit = String(options[0]?.value || '')
+}
+
+async function openConsumableDlg(row: StoreAccount): Promise<void> {
+  consumableTarget.value = row
+  consumableLines.value = [makeConsumableLine()]
+  try {
+    const full = await getStoreAccount(row.id)
+    if (full.consumables?.length) {
+      consumableLines.value = full.consumables.map((c) => ({
+        product_path: [c.product_id],
+        quantity: Number(c.quantity || 1),
+        unit: c.unit || '',
+      }))
+    }
+    consumableDlg.value = true
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载消耗品失败')
+  }
+}
+
+async function submitConsumables(): Promise<void> {
+  if (!consumableTarget.value) return
+  const consumables = consumableLines.value
+    .map((line) => ({
+      product_id: getProductId(line.product_path),
+      quantity: line.quantity,
+      unit: line.unit.trim(),
+      price: 0,
+      amount: 0,
+      remark: '',
+    }))
+    .filter((x) => x.product_id && x.quantity > 0 && x.unit)
+    .map((x) => ({
+      product_id: x.product_id as number,
+      quantity: x.quantity,
+      unit: x.unit,
+      price: x.price,
+      amount: x.amount,
+      remark: x.remark,
+    }))
+  if (!consumables.length) {
+    toast.warning('请至少选择一条有效消耗品明细')
+    return
+  }
+  consumableSaving.value = true
+  try {
+    await bindStoreAccountConsumables(consumableTarget.value.id, { consumables })
+    toast.success('消耗品已绑定')
+    consumableDlg.value = false
+    await qc.invalidateQueries({ queryKey: ['store-accounts'] })
+    await loadStats()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    consumableSaving.value = false
   }
 }
 </script>

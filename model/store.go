@@ -13,8 +13,11 @@ type Store struct {
 	Status        int       `json:"status" gorm:"not null;default:1"`                                     // 状态：1=正常，2=停业
 	ContactPerson string    `json:"contact_person" gorm:"type:varchar(50)"`                               // 联系人
 	Remark        string    `json:"remark" gorm:"type:text"`                                              // 备注
+	ThirdPartyAccountID *uint `json:"third_party_account_id,omitempty" gorm:"index;comment:绑定第三方账号池ID"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+
+	ThirdPartyAccount *ThirdPartyAccount `json:"third_party_account,omitempty" gorm:"foreignKey:ThirdPartyAccountID"`
 }
 
 // CreateStoreReq 创建门店请求
@@ -36,4 +39,9 @@ type UpdateStoreReq struct {
 	Status        *int    `json:"status,omitempty"`         // 状态：1=正常，2=停业
 	ContactPerson *string `json:"contact_person,omitempty"` // 联系人
 	Remark        *string `json:"remark,omitempty"`         // 备注
+}
+
+// BindStoreThirdPartyAccountReq 绑定门店第三方账号（传 null 表示解绑）
+type BindStoreThirdPartyAccountReq struct {
+	ThirdPartyAccountID *uint `json:"third_party_account_id"`
 }

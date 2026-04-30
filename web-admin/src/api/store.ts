@@ -28,3 +28,9 @@ export async function updateStore(id: number, body: Record<string, unknown>): Pr
 export async function deleteStore(id: number): Promise<void> {
   await http.delete<import('./types').ApiEnvelope<unknown>>(`/stores/${id}`)
 }
+
+export async function bindStoreThirdPartyAccount(id: number, thirdPartyAccountId: number | null): Promise<void> {
+  await http.put<import('./types').ApiEnvelope<unknown>>(`/stores/${id}/third-party-account`, {
+    third_party_account_id: thirdPartyAccountId,
+  })
+}

@@ -100,3 +100,54 @@ body {
   opacity: 0;
   transform: translateX(8px);
 }
+
+/* 首屏启动遮罩（在 main.ts 挂载并完成初始路由后淡出移除） */
+.app-boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #f8fafc 0%, #eef2ff 45%, #f1f5f9 100%);
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+.app-boot-splash--exit {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.app-boot-splash__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(148, 163, 184, 0.2);
+}
+.app-boot-splash__logo {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #4338ca;
+}
+.app-boot-splash__spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(67, 56, 202, 0.15);
+  border-top-color: #4338ca;
+  animation: app-boot-splash-spin 0.72s linear infinite;
+}
+.app-boot-splash__hint {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+@keyframes app-boot-splash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

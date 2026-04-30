@@ -76,6 +76,7 @@
             </template>
             <template v-else>
               <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看</BaseButton>
+              <BaseButton v-permission="'supplier:delete'" variant="link" size="sm" @click="onDeleteProduct((row as TreeRow).raw!)">删除</BaseButton>
             </template>
           </div>
         </template>
@@ -271,13 +272,14 @@ import {
 } from '@/components/base'
 import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
 import { createSupplier, deleteSupplier, listSuppliers, updateSupplier } from '@/api/supplier'
-import { listPurchasableProducts } from '@/api/storeSupplier'
 import {
   batchUpsertProductUnitSpecs,
   createSupplierCategory,
   createSupplierProduct,
+  deleteSupplierProduct,
   getSupplierProduct,
   listProductUnitSpecs,
+  listSupplierProducts,
   listSupplierCategories,
   updateSupplierProduct,
 } from '@/api/supplierProduct'
@@ -364,7 +366,7 @@ const productQueryKey = computed(() => ['store-supplier-products', activeSupplie
 const { data: productsData, isLoading: productsLoading } = useQuery({
   queryKey: productQueryKey,
   queryFn: () =>
-    listPurchasableProducts({
+    listSupplierProducts({
       keyword: productKeyword.value || undefined,
       supplier_id: activeSupplierId.value as number,
     }),
@@ -563,7 +565,7 @@ const productForm = reactive({
   name: '',
   spec: '',
 })
-const enableLargeSpec = ref(true)
+const enableLargeSpec = ref(false)
 const smallSpec = reactive({
   unit_code: '',
   factor_to_base: 1,
@@ -583,7 +585,7 @@ function resetProductForm(categoryId?: number): void {
   productForm.category_id = categoryId
   productForm.name = ''
   productForm.spec = ''
-  enableLargeSpec.value = true
+  enableLargeSpec.value = false
   smallSpec.unit_code = ''
   smallSpec.factor_to_base = 1
   smallSpec.precision = 0
@@ -595,6 +597,15 @@ function resetProductForm(categoryId?: number): void {
   largeSpec.cost_price = 0
   largeSpec.sale_price = 0
 }
+
+watch(enableLargeSpec, (enabled) => {
+  if (enabled) return
+  largeSpec.unit_code = ''
+  largeSpec.factor_to_base = 2
+  largeSpec.precision = 0
+  largeSpec.cost_price = 0
+  largeSpec.sale_price = 0
+})
 
 async function openProductCreate(categoryId?: number): Promise<void> {
   if (activeSupplierId.value === '') {
@@ -644,7 +655,7 @@ async function submitCreateProduct(): Promise<void> {
       remark: '',
     })
 
-    const listRes = await listPurchasableProducts({
+    const listRes = await listSupplierProducts({
       supplier_id: activeSupplierId.value as number,
       keyword: productForm.name.trim(),
     })
@@ -764,6 +775,18 @@ async function submitEditProduct(): Promise<void> {
     toast.error(e instanceof Error ? e.message : '更新失败')
   } finally {
     productEditSaving.value = false
+  }
+}
+
+async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
+  const ok = await confirmDialog({ message: `删除商品「${row.name}」？` })
+  if (!ok) return
+  try {
+    await deleteSupplierProduct(row.id)
+    toast.success('商品已删除')
+    await qc.invalidateQueries({ queryKey: ['store-supplier-products'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '删除商品失败')
   }
 }
 </script>

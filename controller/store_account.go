@@ -181,6 +181,33 @@ func (c *StoreAccountController) Delete(ctx *gin.Context) {
 	http.Success(ctx, nil)
 }
 
+// BindConsumables godoc
+// @Summary 绑定记账单消耗品
+// @Tags 门店记账
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "记账ID"
+// @Param body body model.BindStoreAccountConsumablesReq true "消耗品信息"
+// @Success 200 {object} http.Response
+// @Router /store-accounts/{id}/consumables [post]
+func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		http.ErrorApp(ctx, apicode.InvalidID)
+		return
+	}
+	var req model.BindStoreAccountConsumablesReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	if err := c.storeAccountService.BindConsumables(uint(id), &req); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
 // Stats godoc
 // @Summary 记账统计
 // @Tags 门店记账

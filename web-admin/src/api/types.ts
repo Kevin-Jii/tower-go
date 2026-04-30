@@ -54,6 +54,8 @@ export interface Store {
   business_hours?: string
   contact_person?: string
   remark?: string
+  third_party_account_id?: number | null
+  third_party_account?: ThirdPartyAccount
   status?: number
   created_at?: string
   updated_at?: string
@@ -130,6 +132,91 @@ export interface MessageTemplate {
   description?: string
   variables?: string
   is_enabled: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ThirdPartyAccount {
+  id: number
+  platform_name: string
+  name: string
+  login_name: string
+  phone?: string
+  password: string
+  application_key: string
+  login_type?: string
+  channel?: string
+  shop_id?: string
+  customer_id?: string
+  is_enabled: boolean
+  last_test_ok?: boolean
+  last_test_msg?: string
+  last_token?: string
+  token_valid_time?: number
+  last_test_at?: string
+  last_sync_at?: string
+  last_sync_msg?: string
+  last_sync_count?: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ThirdPartyOrder {
+  id: number
+  account_id: number
+  platform_name: string
+  order_no: string
+  place_time?: string
+  place_date?: string
+  order_trade_status?: string
+  status_name?: string
+  pay_amount?: number
+  total_amount?: number
+  total_item_num?: number
+  raw_json?: string
+  synced_at?: string
+  created_at?: string
+}
+
+export interface ThirdPartyRouteStore {
+  id: number
+  route_id: number
+  store_id: number
+  sort: number
+  store?: Store
+}
+
+export interface ThirdPartyRoute {
+  id: number
+  name: string
+  remark?: string
+  stores?: ThirdPartyRouteStore[]
+  created_at?: string
+  updated_at?: string
+}
+
+export interface RouteStoreQuantity {
+  store_id: number
+  store_name: string
+  quantity: number
+}
+
+export interface RouteImportedProductRow {
+  product_name: string
+  total_qty: number
+  store_qty: RouteStoreQuantity[]
+}
+
+export interface ThirdPartyLogisticsSheet {
+  id: number
+  route_id: number
+  sheet_date: string
+  start_date: string
+  end_date: string
+  headers: string[]
+  rows: number[][]
+  products: string[]
   created_at?: string
   updated_at?: string
 }
@@ -262,6 +349,18 @@ export interface StoreAccountItem {
   remark?: string
 }
 
+export interface StoreAccountConsumable {
+  id: number
+  account_id?: number
+  product_id: number
+  product_name?: string
+  quantity: number
+  unit?: string
+  price: number
+  amount: number
+  remark?: string
+}
+
 export interface StoreAccount {
   id: number
   account_no: string
@@ -278,6 +377,7 @@ export interface StoreAccount {
   account_date: string
   created_at?: string
   items?: StoreAccountItem[]
+  consumables?: StoreAccountConsumable[]
 }
 
 export interface MemberRow {
@@ -317,6 +417,7 @@ export interface DashboardStats {
 
 export interface StoreAccountStats {
   total_amount?: number
+  net_income_amount?: number
   count?: number
 }
 
@@ -358,10 +459,67 @@ export interface ChannelStatsItem {
   percent: number
 }
 
+export interface RadarMetricItem {
+  name: string
+  value: number
+}
+
 export interface HomeChartsStats {
   start_date?: string
   end_date?: string
   line?: SalesTrendItem[]
   pie?: ChannelStatsItem[]
+  radar?: RadarMetricItem[]
   overview?: BusinessOverviewStats
 }
+
+/** 钉钉机器人（列表/详情，与后端 model.DingTalkBot JSON 对齐） */
+export interface DingTalkBot {
+  id: number
+  name: string
+  bot_type: string
+  webhook?: string
+  secret?: string
+  client_id?: string
+  client_secret?: string
+  agent_id?: string
+  robot_code?: string
+  store_id?: number | null
+  store_code?: string
+  store_name?: string
+  is_enabled: boolean
+  msg_type?: string
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface CreateDingTalkBotReq {
+  name?: string
+  bot_type?: string
+  webhook?: string
+  secret?: string
+  client_id?: string
+  client_secret?: string
+  agent_id?: string
+  robot_code?: string
+  store_id?: number | null
+  is_enabled?: boolean
+  msg_type?: string
+  remark?: string
+}
+
+export type UpdateDingTalkBotReq = Partial<{
+  name: string
+  bot_type: string
+  webhook: string | null
+  secret: string | null
+  client_id: string | null
+  client_secret: string | null
+  agent_id: string | null
+  robot_code: string | null
+  store_id: number | null
+  is_enabled: boolean
+  msg_type: string
+  remark: string | null
+}>

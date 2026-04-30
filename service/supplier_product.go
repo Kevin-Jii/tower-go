@@ -110,7 +110,7 @@ func (s *SupplierProductService) GetProduct(id uint) (*model.SupplierProduct, er
 }
 
 // ListProducts 获取商品列表
-func (s *SupplierProductService) ListProducts(req *model.ListSupplierProductReq) ([]*model.SupplierProduct, int64, error) {
+func (s *SupplierProductService) ListProducts(req *model.ListSupplierProductReq) ([]*model.SupplierProduct, error) {
 	return s.productModule.List(req)
 }
 

@@ -34,6 +34,10 @@ export async function createStoreAccount(body: Record<string, unknown>): Promise
   return unwrap(res)
 }
 
+export async function bindStoreAccountConsumables(id: number, body: { consumables: Array<Record<string, unknown>> }): Promise<void> {
+  await http.post<import('./types').ApiEnvelope<unknown>>(`/store-accounts/${id}/consumables`, body)
+}
+
 export async function updateStoreAccount(id: number, body: Record<string, unknown>): Promise<void> {
   await http.put<import('./types').ApiEnvelope<unknown>>(`/store-accounts/${id}`, body)
 }

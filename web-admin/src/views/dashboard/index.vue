@@ -1,33 +1,43 @@
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <BaseCard>
-      <template #header>
-        <span class="font-semibold text-slate-800">欢迎</span>
-      </template>
-      <p class="text-slate-600 text-sm md:text-base leading-relaxed m-0">
-        {{ userStore.userInfo?.nickname || userStore.userInfo?.username }}，当前角色：
-        <strong class="text-indigo-700">{{ userStore.userInfo?.role?.name || '-' }}</strong>
-      </p>
-    </BaseCard>
-    <BaseCard>
-      <template #header>
-        <span class="font-semibold text-slate-800">字典标签示例</span>
-      </template>
-      <p class="text-sm text-slate-500 mb-3 m-0">组件 &lt;DictTag type="inbound_status" :value="v" /&gt;</p>
-      <div class="flex flex-wrap gap-2 items-center">
-        <DictTag type="inbound_status" :value="0" />
-        <DictTag type="inbound_status" :value="1" />
-        <DictTag type="inbound_status" :value="2" />
-        <span class="text-xs text-slate-400">（无字典数据时回退显示原始值）</span>
-      </div>
-    </BaseCard>
+  <div class="flex flex-col">
+    <StoreAnalyticsScreen />
   </div>
 </template>
 
 <script setup lang="ts">
-import { BaseCard } from '@/components/base'
-import DictTag from '@/components/DictTag.vue'
-import { useUserStore } from '@/store/user'
+import { defineAsyncComponent, nextTick, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import AppPageLoading from '@/components/AppPageLoading.vue'
+import DashboardChunkError from './DashboardChunkError.vue'
 
-const userStore = useUserStore()
+const StoreAnalyticsScreen = defineAsyncComponent({
+  loader: () => import('./StoreAnalyticsScreen.vue'),
+  loadingComponent: AppPageLoading,
+  delay: 80,
+  errorComponent: DashboardChunkError,
+  onError(err, retry, fail, attempts) {
+    console.error('[dashboard] chunk load error', err)
+    if (attempts <= 2) {
+      retry()
+    } else {
+      fail()
+    }
+  },
+})
+
+const route = useRoute()
+
+function scrollToAnalytics(): void {
+  if (route.query.section !== 'analytics') return
+  const run = (): void => {
+    document.getElementById('dash-analytics')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  void nextTick(() => {
+    run()
+    setTimeout(run, 400)
+  })
+}
+
+onMounted(scrollToAnalytics)
+watch(() => route.query.section, scrollToAnalytics)
 </script>

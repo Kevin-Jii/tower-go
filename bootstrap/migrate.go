@@ -39,11 +39,17 @@ var autoMigrateModels = []interface{}{
 	&model.Gallery{},
 	&model.StoreAccount{},
 	&model.StoreAccountItem{},
+	&model.StoreAccountConsumable{},
 	&model.DingTalkUser{},
 	&model.MessageTemplate{},
 	&model.Member{},
 	&model.WalletLog{},
 	&model.RechargeOrder{},
+	&model.ThirdPartyAccount{},
+	&model.ThirdPartyOrder{},
+	&model.ThirdPartyRoute{},
+	&model.ThirdPartyRouteStore{},
+	&model.ThirdPartyLogisticsSheet{},
 }
 
 func AutoMigrateAndSeeds() {

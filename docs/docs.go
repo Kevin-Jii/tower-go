@@ -5983,6 +5983,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/store-accounts/{id}/consumables": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "门店记账"
+                ],
+                "summary": "绑定记账单消耗品",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "记账ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "消耗品信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.BindStoreAccountConsumablesReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/store-suppliers/categories": {
             "get": {
                 "security": [
@@ -6478,18 +6523,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "状态",
                         "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "每页数量",
-                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -7688,6 +7721,18 @@ const docTemplate = `{
                 }
             }
         },
+        "model.BindStoreAccountConsumablesReq": {
+            "type": "object",
+            "properties": {
+                "consumables": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.CreateStoreAccountConsumableReq"
+                    }
+                }
+            }
+        },
         "model.BusinessOverviewStats": {
             "type": "object",
             "properties": {
@@ -8332,6 +8377,37 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CreateStoreAccountConsumableReq": {
+            "type": "object",
+            "required": [
+                "product_id",
+                "quantity"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "price": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "unit": {
+                    "type": "string",
+                    "maxLength": 20
+                }
+            }
+        },
         "model.CreateStoreAccountItemReq": {
             "type": "object",
             "required": [
@@ -8377,12 +8453,15 @@ const docTemplate = `{
                 "items"
             ],
             "properties": {
-                "account_date": {
-                    "type": "string"
-                },
                 "channel": {
                     "type": "string",
                     "maxLength": 50
+                },
+                "consumables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CreateStoreAccountConsumableReq"
+                    }
                 },
                 "items": {
                     "type": "array",
@@ -8394,10 +8473,6 @@ const docTemplate = `{
                 "notify_image": {
                     "description": "通知图片URL（前端生成）",
                     "type": "string"
-                },
-                "order_no": {
-                    "type": "string",
-                    "maxLength": 100
                 },
                 "other_expense_amount": {
                     "type": "number",
@@ -9795,6 +9870,12 @@ const docTemplate = `{
                 "channel": {
                     "type": "string"
                 },
+                "consumables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StoreAccountConsumable"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -9849,6 +9930,41 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.StoreAccountConsumable": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "integer"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "product_name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "unit": {
                     "type": "string"
                 }
             }

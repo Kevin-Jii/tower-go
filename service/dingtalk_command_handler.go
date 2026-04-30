@@ -149,7 +149,7 @@ func (h *DingTalkCommandHandler) handleTodayAccount(storeID uint) (string, strin
 	}
 
 	today := time.Now().Format("2006-01-02")
-	totalAmount, count, err := h.storeAccountModule.GetStatsByDateRange(storeID, today, today)
+	totalAmount, netIncomeAmount, count, err := h.storeAccountModule.GetStatsByDateRange(storeID, today, today)
 	if err != nil {
 		return "记账查询", fmt.Sprintf("查询失败: %v", err)
 	}
@@ -158,6 +158,7 @@ func (h *DingTalkCommandHandler) handleTodayAccount(storeID uint) (string, strin
 		"Date":        today,
 		"Count":       count,
 		"TotalAmount": fmt.Sprintf("%.2f", totalAmount),
+		"NetIncome":   fmt.Sprintf("%.2f", netIncomeAmount),
 		"CreateTime":  time.Now().Format("2006-01-02 15:04:05"),
 	}
 
@@ -167,7 +168,7 @@ func (h *DingTalkCommandHandler) handleTodayAccount(storeID uint) (string, strin
 			return title, text
 		}
 	}
-	return "📝 今日记账", fmt.Sprintf("日期: %s\n笔数: %d\n总额: ¥%.2f", today, count, totalAmount)
+	return "📝 今日记账", fmt.Sprintf("日期: %s\n笔数: %d\n总销售额: ¥%.2f\n净利润: ¥%.2f", today, count, totalAmount, netIncomeAmount)
 }
 
 // handleTodayInventoryIn 今日入库查询

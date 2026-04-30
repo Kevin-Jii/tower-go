@@ -168,3 +168,33 @@ func (c *StoreController) DeleteStore(ctx *gin.Context) {
 
 	http.Success(ctx, nil)
 }
+
+// BindThirdPartyAccount godoc
+// @Summary 绑定门店第三方账号
+// @Description 绑定或解绑门店第三方账号（传 null 表示解绑）
+// @Tags 门店管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "门店ID"
+// @Param body body model.BindStoreThirdPartyAccountReq true "绑定信息"
+// @Success 200 {object} http.Response
+// @Router /stores/{id}/third-party-account [put]
+func (c *StoreController) BindThirdPartyAccount(ctx *gin.Context) {
+	if !http.RequireAdmin(ctx) {
+		return
+	}
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req model.BindStoreThirdPartyAccountReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	if err := c.storeService.BindThirdPartyAccount(id, req.ThirdPartyAccountID); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}

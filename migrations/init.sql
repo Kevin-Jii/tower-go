@@ -34,10 +34,12 @@ CREATE TABLE IF NOT EXISTS `stores` (
   `status` INT NOT NULL DEFAULT 1,
   `contact_person` VARCHAR(50) DEFAULT NULL,
   `remark` TEXT,
+  `third_party_account_id` BIGINT UNSIGNED DEFAULT NULL,
   `created_at` DATETIME(3) DEFAULT NULL,
   `updated_at` DATETIME(3) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_stores_store_code` (`store_code`)
+  UNIQUE KEY `idx_stores_store_code` (`store_code`),
+  KEY `idx_stores_third_party_account_id` (`third_party_account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店表';
 
 CREATE TABLE IF NOT EXISTS `menus` (
@@ -246,6 +248,118 @@ CREATE TABLE IF NOT EXISTS `store_account_items` (
   KEY `idx_store_account_items_product_id` (`product_id`),
   KEY `idx_store_account_items_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店记账明细';
+
+CREATE TABLE IF NOT EXISTS `store_account_consumables` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `account_id` BIGINT UNSIGNED NOT NULL,
+  `product_id` BIGINT UNSIGNED NOT NULL,
+  `product_name` VARCHAR(200) DEFAULT NULL,
+  `quantity` DECIMAL(10,2) NOT NULL DEFAULT 1,
+  `unit` VARCHAR(20) DEFAULT NULL,
+  `price` DECIMAL(10,2) DEFAULT NULL,
+  `amount` DECIMAL(10,2) DEFAULT NULL,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_store_account_consumables_account_id` (`account_id`),
+  KEY `idx_store_account_consumables_product_id` (`product_id`),
+  KEY `idx_store_account_consumables_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店记账消耗品明细';
+
+CREATE TABLE IF NOT EXISTS `third_party_accounts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `platform_name` VARCHAR(50) NOT NULL DEFAULT 'tsbeer',
+  `name` VARCHAR(100) NOT NULL,
+  `login_name` VARCHAR(100) NOT NULL,
+  `phone` VARCHAR(30) DEFAULT NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `application_key` VARCHAR(128) NOT NULL,
+  `login_type` VARCHAR(10) NOT NULL DEFAULT '2',
+  `channel` VARCHAR(20) NOT NULL DEFAULT 'WEB',
+  `shop_id` VARCHAR(64) DEFAULT NULL,
+  `customer_id` VARCHAR(64) DEFAULT NULL,
+  `is_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `last_test_ok` TINYINT(1) NOT NULL DEFAULT 0,
+  `last_test_msg` VARCHAR(500) DEFAULT NULL,
+  `last_token` TEXT,
+  `token_valid_time` BIGINT DEFAULT NULL,
+  `last_test_at` DATETIME(3) DEFAULT NULL,
+  `last_sync_at` DATETIME(3) DEFAULT NULL,
+  `last_sync_msg` VARCHAR(500) DEFAULT NULL,
+  `last_sync_count` INT NOT NULL DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_third_party_accounts_login_name` (`login_name`),
+  KEY `idx_third_party_accounts_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方账号池';
+
+CREATE TABLE IF NOT EXISTS `third_party_orders` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `account_id` BIGINT UNSIGNED NOT NULL,
+  `platform_name` VARCHAR(50) NOT NULL,
+  `order_no` VARCHAR(100) NOT NULL,
+  `place_time` DATETIME(3) DEFAULT NULL,
+  `place_date` VARCHAR(10) DEFAULT NULL,
+  `order_trade_status` VARCHAR(64) DEFAULT NULL,
+  `status_name` VARCHAR(100) DEFAULT NULL,
+  `pay_amount` DECIMAL(12,2) DEFAULT NULL,
+  `total_amount` DECIMAL(12,2) DEFAULT NULL,
+  `total_item_num` DECIMAL(12,2) DEFAULT NULL,
+  `raw_json` LONGTEXT,
+  `synced_at` DATETIME(3) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_tp_order_no` (`order_no`),
+  KEY `idx_third_party_orders_account_id` (`account_id`),
+  KEY `idx_third_party_orders_place_date` (`place_date`),
+  KEY `idx_third_party_orders_synced_at` (`synced_at`),
+  KEY `idx_third_party_orders_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方同步订单';
+
+CREATE TABLE IF NOT EXISTS `third_party_routes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方物流路线';
+
+CREATE TABLE IF NOT EXISTS `third_party_route_stores` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `route_id` BIGINT UNSIGNED NOT NULL,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `sort` INT NOT NULL DEFAULT 0,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_route_store` (`route_id`, `store_id`),
+  KEY `idx_route_stores_route_id` (`route_id`),
+  KEY `idx_route_stores_store_id` (`store_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方物流路线-门店';
+
+CREATE TABLE IF NOT EXISTS `third_party_logistics_sheets` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `route_id` BIGINT UNSIGNED NOT NULL,
+  `sheet_date` VARCHAR(10) NOT NULL,
+  `start_date` VARCHAR(10) NOT NULL,
+  `end_date` VARCHAR(10) NOT NULL,
+  `headers_json` LONGTEXT,
+  `rows_json` LONGTEXT,
+  `products_json` LONGTEXT,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_route_logistics_period` (`route_id`, `start_date`, `end_date`),
+  KEY `idx_logistics_sheets_route_id` (`route_id`),
+  KEY `idx_logistics_sheets_sheet_date` (`sheet_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方物流单';
 
 CREATE TABLE IF NOT EXISTS `inventories` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -551,6 +665,40 @@ SET @sql_add_roles_data_scope = (
 PREPARE stmt_add_roles_data_scope FROM @sql_add_roles_data_scope;
 EXECUTE stmt_add_roles_data_scope;
 DEALLOCATE PREPARE stmt_add_roles_data_scope;
+
+SET @sql_add_stores_third_party_account_id = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'third_party_account_id'
+    ),
+    'SELECT ''skip add stores.third_party_account_id''',
+    'ALTER TABLE stores ADD COLUMN third_party_account_id BIGINT UNSIGNED DEFAULT NULL COMMENT ''绑定第三方账号池ID'' AFTER remark'
+  )
+);
+PREPARE stmt_add_stores_third_party_account_id FROM @sql_add_stores_third_party_account_id;
+EXECUTE stmt_add_stores_third_party_account_id;
+DEALLOCATE PREPARE stmt_add_stores_third_party_account_id;
+
+SET @sql_add_stores_third_party_account_idx = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'stores'
+        AND INDEX_NAME = 'idx_stores_third_party_account_id'
+    ),
+    'SELECT ''skip add idx_stores_third_party_account_id''',
+    'ALTER TABLE stores ADD INDEX idx_stores_third_party_account_id (third_party_account_id)'
+  )
+);
+PREPARE stmt_add_stores_third_party_account_idx FROM @sql_add_stores_third_party_account_idx;
+EXECUTE stmt_add_stores_third_party_account_idx;
+DEALLOCATE PREPARE stmt_add_stores_third_party_account_idx;
 
 -- 列补齐后的历史行回填（非 INSERT，随结构脚本执行一次即可）
 UPDATE supplier_products

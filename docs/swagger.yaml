@@ -238,6 +238,14 @@ definitions:
     - sn
     - store_id
     type: object
+  model.BindStoreAccountConsumablesReq:
+    properties:
+      consumables:
+        items:
+          $ref: '#/definitions/model.CreateStoreAccountConsumableReq'
+        minItems: 1
+        type: array
+    type: object
   model.BusinessOverviewStats:
     properties:
       all_category_amount:
@@ -694,6 +702,28 @@ definitions:
     - payAmount
     - payType
     type: object
+  model.CreateStoreAccountConsumableReq:
+    properties:
+      amount:
+        minimum: 0
+        type: number
+      price:
+        minimum: 0
+        type: number
+      product_id:
+        type: integer
+      quantity:
+        type: number
+      remark:
+        maxLength: 500
+        type: string
+      unit:
+        maxLength: 20
+        type: string
+    required:
+    - product_id
+    - quantity
+    type: object
   model.CreateStoreAccountItemReq:
     properties:
       amount:
@@ -724,11 +754,13 @@ definitions:
     type: object
   model.CreateStoreAccountReq:
     properties:
-      account_date:
-        type: string
       channel:
         maxLength: 50
         type: string
+      consumables:
+        items:
+          $ref: '#/definitions/model.CreateStoreAccountConsumableReq'
+        type: array
       items:
         items:
           $ref: '#/definitions/model.CreateStoreAccountItemReq'
@@ -736,9 +768,6 @@ definitions:
         type: array
       notify_image:
         description: 通知图片URL（前端生成）
-        type: string
-      order_no:
-        maxLength: 100
         type: string
       other_expense_amount:
         minimum: 0
@@ -1693,6 +1722,10 @@ definitions:
         type: string
       channel:
         type: string
+      consumables:
+        items:
+          $ref: '#/definitions/model.StoreAccountConsumable'
+        type: array
       created_at:
         type: string
       id:
@@ -1728,6 +1761,29 @@ definitions:
       total_amount:
         type: number
       updated_at:
+        type: string
+    type: object
+  model.StoreAccountConsumable:
+    properties:
+      account_id:
+        type: integer
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      price:
+        type: number
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      quantity:
+        type: number
+      remark:
+        type: string
+      unit:
         type: string
     type: object
   model.StoreAccountItem:
@@ -5892,6 +5948,34 @@ paths:
       summary: 更新记账
       tags:
       - 门店记账
+  /store-accounts/{id}/consumables:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 记账ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 消耗品信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.BindStoreAccountConsumablesReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.Response'
+      security:
+      - Bearer: []
+      summary: 绑定记账单消耗品
+      tags:
+      - 门店记账
   /store-accounts/stats:
     get:
       parameters:
@@ -6208,14 +6292,6 @@ paths:
       - description: 状态
         in: query
         name: status
-        type: integer
-      - description: 页码
-        in: query
-        name: page
-        type: integer
-      - description: 每页数量
-        in: query
-        name: page_size
         type: integer
       produces:
       - application/json

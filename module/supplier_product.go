@@ -26,9 +26,8 @@ func (m *SupplierProductModule) GetByID(id uint) (*model.SupplierProduct, error)
 	return &product, nil
 }
 
-func (m *SupplierProductModule) List(req *model.ListSupplierProductReq) ([]*model.SupplierProduct, int64, error) {
+func (m *SupplierProductModule) List(req *model.ListSupplierProductReq) ([]*model.SupplierProduct, error) {
 	var products []*model.SupplierProduct
-	var total int64
 
 	query := m.db.Model(&model.SupplierProduct{})
 
@@ -46,16 +45,11 @@ func (m *SupplierProductModule) List(req *model.ListSupplierProductReq) ([]*mode
 		query = query.Where("status = ?", *req.Status)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+	if err := query.Preload("Supplier").Preload("Category").Order("id DESC").Find(&products).Error; err != nil {
+		return nil, err
 	}
 
-	offset := (req.Page - 1) * req.PageSize
-	if err := query.Preload("Supplier").Preload("Category").Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&products).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return products, total, nil
+	return products, nil
 }
 
 func (m *SupplierProductModule) UpdateByID(id uint, req *model.UpdateSupplierProductReq) error {

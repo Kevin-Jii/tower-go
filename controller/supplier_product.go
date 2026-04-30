@@ -69,8 +69,6 @@ func (c *SupplierProductController) GetProduct(ctx *gin.Context) {
 // @Param category_id query int false "分类ID"
 // @Param keyword query string false "关键词"
 // @Param status query int false "状态"
-// @Param page query int false "页码"
-// @Param page_size query int false "每页数量"
 // @Success 200 {object} http.Response{data=[]model.SupplierProduct}
 // @Router /supplier-products [get]
 func (c *SupplierProductController) ListProducts(ctx *gin.Context) {
@@ -79,18 +77,12 @@ func (c *SupplierProductController) ListProducts(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	if req.Page == 0 {
-		req.Page = 1
-	}
-	if req.PageSize == 0 {
-		req.PageSize = 20
-	}
-	products, total, err := c.productService.ListProducts(&req)
+	products, err := c.productService.ListProducts(&req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
-	http.SuccessWithPagination(ctx, products, total, req.Page, req.PageSize)
+	http.Success(ctx, products)
 }
 
 // UpdateProduct godoc

@@ -14,9 +14,16 @@
       <template #cell-status="{ row }">
         {{ statusLabel((row as Store).status) }}
       </template>
+      <template #cell-third_party_account="{ row }">
+        {{ (row as Store).third_party_account?.name || '-' }}
+      </template>
+      <template #cell-contact_person="{ row }">
+        <span class="whitespace-nowrap">{{ (row as Store).contact_person || '-' }}</span>
+      </template>
       <template #cell-actions="{ row }">
         <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton v-permission="'store:edit'" variant="link" size="sm" @click="openEdit(row as Store)">编辑</BaseButton>
+          <BaseButton v-permission="'store:menu'" variant="link" size="sm" @click="openBindThirdAccount(row as Store)">绑定三方账号</BaseButton>
           <BaseButton v-permission="'store:menu'" variant="link" size="sm" @click="openBindSupplier(row as Store)">绑定供应商</BaseButton>
           <BaseButton v-permission="'store:delete'" variant="link" size="sm" @click="onDelete(row as Store)">删除</BaseButton>
         </div>
@@ -111,6 +118,23 @@
         <BaseButton variant="ghost" @click="bindDlg = false">关闭</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="thirdAccountDlg" title="绑定第三方账号" max-width="min(520px, 96vw)">
+      <div class="space-y-4">
+        <p class="m-0 text-sm text-slate-600">
+          当前门店：<span class="font-medium text-slate-900">{{ bindStore?.name || '-' }}</span>
+        </p>
+        <BaseFormItem label="第三方账号">
+          <BaseSelect v-model="bindThirdAccountId" :options="thirdAccountOptions" placeholder="请选择第三方账号" />
+        </BaseFormItem>
+        <p class="m-0 text-xs text-slate-400">一个门店有且只能绑定一个第三方账号，保存时会覆盖原绑定。</p>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" :loading="bindThirdSaving" @click="onUnbindThirdAccount">解绑</BaseButton>
+        <BaseButton variant="ghost" @click="thirdAccountDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="bindThirdSaving" @click="onBindThirdAccount">保存</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -128,9 +152,10 @@ import {
   BaseTextarea,
 } from '@/components/base'
 import type { BaseTableColumn } from '@/components/base/types'
-import { createStore, deleteStore, listStores, updateStore } from '@/api/store'
+import { bindStoreThirdPartyAccount, createStore, deleteStore, listStores, updateStore } from '@/api/store'
 import { bindStoreSuppliers, listStoreBoundSuppliers, unbindStoreSuppliers } from '@/api/storeSupplier'
 import { listSuppliers } from '@/api/supplier'
+import { listThirdPartyAccounts } from '@/api/thirdPartyAccount'
 import type { Store, StoreSupplierBinding } from '@/api/types'
 import type { BaseSelectOption } from '@/components/base/types'
 import { toast } from '@/feedback/toast'
@@ -145,9 +170,10 @@ const columns: BaseTableColumn[] = [
   { key: 'phone', label: '电话', prop: 'phone', minWidth: '132px', width: '132px', ellipsis: true },
   { key: 'address', label: '地址', prop: 'address', minWidth: '160px', ellipsis: true },
   { key: 'business_hours', label: '营业时间', prop: 'business_hours', width: '120px' },
-  { key: 'contact_person', label: '联系人', prop: 'contact_person', width: '100px' },
+  { key: 'contact_person', label: '联系人', prop: 'contact_person', minWidth: '120px', width: '120px', ellipsis: true },
+  { key: 'third_party_account', label: '第三方账号', minWidth: '140px', width: '140px', ellipsis: true },
   { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '240px', align: 'right' },
+  { key: 'actions', label: '操作', width: '360px', align: 'right' },
 ]
 
 const { data: pageData, isLoading: loading } = useQuery({
@@ -289,9 +315,13 @@ const bindStore = ref<Store | null>(null)
 const bindSupplierId = ref<number | undefined>(undefined)
 const boundSuppliers = ref<StoreSupplierBinding[]>([])
 const supplierOptions = ref<BaseSelectOption[]>([])
+const thirdAccountDlg = ref(false)
+const bindThirdSaving = ref(false)
+const bindThirdAccountId = ref<number | undefined>(undefined)
+const thirdAccountOptions = ref<BaseSelectOption[]>([])
 
 async function loadSupplierOptions(): Promise<void> {
-  const pageData = await listSuppliers({ page: 1, page_size: 200 })
+  const pageData = await listSuppliers({ page: 1, page_size: 100 })
   supplierOptions.value = (pageData.list ?? []).map((s) => ({
     label: `${s.supplier_name}（${s.supplier_code}）`,
     value: s.id,
@@ -311,6 +341,21 @@ async function openBindSupplier(row: Store): Promise<void> {
     await Promise.all([loadSupplierOptions(), loadBoundSuppliers()])
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '加载绑定信息失败')
+  }
+}
+
+async function openBindThirdAccount(row: Store): Promise<void> {
+  bindStore.value = row
+  bindThirdAccountId.value = row.third_party_account_id ?? undefined
+  thirdAccountDlg.value = true
+  try {
+    const rows = await listThirdPartyAccounts('')
+    thirdAccountOptions.value = rows.map((x) => ({
+      label: `${x.name}（${x.login_name}）`,
+      value: x.id,
+    }))
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载第三方账号失败')
   }
 }
 
@@ -348,6 +393,40 @@ async function onUnbindSupplier(supplierId: number): Promise<void> {
     await loadBoundSuppliers()
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '解绑失败')
+  }
+}
+
+async function onBindThirdAccount(): Promise<void> {
+  if (!bindStore.value?.id) return
+  if (!bindThirdAccountId.value) {
+    toast.warning('请选择第三方账号')
+    return
+  }
+  bindThirdSaving.value = true
+  try {
+    await bindStoreThirdPartyAccount(bindStore.value.id, bindThirdAccountId.value)
+    toast.success('绑定成功')
+    thirdAccountDlg.value = false
+    await qc.invalidateQueries({ queryKey: ['stores'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '绑定失败')
+  } finally {
+    bindThirdSaving.value = false
+  }
+}
+
+async function onUnbindThirdAccount(): Promise<void> {
+  if (!bindStore.value?.id) return
+  bindThirdSaving.value = true
+  try {
+    await bindStoreThirdPartyAccount(bindStore.value.id, null)
+    toast.success('已解绑')
+    thirdAccountDlg.value = false
+    await qc.invalidateQueries({ queryKey: ['stores'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '解绑失败')
+  } finally {
+    bindThirdSaving.value = false
   }
 }
 </script>

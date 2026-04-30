@@ -63,6 +63,4 @@ type ListSupplierProductReq struct {
 	CategoryID uint   `form:"category_id"`
 	Keyword    string `form:"keyword"`
 	Status     *int8  `form:"status"`
-	Page       int    `form:"page,default=1" binding:"min=1"`
-	PageSize   int    `form:"page_size,default=20" binding:"min=1,max=100"`
 }

@@ -82,7 +82,7 @@
                 </p>
               </div>
               <p :class="['m-0 text-xl leading-none font-bold', item.low ? 'text-rose-600' : 'text-slate-800']">
-                {{ item.small_qty }}
+                {{ item.display_qty }}
               </p>
             </div>
             <p class="m-0 mt-2 text-[11px]" :class="item.low ? 'text-rose-600' : 'text-slate-400'">
@@ -330,8 +330,14 @@ interface StockCardItem {
   large_unit?: string
   small_qty: number
   large_qty?: number
+  display_qty: string
   quantity: number
   low: boolean
+}
+
+function formatQty(v: number): string {
+  if (Number.isInteger(v)) return String(v)
+  return String(Number(v.toFixed(2)))
 }
 
 const groupedStockCards = computed(() => {
@@ -350,6 +356,17 @@ const groupedStockCards = computed(() => {
     const largeFactor = Number(largeSpec?.factor_to_base || 0)
     const smallQty = Number((qty / (smallFactor > 0 ? smallFactor : 1)).toFixed(2))
     const largeQty = largeFactor > smallFactor ? Number((qty / largeFactor).toFixed(2)) : undefined
+    let displayQty = `${formatQty(smallQty)}${smallSpec?.unit_name || p.unit || '件'}`
+    if (largeSpec && largeFactor > smallFactor) {
+      const ratio = largeFactor / (smallFactor > 0 ? smallFactor : 1)
+      if (ratio > 1) {
+        const largeCount = Math.floor(smallQty / ratio)
+        const remainSmall = Number((smallQty - largeCount * ratio).toFixed(2))
+        if (largeCount > 0 || remainSmall > 0) {
+          displayQty = `${largeCount > 0 ? `${formatQty(largeCount)}${largeSpec.unit_name}` : ''}${remainSmall > 0 ? `${formatQty(remainSmall)}${smallSpec?.unit_name || p.unit || '件'}` : ''}` || `0${smallSpec?.unit_name || p.unit || '件'}`
+        }
+      }
+    }
     const item: StockCardItem = {
       inventory_id: Number(inv?.id ?? 0),
       product_id: p.id,
@@ -359,6 +376,7 @@ const groupedStockCards = computed(() => {
       large_unit: largeSpec?.unit_name,
       small_qty: smallQty,
       large_qty: largeQty,
+      display_qty: displayQty,
       quantity: qty,
       low: smallQty <= LOW_STOCK_THRESHOLD,
     }

@@ -31,7 +31,7 @@ func (m *StoreModule) Create(store *model.Store) error {
 // GetByID 根据ID获取门店
 func (m *StoreModule) GetByID(id uint) (*model.Store, error) {
 	var store model.Store
-	if err := m.db.First(&store, id).Error; err != nil {
+	if err := m.db.Preload("ThirdPartyAccount").First(&store, id).Error; err != nil {
 		return nil, err
 	}
 	return &store, nil
@@ -59,7 +59,7 @@ func (m *StoreModule) List() ([]*model.Store, int64, error) {
 		return nil, 0, err
 	}
 
-	if err := m.db.Find(&stores).Error; err != nil {
+	if err := m.db.Preload("ThirdPartyAccount").Find(&stores).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -83,4 +83,22 @@ func (m *StoreModule) UpdateByID(id uint, req *model.UpdateStoreReq) error {
 // Delete 删除门店
 func (m *StoreModule) Delete(id uint) error {
 	return m.db.Delete(&model.Store{}, id).Error
+}
+
+// BindThirdPartyAccount 绑定门店第三方账号（accountID=nil 表示解绑）
+func (m *StoreModule) BindThirdPartyAccount(storeID uint, accountID *uint) error {
+	if accountID != nil {
+		var count int64
+		if err := m.db.Model(&model.Store{}).
+			Where("third_party_account_id = ? AND id <> ?", *accountID, storeID).
+			Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return errors.New("该第三方账号已绑定其他门店")
+		}
+	}
+	return m.db.Model(&model.Store{}).Where("id = ?", storeID).Updates(map[string]interface{}{
+		"third_party_account_id": accountID,
+	}).Error
 }

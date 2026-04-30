@@ -1,15 +1,13 @@
 import { http, unwrap } from './http'
-import type { Paginated, ProductUnitSpec, StorePurchasableProduct, SupplierCategory } from './types'
+import type { ProductUnitSpec, StorePurchasableProduct, SupplierCategory } from './types'
 
 export async function listSupplierProducts(params?: {
   supplier_id?: number
   category_id?: number
   keyword?: string
   status?: number
-  page?: number
-  page_size?: number
-}): Promise<Paginated<StorePurchasableProduct>> {
-  const res = await http.get<import('./types').ApiEnvelope<Paginated<StorePurchasableProduct>>>('/supplier-products', { params })
+}): Promise<StorePurchasableProduct[]> {
+  const res = await http.get<import('./types').ApiEnvelope<StorePurchasableProduct[]>>('/supplier-products', { params })
   return unwrap(res)
 }
 
@@ -29,6 +27,10 @@ export async function createSupplierProduct(body: {
 
 export async function updateSupplierProduct(id: number, body: Record<string, unknown>): Promise<void> {
   await http.put<import('./types').ApiEnvelope<unknown>>(`/supplier-products/${id}`, body)
+}
+
+export async function deleteSupplierProduct(id: number): Promise<void> {
+  await http.delete<import('./types').ApiEnvelope<unknown>>(`/supplier-products/${id}`)
 }
 
 export async function getSupplierProduct(id: number): Promise<StorePurchasableProduct> {

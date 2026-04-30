@@ -52,6 +52,30 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/dashboard/index.vue'),
         meta: { title: '工作台' },
       },
+      {
+        path: 'system/third-party-account',
+        name: 'ThirdPartyAccount',
+        component: () => import('@/views/system/third-party-account/index.vue'),
+        meta: { title: '第三方账号池' },
+      },
+      {
+        path: 'system/third-party-routes',
+        name: 'ThirdPartyRoutes',
+        component: () => import('@/views/system/third-party-account/routes.vue'),
+        meta: { title: '物流路线图' },
+      },
+      {
+        path: 'system/third-party-routes/import',
+        name: 'ThirdPartyRouteImport',
+        component: () => import('@/views/system/third-party-account/route-import.vue'),
+        meta: { title: '导入第三方订单' },
+      },
+      {
+        path: 'system/third-party-routes/history',
+        name: 'ThirdPartyRouteHistory',
+        component: () => import('@/views/system/third-party-account/route-history.vue'),
+        meta: { title: '历史物流单' },
+      },
     ],
   },
   {
@@ -65,6 +89,12 @@ const routes: RouteRecordRaw[] = [
     name: 'PublicSupplierProfile',
     component: () => import('@/views/public/supplier-profile.vue'),
     meta: { title: '供应商档案', public: true },
+  },
+  {
+    path: '/third-party-account/:id/orders',
+    name: 'ThirdPartyAccountOrders',
+    component: () => import('@/views/system/third-party-account/orders.vue'),
+    meta: { title: '已同步订单' },
   },
 ]
 

@@ -2,7 +2,7 @@ import ArcoVue from '@arco-design/web-vue'
 import '@arco-design/web-vue/dist/arco.css'
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
-import { createApp } from 'vue'
+import { createApp, nextTick } from 'vue'
 import App from './App.vue'
 import { permissionDirective } from './permission/directive'
 import router from './router'
@@ -33,3 +33,28 @@ app.directive('permission', permissionDirective)
 setupRouterGuard(router)
 
 app.mount('#app')
+
+function removeBootSplash(): void {
+  const el = document.getElementById('app-boot-splash')
+  if (!el) return
+  el.classList.add('app-boot-splash--exit')
+  const finish = (): void => {
+    el.remove()
+  }
+  el.addEventListener('transitionend', finish, { once: true })
+  setTimeout(finish, 500)
+}
+
+void Promise.all([
+  router.isReady(),
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  }),
+])
+  .then(() => nextTick())
+  .then(() => {
+    removeBootSplash()
+  })
+  .catch(() => {
+    removeBootSplash()
+  })

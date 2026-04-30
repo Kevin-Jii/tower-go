@@ -8,11 +8,15 @@ import (
 )
 
 type StoreService struct {
-	storeModule *module.StoreModule
+	storeModule             *module.StoreModule
+	thirdPartyAccountModule *module.ThirdPartyAccountModule
 }
 
-func NewStoreService(storeModule *module.StoreModule) *StoreService {
-	return &StoreService{storeModule: storeModule}
+func NewStoreService(storeModule *module.StoreModule, thirdPartyAccountModule *module.ThirdPartyAccountModule) *StoreService {
+	return &StoreService{
+		storeModule:             storeModule,
+		thirdPartyAccountModule: thirdPartyAccountModule,
+	}
 }
 
 // CreateStore 创建门店（仅总部管理员）
@@ -60,4 +64,20 @@ func (s *StoreService) UpdateStore(id uint, req *model.UpdateStoreReq) error {
 // DeleteStore 删除门店
 func (s *StoreService) DeleteStore(id uint) error {
 	return s.storeModule.Delete(id)
+}
+
+// BindThirdPartyAccount 绑定门店第三方账号（一个门店最多绑定一个账号）
+func (s *StoreService) BindThirdPartyAccount(storeID uint, accountID *uint) error {
+	if _, err := s.storeModule.GetByID(storeID); err != nil {
+		return errors.New("store not found")
+	}
+	if accountID != nil {
+		if s.thirdPartyAccountModule == nil {
+			return errors.New("third party account module not configured")
+		}
+		if _, err := s.thirdPartyAccountModule.GetByID(*accountID); err != nil {
+			return errors.New("third party account not found")
+		}
+	}
+	return s.storeModule.BindThirdPartyAccount(storeID, accountID)
 }

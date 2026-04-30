@@ -148,18 +148,16 @@ func NewStoreAccountService(
 // Create 创建记账
 func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.CreateStoreAccountReq) (*model.StoreAccount, error) {
 	accountNo := s.storeAccountModule.GenerateAccountNo()
+	orderNo := fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
 
-	// 解析记账日期
+	// 记账日期由后端默认当前时间
 	accountDate := time.Now()
-	if req.AccountDate != "" {
-		if t, err := time.Parse("2006-01-02", req.AccountDate); err == nil {
-			accountDate = t
-		}
-	}
 
 	// 构建明细
 	var items []model.StoreAccountItem
+	var consumables []model.StoreAccountConsumable
 	var totalAmount float64
+	var consumableAmount float64
 	productMap := make(map[uint]*model.SupplierProduct)
 
 	for _, item := range req.Items {
@@ -222,14 +220,63 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		totalAmount += amount
 	}
 
+	for _, item := range req.Consumables {
+		productName := ""
+		unit := item.Unit
+		price := item.Price
+		var productUnitSpecs []*model.ProductUnitSpec
+		var product *model.SupplierProduct
+		if s.productModule != nil {
+			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
+				product = p
+				productName = p.Name
+				if unit == "" {
+					unit = p.Unit
+				}
+			}
+		}
+		if s.unitSpecModule != nil {
+			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
+				productUnitSpecs = specs
+			}
+		}
+		if s.unitSpecModule != nil {
+			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)
+			if !matched {
+				name := productName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return nil, fmt.Errorf("消耗品【%s】单位【%s】未配置售价，请先维护该单位售价", name, unit)
+			}
+			price = specPrice
+		} else if price <= 0 && product != nil {
+			price = resolveUnitPrice(unit, product)
+		}
+		amount := item.Amount
+		if price > 0 && item.Quantity > 0 {
+			amount = price * item.Quantity
+		}
+		consumables = append(consumables, model.StoreAccountConsumable{
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Quantity:    item.Quantity,
+			Unit:        unit,
+			Price:       price,
+			Amount:      amount,
+			Remark:      item.Remark,
+		})
+		consumableAmount += amount
+	}
+
 	account := &model.StoreAccount{
 		AccountNo:          accountNo,
 		StoreID:            storeID,
 		Channel:            req.Channel,
-		OrderNo:            req.OrderNo,
+		OrderNo:            orderNo,
 		TotalAmount:        totalAmount,
 		OtherExpenseAmount: req.OtherExpenseAmount,
-		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount,
+		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount - consumableAmount,
 		ItemCount:          len(items),
 		TagCode:            req.TagCode,
 		TagName:            req.TagName,
@@ -237,6 +284,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		OperatorID:         operatorID,
 		AccountDate:        accountDate,
 		Items:              items,
+		Consumables:        consumables,
 	}
 
 	inventoryOutOrder := &model.InventoryOrder{
@@ -572,13 +620,70 @@ func (s *StoreAccountService) Delete(id uint) error {
 
 // GetStats 获取统计
 func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string) (map[string]interface{}, error) {
-	totalAmount, count, err := s.storeAccountModule.GetStatsByDateRange(storeID, startDate, endDate)
+	totalAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRange(storeID, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"total_amount": totalAmount,
-		"count":        count,
+		"total_amount":      totalAmount,
+		"net_income_amount": netIncomeAmount,
+		"count":             count,
 	}, nil
+}
+
+func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindStoreAccountConsumablesReq) error {
+	if _, err := s.storeAccountModule.GetByID(accountID); err != nil {
+		return err
+	}
+	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
+	for _, item := range req.Consumables {
+		productName := ""
+		unit := item.Unit
+		price := item.Price
+		var productUnitSpecs []*model.ProductUnitSpec
+		var product *model.SupplierProduct
+		if s.productModule != nil {
+			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
+				product = p
+				productName = p.Name
+				if unit == "" {
+					unit = p.Unit
+				}
+			}
+		}
+		if s.unitSpecModule != nil {
+			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
+				productUnitSpecs = specs
+			}
+		}
+		if s.unitSpecModule != nil {
+			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)
+			if !matched {
+				name := productName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return fmt.Errorf("消耗品【%s】单位【%s】未配置售价，请先维护该单位售价", name, unit)
+			}
+			price = specPrice
+		} else if price <= 0 && product != nil {
+			price = resolveUnitPrice(unit, product)
+		}
+		amount := item.Amount
+		if price > 0 && item.Quantity > 0 {
+			amount = price * item.Quantity
+		}
+		consumables = append(consumables, model.StoreAccountConsumable{
+			AccountID:   accountID,
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Quantity:    item.Quantity,
+			Unit:        unit,
+			Price:       price,
+			Amount:      amount,
+			Remark:      item.Remark,
+		})
+	}
+	return s.storeAccountModule.ReplaceConsumables(accountID, consumables)
 }

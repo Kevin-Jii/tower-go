@@ -93,7 +93,7 @@ func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount,
 // GetByID 根据ID获取记账（含明细）
 func (m *StoreAccountModule) GetByID(id uint) (*model.StoreAccount, error) {
 	var account model.StoreAccount
-	err := m.db.Preload("Items").Preload("Store").Preload("Operator").First(&account, id).Error
+	err := m.db.Preload("Items").Preload("Consumables").Preload("Store").Preload("Operator").First(&account, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +128,7 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 
 	offset := (req.Page - 1) * req.PageSize
 	if err := query.Preload("Items").Preload("Store").Preload("Operator").
+		Preload("Consumables").
 		Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&accounts).Error; err != nil {
 		return accounts, 0, err
 	}
@@ -160,8 +161,9 @@ func (m *StoreAccountModule) GenerateAccountNo() string {
 }
 
 // GetStatsByDateRange 按日期范围统计
-func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDate string) (float64, int64, error) {
+func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDate string) (float64, float64, int64, error) {
 	var totalAmount float64
+	var netIncomeAmount float64
 	var count int64
 
 	query := m.db.Model(&model.StoreAccount{})
@@ -176,10 +178,40 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 	}
 
 	if err := query.Count(&count).Error; err != nil {
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 
 	query.Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount)
+	query.Select("COALESCE(SUM(net_income_amount), 0)").Scan(&netIncomeAmount)
 
-	return totalAmount, count, nil
+	return totalAmount, netIncomeAmount, count, nil
+}
+
+func (m *StoreAccountModule) ReplaceConsumables(accountID uint, consumables []model.StoreAccountConsumable) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("account_id = ?", accountID).Delete(&model.StoreAccountConsumable{}).Error; err != nil {
+			return err
+		}
+		if len(consumables) > 0 {
+			if err := tx.Create(&consumables).Error; err != nil {
+				return err
+			}
+		}
+
+		var account model.StoreAccount
+		if err := tx.First(&account, accountID).Error; err != nil {
+			return err
+		}
+
+		var consumableTotal float64
+		if err := tx.Model(&model.StoreAccountConsumable{}).
+			Where("account_id = ?", accountID).
+			Select("COALESCE(SUM(amount),0)").
+			Scan(&consumableTotal).Error; err != nil {
+			return err
+		}
+
+		netIncome := account.TotalAmount - account.OtherExpenseAmount - consumableTotal
+		return tx.Model(&model.StoreAccount{}).Where("id = ?", accountID).Update("net_income_amount", netIncome).Error
+	})
 }

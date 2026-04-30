@@ -102,7 +102,7 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 	page := httpPkg.GetPage(ctx)
 	pageSize := httpPkg.GetPageSize(ctx)
 
-	bots, _, err := c.svc.ListBots(page, pageSize)
+	bots, total, err := c.svc.ListBots(page, pageSize)
 	if err != nil {
 		httpPkg.Error(ctx, 500, err.Error())
 		return
@@ -123,7 +123,7 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 		delete(m, "store")
 		result = append(result, m)
 	}
-	httpPkg.Success(ctx, result)
+	httpPkg.SuccessWithPagination(ctx, result, total, page, pageSize)
 }
 
 // UpdateBot godoc

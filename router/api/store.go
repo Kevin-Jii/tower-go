@@ -15,6 +15,7 @@ func RegisterStoreRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		stores.GET("/all", middleware.Permission("store:list"), c.Store.ListAllStores)
 		stores.GET("/:id", middleware.Permission("store:list"), c.Store.GetStore)
 		stores.PUT("/:id", middleware.Permission("store:edit"), c.Store.UpdateStore)
+		stores.PUT("/:id/third-party-account", middleware.Permission("store:menu"), c.Store.BindThirdPartyAccount)
 		stores.DELETE("/:id", middleware.Permission("store:delete"), c.Store.DeleteStore)
 	}
 }

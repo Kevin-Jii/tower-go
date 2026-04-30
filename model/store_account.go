@@ -6,11 +6,18 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	StoreAccountPaymentPaid   = 1 // 已支付
+	StoreAccountPaymentUnpaid = 2 // 未支付
+)
+
 // StoreAccount 门店记账（主表）
 type StoreAccount struct {
 	ID                 uint                     `json:"id" gorm:"primaryKey;autoIncrement"`
 	AccountNo          string                   `json:"account_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:记账编号"`
 	StoreID            uint                     `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	MemberID           *uint                    `json:"member_id,omitempty" gorm:"index;comment:关联会员ID"`
+	PaymentStatus      int                      `json:"payment_status" gorm:"not null;default:1;index;comment:支付状态 1=已支付 2=未支付"`
 	Channel            string                   `json:"channel" gorm:"type:varchar(50);index;comment:渠道来源(字典:sales_channel)"`
 	OrderNo            string                   `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
 	TotalAmount        float64                  `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
@@ -29,8 +36,9 @@ type StoreAccount struct {
 	Consumables        []StoreAccountConsumable `json:"consumables,omitempty" gorm:"foreignKey:AccountID"`
 
 	// 关联
-	Store    *Store `json:"store,omitempty" gorm:"foreignKey:StoreID"`
-	Operator *User  `json:"operator,omitempty" gorm:"foreignKey:OperatorID"`
+	Store    *Store  `json:"store,omitempty" gorm:"foreignKey:StoreID"`
+	Operator *User   `json:"operator,omitempty" gorm:"foreignKey:OperatorID"`
+	Member   *Member `json:"member,omitempty" gorm:"foreignKey:MemberID"`
 }
 
 func (StoreAccount) TableName() string {
@@ -59,6 +67,8 @@ func (StoreAccountItem) TableName() string {
 
 // CreateStoreAccountReq 创建记账请求
 type CreateStoreAccountReq struct {
+	MemberID           *uint                             `json:"member_id"`
+	PaymentStatus      int                               `json:"payment_status" binding:"omitempty,oneof=1 2"`
 	Channel            string                            `json:"channel" binding:"required,max=50"`
 	TagCode            string                            `json:"tag_code" binding:"max=50"`
 	TagName            string                            `json:"tag_name" binding:"max=100"`
@@ -91,6 +101,8 @@ type CreateStoreAccountItemReq struct {
 
 // UpdateStoreAccountReq 更新记账请求
 type UpdateStoreAccountReq struct {
+	MemberID           *uint    `json:"member_id"`
+	PaymentStatus      *int     `json:"payment_status" binding:"omitempty,oneof=1 2"`
 	Channel            string   `json:"channel" binding:"max=50"`
 	OrderNo            string   `json:"order_no" binding:"max=100"`
 	TagCode            string   `json:"tag_code" binding:"max=50"`

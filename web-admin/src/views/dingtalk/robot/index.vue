@@ -103,8 +103,12 @@
             :options="[
               { label: 'Markdown', value: 'markdown' },
               { label: 'Text', value: 'text' },
+              { label: '卡片', value: 'card' },
             ]"
           />
+        </BaseFormItem>
+        <BaseFormItem v-if="form.msg_type === 'card'" label="卡片模板Key" required>
+          <BaseInput v-model="form.card_msg_key" placeholder="如 sampleActionCard / your.card.template.key" />
         </BaseFormItem>
         <BaseFormItem label="备注">
           <BaseTextarea v-model="form.remark" :rows="2" />
@@ -208,6 +212,7 @@ const form = reactive({
   agent_id: '',
   robot_code: '',
   msg_type: 'markdown',
+  card_msg_key: '',
   remark: '',
 })
 
@@ -223,6 +228,7 @@ function resetForm(): void {
   form.agent_id = ''
   form.robot_code = ''
   form.msg_type = 'markdown'
+  form.card_msg_key = ''
   form.remark = ''
   formStoreId.value = undefined
 }
@@ -249,6 +255,7 @@ async function openEdit(row: DingTalkBot): Promise<void> {
     form.agent_id = full.agent_id ?? ''
     form.robot_code = full.robot_code ?? ''
     form.msg_type = full.msg_type || 'markdown'
+    form.card_msg_key = full.card_msg_key ?? ''
     form.remark = full.remark ?? ''
     const sid = full.store_id
     formStoreId.value = sid != null && sid > 0 ? Number(sid) : 0
@@ -264,6 +271,14 @@ async function submit(): Promise<void> {
 
   saving.value = true
   try {
+    if (form.msg_type === 'card' && form.bot_type !== 'stream') {
+      toast.warning('卡片消息仅支持 Stream 机器人')
+      return
+    }
+    if (form.msg_type === 'card' && !form.card_msg_key.trim()) {
+      toast.warning('请选择卡片类型并填写卡片模板Key')
+      return
+    }
     if (!isEdit.value) {
       if (form.bot_type === 'webhook' && !form.webhook.trim()) {
         toast.warning('请填写 Webhook')
@@ -281,6 +296,7 @@ async function submit(): Promise<void> {
           secret: form.secret.trim(),
           store_id: storePayload,
           msg_type: form.msg_type,
+          card_msg_key: form.msg_type === 'card' ? form.card_msg_key.trim() : '',
           remark: form.remark.trim(),
         })
       } else {
@@ -293,6 +309,7 @@ async function submit(): Promise<void> {
           robot_code: form.robot_code.trim(),
           store_id: storePayload,
           msg_type: form.msg_type,
+          card_msg_key: form.msg_type === 'card' ? form.card_msg_key.trim() : '',
           remark: form.remark.trim(),
         })
       }
@@ -302,6 +319,7 @@ async function submit(): Promise<void> {
         name: form.name.trim(),
         bot_type: form.bot_type,
         msg_type: form.msg_type,
+        card_msg_key: form.msg_type === 'card' ? form.card_msg_key.trim() || null : null,
         remark: form.remark.trim() || null,
         store_id: storePayload,
       }

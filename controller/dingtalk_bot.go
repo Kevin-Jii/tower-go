@@ -44,7 +44,9 @@ func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 		if err.Error() == "webhook already exists" {
 			status = 409
 		} else if err.Error() == "webhook is required for webhook type" ||
-			err.Error() == "clientID and clientSecret are required for stream type" {
+			err.Error() == "clientID and clientSecret are required for stream type" ||
+			err.Error() == "card msg type only supports stream bot" ||
+			err.Error() == "card_msg_key is required when msg_type is card" {
 			status = 400
 		}
 		httpPkg.Error(ctx, status, err.Error())
@@ -156,7 +158,9 @@ func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 		status := 500
 		if err.Error() == "webhook already exists" {
 			status = 409
-		} else if err.Error() == "no fields to update" {
+		} else if err.Error() == "no fields to update" ||
+			err.Error() == "card msg type only supports stream bot" ||
+			err.Error() == "card_msg_key is required when msg_type is card" {
 			status = 400
 		}
 		httpPkg.Error(ctx, status, err.Error())
@@ -296,5 +300,3 @@ func (c *DingTalkBotController) TestStreamBotCallback(ctx *gin.Context) {
 		"note":        "you can now send a message to this bot in DingTalk to test the callback",
 	})
 }
-
-

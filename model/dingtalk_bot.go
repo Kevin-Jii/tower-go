@@ -15,7 +15,8 @@ type DingTalkBot struct {
 	StoreID      *uint     `json:"store_id" gorm:"index"`                      // 所属门店（null 表示全局）
 	Store        *Store    `json:"store,omitempty" gorm:"foreignKey:StoreID"`  // 门店关联
 	IsEnabled    bool      `json:"is_enabled" gorm:"default:true;index"`       // 是否启用
-	MsgType      string    `json:"msg_type" gorm:"size:20;default:'markdown'"` // 消息类型: text, markdown
+	MsgType      string    `json:"msg_type" gorm:"size:20;default:'markdown'"` // 消息类型: text, markdown, card
+	CardMsgKey   string    `json:"card_msg_key" gorm:"size:100"`               // 卡片模板标识（msgKey）
 	Remark       string    `json:"remark" gorm:"type:text"`                    // 备注
 	RobotCode    string    `json:"robot_code" gorm:"size:100"`                 // 钉钉机器人编码(robotCode)
 	CreatedAt    time.Time `json:"created_at"`
@@ -39,6 +40,7 @@ type CreateDingTalkBotReq struct {
 	StoreID      *uint  `json:"store_id"`
 	IsEnabled    *bool  `json:"is_enabled"`
 	MsgType      string `json:"msg_type"`
+	CardMsgKey   string `json:"card_msg_key"`
 	Remark       string `json:"remark"`
 	RobotCode    string `json:"robot_code"` // 钉钉机器人编码(robotCode)
 }
@@ -55,6 +57,7 @@ type UpdateDingTalkBotReq struct {
 	StoreID      *uint   `json:"store_id" patch:"always"`
 	IsEnabled    *bool   `json:"is_enabled" patch:"always"`
 	MsgType      *string `json:"msg_type" patch:"allowZero"`
+	CardMsgKey   *string `json:"card_msg_key" patch:"always"`
 	Remark       *string `json:"remark" patch:"always"`
 	RobotCode    *string `json:"robot_code" patch:"always"`
 }

@@ -93,7 +93,7 @@ func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount,
 // GetByID 根据ID获取记账（含明细）
 func (m *StoreAccountModule) GetByID(id uint) (*model.StoreAccount, error) {
 	var account model.StoreAccount
-	err := m.db.Preload("Items").Preload("Consumables").Preload("Store").Preload("Operator").First(&account, id).Error
+	err := m.db.Preload("Items").Preload("Consumables").Preload("Store").Preload("Operator").Preload("Member").First(&account, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	}
 
 	offset := (req.Page - 1) * req.PageSize
-	if err := query.Preload("Items").Preload("Store").Preload("Operator").
+	if err := query.Preload("Items").Preload("Store").Preload("Operator").Preload("Member").
 		Preload("Consumables").
 		Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&accounts).Error; err != nil {
 		return accounts, 0, err
@@ -181,8 +181,31 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		return 0, 0, 0, err
 	}
 
-	query.Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount)
-	query.Select("COALESCE(SUM(net_income_amount), 0)").Scan(&netIncomeAmount)
+	if err := query.Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount).Error; err != nil {
+		return 0, 0, 0, err
+	}
+
+	// 实时净利润：销售额 - 其他支出 - 消耗品金额（不依赖历史 net_income_amount 存量值）
+	costSub := m.db.Table("store_account_items AS sai").
+		Select("sai.account_id, COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price,0)),0) AS cost_amount").
+		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
+		Group("sai.account_id")
+	netQuery := m.db.Model(&model.StoreAccount{}).
+		Select("COALESCE(SUM(store_accounts.total_amount - store_accounts.other_expense_amount - COALESCE(cons.sum_amount, 0) - COALESCE(costs.cost_amount,0)), 0)").
+		Joins("LEFT JOIN (SELECT account_id, COALESCE(SUM(amount),0) AS sum_amount FROM store_account_consumables GROUP BY account_id) AS cons ON cons.account_id = store_accounts.id").
+		Joins("LEFT JOIN (?) AS costs ON costs.account_id = store_accounts.id", costSub)
+	if storeID > 0 {
+		netQuery = netQuery.Where("store_accounts.store_id = ?", storeID)
+	}
+	if startDate != "" {
+		netQuery = netQuery.Where("store_accounts.account_date >= ?", startDate)
+	}
+	if endDate != "" {
+		netQuery = netQuery.Where("store_accounts.account_date <= ?", endDate)
+	}
+	if err := netQuery.Scan(&netIncomeAmount).Error; err != nil {
+		return 0, 0, 0, err
+	}
 
 	return totalAmount, netIncomeAmount, count, nil
 }
@@ -211,7 +234,16 @@ func (m *StoreAccountModule) ReplaceConsumables(accountID uint, consumables []mo
 			return err
 		}
 
-		netIncome := account.TotalAmount - account.OtherExpenseAmount - consumableTotal
+		var itemCostTotal float64
+		if err := tx.Table("store_account_items AS sai").
+			Select("COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price,0)),0)").
+			Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
+			Where("sai.account_id = ?", accountID).
+			Scan(&itemCostTotal).Error; err != nil {
+			return err
+		}
+
+		netIncome := account.TotalAmount - account.OtherExpenseAmount - consumableTotal - itemCostTotal
 		return tx.Model(&model.StoreAccount{}).Where("id = ?", accountID).Update("net_income_amount", netIncome).Error
 	})
 }

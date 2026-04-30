@@ -1,5 +1,5 @@
 import { http, unwrap } from './http'
-import type { MemberRow, Paginated } from './types'
+import type { MemberConsumptionPage, MemberRow, Paginated } from './types'
 
 export async function listMembers(params?: {
   page?: number
@@ -34,5 +34,13 @@ export async function adjustMemberBalance(
   body: { amount: string; type: number; remark?: string; version: number },
 ): Promise<MemberRow> {
   const res = await http.post<import('./types').ApiEnvelope<MemberRow>>(`/members/${id}/adjust-balance`, body)
+  return unwrap(res)
+}
+
+export async function listMemberConsumptions(
+  id: number,
+  params?: { start_date?: string; end_date?: string; page?: number; page_size?: number },
+): Promise<MemberConsumptionPage> {
+  const res = await http.get<import('./types').ApiEnvelope<MemberConsumptionPage>>(`/members/${id}/consumptions`, { params })
   return unwrap(res)
 }

@@ -2,8 +2,8 @@ package service
 
 import (
 	"bytes"
-	"text/template"
 	"strings"
+	"text/template"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
@@ -45,6 +45,10 @@ func (s *MessageTemplateService) RenderTemplate(code string, data map[string]int
 
 // render 使用 Go template 渲染
 func (s *MessageTemplateService) render(tplStr string, data map[string]interface{}) (string, error) {
+	// 兼容误写模板语法：{{.range .Items}} / {{.end}}
+	tplStr = strings.ReplaceAll(tplStr, "{{.range ", "{{range ")
+	tplStr = strings.ReplaceAll(tplStr, "{{.end}}", "{{end}}")
+
 	tpl, err := template.New("msg").Parse(tplStr)
 	if err != nil {
 		return "", err

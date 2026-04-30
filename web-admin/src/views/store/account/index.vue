@@ -22,15 +22,42 @@
     </div>
 
     <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="960px">
+      <template #cell-channel="{ row }">
+        {{ channelLabel((row as StoreAccount).channel) }}
+      </template>
+      <template #cell-member="{ row }">
+        {{ memberLabel(row as StoreAccount) }}
+      </template>
+      <template #cell-payment_status="{ row }">
+        {{ paymentStatusLabel((row as StoreAccount).payment_status) }}
+      </template>
+      <template #cell-net_income_amount="{ row }">
+        {{ formatMoney((row as StoreAccount).net_income_amount) }}
+      </template>
       <template #cell-account_date="{ row }">
         {{ formatDate((row as StoreAccount).account_date) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+        <div class="flex flex-wrap items-center justify-end gap-2" @click.stop>
           <BaseButton v-permission="'store:account:list'" variant="link" size="sm" @click="openView(row as StoreAccount)">详情</BaseButton>
-          <BaseButton v-permission="'store:account:edit'" variant="link" size="sm" @click="openConsumableDlg(row as StoreAccount)">绑定消耗品</BaseButton>
-          <BaseButton v-permission="'store:account:edit'" variant="link" size="sm" @click="openEdit(row as StoreAccount)">编辑</BaseButton>
-          <BaseButton v-permission="'store:account:delete'" variant="link" size="sm" @click="onDelete(row as StoreAccount)">删除</BaseButton>
+          <BaseButton
+            v-permission="'store:account:edit'"
+            variant="link"
+            size="sm"
+            :disabled="!canEditAccount(row as StoreAccount)"
+            @click="openConsumableDlg(row as StoreAccount)"
+          >
+            绑定消耗品
+          </BaseButton>
+          <BaseButton
+            v-permission="'store:account:edit'"
+            variant="link"
+            size="sm"
+            :disabled="!canEditAccount(row as StoreAccount)"
+            @click="openEdit(row as StoreAccount)"
+          >
+            编辑
+          </BaseButton>
         </div>
       </template>
     </BaseTable>
@@ -49,6 +76,12 @@
       <div class="space-y-4">
         <BaseFormItem label="渠道" required>
           <BaseSelect v-model="cForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
+        </BaseFormItem>
+        <BaseFormItem label="绑定会员">
+          <BaseSelect v-model="cForm.member_id" :options="memberOptionsWithNone" placeholder="可选，默认不绑定" />
+        </BaseFormItem>
+        <BaseFormItem label="支付状态">
+          <BaseSelect v-model="cForm.payment_status" :options="paymentStatusOptions" />
         </BaseFormItem>
         <div class="flex items-center justify-between gap-2">
           <span class="text-sm font-medium text-slate-700">商品明细</span>
@@ -98,6 +131,12 @@
         <BaseFormItem label="渠道">
           <BaseSelect v-model="eForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
         </BaseFormItem>
+        <BaseFormItem label="绑定会员">
+          <BaseSelect v-model="eForm.member_id" :options="memberOptionsWithNone" placeholder="可选，默认不绑定" />
+        </BaseFormItem>
+        <BaseFormItem label="支付状态">
+          <BaseSelect v-model="eForm.payment_status" :options="paymentStatusOptions" />
+        </BaseFormItem>
         <BaseFormItem label="标签编码">
           <BaseInput v-model="eForm.tag_code" />
         </BaseFormItem>
@@ -119,10 +158,14 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div><span class="text-[var(--color-text-3)]">单号</span>：{{ viewAccount.account_no }}</div>
           <div><span class="text-[var(--color-text-3)]">记账日期</span>：{{ formatDate(viewAccount.account_date) }}</div>
-          <div><span class="text-[var(--color-text-3)]">渠道</span>：{{ viewAccount.channel || '-' }}</div>
+          <div><span class="text-[var(--color-text-3)]">渠道</span>：{{ channelLabel(viewAccount.channel) }}</div>
+          <div><span class="text-[var(--color-text-3)]">会员</span>：{{ memberLabel(viewAccount) }}</div>
+          <div><span class="text-[var(--color-text-3)]">支付状态</span>：{{ paymentStatusLabel(viewAccount.payment_status) }}</div>
           <div><span class="text-[var(--color-text-3)]">订单号</span>：{{ viewAccount.order_no || '-' }}</div>
           <div><span class="text-[var(--color-text-3)]">总金额</span>：{{ formatMoney(viewAccount.total_amount) }}</div>
           <div><span class="text-[var(--color-text-3)]">其他支出</span>：{{ formatMoney(viewAccount.other_expense_amount) }}</div>
+          <div><span class="text-[var(--color-text-3)]">商品成本</span>：{{ formatMoney(accountItemCost(viewAccount)) }}</div>
+          <div><span class="text-[var(--color-text-3)]">耗材金额</span>：{{ formatMoney(accountConsumableAmount(viewAccount)) }}</div>
           <div><span class="text-[var(--color-text-3)]">净收入</span>：{{ formatMoney(viewAccount.net_income_amount) }}</div>
           <div><span class="text-[var(--color-text-3)]">明细条数</span>：{{ viewAccount.item_count ?? (viewAccount.items?.length ?? 0) }}</div>
           <div class="sm:col-span-2">
@@ -189,6 +232,13 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div class="rounded border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-2 text-sm">
+          <span class="text-[var(--color-text-3)]">净利润口径：</span>
+          销售额 {{ formatMoney(viewAccount.total_amount) }} - 其他支出 {{ formatMoney(viewAccount.other_expense_amount) }} - 商品成本
+          {{ formatMoney(accountItemCost(viewAccount)) }} - 耗材金额 {{ formatMoney(accountConsumableAmount(viewAccount)) }} =
+          <span class="font-semibold text-emerald-700">{{ formatMoney(accountNetProfitBreakdown(viewAccount)) }}</span>
         </div>
       </div>
       <p v-else class="m-0 text-sm text-[var(--color-text-3)]">加载中…</p>
@@ -261,7 +311,6 @@ import type { BaseTableColumn } from '@/components/base/types'
 import {
   bindStoreAccountConsumables,
   createStoreAccount,
-  deleteStoreAccount,
   getStoreAccount,
   getStoreAccountStats,
   listStoreAccounts,
@@ -270,9 +319,9 @@ import {
 import { listDictDataByTypeCode } from '@/api/dict'
 import { listProductUnitSpecs } from '@/api/supplierProduct'
 import { listPurchasableProducts } from '@/api/storeSupplier'
-import type { DictData, ProductUnitSpec, StoreAccount } from '@/api/types'
+import { listMembers } from '@/api/member'
+import type { DictData, MemberRow, ProductUnitSpec, StoreAccount } from '@/api/types'
 import { toast } from '@/feedback/toast'
-import { confirmDialog } from '@/feedback/confirm'
 import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
@@ -383,6 +432,32 @@ const { data: channelData } = useQuery({
   queryFn: () => listDictDataByTypeCode('sales_channel'),
 })
 const channelOptions = computed(() => (channelData.value ?? []).map((d) => ({ label: d.label, value: d.value })))
+const channelDictMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const d of channelData.value ?? []) {
+    map.set(String(d.value), d.label || String(d.value))
+  }
+  return map
+})
+const { data: membersPageData } = useQuery({
+  queryKey: ['store-account-members'],
+  queryFn: () => listMembers({ page: 1, page_size: 200 }),
+})
+const memberList = computed(() => membersPageData.value?.list ?? ([] as MemberRow[]))
+const memberOptions = computed(() =>
+  memberList.value.map((m) => ({
+    label: `${m.phone}${m.name ? `（${m.name}）` : ''}`,
+    value: m.id,
+  })),
+)
+const memberOptionsWithNone = computed(() => [{ label: '不绑定会员', value: 0 }, ...memberOptions.value])
+const memberMap = computed(() => {
+  const map = new Map<number, MemberRow>()
+  for (const m of memberList.value) {
+    map.set(m.id, m)
+  }
+  return map
+})
 
 const productCascaderOptions = computed(() => {
   const grouped = new Map<string, { id: number; name: string }[]>()
@@ -426,16 +501,65 @@ watch(
 const columns: BaseTableColumn[] = [
   { key: 'account_no', label: '记账编号', prop: 'account_no', minWidth: '140px', ellipsis: true },
   { key: 'channel', label: '渠道', prop: 'channel', width: '100px' },
+  { key: 'member', label: '会员', width: '150px', ellipsis: true },
+  { key: 'payment_status', label: '支付状态', width: '96px' },
   { key: 'order_no', label: '订单号', prop: 'order_no', minWidth: '120px', ellipsis: true },
   { key: 'total_amount', label: '销售额', prop: 'total_amount', width: '96px' },
   { key: 'net_income_amount', label: '净利润', prop: 'net_income_amount', width: '96px' },
   { key: 'account_date', label: '日期', width: '120px' },
-  { key: 'actions', label: '操作', width: '220px', align: 'right' },
+  { key: 'actions', label: '操作', width: '260px', align: 'right' },
 ]
 
 function formatDate(v: string): string {
   if (!v) return '-'
   return String(v).slice(0, 10)
+}
+
+function channelLabel(v: string | undefined): string {
+  const key = String(v || '').trim()
+  if (!key) return '-'
+  return channelDictMap.value.get(key) || key
+}
+
+function memberLabel(row: StoreAccount): string {
+  if (row.member) {
+    const phone = String(row.member.phone || '').trim()
+    const name = String(row.member.name || '').trim()
+    if (phone && name) return `${phone}（${name}）`
+    return phone || name || `会员#${row.member.id}`
+  }
+  const mid = Number(row.member_id || 0)
+  if (mid > 0) {
+    const m = memberMap.value.get(mid)
+    if (m) {
+      return `${m.phone}${m.name ? `（${m.name}）` : ''}`
+    }
+    return `会员#${mid}`
+  }
+  return '-'
+}
+
+const paymentStatusOptions = [
+  { label: '已支付', value: 1 },
+  { label: '未支付', value: 2 },
+]
+
+function paymentStatusLabel(v: number | undefined): string {
+  return Number(v) === 2 ? '未支付' : '已支付'
+}
+
+function canEditAccount(row: StoreAccount): boolean {
+  const s = String(row.created_at || '').trim()
+  if (!s) return false
+  const created = new Date(s)
+  if (Number.isNaN(created.getTime())) return false
+  const now = new Date()
+  const dayStart = new Date(created.getFullYear(), created.getMonth(), created.getDate(), 0, 0, 0, 0)
+  let cutoff = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+  if (created.getHours() >= 23) {
+    cutoff = new Date(dayStart.getTime() + 27 * 60 * 60 * 1000)
+  }
+  return now < cutoff
 }
 
 const createDlg = ref(false)
@@ -447,12 +571,16 @@ interface AccountLine {
 }
 const cForm = reactive({
   channel: '',
+  member_id: 0,
+  payment_status: 1,
   lines: [] as AccountLine[],
   remark: '',
 })
 
 function openCreate(): void {
   cForm.channel = ''
+  cForm.member_id = 0
+  cForm.payment_status = 1
   cForm.lines = [makeAccountLine()]
   cForm.remark = ''
   createDlg.value = true
@@ -539,6 +667,8 @@ async function submitCreate(): Promise<void> {
   try {
     await createStoreAccount({
       store_id: tenantStoreId.value,
+      member_id: cForm.member_id > 0 ? cForm.member_id : undefined,
+      payment_status: cForm.payment_status,
       channel: cForm.channel.trim(),
       remark: cForm.remark.trim(),
       other_expense_amount: 0,
@@ -557,6 +687,8 @@ async function submitCreate(): Promise<void> {
 const editDlg = ref(false)
 const editId = ref(0)
 const eForm = reactive({
+  member_id: 0,
+  payment_status: 1,
   channel: '',
   tag_code: '',
   tag_name: '',
@@ -564,7 +696,13 @@ const eForm = reactive({
 })
 
 function openEdit(row: StoreAccount): void {
+  if (!canEditAccount(row)) {
+    toast.warning('该记录已超过可编辑时间')
+    return
+  }
   editId.value = row.id
+  eForm.member_id = Number(row.member_id || 0)
+  eForm.payment_status = Number(row.payment_status || 1)
   eForm.channel = row.channel ?? ''
   eForm.tag_code = row.tag_code ?? ''
   eForm.tag_name = row.tag_name ?? ''
@@ -576,6 +714,8 @@ async function submitEdit(): Promise<void> {
   saving.value = true
   try {
     await updateStoreAccount(editId.value, {
+      member_id: eForm.member_id,
+      payment_status: eForm.payment_status,
       channel: eForm.channel.trim(),
       tag_code: eForm.tag_code.trim(),
       tag_name: eForm.tag_name.trim(),
@@ -612,6 +752,47 @@ function formatDateTime(v: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
+function accountConsumableAmount(account: StoreAccount): number {
+  return (account.consumables ?? []).reduce((sum, c) => sum + Number(c.amount || 0), 0)
+}
+
+function itemCostPrice(productId: number, unit?: string): number {
+  const specs = specsByProduct.value.get(productId) ?? []
+  const normalized = String(unit || '').trim().toLowerCase()
+  for (const s of specs) {
+    if (!s.is_enabled) continue
+    const code = String(s.unit_code || '').trim().toLowerCase()
+    const name = String(s.unit_name || '').trim().toLowerCase()
+    if (normalized && (normalized === code || normalized === name)) return Number(s.cost_price || 0)
+  }
+  for (const s of specs) {
+    if (!s.is_enabled) continue
+    const code = String(s.unit_code || '').trim().toLowerCase()
+    const name = String(s.unit_name || '').trim().toLowerCase()
+    if (normalized && (code.includes(normalized) || name.includes(normalized) || normalized.includes(code) || normalized.includes(name))) {
+      return Number(s.cost_price || 0)
+    }
+  }
+  return 0
+}
+
+function accountItemCost(account: StoreAccount): number {
+  return (account.items ?? []).reduce((sum, it) => {
+    const qty = Number(it.quantity || 0)
+    if (qty <= 0) return sum
+    return sum + qty * itemCostPrice(it.product_id, it.unit)
+  }, 0)
+}
+
+function accountNetProfitBreakdown(account: StoreAccount): number {
+  return (
+    Number(account.total_amount || 0) -
+    Number(account.other_expense_amount || 0) -
+    accountItemCost(account) -
+    accountConsumableAmount(account)
+  )
+}
+
 async function openView(row: StoreAccount): Promise<void> {
   viewAccount.value = null
   viewDlg.value = true
@@ -621,18 +802,6 @@ async function openView(row: StoreAccount): Promise<void> {
   } catch (e: unknown) {
     viewDlg.value = false
     toast.error(e instanceof Error ? e.message : '加载失败')
-  }
-}
-
-async function onDelete(row: StoreAccount): Promise<void> {
-  const ok = await confirmDialog({ message: `删除记账「${row.account_no}」？` })
-  if (!ok) return
-  try {
-    await deleteStoreAccount(row.id)
-    toast.success('已删除')
-    await reloadAll()
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
 
@@ -657,6 +826,10 @@ function onConsumableProductChange(idx: number): void {
 }
 
 async function openConsumableDlg(row: StoreAccount): Promise<void> {
+  if (!canEditAccount(row)) {
+    toast.warning('该记录已超过可编辑时间')
+    return
+  }
   consumableTarget.value = row
   consumableLines.value = [makeConsumableLine()]
   try {

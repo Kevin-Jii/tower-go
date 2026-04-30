@@ -17,6 +17,7 @@ func DecimalZero() DecimalType {
 // Member 会员表
 type Member struct {
 	ID         uint            `json:"id" gorm:"primaryKey"`
+	StoreID    uint            `json:"store_id" gorm:"index;comment:所属门店ID"`
 	UID        string          `json:"uid" gorm:"type:varchar(64);uniqueIndex;comment:用户唯一标识"`
 	Name       string          `json:"name" gorm:"type:varchar(100);comment:会员姓名"`
 	Phone      string          `json:"phone" gorm:"type:varchar(20);uniqueIndex;comment:手机号"`
@@ -67,7 +68,7 @@ type RechargeOrder struct {
 	ID          uint            `json:"id" gorm:"primaryKey"`
 	OrderNo     string          `json:"orderNo" gorm:"type:varchar(32);uniqueIndex;comment:单号"`
 	MemberID    uint            `json:"memberId" gorm:"index;comment:会员ID"`
-	MemberName  string          `json:"memberName" gorm:"-"` // 不存数据库，关联查询
+	MemberName  string          `json:"memberName" gorm:"-"`  // 不存数据库，关联查询
 	MemberPhone string          `json:"memberPhone" gorm:"-"` // 不存数据库，关联查询
 	PayAmount   decimal.Decimal `json:"payAmount" gorm:"type:decimal(10,2);comment:实付金额"`
 	GiftAmount  decimal.Decimal `json:"giftAmount" gorm:"type:decimal(10,2);comment:赠送金额"`
@@ -78,8 +79,8 @@ type RechargeOrder struct {
 	StatusName  string          `json:"statusName" gorm:"-"` // 不存数据库
 	PayTime     *time.Time      `json:"payTime" gorm:"comment:支付时间"`
 	Remark      string          `json:"remark" gorm:"type:varchar(255);comment:备注"`
-	CreateTime  time.Time      `json:"createTime" gorm:"autoCreateTime"`
-	UpdateTime  time.Time      `json:"updateTime" gorm:"autoUpdateTime"`
+	CreateTime  time.Time       `json:"createTime" gorm:"autoCreateTime"`
+	UpdateTime  time.Time       `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
 // TableName 指定表名为 t_recharge_order
@@ -146,7 +147,7 @@ type CreateRechargeOrderReq struct {
 	PayAmount  decimal.Decimal `json:"payAmount" binding:"required"`
 	GiftAmount decimal.Decimal `json:"giftAmount"`
 	PayType    int             `json:"payType" binding:"required"`
-	Remark     string         `json:"remark"`
+	Remark     string          `json:"remark"`
 }
 
 // PayRechargeOrderReq 支付充值单请求
@@ -160,4 +161,28 @@ type ListWalletLogReq struct {
 	ChangeType *ChangeTypeEnum `form:"changeType"`
 	StartTime  *time.Time      `form:"startTime"`
 	EndTime    *time.Time      `form:"endTime"`
+}
+
+// MemberConsumptionRecord 会员消费记录（来自门店记账）
+type MemberConsumptionRecord struct {
+	AccountID          uint      `json:"account_id"`
+	AccountNo          string    `json:"account_no"`
+	AccountDate        time.Time `json:"account_date"`
+	Channel            string    `json:"channel"`
+	ChannelName        string    `json:"channel_name"`
+	OrderNo            string    `json:"order_no"`
+	TotalAmount        float64   `json:"total_amount"`
+	OtherExpenseAmount float64   `json:"other_expense_amount"`
+	ConsumableAmount   float64   `json:"consumable_amount"`
+	NetIncomeAmount    float64   `json:"net_income_amount"`
+	CreatedAt          time.Time `json:"created_at"`
+}
+
+// MemberConsumptionSummary 会员消费汇总
+type MemberConsumptionSummary struct {
+	Count              int64   `json:"count"`
+	TotalAmount        float64 `json:"total_amount"`
+	OtherExpenseAmount float64 `json:"other_expense_amount"`
+	ConsumableAmount   float64 `json:"consumable_amount"`
+	NetIncomeAmount    float64 `json:"net_income_amount"`
 }

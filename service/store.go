@@ -27,14 +27,15 @@ func (s *StoreService) CreateStore(req *model.CreateStoreReq) error {
 	}
 
 	store := &model.Store{
-		StoreCode:     &storeCode,
-		Name:          req.Name,
-		Address:       req.Address,
-		Phone:         req.Phone,
-		BusinessHours: req.BusinessHours,
-		ContactPerson: req.ContactPerson,
-		Remark:        req.Remark,
-		Status:        1, // 默认正常
+		StoreCode:          &storeCode,
+		Name:               req.Name,
+		Address:            req.Address,
+		AdministrativeUnit: req.AdministrativeUnit,
+		Phone:              req.Phone,
+		BusinessHours:      req.BusinessHours,
+		ContactPerson:      req.ContactPerson,
+		Remark:             req.Remark,
+		Status:             1, // 默认正常
 	}
 	return s.storeModule.Create(store)
 }

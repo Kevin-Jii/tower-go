@@ -56,6 +56,14 @@
         <BaseFormItem label="地址">
           <BaseInput v-model="form.address" placeholder="可选" />
         </BaseFormItem>
+        <BaseFormItem label="归属区">
+          <BaseSelect
+            v-model="form.administrative_unit"
+            :options="administrativeUnitOptions"
+            placeholder="请选择归属区"
+            clearable
+          />
+        </BaseFormItem>
         <BaseFormItem label="营业时间">
           <BaseInput v-model="form.business_hours" placeholder="如 10:00-22:00" />
         </BaseFormItem>
@@ -156,7 +164,8 @@ import { bindStoreThirdPartyAccount, createStore, deleteStore, listStores, updat
 import { bindStoreSuppliers, listStoreBoundSuppliers, unbindStoreSuppliers } from '@/api/storeSupplier'
 import { listSuppliers } from '@/api/supplier'
 import { listThirdPartyAccounts } from '@/api/thirdPartyAccount'
-import type { Store, StoreSupplierBinding } from '@/api/types'
+import { listDictDataByTypeCode } from '@/api/dict'
+import type { DictData, Store, StoreSupplierBinding } from '@/api/types'
 import type { BaseSelectOption } from '@/components/base/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
@@ -219,6 +228,7 @@ const form = reactive({
   name: '',
   phone: '',
   address: '',
+  administrative_unit: '',
   business_hours: '',
   contact_person: '',
   remark: '',
@@ -238,6 +248,7 @@ function openCreate(): void {
   form.name = ''
   form.phone = ''
   form.address = ''
+  form.administrative_unit = ''
   form.business_hours = ''
   form.contact_person = ''
   form.remark = ''
@@ -252,6 +263,7 @@ function openEdit(row: Store): void {
   form.name = row.name ?? ''
   form.phone = row.phone ?? ''
   form.address = row.address ?? ''
+  form.administrative_unit = row.administrative_unit ?? ''
   form.business_hours = row.business_hours ?? ''
   form.contact_person = row.contact_person ?? ''
   form.remark = row.remark ?? ''
@@ -272,6 +284,7 @@ async function save(): Promise<void> {
         name: form.name.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
+        administrative_unit: form.administrative_unit.trim(),
         business_hours: form.business_hours.trim(),
         contact_person: form.contact_person.trim(),
         remark: form.remark.trim(),
@@ -282,6 +295,7 @@ async function save(): Promise<void> {
         name: form.name.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
+        administrative_unit: form.administrative_unit.trim(),
         business_hours: form.business_hours.trim(),
         contact_person: form.contact_person.trim(),
         remark: form.remark.trim(),
@@ -319,6 +333,22 @@ const thirdAccountDlg = ref(false)
 const bindThirdSaving = ref(false)
 const bindThirdAccountId = ref<number | undefined>(undefined)
 const thirdAccountOptions = ref<BaseSelectOption[]>([])
+
+const { data: administrativeUnitDictData } = useQuery({
+  queryKey: ['dict-data', 'ADMINISTRATIVEUNIT'],
+  queryFn: () => listDictDataByTypeCode('ADMINISTRATIVEUNIT'),
+})
+
+const administrativeUnitOptions = computed<BaseSelectOption[]>(() => {
+  const rows = (administrativeUnitDictData.value ?? []) as DictData[]
+  return rows
+    .filter((x) => Number(x.status ?? 1) === 1)
+    .sort((a, b) => Number(a.sort ?? 0) - Number(b.sort ?? 0))
+    .map((x) => ({
+      label: x.label || x.value,
+      value: x.value,
+    }))
+})
 
 async function loadSupplierOptions(): Promise<void> {
   const pageData = await listSuppliers({ page: 1, page_size: 100 })

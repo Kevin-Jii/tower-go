@@ -14,6 +14,7 @@ func RegisterMemberRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		members.GET("", middleware.Permission("store:member:list"), c.Member.ListMembers)
 		members.GET("/phone", middleware.Permission("store:member:list"), c.Member.GetMemberByPhone)
 		members.GET("/:id", middleware.Permission("store:member:list"), c.Member.GetMember)
+		members.GET("/:id/consumptions", middleware.Permission("store:member:list"), c.Member.ListMemberConsumptions)
 		members.PUT("/:id", middleware.Permission("store:member:edit"), c.Member.UpdateMember)
 		members.DELETE("/:id", middleware.Permission("store:member:delete"), c.Member.DeleteMember)
 		members.POST("/:id/adjust-balance", middleware.Permission("store:member:balance"), c.Member.AdjustBalance)

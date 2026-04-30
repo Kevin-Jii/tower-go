@@ -2,7 +2,6 @@ package controller
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
@@ -113,7 +112,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新记账
-// @Description 更新记账信息，仅限创建后24小时内可修改（管理员不受限制）
+// @Description 更新记账信息，仅允许当天修改；若23:00后创建可延长至次日03:00
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -136,13 +135,9 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 		return
 	}
 
-	// 非管理员检查24小时限制
-	roleCode := middleware.GetRoleCode(ctx)
-	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
-		if time.Since(account.CreatedAt) > 24*time.Hour {
-			http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
-			return
-		}
+	if !c.storeAccountService.IsAccountEditable(account) {
+		http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
+		return
 	}
 
 	var req model.UpdateStoreAccountReq
@@ -167,18 +162,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /store-accounts/{id} [delete]
 func (c *StoreAccountController) Delete(ctx *gin.Context) {
-	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
-	if err != nil {
-		http.ErrorApp(ctx, apicode.InvalidID)
-		return
-	}
-
-	if err := c.storeAccountService.Delete(uint(id)); err != nil {
-		http.Error(ctx, 500, err.Error())
-		return
-	}
-
-	http.Success(ctx, nil)
+	http.Error(ctx, 400, "记账记录不允许删除")
 }
 
 // BindConsumables godoc
@@ -197,6 +181,16 @@ func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
 		http.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
+	account, err := c.storeAccountService.Get(uint(id))
+	if err != nil {
+		http.ErrorApp(ctx, apicode.StoreAccountGone)
+		return
+	}
+	if !c.storeAccountService.IsAccountEditable(account) {
+		http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
+		return
+	}
+
 	var req model.BindStoreAccountConsumablesReq
 	if !http.BindJSON(ctx, &req) {
 		return

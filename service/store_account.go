@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -103,12 +104,43 @@ func tryResolveUnitSpecSalePrice(unit string, specs []*model.ProductUnitSpec) (f
 	return 0, false
 }
 
+func resolveUnitCostFromSpecs(unit string, specs []*model.ProductUnitSpec) float64 {
+	if len(specs) == 0 {
+		return 0
+	}
+	normalized := strings.ToLower(strings.TrimSpace(unit))
+	for _, spec := range specs {
+		if spec == nil || !spec.IsEnabled || spec.CostPrice < 0 {
+			continue
+		}
+		if normalized == strings.ToLower(strings.TrimSpace(spec.UnitCode)) ||
+			normalized == strings.ToLower(strings.TrimSpace(spec.UnitName)) {
+			return spec.CostPrice
+		}
+	}
+	if normalized != "" {
+		for _, spec := range specs {
+			if spec == nil || !spec.IsEnabled || spec.CostPrice < 0 {
+				continue
+			}
+			code := strings.ToLower(strings.TrimSpace(spec.UnitCode))
+			name := strings.ToLower(strings.TrimSpace(spec.UnitName))
+			if strings.Contains(code, normalized) || strings.Contains(name, normalized) ||
+				strings.Contains(normalized, code) || strings.Contains(normalized, name) {
+				return spec.CostPrice
+			}
+		}
+	}
+	return 0
+}
+
 type StoreAccountService struct {
 	storeAccountModule    *module.StoreAccountModule
 	inventoryModule       *module.InventoryModule
 	productModule         *module.SupplierProductModule
 	unitSpecModule        *module.ProductUnitSpecModule
 	storeModule           *module.StoreModule
+	memberModule          *module.MemberModule
 	userModule            *module.UserModule
 	dictModule            *module.DictModule
 	dingTalkService       *DingTalkService
@@ -123,6 +155,7 @@ func NewStoreAccountService(
 	productModule *module.SupplierProductModule,
 	unitSpecModule *module.ProductUnitSpecModule,
 	storeModule *module.StoreModule,
+	memberModule *module.MemberModule,
 	userModule *module.UserModule,
 	dictModule *module.DictModule,
 	dingTalkService *DingTalkService,
@@ -136,6 +169,7 @@ func NewStoreAccountService(
 		productModule:         productModule,
 		unitSpecModule:        unitSpecModule,
 		storeModule:           storeModule,
+		memberModule:          memberModule,
 		userModule:            userModule,
 		dictModule:            dictModule,
 		dingTalkService:       dingTalkService,
@@ -147,6 +181,12 @@ func NewStoreAccountService(
 
 // Create 创建记账
 func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.CreateStoreAccountReq) (*model.StoreAccount, error) {
+	if req.MemberID != nil && *req.MemberID > 0 && s.memberModule != nil {
+		if _, err := s.memberModule.GetMember(*req.MemberID, storeID, false); err != nil {
+			return nil, fmt.Errorf("会员不存在")
+		}
+	}
+
 	accountNo := s.storeAccountModule.GenerateAccountNo()
 	orderNo := fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
 
@@ -158,6 +198,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	var consumables []model.StoreAccountConsumable
 	var totalAmount float64
 	var consumableAmount float64
+	var itemCostAmount float64
 	productMap := make(map[uint]*model.SupplierProduct)
 
 	for _, item := range req.Items {
@@ -218,6 +259,9 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		})
 
 		totalAmount += amount
+		if item.Quantity > 0 {
+			itemCostAmount += item.Quantity * resolveUnitCostFromSpecs(unit, productUnitSpecs)
+		}
 	}
 
 	for _, item := range req.Consumables {
@@ -272,11 +316,13 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	account := &model.StoreAccount{
 		AccountNo:          accountNo,
 		StoreID:            storeID,
+		MemberID:           req.MemberID,
+		PaymentStatus:      resolvePaymentStatus(req.PaymentStatus),
 		Channel:            req.Channel,
 		OrderNo:            orderNo,
 		TotalAmount:        totalAmount,
 		OtherExpenseAmount: req.OtherExpenseAmount,
-		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount - consumableAmount,
+		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount - consumableAmount - itemCostAmount,
 		ItemCount:          len(items),
 		TagCode:            req.TagCode,
 		TagName:            req.TagName,
@@ -450,8 +496,12 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 	if s.imageGeneratorService != nil {
 		var items []AccountItemData
 		for _, item := range account.Items {
+			name := strings.TrimSpace(item.ProductName)
+			if name == "" {
+				name = fmt.Sprintf("商品#%d", item.ProductID)
+			}
 			items = append(items, AccountItemData{
-				Name:     item.ProductName,
+				Name:     name,
 				Quantity: item.Quantity,
 				Unit:     item.Unit,
 				Amount:   item.Amount,
@@ -466,6 +516,10 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 			OperatorName: operatorDisplay,
 			Items:        items,
 			TotalAmount:  account.TotalAmount,
+			OtherExpense: account.OtherExpenseAmount,
+			NetIncome:    account.NetIncomeAmount,
+			ItemCount:    account.ItemCount,
+			Remark:       account.Remark,
 			CreateTime:   time.Now().Format("2006-01-02 15:04:05"),
 		}
 
@@ -481,9 +535,20 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 
 	// 构建商品明细
 	var itemLines []string
+	type templateItem struct {
+		ProductName string
+		Quantity    string
+		Amount      string
+	}
+	templateItems := make([]templateItem, 0, len(account.Items))
 	for i, item := range account.Items {
 		line := fmt.Sprintf("%d. %s x%.2f%s = ¥%.2f", i+1, item.ProductName, item.Quantity, item.Unit, item.Amount)
 		itemLines = append(itemLines, line)
+		templateItems = append(templateItems, templateItem{
+			ProductName: strings.TrimSpace(item.ProductName),
+			Quantity:    fmt.Sprintf("%.2f%s", item.Quantity, strings.TrimSpace(item.Unit)),
+			Amount:      fmt.Sprintf("¥%.2f", item.Amount),
+		})
 	}
 
 	var title, text string
@@ -498,6 +563,7 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 			"AccountDate":  account.AccountDate.Format("2006-01-02"),
 			"OperatorName": operatorDisplay,
 			"ItemList":     strings.Join(itemLines, "\n\n"),
+			"Items":        templateItems,
 			"TotalAmount":  fmt.Sprintf("%.2f", account.TotalAmount),
 			"ItemCount":    account.ItemCount,
 			"CreateTime":   time.Now().Format("2006-01-02 15:04:05"),
@@ -539,7 +605,63 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 
 	// 发送通知：如果有图片，先发图片再发文字；否则只发文字
 	var sendErr error
-	if imageURL != "" {
+	if bot.MsgType == "card" && strings.TrimSpace(bot.CardMsgKey) != "" {
+		itemListForCard := make([]map[string]interface{}, 0, len(account.Items))
+		for _, it := range account.Items {
+			name := strings.TrimSpace(it.ProductName)
+			if name == "" {
+				name = fmt.Sprintf("商品#%d", it.ProductID)
+			}
+			itemListForCard = append(itemListForCard, map[string]interface{}{
+				"name":     name,
+				"quantity": fmt.Sprintf("%.2f", it.Quantity),
+				"unit":     strings.TrimSpace(it.Unit),
+				"amount":   fmt.Sprintf("%.2f", it.Amount),
+			})
+		}
+		accountBlock := map[string]interface{}{
+			"account_no":    account.AccountNo,
+			"channel":       channelName,
+			"account_date":  account.AccountDate.Format("2006-01-02"),
+			"other_expense": fmt.Sprintf("%.2f", account.OtherExpenseAmount),
+			"net_income":    fmt.Sprintf("%.2f", account.NetIncomeAmount),
+		}
+		cardParam := map[string]interface{}{
+			"title":        title,
+			"storeName":    store.Name,
+			"storename":    store.Name,
+			"accountNo":    account.AccountNo,
+			"channelName":  channelName,
+			"accountDate":  account.AccountDate.Format("2006-01-02"),
+			"operatorName": operatorDisplay,
+			"content":      text,
+			"item_list":    itemListForCard,
+			"itemList":     strings.Join(itemLines, "\n"),
+			"shangpinls":   strings.Join(itemLines, "\n"),
+			"shangpinimg":  imageURL,
+			"itemCount":    account.ItemCount,
+			"totalAmount":  fmt.Sprintf("%.2f", account.TotalAmount),
+			"createTime":   time.Now().Format("2006-01-02 15:04:05"),
+			"imageUrl":     imageURL,
+			"account":      accountBlock,
+			// 兼容钉钉模板使用扁平点路径变量名的场景
+			"account.account_no":    accountBlock["account_no"],
+			"account.channel":       accountBlock["channel"],
+			"account.account_date":  accountBlock["account_date"],
+			"account.other_expense": accountBlock["other_expense"],
+			"account.net_income":    accountBlock["net_income"],
+			"ccount.total_amount":   fmt.Sprintf("%.2f", account.TotalAmount),
+		}
+		sendErr = s.dingTalkService.SendStreamCardToMobile(bot, bot.CardMsgKey, store.Phone, cardParam)
+		if sendErr != nil {
+			// 卡片失败后回退到 Markdown，避免通知丢失
+			if imageURL != "" {
+				sendErr = s.dingTalkService.SendStreamMarkdownWithImageToMobile(bot, title, text, imageURL, store.Phone)
+			} else {
+				sendErr = s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone)
+			}
+		}
+	} else if imageURL != "" {
 		sendErr = s.dingTalkService.SendStreamMarkdownWithImageToMobile(bot, title, text, imageURL, store.Phone)
 	} else {
 		sendErr = s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone)
@@ -567,20 +689,55 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 
 // Get 获取记账详情
 func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
-	return s.storeAccountModule.GetByID(id)
+	account, err := s.storeAccountModule.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	account.NetIncomeAmount = s.calculateAccountNetIncome(account)
+	return account, nil
 }
 
 // List 记账列表
 func (s *StoreAccountService) List(req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
-	return s.storeAccountModule.List(req)
+	list, total, err := s.storeAccountModule.List(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, account := range list {
+		account.NetIncomeAmount = s.calculateAccountNetIncome(account)
+	}
+	return list, total, nil
 }
 
 // Update 更新记账
 func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) error {
+	account, err := s.storeAccountModule.GetByID(id)
+	if err != nil {
+		return err
+	}
+	if !s.IsAccountEditable(account) {
+		return errors.New("记账已超过可编辑时间，仅支持当天编辑（23:00后创建可延长至次日03:00）")
+	}
+
 	updates := make(map[string]interface{})
 
 	if req.Channel != "" {
 		updates["channel"] = req.Channel
+	}
+	if req.PaymentStatus != nil {
+		updates["payment_status"] = resolvePaymentStatus(*req.PaymentStatus)
+	}
+	if req.MemberID != nil {
+		if *req.MemberID > 0 {
+			if s.memberModule != nil {
+				if _, err := s.memberModule.GetMember(*req.MemberID, account.StoreID, false); err != nil {
+					return fmt.Errorf("会员不存在")
+				}
+			}
+			updates["member_id"] = *req.MemberID
+		} else {
+			updates["member_id"] = nil
+		}
 	}
 	if req.OrderNo != "" {
 		updates["order_no"] = req.OrderNo
@@ -601,9 +758,12 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	}
 	if req.OtherExpenseAmount != nil {
 		updates["other_expense_amount"] = *req.OtherExpenseAmount
-		if account, err := s.storeAccountModule.GetByID(id); err == nil && account != nil {
-			updates["net_income_amount"] = account.TotalAmount - *req.OtherExpenseAmount
+		var consumableTotal float64
+		for _, c := range account.Consumables {
+			consumableTotal += c.Amount
 		}
+		itemCostTotal := s.calculateAccountItemCost(account.Items)
+		updates["net_income_amount"] = account.TotalAmount - *req.OtherExpenseAmount - consumableTotal - itemCostTotal
 	}
 
 	if len(updates) == 0 {
@@ -615,7 +775,7 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 
 // Delete 删除记账
 func (s *StoreAccountService) Delete(id uint) error {
-	return s.storeAccountModule.Delete(id)
+	return errors.New("记账记录不允许删除")
 }
 
 // GetStats 获取统计
@@ -632,9 +792,56 @@ func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string) 
 	}, nil
 }
 
+func (s *StoreAccountService) calculateAccountNetIncome(account *model.StoreAccount) float64 {
+	if account == nil {
+		return 0
+	}
+	var consumableTotal float64
+	for _, c := range account.Consumables {
+		consumableTotal += c.Amount
+	}
+	itemCostTotal := s.calculateAccountItemCost(account.Items)
+	return account.TotalAmount - account.OtherExpenseAmount - consumableTotal - itemCostTotal
+}
+
+func (s *StoreAccountService) calculateAccountItemCost(items []model.StoreAccountItem) float64 {
+	if len(items) == 0 || s.unitSpecModule == nil {
+		return 0
+	}
+	specCache := make(map[uint][]*model.ProductUnitSpec)
+	var total float64
+	for _, it := range items {
+		if it.ProductID == 0 || it.Quantity <= 0 {
+			continue
+		}
+		specs, ok := specCache[it.ProductID]
+		if !ok {
+			rows, err := s.unitSpecModule.ListByProductID(it.ProductID)
+			if err == nil {
+				specs = rows
+			}
+			specCache[it.ProductID] = specs
+		}
+		costPrice := resolveUnitCostFromSpecs(it.Unit, specs)
+		total += it.Quantity * costPrice
+	}
+	return total
+}
+
+func resolvePaymentStatus(v int) int {
+	if v == model.StoreAccountPaymentUnpaid {
+		return model.StoreAccountPaymentUnpaid
+	}
+	return model.StoreAccountPaymentPaid
+}
+
 func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindStoreAccountConsumablesReq) error {
-	if _, err := s.storeAccountModule.GetByID(accountID); err != nil {
+	account, err := s.storeAccountModule.GetByID(accountID)
+	if err != nil {
 		return err
+	}
+	if !s.IsAccountEditable(account) {
+		return errors.New("记账已超过可编辑时间，仅支持当天编辑（23:00后创建可延长至次日03:00）")
 	}
 	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
 	for _, item := range req.Consumables {
@@ -686,4 +893,27 @@ func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindSto
 		})
 	}
 	return s.storeAccountModule.ReplaceConsumables(accountID, consumables)
+}
+
+// IsAccountEditable 判断记账记录是否允许编辑：
+// 1. 默认仅允许在记账创建当日（自然日）编辑
+// 2. 若创建时间在当日23点（含）后，延长至次日03:00
+func (s *StoreAccountService) IsAccountEditable(account *model.StoreAccount) bool {
+	if account == nil {
+		return false
+	}
+	now := time.Now()
+	created := account.CreatedAt
+	loc := now.Location()
+	if !created.IsZero() {
+		created = created.In(loc)
+	}
+
+	dayStart := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, loc)
+	nextDayStart := dayStart.Add(24 * time.Hour)
+	cutoff := nextDayStart
+	if created.Hour() >= 23 {
+		cutoff = dayStart.Add(27 * time.Hour) // 次日03:00
+	}
+	return now.Before(cutoff)
 }

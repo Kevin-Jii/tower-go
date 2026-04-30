@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,12 +12,12 @@ import (
 
 // MemberService 会员服务
 type MemberService struct {
-	module           *module.MemberModule
-	storeModule      *module.StoreModule
-	botModule        *module.DingTalkBotModule
-	dictModule       *module.DictModule
-	userModule       *module.UserModule
-	dingTalkService  *DingTalkService
+	module          *module.MemberModule
+	storeModule     *module.StoreModule
+	botModule       *module.DingTalkBotModule
+	dictModule      *module.DictModule
+	userModule      *module.UserModule
+	dingTalkService *DingTalkService
 }
 
 // NewMemberService 创建会员服务
@@ -42,28 +43,28 @@ func (s *MemberService) SetDependencies(
 // ========== Member 操作 ==========
 
 // CreateMember 创建会员
-func (s *MemberService) CreateMember(req *model.CreateMemberReq) (*model.Member, error) {
-	return s.module.CreateMember(req)
+func (s *MemberService) CreateMember(req *model.CreateMemberReq, storeID uint) (*model.Member, error) {
+	return s.module.CreateMember(req, storeID)
 }
 
 // UpdateMember 更新会员
-func (s *MemberService) UpdateMember(id uint, req *model.UpdateMemberReq) (*model.Member, error) {
-	return s.module.UpdateMember(id, req)
+func (s *MemberService) UpdateMember(id uint, req *model.UpdateMemberReq, storeID uint, isAdmin bool) (*model.Member, error) {
+	return s.module.UpdateMember(id, req, storeID, isAdmin)
 }
 
 // DeleteMember 删除会员
-func (s *MemberService) DeleteMember(id uint) error {
-	return s.module.DeleteMember(id)
+func (s *MemberService) DeleteMember(id uint, storeID uint, isAdmin bool) error {
+	return s.module.DeleteMember(id, storeID, isAdmin)
 }
 
 // GetMember 获取会员
-func (s *MemberService) GetMember(id uint) (*model.Member, error) {
-	return s.module.GetMember(id)
+func (s *MemberService) GetMember(id uint, storeID uint, isAdmin bool) (*model.Member, error) {
+	return s.module.GetMember(id, storeID, isAdmin)
 }
 
 // GetMemberByPhone 通过手机号获取会员
-func (s *MemberService) GetMemberByPhone(phone string) (*model.Member, error) {
-	return s.module.GetMemberByPhone(phone)
+func (s *MemberService) GetMemberByPhone(phone string, storeID uint, isAdmin bool) (*model.Member, error) {
+	return s.module.GetMemberByPhone(phone, storeID, isAdmin)
 }
 
 // GetMemberByUID 通过UID获取会员
@@ -72,13 +73,13 @@ func (s *MemberService) GetMemberByUID(uid string) (*model.Member, error) {
 }
 
 // ListMembers 获取会员列表
-func (s *MemberService) ListMembers(keyword string, page, pageSize int) ([]model.Member, int64, error) {
-	return s.module.ListMembers(keyword, page, pageSize)
+func (s *MemberService) ListMembers(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.Member, int64, error) {
+	return s.module.ListMembers(keyword, page, pageSize, storeID, isAdmin)
 }
 
 // AdjustBalance 调整余额
-func (s *MemberService) AdjustBalance(id uint, amount model.DecimalType, changeType model.ChangeTypeEnum, remark string, version int, storeID, userID uint) (*model.Member, error) {
-	member, err := s.module.AdjustBalanceWithLock(id, amount, changeType, remark, version)
+func (s *MemberService) AdjustBalance(id uint, amount model.DecimalType, changeType model.ChangeTypeEnum, remark string, version int, storeID, userID uint, isAdmin bool) (*model.Member, error) {
+	member, err := s.module.AdjustBalanceWithLock(id, amount, changeType, remark, version, storeID, isAdmin)
 	if err != nil {
 		return nil, err
 	}
@@ -102,22 +103,22 @@ func (s *MemberService) GetWalletLog(id uint) (*model.WalletLog, error) {
 }
 
 // ListWalletLogs 查询流水列表
-func (s *MemberService) ListWalletLogs(req *model.ListWalletLogReq, page, pageSize int) ([]model.WalletLog, int64, error) {
-	return s.module.ListWalletLogs(req, page, pageSize)
+func (s *MemberService) ListWalletLogs(req *model.ListWalletLogReq, page, pageSize int, storeID uint, isAdmin bool) ([]model.WalletLog, int64, error) {
+	return s.module.ListWalletLogs(req, page, pageSize, storeID, isAdmin)
 }
 
 // ========== RechargeOrder 操作 ==========
 
 // CreateRechargeOrder 创建充值单（自动完成支付）
-func (s *MemberService) CreateRechargeOrder(req *model.CreateRechargeOrderReq, storeID, userID uint) (*model.RechargeOrder, error) {
+func (s *MemberService) CreateRechargeOrder(req *model.CreateRechargeOrderReq, storeID, userID uint, isAdmin bool) (*model.RechargeOrder, error) {
 	// 1. 创建充值单
-	order, err := s.module.CreateRechargeOrder(req)
+	order, err := s.module.CreateRechargeOrder(req, storeID, isAdmin)
 	if err != nil {
 		return nil, err
 	}
 
 	// 2. 自动完成支付（更新会员余额、记录流水）
-	order, err = s.module.PayRechargeOrder(order.OrderNo)
+	order, err = s.module.PayRechargeOrder(order.OrderNo, storeID, isAdmin)
 	if err != nil {
 		return nil, err
 	}
@@ -129,23 +130,23 @@ func (s *MemberService) CreateRechargeOrder(req *model.CreateRechargeOrderReq, s
 }
 
 // GetRechargeOrder 获取充值单
-func (s *MemberService) GetRechargeOrder(id uint) (*model.RechargeOrder, error) {
-	return s.module.GetRechargeOrder(id)
+func (s *MemberService) GetRechargeOrder(id uint, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
+	return s.module.GetRechargeOrder(id, storeID, isAdmin)
 }
 
 // GetRechargeOrderByNo 通过单号获取充值单
-func (s *MemberService) GetRechargeOrderByNo(orderNo string) (*model.RechargeOrder, error) {
-	return s.module.GetRechargeOrderByNo(orderNo)
+func (s *MemberService) GetRechargeOrderByNo(orderNo string, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
+	return s.module.GetRechargeOrderByNo(orderNo, storeID, isAdmin)
 }
 
 // ListRechargeOrders 查询充值单列表
-func (s *MemberService) ListRechargeOrders(memberID uint, status *model.PayStatusEnum, page, pageSize int) ([]model.RechargeOrder, int64, error) {
-	return s.module.ListRechargeOrders(memberID, status, page, pageSize)
+func (s *MemberService) ListRechargeOrders(memberID uint, status *model.PayStatusEnum, page, pageSize int, storeID uint, isAdmin bool) ([]model.RechargeOrder, int64, error) {
+	return s.module.ListRechargeOrders(memberID, status, page, pageSize, storeID, isAdmin)
 }
 
 // PayRechargeOrder 支付充值单
-func (s *MemberService) PayRechargeOrder(orderNo string, storeID, userID uint) (*model.RechargeOrder, error) {
-	order, err := s.module.PayRechargeOrder(orderNo)
+func (s *MemberService) PayRechargeOrder(orderNo string, storeID, userID uint, isAdmin bool) (*model.RechargeOrder, error) {
+	order, err := s.module.PayRechargeOrder(orderNo, storeID, isAdmin)
 	if err != nil {
 		return nil, err
 	}
@@ -405,6 +406,29 @@ func getPayTypeName(payType int) string {
 }
 
 // CancelRechargeOrder 取消充值单
-func (s *MemberService) CancelRechargeOrder(orderNo string) (*model.RechargeOrder, error) {
-	return s.module.CancelRechargeOrder(orderNo)
+func (s *MemberService) CancelRechargeOrder(orderNo string, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
+	return s.module.CancelRechargeOrder(orderNo, storeID, isAdmin)
+}
+
+func (s *MemberService) ListMemberConsumptions(memberID uint, startDate, endDate string, page, pageSize int, storeID uint, isAdmin bool) ([]model.MemberConsumptionRecord, int64, *model.MemberConsumptionSummary, error) {
+	member, err := s.module.GetMember(memberID, storeID, isAdmin)
+	if err != nil || member == nil {
+		return nil, 0, nil, errors.New("member not found")
+	}
+
+	records, total, summary, err := s.module.ListMemberConsumptions(memberID, startDate, endDate, page, pageSize)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	if s.dictModule != nil {
+		for i := range records {
+			records[i].ChannelName = records[i].Channel
+			if records[i].Channel != "" {
+				if dictData, e := s.dictModule.GetDataByTypeAndValue("sales_channel", records[i].Channel); e == nil && dictData != nil {
+					records[i].ChannelName = dictData.Label
+				}
+			}
+		}
+	}
+	return records, total, summary, nil
 }

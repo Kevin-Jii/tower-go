@@ -50,6 +50,7 @@ export interface Store {
   /** 门店编码（与后端 model.Store.store_code 一致） */
   store_code?: string | null
   address?: string
+  administrative_unit?: string
   phone?: string
   business_hours?: string
   contact_person?: string
@@ -365,6 +366,13 @@ export interface StoreAccount {
   id: number
   account_no: string
   store_id: number
+  member_id?: number
+  payment_status?: number
+  member?: {
+    id: number
+    name?: string
+    phone?: string
+  }
   channel: string
   order_no?: string
   total_amount: number
@@ -382,6 +390,7 @@ export interface StoreAccount {
 
 export interface MemberRow {
   id: number
+  store_id?: number
   uid: string
   name?: string
   phone: string
@@ -390,6 +399,36 @@ export interface MemberRow {
   level: number
   version: number
   createTime?: string
+}
+
+export interface MemberConsumptionRecord {
+  account_id: number
+  account_no: string
+  account_date: string
+  channel: string
+  channel_name?: string
+  order_no?: string
+  total_amount: number
+  other_expense_amount: number
+  consumable_amount: number
+  net_income_amount: number
+  created_at?: string
+}
+
+export interface MemberConsumptionSummary {
+  count: number
+  total_amount: number
+  other_expense_amount: number
+  consumable_amount: number
+  net_income_amount: number
+}
+
+export interface MemberConsumptionPage {
+  list: MemberConsumptionRecord[]
+  total: number
+  page: number
+  page_size: number
+  summary?: MemberConsumptionSummary
 }
 
 export interface InventoryStats {
@@ -489,6 +528,7 @@ export interface DingTalkBot {
   store_name?: string
   is_enabled: boolean
   msg_type?: string
+  card_msg_key?: string
   remark?: string
   created_at?: string
   updated_at?: string
@@ -506,6 +546,7 @@ export interface CreateDingTalkBotReq {
   store_id?: number | null
   is_enabled?: boolean
   msg_type?: string
+  card_msg_key?: string
   remark?: string
 }
 
@@ -521,5 +562,6 @@ export type UpdateDingTalkBotReq = Partial<{
   store_id: number | null
   is_enabled: boolean
   msg_type: string
+  card_msg_key: string | null
   remark: string | null
 }>

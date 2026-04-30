@@ -131,6 +131,7 @@ const arcoColumns = computed<TableColumnData[]>(() =>
     minWidth: minW,
     fixed: col.fixed,
     align: col.align,
+    className: col.key === 'actions' ? 'base-table-actions-cell' : undefined,
     ellipsis: col.ellipsis,
     tooltip: col.ellipsis ? true : undefined,
     render: ({ record }) => {
@@ -167,5 +168,22 @@ function onRowClick(record: TableData): void {
 }
 :deep(.base-table-row--clickable) {
   cursor: pointer;
+}
+
+/* 统一兜底：操作列按钮过多时允许自动换行，避免被固定列宽挤压遮挡 */
+:deep(td.base-table-actions-cell) {
+  white-space: normal !important;
+}
+:deep(td.base-table-actions-cell > .arco-table-cell) {
+  overflow: visible;
+}
+:deep(td.base-table-actions-cell .flex-nowrap) {
+  flex-wrap: wrap !important;
+}
+:deep(td.base-table-actions-cell .whitespace-nowrap) {
+  white-space: normal !important;
+}
+:deep(td.base-table-actions-cell .shrink-0) {
+  flex-shrink: 1 !important;
 }
 </style>

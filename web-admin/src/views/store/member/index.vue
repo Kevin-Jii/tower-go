@@ -15,6 +15,7 @@
       </template>
       <template #cell-actions="{ row }">
         <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+          <BaseButton v-permission="'store:member:list'" variant="link" size="sm" @click="openConsumptions(row as MemberRow)">消费记录</BaseButton>
           <BaseButton v-permission="'store:member:edit'" variant="link" size="sm" @click="openEdit(row as MemberRow)">编辑</BaseButton>
           <BaseButton v-permission="'store:member:balance'" variant="link" size="sm" @click="openAdjust(row as MemberRow)">调余额</BaseButton>
           <BaseButton v-permission="'store:member:delete'" variant="link" size="sm" @click="onDelete(row as MemberRow)">删除</BaseButton>
@@ -80,6 +81,63 @@
         <BaseButton variant="primary" :loading="adjSaving" @click="submitAdjust">提交</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="consDlg" title="会员消费记录" max-width="min(960px, 96vw)">
+      <div class="space-y-4">
+        <div class="text-sm text-slate-600">
+          会员：{{ consMember ? `${consMember.phone}${consMember.name ? `（${consMember.name}）` : ''}` : '-' }}
+        </div>
+        <div class="flex flex-wrap items-end gap-2">
+          <BaseFormItem label="开始日期" class="w-44">
+            <BaseInput v-model="consStart" type="date" />
+          </BaseFormItem>
+          <BaseFormItem label="结束日期" class="w-44">
+            <BaseInput v-model="consEnd" type="date" />
+          </BaseFormItem>
+          <BaseButton variant="primary" :loading="consLoading" @click="reloadConsumptions">查询</BaseButton>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded border border-[var(--color-border-2)] p-3">
+          <div>
+            <div class="text-xs text-[var(--color-text-3)]">消费笔数</div>
+            <div class="text-base font-semibold">{{ consSummary.count ?? 0 }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-[var(--color-text-3)]">销售总额</div>
+            <div class="text-base font-semibold text-indigo-700">{{ fmtMoney(consSummary.total_amount ?? 0) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-[var(--color-text-3)]">消耗品成本</div>
+            <div class="text-base font-semibold text-amber-700">{{ fmtMoney(consSummary.consumable_amount ?? 0) }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-[var(--color-text-3)]">净利润</div>
+            <div class="text-base font-semibold text-emerald-700">{{ fmtMoney(consSummary.net_income_amount ?? 0) }}</div>
+          </div>
+        </div>
+        <BaseTable
+          :columns="consColumns"
+          :data="(consRows as unknown) as Record<string, unknown>[]"
+          :loading="consLoading"
+          min-width="860px"
+        >
+          <template #cell-total_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).total_amount) }}</template>
+          <template #cell-consumable_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).consumable_amount) }}</template>
+          <template #cell-net_income_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).net_income_amount) }}</template>
+        </BaseTable>
+        <div class="flex justify-end">
+          <BasePagination
+            :page="consPage"
+            :page-size="consPageSize"
+            :total="consTotal"
+            @update:page="(p) => (consPage = p)"
+            @update:page-size="(s) => (consPageSize = s)"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="consDlg = false">关闭</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -97,8 +155,8 @@ import {
   BaseTable,
 } from '@/components/base'
 import type { BaseTableColumn } from '@/components/base/types'
-import { adjustMemberBalance, createMember, deleteMember, listMembers, updateMember } from '@/api/member'
-import type { MemberRow } from '@/api/types'
+import { adjustMemberBalance, createMember, deleteMember, listMemberConsumptions, listMembers, updateMember } from '@/api/member'
+import type { MemberConsumptionRecord, MemberRow } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 
@@ -139,6 +197,15 @@ const columns: BaseTableColumn[] = [
   { key: 'points', label: '积分', prop: 'points', width: '72px' },
   { key: 'level', label: '等级', prop: 'level', width: '72px' },
   { key: 'actions', label: '操作', width: '260px', align: 'right' },
+]
+const consColumns: BaseTableColumn[] = [
+  { key: 'account_no', label: '记账单号', prop: 'account_no', minWidth: '140px', ellipsis: true },
+  { key: 'account_date', label: '日期', prop: 'account_date', width: '120px' },
+  { key: 'channel_name', label: '渠道', prop: 'channel_name', width: '120px' },
+  { key: 'order_no', label: '订单号', prop: 'order_no', minWidth: '120px', ellipsis: true },
+  { key: 'total_amount', label: '销售额', width: '100px' },
+  { key: 'consumable_amount', label: '消耗品', width: '100px' },
+  { key: 'net_income_amount', label: '净利润', width: '100px' },
 ]
 
 function fmtMoney(v: string | number): string {
@@ -262,4 +329,82 @@ async function onDelete(row: MemberRow): Promise<void> {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
+
+const consDlg = ref(false)
+const consLoading = ref(false)
+const consMember = ref<MemberRow | null>(null)
+const consStart = ref('')
+const consEnd = ref('')
+const consPage = ref(1)
+const consPageSize = ref(10)
+const consTotal = ref(0)
+const consRows = ref<MemberConsumptionRecord[]>([])
+const consSummary = reactive({
+  count: 0,
+  total_amount: 0,
+  other_expense_amount: 0,
+  consumable_amount: 0,
+  net_income_amount: 0,
+})
+
+function currentMonthRange(): { start: string; end: string } {
+  const t = new Date()
+  const y = t.getFullYear()
+  const m = String(t.getMonth() + 1).padStart(2, '0')
+  const d = String(t.getDate()).padStart(2, '0')
+  return { start: `${y}-${m}-01`, end: `${y}-${m}-${d}` }
+}
+
+async function loadConsumptions(): Promise<void> {
+  if (!consMember.value) return
+  consLoading.value = true
+  try {
+    const data = await listMemberConsumptions(consMember.value.id, {
+      start_date: consStart.value || undefined,
+      end_date: consEnd.value || undefined,
+      page: consPage.value,
+      page_size: consPageSize.value,
+    })
+    consRows.value = data.list ?? []
+    consTotal.value = Number(data.total ?? 0)
+    consSummary.count = Number(data.summary?.count ?? 0)
+    consSummary.total_amount = Number(data.summary?.total_amount ?? 0)
+    consSummary.other_expense_amount = Number(data.summary?.other_expense_amount ?? 0)
+    consSummary.consumable_amount = Number(data.summary?.consumable_amount ?? 0)
+    consSummary.net_income_amount = Number(data.summary?.net_income_amount ?? 0)
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载消费记录失败')
+  } finally {
+    consLoading.value = false
+  }
+}
+
+function reloadConsumptions(): void {
+  consPage.value = 1
+  void loadConsumptions()
+}
+
+function openConsumptions(row: MemberRow): void {
+  consMember.value = row
+  const r = currentMonthRange()
+  consStart.value = r.start
+  consEnd.value = r.end
+  consPage.value = 1
+  consPageSize.value = 10
+  consTotal.value = 0
+  consRows.value = []
+  consSummary.count = 0
+  consSummary.total_amount = 0
+  consSummary.other_expense_amount = 0
+  consSummary.consumable_amount = 0
+  consSummary.net_income_amount = 0
+  consDlg.value = true
+  void loadConsumptions()
+}
+
+watch([consPage, consPageSize], () => {
+  if (consDlg.value) {
+    void loadConsumptions()
+  }
+})
 </script>

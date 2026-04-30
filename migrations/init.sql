@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `stores` (
   `store_code` VARCHAR(6) DEFAULT NULL,
   `name` VARCHAR(100) NOT NULL,
   `address` VARCHAR(255) DEFAULT NULL,
+  `administrative_unit` VARCHAR(100) DEFAULT NULL COMMENT '归属区',
   `phone` VARCHAR(20) DEFAULT NULL,
   `business_hours` VARCHAR(100) DEFAULT NULL,
   `status` INT NOT NULL DEFAULT 1,
@@ -206,6 +207,8 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `account_no` VARCHAR(50) NOT NULL,
   `store_id` BIGINT UNSIGNED NOT NULL,
+  `member_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '关联会员ID',
+  `payment_status` TINYINT NOT NULL DEFAULT 1 COMMENT '支付状态 1=已支付 2=未支付',
   `channel` VARCHAR(50) DEFAULT NULL,
   `order_no` VARCHAR(100) DEFAULT NULL,
   `total_amount` DECIMAL(10,2) DEFAULT NULL,
@@ -223,6 +226,8 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_store_accounts_account_no` (`account_no`),
   KEY `idx_store_accounts_store_id` (`store_id`),
+  KEY `idx_store_accounts_member_id` (`member_id`),
+  KEY `idx_store_accounts_payment_status` (`payment_status`),
   KEY `idx_store_accounts_channel` (`channel`),
   KEY `idx_store_accounts_order_no` (`order_no`),
   KEY `idx_store_accounts_tag_code` (`tag_code`),
@@ -476,6 +481,7 @@ CREATE TABLE IF NOT EXISTS `printers` (
 -- 会员表
 CREATE TABLE IF NOT EXISTS `t_member` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `store_id` int unsigned NOT NULL DEFAULT '0' COMMENT '所属门店ID',
   `uid` varchar(32) NOT NULL DEFAULT '' COMMENT '用户唯一标识',
   `name` varchar(100) NOT NULL DEFAULT '' COMMENT '会员姓名',
   `phone` varchar(20) NOT NULL DEFAULT '' COMMENT '手机号',
@@ -487,7 +493,8 @@ CREATE TABLE IF NOT EXISTS `t_member` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_uid` (`uid`),
-  UNIQUE KEY `idx_phone` (`phone`)
+  UNIQUE KEY `idx_store_phone` (`store_id`, `phone`),
+  KEY `idx_store_id` (`store_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员表';
 
 -- 会员流水表
@@ -762,3 +769,9 @@ CREATE TABLE IF NOT EXISTS `price_list_items` (
   KEY `idx_product_id` (`product_id`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='价目单商品表';
+
+INSERT INTO `dict_types` (`code`, `name`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT 'ADMINISTRATIVEUNIT', '归属区', '门店归属区字典', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (
+  SELECT 1 FROM `dict_types` WHERE `code` = 'ADMINISTRATIVEUNIT'
+);

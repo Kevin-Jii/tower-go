@@ -194,6 +194,39 @@ func (s *DingTalkService) SendStreamMarkdownToMobile(bot *model.DingTalkBot, tit
 	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
 }
 
+// SendStreamCardToMobile Stream 模式发送卡片消息到指定手机号用户
+// cardMsgKey 为钉钉卡片模板标识，cardParam 会被序列化为 msgParam
+func (s *DingTalkService) SendStreamCardToMobile(bot *model.DingTalkBot, cardMsgKey, mobile string, cardParam map[string]interface{}) error {
+	if bot.RobotCode == "" {
+		return errors.New("robotCode is required for stream mode")
+	}
+	if strings.TrimSpace(cardMsgKey) == "" {
+		return errors.New("card msg key is required")
+	}
+
+	accessToken, err := s.getStreamAccessToken(bot.ClientID, bot.ClientSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	var userIds []string
+	if mobile != "" {
+		userId, err := s.GetUserIdByMobile(mobile, accessToken)
+		if err != nil {
+			return fmt.Errorf("failed to get userId by mobile %s: %w", mobile, err)
+		}
+		userIds = []string{userId}
+	}
+
+	msgBody := map[string]interface{}{
+		"msgtype": strings.TrimSpace(cardMsgKey),
+	}
+	for k, v := range cardParam {
+		msgBody[k] = v
+	}
+	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
+}
+
 // SendStreamImageToMobile Stream 模式发送图片消息到指定手机号用户
 // imageURL: 图片的公开访问URL
 func (s *DingTalkService) SendStreamImageToMobile(bot *model.DingTalkBot, imageURL, mobile string) error {
@@ -881,6 +914,7 @@ func (s *DingTalkService) CreateBot(req *model.CreateDingTalkBotReq) (*model.Din
 		StoreID:      req.StoreID,
 		IsEnabled:    true,
 		MsgType:      "markdown",
+		CardMsgKey:   strings.TrimSpace(req.CardMsgKey),
 		Remark:       req.Remark,
 	}
 
@@ -889,6 +923,12 @@ func (s *DingTalkService) CreateBot(req *model.CreateDingTalkBotReq) (*model.Din
 	}
 	if req.MsgType != "" {
 		bot.MsgType = req.MsgType
+	}
+	if bot.MsgType == "card" && bot.BotType != "stream" {
+		return nil, errors.New("card msg type only supports stream bot")
+	}
+	if bot.MsgType == "card" && strings.TrimSpace(bot.CardMsgKey) == "" {
+		return nil, errors.New("card_msg_key is required when msg_type is card")
 	}
 
 	// 创建机器人
@@ -967,6 +1007,25 @@ func (s *DingTalkService) UpdateBot(id uint, req *model.UpdateDingTalkBotReq) er
 		if exists {
 			return errors.New("webhook already exists")
 		}
+	}
+
+	targetBotType := bot.BotType
+	if req.BotType != nil && *req.BotType != "" {
+		targetBotType = *req.BotType
+	}
+	targetMsgType := bot.MsgType
+	if req.MsgType != nil && *req.MsgType != "" {
+		targetMsgType = *req.MsgType
+	}
+	targetCardMsgKey := strings.TrimSpace(bot.CardMsgKey)
+	if req.CardMsgKey != nil {
+		targetCardMsgKey = strings.TrimSpace(*req.CardMsgKey)
+	}
+	if targetMsgType == "card" && targetBotType != "stream" {
+		return errors.New("card msg type only supports stream bot")
+	}
+	if targetMsgType == "card" && targetCardMsgKey == "" {
+		return errors.New("card_msg_key is required when msg_type is card")
 	}
 
 	updates := updatesPkg.BuildUpdatesFromReq(req)
@@ -1261,6 +1320,14 @@ func (s *DingTalkService) TestBot(id uint) error {
 			return errors.New("robot_code is empty for stream bot: please set the store phone number (门店联系电话) for testing")
 		}
 
+		if bot.MsgType == "card" && strings.TrimSpace(bot.CardMsgKey) != "" {
+			cardParam := map[string]interface{}{
+				"title":      "机器人测试",
+				"content":    testMsg,
+				"createTime": time.Now().Format("2006-01-02 15:04:05"),
+			}
+			return s.SendStreamCardToMobile(bot, bot.CardMsgKey, mobile, cardParam)
+		}
 		if bot.MsgType == "markdown" {
 			return s.SendStreamMarkdownToMobile(bot, "机器人测试", testMsg, mobile)
 		}

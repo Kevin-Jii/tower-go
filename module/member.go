@@ -27,13 +27,37 @@ func (m *MemberModule) GetDB() *gorm.DB {
 	return m.db
 }
 
+func (m *MemberModule) scopedMemberQuery(storeID uint, isAdmin bool) *gorm.DB {
+	q := m.db.Model(&model.Member{})
+	if !isAdmin {
+		q = q.Where("store_id = ?", storeID)
+	}
+	return q
+}
+
+func (m *MemberModule) scopedWalletLogQuery(storeID uint, isAdmin bool) *gorm.DB {
+	q := m.db.Model(&model.WalletLog{}).Joins("JOIN t_member ON t_member.id = t_member_wallet_log.member_id")
+	if !isAdmin {
+		q = q.Where("t_member.store_id = ?", storeID)
+	}
+	return q
+}
+
+func (m *MemberModule) scopedRechargeOrderQuery(storeID uint, isAdmin bool) *gorm.DB {
+	q := m.db.Model(&model.RechargeOrder{}).Joins("JOIN t_member ON t_member.id = t_recharge_order.member_id")
+	if !isAdmin {
+		q = q.Where("t_member.store_id = ?", storeID)
+	}
+	return q
+}
+
 // ========== Member 操作 ==========
 
 // CreateMember 创建会员
-func (m *MemberModule) CreateMember(req *model.CreateMemberReq) (*model.Member, error) {
+func (m *MemberModule) CreateMember(req *model.CreateMemberReq, storeID uint) (*model.Member, error) {
 	// 检查手机号是否已存在
 	var count int64
-	m.db.Model(&model.Member{}).Where("phone = ?", req.Phone).Count(&count)
+	m.db.Model(&model.Member{}).Where("store_id = ? AND phone = ?", storeID, req.Phone).Count(&count)
 	if count > 0 {
 		return nil, errors.New("手机号已注册")
 	}
@@ -51,6 +75,7 @@ func (m *MemberModule) CreateMember(req *model.CreateMemberReq) (*model.Member, 
 	}
 
 	member := &model.Member{
+		StoreID: storeID,
 		UID:     uid,
 		Name:    req.Name,
 		Phone:   req.Phone,
@@ -66,42 +91,49 @@ func (m *MemberModule) CreateMember(req *model.CreateMemberReq) (*model.Member, 
 }
 
 // UpdateMember 更新会员
-func (m *MemberModule) UpdateMember(id uint, req *model.UpdateMemberReq) (*model.Member, error) {
-	var member model.Member
-	if err := m.db.First(&member, id).Error; err != nil {
+func (m *MemberModule) UpdateMember(id uint, req *model.UpdateMemberReq, storeID uint, isAdmin bool) (*model.Member, error) {
+	member, err := m.GetMember(id, storeID, isAdmin)
+	if err != nil {
 		return nil, err
 	}
 	updateMap := updatesPkg.BuildUpdatesFromReq(req)
 	if len(updateMap) == 0 {
-		return &member, nil
+		return member, nil
 	}
-	if err := m.db.Model(&member).Updates(updateMap).Error; err != nil {
+	if err := m.db.Model(member).Updates(updateMap).Error; err != nil {
 		return nil, err
 	}
-	if err := m.db.First(&member, id).Error; err != nil {
+	updated, err := m.GetMember(id, storeID, isAdmin)
+	if err != nil {
 		return nil, err
 	}
-	return &member, nil
+	return updated, nil
 }
 
 // DeleteMember 删除会员
-func (m *MemberModule) DeleteMember(id uint) error {
-	return m.db.Delete(&model.Member{}, id).Error
+func (m *MemberModule) DeleteMember(id uint, storeID uint, isAdmin bool) error {
+	member, err := m.GetMember(id, storeID, isAdmin)
+	if err != nil {
+		return err
+	}
+	return m.db.Delete(&model.Member{}, member.ID).Error
 }
 
 // GetMember 获取会员
-func (m *MemberModule) GetMember(id uint) (*model.Member, error) {
+func (m *MemberModule) GetMember(id uint, storeID uint, isAdmin bool) (*model.Member, error) {
 	var member model.Member
-	if err := m.db.First(&member, id).Error; err != nil {
+	query := m.scopedMemberQuery(storeID, isAdmin)
+	if err := query.Where("id = ?", id).First(&member).Error; err != nil {
 		return nil, err
 	}
 	return &member, nil
 }
 
 // GetMemberByPhone 通过手机号获取会员
-func (m *MemberModule) GetMemberByPhone(phone string) (*model.Member, error) {
+func (m *MemberModule) GetMemberByPhone(phone string, storeID uint, isAdmin bool) (*model.Member, error) {
 	var member model.Member
-	if err := m.db.Where("phone = ?", phone).First(&member).Error; err != nil {
+	query := m.scopedMemberQuery(storeID, isAdmin)
+	if err := query.Where("phone = ?", phone).First(&member).Error; err != nil {
 		return nil, err
 	}
 	return &member, nil
@@ -117,11 +149,11 @@ func (m *MemberModule) GetMemberByUID(uid string) (*model.Member, error) {
 }
 
 // ListMembers 获取会员列表
-func (m *MemberModule) ListMembers(keyword string, page, pageSize int) ([]model.Member, int64, error) {
+func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.Member, int64, error) {
 	var members []model.Member
 	var total int64
 
-	query := m.db.Model(&model.Member{})
+	query := m.scopedMemberQuery(storeID, isAdmin)
 	if keyword != "" {
 		query = query.Where("phone LIKE ? OR uid LIKE ? OR name LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
@@ -143,10 +175,10 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int) ([]model.
 }
 
 // AdjustBalanceWithLock 乐观锁调整余额
-func (m *MemberModule) AdjustBalanceWithLock(id uint, amount model.DecimalType, changeType model.ChangeTypeEnum, remark string, version int) (*model.Member, error) {
+func (m *MemberModule) AdjustBalanceWithLock(id uint, amount model.DecimalType, changeType model.ChangeTypeEnum, remark string, version int, storeID uint, isAdmin bool) (*model.Member, error) {
 	var member model.Member
-	// 使用行锁查询
-	if err := m.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&member, id).Error; err != nil {
+	query := m.scopedMemberQuery(storeID, isAdmin).Clauses(clause.Locking{Strength: "UPDATE"})
+	if err := query.Where("id = ?", id).First(&member).Error; err != nil {
 		return nil, err
 	}
 
@@ -216,11 +248,11 @@ func (m *MemberModule) GetWalletLog(id uint) (*model.WalletLog, error) {
 }
 
 // ListWalletLogs 查询流水列表
-func (m *MemberModule) ListWalletLogs(req *model.ListWalletLogReq, page, pageSize int) ([]model.WalletLog, int64, error) {
+func (m *MemberModule) ListWalletLogs(req *model.ListWalletLogReq, page, pageSize int, storeID uint, isAdmin bool) ([]model.WalletLog, int64, error) {
 	var logs []model.WalletLog
 	var total int64
 
-	query := m.db.Model(&model.WalletLog{})
+	query := m.scopedWalletLogQuery(storeID, isAdmin)
 	if req.MemberID > 0 {
 		query = query.Where("member_id = ?", req.MemberID)
 	}
@@ -253,7 +285,10 @@ func (m *MemberModule) ListWalletLogs(req *model.ListWalletLogReq, page, pageSiz
 // ========== RechargeOrder 操作 ==========
 
 // CreateRechargeOrder 创建充值单
-func (m *MemberModule) CreateRechargeOrder(req *model.CreateRechargeOrderReq) (*model.RechargeOrder, error) {
+func (m *MemberModule) CreateRechargeOrder(req *model.CreateRechargeOrderReq, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
+	if _, err := m.GetMember(req.MemberID, storeID, isAdmin); err != nil {
+		return nil, err
+	}
 	orderNo := generateOrderNo()
 	order := &model.RechargeOrder{
 		OrderNo:     orderNo,
@@ -300,34 +335,36 @@ func getPayTypeName(payType int) string {
 }
 
 // GetRechargeOrder 获取充值单
-func (m *MemberModule) GetRechargeOrder(id uint) (*model.RechargeOrder, error) {
+func (m *MemberModule) GetRechargeOrder(id uint, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
 	var order model.RechargeOrder
-	if err := m.db.First(&order, id).Error; err != nil {
+	query := m.scopedRechargeOrderQuery(storeID, isAdmin)
+	if err := query.Where("t_recharge_order.id = ?", id).First(&order).Error; err != nil {
 		return nil, err
 	}
 	return &order, nil
 }
 
 // GetRechargeOrderByNo 通过单号获取充值单
-func (m *MemberModule) GetRechargeOrderByNo(orderNo string) (*model.RechargeOrder, error) {
+func (m *MemberModule) GetRechargeOrderByNo(orderNo string, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
 	var order model.RechargeOrder
-	if err := m.db.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
+	query := m.scopedRechargeOrderQuery(storeID, isAdmin)
+	if err := query.Where("t_recharge_order.order_no = ?", orderNo).First(&order).Error; err != nil {
 		return nil, err
 	}
 	return &order, nil
 }
 
 // ListRechargeOrders 查询充值单列表
-func (m *MemberModule) ListRechargeOrders(memberID uint, status *model.PayStatusEnum, page, pageSize int) ([]model.RechargeOrder, int64, error) {
+func (m *MemberModule) ListRechargeOrders(memberID uint, status *model.PayStatusEnum, page, pageSize int, storeID uint, isAdmin bool) ([]model.RechargeOrder, int64, error) {
 	var orders []model.RechargeOrder
 	var total int64
 
-	query := m.db.Model(&model.RechargeOrder{})
+	query := m.scopedRechargeOrderQuery(storeID, isAdmin)
 	if memberID > 0 {
-		query = query.Where("member_id = ?", memberID)
+		query = query.Where("t_recharge_order.member_id = ?", memberID)
 	}
 	if status != nil {
-		query = query.Where("pay_status = ?", *status)
+		query = query.Where("t_recharge_order.pay_status = ?", *status)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
@@ -345,9 +382,10 @@ func (m *MemberModule) ListRechargeOrders(memberID uint, status *model.PayStatus
 }
 
 // PayRechargeOrder 支付充值单（余额充值）
-func (m *MemberModule) PayRechargeOrder(orderNo string) (*model.RechargeOrder, error) {
+func (m *MemberModule) PayRechargeOrder(orderNo string, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
 	var order model.RechargeOrder
-	if err := m.db.Where("order_no = ? AND pay_status = ?", orderNo, model.PayStatusPending).First(&order).Error; err != nil {
+	query := m.scopedRechargeOrderQuery(storeID, isAdmin)
+	if err := query.Where("t_recharge_order.order_no = ? AND t_recharge_order.pay_status = ?", orderNo, model.PayStatusPending).First(&order).Error; err != nil {
 		return nil, err
 	}
 
@@ -401,9 +439,10 @@ func (m *MemberModule) PayRechargeOrder(orderNo string) (*model.RechargeOrder, e
 }
 
 // CancelRechargeOrder 取消充值单
-func (m *MemberModule) CancelRechargeOrder(orderNo string) (*model.RechargeOrder, error) {
+func (m *MemberModule) CancelRechargeOrder(orderNo string, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
 	var order model.RechargeOrder
-	if err := m.db.Where("order_no = ? AND pay_status = ?", orderNo, model.PayStatusPending).First(&order).Error; err != nil {
+	query := m.scopedRechargeOrderQuery(storeID, isAdmin)
+	if err := query.Where("t_recharge_order.order_no = ? AND t_recharge_order.pay_status = ?", orderNo, model.PayStatusPending).First(&order).Error; err != nil {
 		return nil, err
 	}
 
@@ -412,6 +451,75 @@ func (m *MemberModule) CancelRechargeOrder(orderNo string) (*model.RechargeOrder
 	}
 
 	return &order, nil
+}
+
+// ListMemberConsumptions 查询会员消费记录（来自门店记账）
+func (m *MemberModule) ListMemberConsumptions(memberID uint, startDate, endDate string, page, pageSize int) ([]model.MemberConsumptionRecord, int64, *model.MemberConsumptionSummary, error) {
+	records := make([]model.MemberConsumptionRecord, 0)
+	var total int64
+	summary := &model.MemberConsumptionSummary{}
+
+	base := m.db.Table("store_accounts AS sa").
+		Where("sa.member_id = ?", memberID)
+	if startDate != "" {
+		base = base.Where("sa.account_date >= ?", startDate)
+	}
+	if endDate != "" {
+		base = base.Where("sa.account_date <= ?", endDate)
+	}
+
+	if err := base.Count(&total).Error; err != nil {
+		return records, 0, nil, err
+	}
+
+	consSub := m.db.Table("store_account_consumables").
+		Select("account_id, COALESCE(SUM(amount),0) AS consumable_amount").
+		Group("account_id")
+	costSub := m.db.Table("store_account_items AS sai").
+		Select("sai.account_id, COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price,0)),0) AS cost_amount").
+		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
+		Group("sai.account_id")
+
+	offset := (page - 1) * pageSize
+	listQuery := m.db.Table("store_accounts AS sa").
+		Select(`sa.id AS account_id, sa.account_no, sa.account_date, sa.channel, sa.order_no,
+			sa.total_amount, sa.other_expense_amount,
+			COALESCE(cons.consumable_amount,0) AS consumable_amount,
+			(sa.total_amount - sa.other_expense_amount - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0)) AS net_income_amount,
+			sa.created_at`).
+		Joins("LEFT JOIN (?) AS cons ON cons.account_id = sa.id", consSub).
+		Joins("LEFT JOIN (?) AS costs ON costs.account_id = sa.id", costSub).
+		Where("sa.member_id = ?", memberID)
+	if startDate != "" {
+		listQuery = listQuery.Where("sa.account_date >= ?", startDate)
+	}
+	if endDate != "" {
+		listQuery = listQuery.Where("sa.account_date <= ?", endDate)
+	}
+	if err := listQuery.Order("sa.id DESC").Offset(offset).Limit(pageSize).Scan(&records).Error; err != nil {
+		return records, 0, nil, err
+	}
+
+	summaryQuery := m.db.Table("store_accounts AS sa").
+		Select(`COUNT(1) AS count,
+			COALESCE(SUM(sa.total_amount),0) AS total_amount,
+			COALESCE(SUM(sa.other_expense_amount),0) AS other_expense_amount,
+			COALESCE(SUM(COALESCE(cons.consumable_amount,0)),0) AS consumable_amount,
+			COALESCE(SUM(sa.total_amount - sa.other_expense_amount - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0)),0) AS net_income_amount`).
+		Joins("LEFT JOIN (?) AS cons ON cons.account_id = sa.id", consSub).
+		Joins("LEFT JOIN (?) AS costs ON costs.account_id = sa.id", costSub).
+		Where("sa.member_id = ?", memberID)
+	if startDate != "" {
+		summaryQuery = summaryQuery.Where("sa.account_date >= ?", startDate)
+	}
+	if endDate != "" {
+		summaryQuery = summaryQuery.Where("sa.account_date <= ?", endDate)
+	}
+	if err := summaryQuery.Scan(summary).Error; err != nil {
+		return records, 0, nil, err
+	}
+
+	return records, total, summary, nil
 }
 
 // generateOrderNo 生成订单号

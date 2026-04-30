@@ -37,7 +37,8 @@ func (c *MemberController) CreateMember(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	member, err := c.service.CreateMember(&req)
+	storeID := middleware.GetStoreID(ctx)
+	member, err := c.service.CreateMember(&req, storeID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -68,7 +69,8 @@ func (c *MemberController) UpdateMember(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	member, err := c.service.UpdateMember(uint(id), &req)
+	storeID := middleware.GetStoreID(ctx)
+	member, err := c.service.UpdateMember(uint(id), &req, storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -92,7 +94,8 @@ func (c *MemberController) DeleteMember(ctx *gin.Context) {
 		http.Error(ctx, 400, "invalid id")
 		return
 	}
-	if err := c.service.DeleteMember(uint(id)); err != nil {
+	storeID := middleware.GetStoreID(ctx)
+	if err := c.service.DeleteMember(uint(id), storeID, middleware.IsAdmin(ctx)); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
@@ -115,7 +118,8 @@ func (c *MemberController) GetMember(ctx *gin.Context) {
 		http.Error(ctx, 400, "invalid id")
 		return
 	}
-	member, err := c.service.GetMember(uint(id))
+	storeID := middleware.GetStoreID(ctx)
+	member, err := c.service.GetMember(uint(id), storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 404, err.Error())
 		return
@@ -147,7 +151,8 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 		pageSize = 20
 	}
 
-	members, total, err := c.service.ListMembers(keyword, page, pageSize)
+	storeID := middleware.GetStoreID(ctx)
+	members, total, err := c.service.ListMembers(keyword, page, pageSize, storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -190,7 +195,7 @@ func (c *MemberController) AdjustBalance(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	userID := middleware.GetUserID(ctx)
 
-	member, err := c.service.AdjustBalance(uint(id), req.Amount, req.Type, req.Remark, req.Version, storeID, userID)
+	member, err := c.service.AdjustBalance(uint(id), req.Amount, req.Type, req.Remark, req.Version, storeID, userID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -213,7 +218,8 @@ func (c *MemberController) GetMemberByPhone(ctx *gin.Context) {
 		http.Error(ctx, 400, "phone is required")
 		return
 	}
-	member, err := c.service.GetMemberByPhone(phone)
+	storeID := middleware.GetStoreID(ctx)
+	member, err := c.service.GetMemberByPhone(phone, storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 404, err.Error())
 		return
@@ -252,7 +258,8 @@ func (c *MemberController) ListWalletLogs(ctx *gin.Context) {
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
-	logs, total, err := c.service.ListWalletLogs(&req, page, pageSize)
+	storeID := middleware.GetStoreID(ctx)
+	logs, total, err := c.service.ListWalletLogs(&req, page, pageSize, storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -283,7 +290,7 @@ func (c *MemberController) CreateRechargeOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	userID := middleware.GetUserID(ctx)
 
-	order, err := c.service.CreateRechargeOrder(&req, storeID, userID)
+	order, err := c.service.CreateRechargeOrder(&req, storeID, userID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -307,7 +314,8 @@ func (c *MemberController) GetRechargeOrder(ctx *gin.Context) {
 		http.Error(ctx, 400, "invalid id")
 		return
 	}
-	order, err := c.service.GetRechargeOrder(uint(id))
+	storeID := middleware.GetStoreID(ctx)
+	order, err := c.service.GetRechargeOrder(uint(id), storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 404, err.Error())
 		return
@@ -351,7 +359,8 @@ func (c *MemberController) ListRechargeOrders(ctx *gin.Context) {
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
-	orders, total, err := c.service.ListRechargeOrders(memberID, status, page, pageSize)
+	storeID := middleware.GetStoreID(ctx)
+	orders, total, err := c.service.ListRechargeOrders(memberID, status, page, pageSize, storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -380,7 +389,7 @@ func (c *MemberController) PayRechargeOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	userID := middleware.GetUserID(ctx)
 
-	order, err := c.service.PayRechargeOrder(req.OrderNo, storeID, userID)
+	order, err := c.service.PayRechargeOrder(req.OrderNo, storeID, userID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -404,10 +413,58 @@ func (c *MemberController) CancelRechargeOrder(ctx *gin.Context) {
 		http.Error(ctx, 400, "orderNo is required")
 		return
 	}
-	order, err := c.service.CancelRechargeOrder(orderNo)
+	storeID := middleware.GetStoreID(ctx)
+	order, err := c.service.CancelRechargeOrder(orderNo, storeID, middleware.IsAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 	http.Success(ctx, order)
+}
+
+// ListMemberConsumptions 查询会员消费记录
+// @Summary 查询会员消费记录
+// @Description 按会员查询门店记账消费记录，支持日期筛选与汇总
+// @Tags 会员管理
+// @Produce json
+// @Param id path int true "会员ID"
+// @Param start_date query string false "开始日期(YYYY-MM-DD)"
+// @Param end_date query string false "结束日期(YYYY-MM-DD)"
+// @Param page query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Success 200 {object} http.Response
+// @Router /members/{id}/consumptions [get]
+func (c *MemberController) ListMemberConsumptions(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(ctx, 400, "invalid id")
+		return
+	}
+
+	startDate := ctx.Query("start_date")
+	endDate := ctx.Query("end_date")
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	storeID := middleware.GetStoreID(ctx)
+	list, total, summary, err := c.service.ListMemberConsumptions(uint(id), startDate, endDate, page, pageSize, storeID, middleware.IsAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	http.Success(ctx, gin.H{
+		"list":      list,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+		"summary":   summary,
+	})
 }

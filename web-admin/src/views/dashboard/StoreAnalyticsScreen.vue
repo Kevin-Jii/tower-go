@@ -1,6 +1,5 @@
 <template>
   <section
-    v-if="canStats"
     id="dash-analytics"
     ref="screenRoot"
     class="dash-screen rounded-2xl border border-cyan-500/25 shadow-xl"
@@ -107,26 +106,13 @@
       </div>
     </div>
   </section>
-  <div v-else class="flex flex-col items-center justify-center min-h-[320px] px-4">
-    <BaseCard class="max-w-lg w-full">
-      <template #header>
-        <span class="font-semibold text-slate-800">无法显示经营数据大屏</span>
-      </template>
-      <p class="m-0 text-slate-600 text-sm leading-relaxed">
-        当前账号缺少 <code class="text-indigo-700">statistics:dashboard</code> 权限，且非总部/超级管理员角色时不会展示大屏。
-      </p>
-      <p class="mt-3 mb-0 text-slate-500 text-sm leading-relaxed">
-        请在「系统管理 → 角色」中为该角色勾选菜单「数据统计」，或联系管理员分配权限。
-      </p>
-    </BaseCard>
-  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import * as echarts from 'echarts'
-import { BaseButton, BaseCard, BaseInput } from '@/components/base'
+import { BaseButton, BaseInput } from '@/components/base'
 import { getHomeCharts, getStatisticsDashboard } from '@/api/statistics'
 import type { HomeChartsStats } from '@/api/types'
 import { useUserStore } from '@/store/user'
@@ -134,14 +120,6 @@ import { toast } from '@/feedback/toast'
 
 const userStore = useUserStore()
 const qc = useQueryClient()
-
-/** 与后端一致：总部管理员 / 超级管理员走全量接口；其余角色依赖权限列表中的 statistics:dashboard */
-const roleCode = computed(() => String(userStore.userInfo?.role?.code ?? ''))
-const canStats = computed(() => {
-  const code = roleCode.value
-  if (code === 'super_admin' || code === 'admin') return true
-  return userStore.permissions.includes('statistics:dashboard')
-})
 
 const period = ref('today')
 const periodOptions = [
@@ -174,7 +152,6 @@ const {
 } = useQuery({
   queryKey: dashKey,
   queryFn: () => getStatisticsDashboard({ period: period.value, ...storeParam.value }),
-  enabled: () => canStats.value,
 })
 
 const dashError = computed(() => {
@@ -346,7 +323,6 @@ function applyChartOptions(hc: HomeChartsStats): void {
 }
 
 async function loadHomeCharts(): Promise<void> {
-  if (!canStats.value) return
   if (!ovStart.value || !ovEnd.value) {
     toast.warning('请选择起止日期')
     return
@@ -406,7 +382,7 @@ onMounted(() => {
   void (async () => {
     await nextTick()
     await nextTick()
-    if (canStats.value) await loadHomeCharts()
+    await loadHomeCharts()
   })()
 })
 

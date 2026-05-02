@@ -8,7 +8,7 @@ import (
 // RegisterMemberRoutes 注册会员管理路由
 func RegisterMemberRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	members := v1.Group("/members")
-	members.Use(middleware.AuthMiddleware())
+	members.Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		members.POST("", middleware.Permission("store:member:add"), c.Member.CreateMember)
 		members.GET("", middleware.Permission("store:member:list"), c.Member.ListMembers)
@@ -27,7 +27,7 @@ func RegisterMemberRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	}
 
 	rechargeOrders := v1.Group("/recharge-orders")
-	rechargeOrders.Use(middleware.AuthMiddleware())
+	rechargeOrders.Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		rechargeOrders.POST("", middleware.Permission("store:member:add"), c.Member.CreateRechargeOrder)
 		rechargeOrders.GET("", middleware.Permission("store:member:list"), c.Member.ListRechargeOrders)

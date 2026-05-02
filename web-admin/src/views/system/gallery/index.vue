@@ -8,21 +8,19 @@
         <div class="flex gap-2">
           <BaseButton variant="primary" @click="reload">查询</BaseButton>
           <BaseButton v-permission="'system:gallery:upload'" variant="primary" @click="openUpload">上传图片</BaseButton>
-          <BaseButton
-            v-permission="'system:gallery:delete'"
-            variant="danger"
-            :disabled="selectedIds.length === 0"
-            @click="onBatchDelete"
-          >
+          <BaseButton v-permission="'system:gallery:delete'" variant="danger" :disabled="selectedIds.length === 0"
+            @click="onBatchDelete">
             批量删除
           </BaseButton>
         </div>
       </div>
     </div>
 
-    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1180px">
+    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="1180px">
       <template #cell-select="{ row }">
-        <a-checkbox :model-value="selectedIds.includes((row as Gallery).id)" @change="toggleSelected((row as Gallery).id)" />
+        <a-checkbox :model-value="selectedIds.includes((row as Gallery).id)"
+          @change="toggleSelected((row as Gallery).id)" />
       </template>
       <template #cell-preview="{ row }">
         <a-image :src="(row as Gallery).url" width="56" height="56" fit="cover" :preview="true" />
@@ -34,10 +32,7 @@
         {{ formatDateTime((row as Gallery).created_at) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'system:gallery:edit'" variant="link" size="sm" @click="openEdit(row as Gallery)">编辑</BaseButton>
-          <BaseButton v-permission="'system:gallery:delete'" variant="link" size="sm" @click="onDelete(row as Gallery)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="galleryRowActions(row as Gallery)" />
       </template>
     </BaseTable>
 
@@ -89,9 +84,10 @@ import {
   BaseInput,
   BaseSelect,
   BaseTable,
+  BaseTableRowActions,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
+import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import { batchDeleteGallery, deleteGallery, listGalleries, updateGallery, uploadGallery } from '@/api/gallery'
 import type { Gallery } from '@/api/types'
 import { toast } from '@/feedback/toast'
@@ -103,9 +99,9 @@ const columns: BaseTableColumn[] = [
   { key: 'name', label: '文件名', prop: 'name', minWidth: '220px', ellipsis: true },
   { key: 'category', label: '分类', prop: 'category', width: '120px' },
   { key: 'size', label: '大小', width: '96px' },
-  { key: 'remark', label: '备注', prop: 'remark', minWidth: '160px', ellipsis: true },
   { key: 'created_at', label: '上传时间', width: '176px' },
-  { key: 'actions', label: '操作', width: '160px', align: 'right' },
+  { key: 'remark', label: '备注', prop: 'remark', minWidth: '160px', ellipsis: true },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
 const categoryOptions: BaseSelectOption[] = [
@@ -255,6 +251,13 @@ async function onDelete(row: Gallery): Promise<void> {
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
+}
+
+function galleryRowActions(row: Gallery): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'system:gallery:edit', onClick: () => openEdit(row) },
+    { label: '删除', permission: 'system:gallery:delete', danger: true, onClick: () => void onDelete(row) },
+  ]
 }
 
 async function onBatchDelete(): Promise<void> {

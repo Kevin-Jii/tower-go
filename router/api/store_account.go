@@ -8,7 +8,7 @@ import (
 // RegisterStoreAccountRoutes 注册门店记账路由
 func RegisterStoreAccountRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	accounts := v1.Group("/store-accounts")
-	accounts.Use(middleware.AuthMiddleware())
+	accounts.Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		accounts.POST("", middleware.Permission("store:account:add"), c.StoreAccount.Create)
 		accounts.GET("", middleware.Permission("store:account:list"), c.StoreAccount.List)

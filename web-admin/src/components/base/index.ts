@@ -11,6 +11,7 @@ export { default as BasePagination } from './BasePagination.vue'
 export { default as BaseSelect } from './BaseSelect.vue'
 export { default as BaseSwitch } from './BaseSwitch.vue'
 export { default as BaseTable } from './BaseTable.vue'
+export { default as BaseTableRowActions } from './BaseTableRowActions.vue'
 export { default as BaseTag } from './BaseTag.vue'
 export { default as BaseTextarea } from './BaseTextarea.vue'
 export { default as BaseTreeCheck } from './BaseTreeCheck.vue'
@@ -20,4 +21,5 @@ export type {
   BaseSelectOption,
   BaseTableColumn,
   BaseTreeNode,
+  TableRowAction,
 } from './types'

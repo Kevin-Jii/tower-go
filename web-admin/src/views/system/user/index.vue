@@ -10,7 +10,8 @@
         </div>
       </div>
     </div>
-    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1040px">
+    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="1040px">
       <template #cell-role="{ row }">
         {{ (row as User).role?.name || '-' }}
       </template>
@@ -21,21 +22,12 @@
         {{ (row as User).status === 1 ? '正常' : '禁用' }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'system:user:edit'" variant="link" size="sm" @click="openEdit(row as User)">编辑</BaseButton>
-          <BaseButton v-permission="'system:user:edit'" variant="link" size="sm" @click="openRole(row as User)">角色</BaseButton>
-          <BaseButton v-permission="'system:user:delete'" variant="link" size="sm" @click="onDelete(row as User)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="userRowActions(row as User)" />
       </template>
     </BaseTable>
     <div class="flex justify-end">
-      <BasePagination
-        :page="page"
-        :page-size="pageSize"
-        :total="total"
-        @update:page="(p) => (page = p)"
-        @update:page-size="(s) => (pageSize = s)"
-      />
+      <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+        @update:page-size="(s) => (pageSize = s)" />
     </div>
 
     <BaseDialog v-model="dlg" :title="dlgTitle" max-width="min(480px, 96vw)">
@@ -56,20 +48,13 @@
           <BaseSelect v-model="form.role_id" :options="roleOptions" placeholder="选择角色" />
         </BaseFormItem>
         <BaseFormItem v-if="isAdmin" label="门店" required>
-          <BaseSelect
-            v-model="form.store_code"
-            :options="storeOptions"
-            placeholder="请选择门店（按编码提交）"
-          />
+          <BaseSelect v-model="form.store_code" :options="storeOptions" placeholder="请选择门店（按编码提交）" />
         </BaseFormItem>
         <BaseFormItem v-if="mode === 'edit'" label="状态">
-          <BaseSelect
-            v-model="form.status"
-            :options="[
-              { label: '正常', value: 1 },
-              { label: '禁用', value: 2 },
-            ]"
-          />
+          <BaseSelect v-model="form.status" :options="[
+            { label: '正常', value: 1 },
+            { label: '禁用', value: 2 },
+          ]" />
         </BaseFormItem>
       </div>
       <div v-else class="space-y-4">
@@ -96,8 +81,9 @@ import {
   BasePagination,
   BaseSelect,
   BaseTable,
+  BaseTableRowActions,
 } from '@/components/base'
-import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
+import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import { assignUserRole, createUser, deleteUser, listUsers, updateUser } from '@/api/user'
 import { listRoles } from '@/api/role'
 import { listAllStores } from '@/api/store'
@@ -122,7 +108,7 @@ const columns: BaseTableColumn[] = [
   { key: 'role', label: '角色', minWidth: '100px' },
   { key: 'store', label: '门店', minWidth: '120px' },
   { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '240px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
 const keyword = ref('')
@@ -240,6 +226,14 @@ function openRole(row: User): void {
   editId.value = row.id
   roleOnlyId.value = row.role_id ?? undefined
   dlg.value = true
+}
+
+function userRowActions(row: User): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'system:user:edit', onClick: () => openEdit(row) },
+    { label: '角色', place: 'more', permission: 'system:user:edit', onClick: () => openRole(row) },
+    { label: '删除', place: 'more', permission: 'system:user:delete', danger: true, onClick: () => void onDelete(row) },
+  ]
 }
 
 async function submit(): Promise<void> {

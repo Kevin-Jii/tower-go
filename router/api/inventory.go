@@ -8,14 +8,14 @@ import (
 // RegisterInventoryRoutes 注册库存路由
 func RegisterInventoryRoutes(r *gin.RouterGroup, c *Controllers) {
 	// 库存管理
-	inventories := r.Group("/inventories").Use(middleware.AuthMiddleware())
+	inventories := r.Group("/inventories").Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		inventories.GET("", middleware.Permission("inventory:list"), c.Inventory.ListInventory)
 		inventories.PUT("/:id", middleware.PermissionAny("inventory:in", "inventory:out"), c.Inventory.UpdateInventory)
 	}
 
 	// 出入库单
-	orders := r.Group("/inventory-orders").Use(middleware.AuthMiddleware())
+	orders := r.Group("/inventory-orders").Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		orders.POST("", middleware.PermissionAny("inventory:in", "inventory:out"), c.Inventory.CreateOrder)
 		orders.GET("", middleware.Permission("inventory:record"), c.Inventory.ListOrders)

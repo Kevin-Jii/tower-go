@@ -121,9 +121,9 @@ const arcoColumns = computed<TableColumnData[]>(() =>
   props.columns.map((col) => {
     const w = parseSize(col.width)
     const mw = parseSize(col.minWidth)
-    /** 操作列：保证至少宽度，避免 link 按钮被压成竖排（table-layout:fixed 下常见） */
+    /** 操作列：略给最小宽度；具体按钮由 BaseTableRowActions 收敛为「更多」 */
     const minW =
-      col.key === 'actions' ? Math.max(mw ?? 0, w ?? 0, 168) : mw !== undefined ? mw : undefined
+      col.key === 'actions' ? Math.max(mw ?? 0, w ?? 0, 108) : mw !== undefined ? mw : undefined
     return {
     title: col.label,
     dataIndex: col.prop || col.key,
@@ -175,7 +175,17 @@ function onRowClick(record: TableData): void {
   white-space: normal !important;
 }
 :deep(td.base-table-actions-cell > .arco-table-cell) {
-  overflow: visible;
+  overflow: hidden;
+}
+:deep(td.base-table-actions-cell > .arco-table-cell > *) {
+  max-width: 100%;
+}
+:deep(td.base-table-actions-cell > .arco-table-cell > div) {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap !important;
+  justify-content: flex-end;
+  gap: 4px 8px;
 }
 :deep(td.base-table-actions-cell .flex-nowrap) {
   flex-wrap: wrap !important;
@@ -185,5 +195,9 @@ function onRowClick(record: TableData): void {
 }
 :deep(td.base-table-actions-cell .shrink-0) {
   flex-shrink: 1 !important;
+}
+:deep(td.base-table-actions-cell .arco-select),
+:deep(td.base-table-actions-cell .arco-input-wrapper) {
+  max-width: 100%;
 }
 </style>

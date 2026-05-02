@@ -29,4 +29,5 @@ var (
 	StoreAccountGone = Code{40402, "记账记录不存在"}
 
 	StoreAccountEditTimeout = Code{40304, "账单创建超过24小时，无法修改"}
+	StoreClosed             = Code{40305, "门店已停业，当前不允许业务操作"}
 )

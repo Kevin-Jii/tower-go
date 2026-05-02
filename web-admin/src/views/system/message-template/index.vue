@@ -32,10 +32,7 @@
         <div class="max-w-[460px] truncate" :title="(row as MessageTemplate).content">{{ (row as MessageTemplate).content }}</div>
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'message:template:edit'" variant="link" size="sm" @click="openEdit(row as MessageTemplate)">编辑</BaseButton>
-          <BaseButton v-permission="'message:template:delete'" variant="link" size="sm" @click="onDelete(row as MessageTemplate)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="messageTemplateRowActions(row as MessageTemplate)" />
       </template>
     </BaseTable>
 
@@ -82,9 +79,10 @@ import {
   BaseSelect,
   BaseSwitch,
   BaseTable,
+  BaseTableRowActions,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseTableColumn } from '@/components/base/types'
+import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
 import {
   createMessageTemplate,
   deleteMessageTemplate,
@@ -110,7 +108,7 @@ const columns: BaseTableColumn[] = [
   { key: 'title', label: '标题', prop: 'title', minWidth: '180px', ellipsis: true },
   { key: 'content', label: '内容', minWidth: '320px' },
   { key: 'is_enabled', label: '启用', width: '90px' },
-  { key: 'actions', label: '操作', width: '180px', align: 'right' },
+  { key: 'actions', label: '操作', width: '120px', align: 'right' },
 ]
 
 const keyword = ref('')
@@ -231,5 +229,12 @@ async function onDelete(row: MessageTemplate): Promise<void> {
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
+}
+
+function messageTemplateRowActions(row: MessageTemplate): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'message:template:edit', onClick: () => openEdit(row) },
+    { label: '删除', permission: 'message:template:delete', danger: true, onClick: () => void onDelete(row) },
+  ]
 }
 </script>

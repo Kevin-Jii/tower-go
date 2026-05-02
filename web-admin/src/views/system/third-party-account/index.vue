@@ -10,9 +10,11 @@
       </div>
     </div>
 
-    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1240px">
+    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="1240px">
       <template #cell-is_enabled="{ row }">
-        <BaseSwitch :model-value="(row as ThirdPartyAccount).is_enabled" @update:model-value="toggleEnabled(row as ThirdPartyAccount, $event)" />
+        <BaseSwitch :model-value="(row as ThirdPartyAccount).is_enabled"
+          @update:model-value="toggleEnabled(row as ThirdPartyAccount, $event)" />
       </template>
       <template #cell-last_test_ok="{ row }">
         <span :class="(row as ThirdPartyAccount).last_test_ok ? 'text-emerald-600' : 'text-rose-600'">
@@ -32,13 +34,9 @@
       <template #cell-actions="{ row }">
         <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
           <BaseButton variant="link" size="sm" @click="openEdit(row as ThirdPartyAccount)">编辑</BaseButton>
-          <BaseSelect
-            v-model="actionValues[(row as ThirdPartyAccount).id]"
-            class="w-40"
-            placeholder="更多操作"
+          <BaseSelect v-model="actionValues[(row as ThirdPartyAccount).id]" class="w-40" placeholder="更多操作"
             :options="actionOptions"
-            @update:model-value="onActionSelect(row as ThirdPartyAccount, String($event || ''))"
-          />
+            @update:model-value="onActionSelect(row as ThirdPartyAccount, String($event || ''))" />
         </div>
       </template>
     </BaseTable>
@@ -133,11 +131,8 @@ const list = computed(() => rowsData.value ?? [])
 
 const columns: BaseTableColumn[] = [
   { key: 'name', label: '账号名称', prop: 'name', minWidth: '140px', ellipsis: true },
-  { key: 'platform_name', label: '平台', prop: 'platform_name', width: '90px' },
   { key: 'login_name', label: '登录名', prop: 'login_name', minWidth: '150px', ellipsis: true },
   { key: 'phone', label: '手机号', prop: 'phone', width: '120px' },
-  { key: 'shop_id', label: 'shopId', prop: 'shop_id', minWidth: '150px', ellipsis: true },
-  { key: 'is_enabled', label: '启用', width: '90px' },
   { key: 'last_test_ok', label: '测试状态', width: '110px' },
   { key: 'last_test_msg', label: '测试信息', minWidth: '220px' },
   { key: 'last_sync_msg', label: '同步信息', minWidth: '220px' },
@@ -318,4 +313,3 @@ async function toggleEnabled(row: ThirdPartyAccount, value: boolean | number): P
   }
 }
 </script>
-

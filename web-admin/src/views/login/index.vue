@@ -18,6 +18,10 @@
             autocomplete="current-password"
           />
         </BaseFormItem>
+        <label class="flex items-center gap-2 cursor-pointer select-none mt-1 mb-1 text-sm text-slate-600">
+          <input v-model="rememberMe" type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          <span>记住账号密码（保存在本机浏览器，请勿在公共电脑勾选）</span>
+        </label>
         <BaseButton variant="primary" class="w-full mt-2" native-type="submit" size="lg" :loading="loading">
           登录
         </BaseButton>
@@ -27,12 +31,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BaseButton, BaseForm, BaseFormItem, BaseInput } from '@/components/base'
 import { login } from '@/api/auth'
 import { useUserStore } from '@/store/user'
 import { toast } from '@/feedback/toast'
+import { clearRememberedLogin, getRememberedLogin, setRememberedLogin } from '@/utils/storage'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,11 +45,26 @@ const userStore = useUserStore()
 
 const form = reactive({ phone: '', password: '' })
 const loading = ref(false)
+const rememberMe = ref(false)
+
+onMounted(() => {
+  const saved = getRememberedLogin()
+  if (saved) {
+    form.phone = saved.phone
+    form.password = saved.password
+    rememberMe.value = true
+  }
+})
 
 async function onSubmit(): Promise<void> {
   loading.value = true
   try {
     const data = await login(form.phone, form.password)
+    if (rememberMe.value) {
+      setRememberedLogin(form.phone, form.password)
+    } else {
+      clearRememberedLogin()
+    }
     userStore.setLogin({ token: data.token, user: data.user_info })
     userStore.markDynamicRoutes(false)
     const redirect = (route.query.redirect as string) || '/'

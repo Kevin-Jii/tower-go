@@ -1,45 +1,75 @@
 <template>
   <div class="flex flex-col gap-4">
-    <div class="flex flex-col md:flex-row md:items-end gap-3 justify-between">
-      <h2 class="page-title">门店列表</h2>
-      <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-        <BaseInput v-model="keyword" class="w-full sm:w-56" placeholder="名称 / 编码 / 电话" clearable @enter="page = 1" />
-        <BaseButton variant="primary" @click="page = 1">查询</BaseButton>
-        <BaseButton v-permission="'store:add'" variant="primary" @click="openCreate">新增门店</BaseButton>
-      </div>
-    </div>
-
-    <div class="min-w-0 overflow-x-auto">
-      <BaseTable :columns="columns" :data="(pagedRows as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1080px">
-      <template #cell-status="{ row }">
-        {{ statusLabel((row as Store).status) }}
+    <a-card :bordered="true" class="min-w-0">
+      <template #title>
+        <span class="text-base font-semibold">门店列表</span>
       </template>
-      <template #cell-third_party_account="{ row }">
-        {{ (row as Store).third_party_account?.name || '-' }}
-      </template>
-      <template #cell-contact_person="{ row }">
-        <span class="whitespace-nowrap">{{ (row as Store).contact_person || '-' }}</span>
-      </template>
-      <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'store:edit'" variant="link" size="sm" @click="openEdit(row as Store)">编辑</BaseButton>
-          <BaseButton v-permission="'store:menu'" variant="link" size="sm" @click="openBindThirdAccount(row as Store)">绑定三方账号</BaseButton>
-          <BaseButton v-permission="'store:menu'" variant="link" size="sm" @click="openBindSupplier(row as Store)">绑定供应商</BaseButton>
-          <BaseButton v-permission="'store:delete'" variant="link" size="sm" @click="onDelete(row as Store)">删除</BaseButton>
+      <template #extra>
+        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <BaseInput v-model="keyword" class="w-full sm:w-56" placeholder="名称 / 编码 / 电话" clearable @enter="page = 1" />
+          <BaseButton variant="primary" @click="page = 1">查询</BaseButton>
+          <BaseButton v-permission="'store:add'" variant="primary" @click="openCreate">新增门店</BaseButton>
         </div>
       </template>
-      </BaseTable>
-    </div>
 
-    <div class="flex justify-end">
-      <BasePagination
-        :page="page"
-        :page-size="pageSize"
-        :total="filteredList.length"
-        @update:page="(p) => (page = p)"
-        @update:page-size="(s) => (pageSize = s)"
-      />
-    </div>
+      <div v-if="pagedRows.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <a-card v-for="row in pagedRows" :key="row.id"
+          class="store-card rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow"
+          :body-style="{ padding: '14px 14px 10px' }">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="m-0 text-base font-semibold text-slate-900 truncate">
+                {{ row.name || '-' }}
+                <span class="text-slate-500 font-medium">【{{ row.store_code || '-' }}】</span>
+              </p>
+              <p class="m-0 mt-1 text-sm text-slate-500 truncate">负责人：{{ row.contact_person || '-' }}</p>
+            </div>
+            <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+              :class="row.status === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">
+              {{ statusLabel(row.status) }}
+            </span>
+          </div>
+
+          <div class="mt-3 space-y-1.5 text-sm text-slate-700">
+            <p class="m-0"><span class="text-slate-500"><b>营业时间：</b></span>{{ row.business_hours || '-' }}</p>
+            <p class="m-0"><span class="text-slate-500"><b>电话：</b></span>{{ row.phone || '-' }}</p>
+            <p class="m-0"><span class="text-slate-500"><b>地址：</b></span>{{ row.address || '-' }}</p>
+            <p class="m-0"><span class="text-slate-500"><b>第三方账号：</b></span>{{ row.third_party_account?.name || '-' }}
+            </p>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+            <BaseButton size="sm" class="store-card-btn store-card-btn--third" v-permission="'store:menu'"
+              @click="openBindThirdAccount(row)">
+              第三方绑定
+            </BaseButton>
+            <BaseButton size="sm" class="store-card-btn store-card-btn--supplier" v-permission="'store:menu'"
+              @click="openBindSupplier(row)">
+              绑定供应商
+            </BaseButton>
+            <BaseButton size="sm" class="store-card-btn store-card-btn--edit" v-permission="'store:edit'"
+              @click="openEdit(row)">
+              编辑
+            </BaseButton>
+            <BaseButton size="sm" class="store-card-btn store-card-btn--status" v-permission="'store:edit'"
+              :loading="statusChanging[row.id] === true" @click="setBusinessStatus(row, row.status === 1 ? 2 : 1)">
+              {{ row.status === 1 ? '设为停业' : '设为正常' }}
+            </BaseButton>
+          </div>
+        </a-card>
+      </div>
+      <a-empty v-else-if="!loading" description="暂无门店数据" />
+      <div v-else class="py-8">
+        <a-skeleton :animation="true">
+          <a-skeleton-line :rows="4" />
+        </a-skeleton>
+      </div>
+
+      <div class="flex justify-end mt-3">
+        <BasePagination :page="page" :page-size="pageSize" :total="filteredList.length" @update:page="(p) => (page = p)"
+          @update:page-size="(s) => (pageSize = s)" />
+      </div>
+    </a-card>
 
     <BaseDialog v-model="dlg" :title="isEdit ? '编辑门店' : '新增门店'" max-width="min(520px, 96vw)">
       <div class="max-h-[70vh] overflow-y-auto space-y-4 pr-1">
@@ -57,12 +87,8 @@
           <BaseInput v-model="form.address" placeholder="可选" />
         </BaseFormItem>
         <BaseFormItem label="归属区">
-          <BaseSelect
-            v-model="form.administrative_unit"
-            :options="administrativeUnitOptions"
-            placeholder="请选择归属区"
-            clearable
-          />
+          <BaseSelect v-model="form.administrative_unit" :options="administrativeUnitOptions" placeholder="请选择归属区"
+            clearable />
         </BaseFormItem>
         <BaseFormItem label="营业时间">
           <BaseInput v-model="form.business_hours" placeholder="如 10:00-22:00" />
@@ -74,13 +100,10 @@
           <BaseTextarea v-model="form.remark" :rows="2" placeholder="可选" />
         </BaseFormItem>
         <BaseFormItem v-if="isEdit" label="状态">
-          <BaseSelect
-            v-model="form.status"
-            :options="[
-              { label: '正常', value: 1 },
-              { label: '停业', value: 2 },
-            ]"
-          />
+          <BaseSelect v-model="form.status" :options="[
+            { label: '正常', value: 1 },
+            { label: '停业', value: 2 },
+          ]" />
         </BaseFormItem>
       </div>
       <template #footer>
@@ -103,17 +126,12 @@
         <BaseFormItem label="已绑定供应商">
           <div class="min-h-14 rounded border border-[var(--color-border-2)] p-3">
             <div v-if="boundSuppliers.length" class="flex flex-wrap gap-2">
-              <span
-                v-for="b in boundSuppliers"
-                :key="b.id"
-                class="inline-flex items-center gap-2 rounded bg-[var(--color-fill-2)] px-2 py-1 text-xs"
-              >
+              <span v-for="b in boundSuppliers" :key="b.id"
+                class="inline-flex items-center gap-2 rounded bg-[var(--color-fill-2)] px-2 py-1 text-xs">
                 {{ b.supplier?.supplier_name || `供应商#${b.supplier_id}` }}
-                <button
-                  v-permission="'store:menu'"
+                <button v-permission="'store:menu'"
                   class="cursor-pointer border-none bg-transparent p-0 text-[var(--color-danger-6)]"
-                  @click="onUnbindSupplier(b.supplier_id)"
-                >
+                  @click="onUnbindSupplier(b.supplier_id)">
                   解绑
                 </button>
               </span>
@@ -156,11 +174,9 @@ import {
   BaseInput,
   BasePagination,
   BaseSelect,
-  BaseTable,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseTableColumn } from '@/components/base/types'
-import { bindStoreThirdPartyAccount, createStore, deleteStore, listStores, updateStore } from '@/api/store'
+import { bindStoreThirdPartyAccount, createStore, listStores, updateStore } from '@/api/store'
 import { bindStoreSuppliers, listStoreBoundSuppliers, unbindStoreSuppliers } from '@/api/storeSupplier'
 import { listSuppliers } from '@/api/supplier'
 import { listThirdPartyAccounts } from '@/api/thirdPartyAccount'
@@ -171,19 +187,6 @@ import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 
 const qc = useQueryClient()
-
-const columns: BaseTableColumn[] = [
-  { key: 'id', label: 'ID', prop: 'id', width: '72px' },
-  { key: 'store_code', label: '编码', prop: 'store_code', width: '100px' },
-  { key: 'name', label: '名称', prop: 'name', minWidth: '120px' },
-  { key: 'phone', label: '电话', prop: 'phone', minWidth: '132px', width: '132px', ellipsis: true },
-  { key: 'address', label: '地址', prop: 'address', minWidth: '160px', ellipsis: true },
-  { key: 'business_hours', label: '营业时间', prop: 'business_hours', width: '120px' },
-  { key: 'contact_person', label: '联系人', prop: 'contact_person', minWidth: '120px', width: '120px', ellipsis: true },
-  { key: 'third_party_account', label: '第三方账号', minWidth: '140px', width: '140px', ellipsis: true },
-  { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '360px', align: 'right' },
-]
 
 const { data: pageData, isLoading: loading } = useQuery({
   queryKey: ['stores', 'list'],
@@ -223,6 +226,7 @@ const dlg = ref(false)
 const saving = ref(false)
 const isEdit = ref(false)
 const editId = ref(0)
+const statusChanging = reactive<Record<number, boolean>>({})
 
 const form = reactive({
   name: '',
@@ -311,15 +315,17 @@ async function save(): Promise<void> {
   }
 }
 
-async function onDelete(row: Store): Promise<void> {
-  const ok = await confirmDialog({ message: `删除门店「${row.name}」？此操作不可恢复。` })
-  if (!ok) return
+async function setBusinessStatus(row: Store, targetStatus: 1 | 2): Promise<void> {
+  if (row.status === targetStatus) return
+  statusChanging[row.id] = true
   try {
-    await deleteStore(row.id)
-    toast.success('已删除')
-    await qc.invalidateQueries({ queryKey: ['stores'] })
+    await updateStore(row.id, { status: targetStatus })
+    row.status = targetStatus
+    toast.success(`已设为${targetStatus === 1 ? '正常营业' : '停业'}`)
   } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '删除失败')
+    toast.error(e instanceof Error ? e.message : '状态更新失败')
+  } finally {
+    statusChanging[row.id] = false
   }
 }
 
@@ -460,3 +466,34 @@ async function onUnbindThirdAccount(): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+.store-card {
+  border-radius: 16px;
+}
+
+:deep(.store-card-btn) {
+  border: none !important;
+  font-weight: 600 !important;
+}
+
+:deep(.store-card-btn--third) {
+  background: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+:deep(.store-card-btn--supplier) {
+  background: #ecfeff !important;
+  color: #0e7490 !important;
+}
+
+:deep(.store-card-btn--edit) {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+}
+
+:deep(.store-card-btn--status) {
+  background: #fff1f2 !important;
+  color: #be123c !important;
+}
+</style>

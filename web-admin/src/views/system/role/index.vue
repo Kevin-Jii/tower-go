@@ -4,7 +4,8 @@
       <h2 class="page-title">角色管理</h2>
       <BaseButton v-permission="'system:role:add'" variant="primary" @click="openCreate">新增角色</BaseButton>
     </div>
-    <BaseTable :columns="columns" :data="(roles as unknown) as Record<string, unknown>[]" :loading="loading" min-width="960px">
+    <BaseTable :columns="columns" :data="(roles as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="960px">
       <template #cell-data_scope="{ row }">
         {{ scopeLabel(Number((row as Role).data_scope)) }}
       </template>
@@ -12,15 +13,12 @@
         {{ (row as Role).status === 1 ? '启用' : '禁用' }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'system:role:menu'" variant="link" size="sm" @click="openAssign(row as Role)">分配菜单</BaseButton>
-          <BaseButton v-permission="'system:role:edit'" variant="link" size="sm" @click="openEdit(row as Role)">编辑</BaseButton>
-          <BaseButton v-permission="'system:role:delete'" variant="link" size="sm" @click="onDelete(row as Role)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="roleRowActions(row as Role)" :max-inline="1" />
       </template>
     </BaseTable>
 
-    <BaseDialog v-model="dlg" :title="dlgTitle" :max-width="mode === 'assign' ? 'min(560px, 96vw)' : 'min(480px, 96vw)'">
+    <BaseDialog v-model="dlg" :title="dlgTitle"
+      :max-width="mode === 'assign' ? 'min(560px, 96vw)' : 'min(480px, 96vw)'">
       <div v-if="mode !== 'assign'" class="space-y-4">
         <BaseFormItem label="名称" required>
           <BaseInput v-model="form.name" />
@@ -32,15 +30,12 @@
           <BaseTextarea v-model="form.description" :rows="2" />
         </BaseFormItem>
         <BaseFormItem label="数据范围">
-          <BaseSelect
-            v-model="form.data_scope"
-            :options="[
-              { label: '全部', value: 1 },
-              { label: '租户', value: 2 },
-              { label: '本门店', value: 3 },
-              { label: '仅本人', value: 4 },
-            ]"
-          />
+          <BaseSelect v-model="form.data_scope" :options="[
+            { label: '全部', value: 1 },
+            { label: '租户', value: 2 },
+            { label: '本门店', value: 3 },
+            { label: '仅本人', value: 4 },
+          ]" />
         </BaseFormItem>
         <BaseFormItem label="状态">
           <BaseSwitch v-model="form.status" :active-value="1" :inactive-value="0" />
@@ -68,10 +63,11 @@ import {
   BaseSelect,
   BaseSwitch,
   BaseTable,
+  BaseTableRowActions,
   BaseTextarea,
   BaseTreeCheck,
 } from '@/components/base'
-import type { BaseTableColumn, BaseTreeNode } from '@/components/base/types'
+import type { BaseTableColumn, BaseTreeNode, TableRowAction } from '@/components/base/types'
 import { assignRoleMenus, fetchMenuTree, fetchRoleMenuIds, fetchRoleMenuPermissions } from '@/api/menu'
 import { createRole, deleteRole, listRoles, updateRole } from '@/api/role'
 import type { Menu, Role } from '@/api/types'
@@ -86,12 +82,12 @@ const { data: rolesData, isLoading: loading } = useQuery({
 const roles = computed(() => rolesData.value ?? [])
 
 const columns: BaseTableColumn[] = [
-  { key: 'name', label: '名称', prop: 'name', minWidth: '120px' },
+  { key: 'name', label: '名称', prop: 'name', minWidth: '80px' },
   { key: 'code', label: '编码', prop: 'code', width: '140px' },
   { key: 'description', label: '描述', prop: 'description', minWidth: '160px', ellipsis: true },
   { key: 'data_scope', label: '数据范围', width: '100px' },
-  { key: 'status', label: '状态', width: '88px' },
-  { key: 'actions', label: '操作', width: '280px', align: 'right' },
+  { key: 'status', label: '状态', width: '96px' },
+  { key: 'actions', label: '操作', width: '180px', align: 'right' },
 ]
 
 const { data: rawMenuTree } = useQuery({
@@ -132,6 +128,14 @@ function filterTree(nodes: Menu[]): Menu[] {
       ...n,
       children: n.children?.length ? filterTree(n.children) : [],
     }))
+}
+
+function roleRowActions(row: Role): TableRowAction[] {
+  return [
+    { label: '分配菜单', permission: 'system:role:menu', onClick: () => void openAssign(row) },
+    { label: '编辑', permission: 'system:role:edit', onClick: () => openEdit(row) },
+    { label: '删除', permission: 'system:role:delete', danger: true, onClick: () => void onDelete(row) },
+  ]
 }
 
 function scopeLabel(v?: number): string {

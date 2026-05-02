@@ -8,7 +8,7 @@ import (
 // RegisterPurchaseRoutes 注册采购单管理路由
 func RegisterPurchaseRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	purchaseOrders := v1.Group("/purchase-orders")
-	purchaseOrders.Use(middleware.StoreAuthMiddleware())
+	purchaseOrders.Use(middleware.StoreAuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		purchaseOrders.POST("", middleware.Permission("purchase:add"), c.PurchaseOrder.CreateOrder)
 		purchaseOrders.GET("", middleware.Permission("purchase:list"), c.PurchaseOrder.ListOrders)

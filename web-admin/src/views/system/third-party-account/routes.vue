@@ -15,12 +15,7 @@
         </div>
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex items-center justify-end gap-2">
-          <BaseButton variant="link" size="sm" @click="openEdit(row as ThirdPartyRoute)">编辑</BaseButton>
-          <BaseButton variant="link" size="sm" @click="openImport(row as ThirdPartyRoute)">按日期导入</BaseButton>
-          <BaseButton variant="link" size="sm" @click="openHistory(row as ThirdPartyRoute)">历史物流单</BaseButton>
-          <BaseButton variant="link" size="sm" @click="onDelete(row as ThirdPartyRoute)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="routeRowActions(row as ThirdPartyRoute)" />
       </template>
     </BaseTable>
 
@@ -58,8 +53,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import { BaseButton, BaseDialog, BaseFormItem, BaseInput, BaseTable, BaseTextarea } from '@/components/base'
-import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
+import { BaseButton, BaseDialog, BaseFormItem, BaseInput, BaseTable, BaseTableRowActions, BaseTextarea } from '@/components/base'
+import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import type { ThirdPartyRoute } from '@/api/types'
 import { deleteThirdPartyRoute, listThirdPartyRoutes, createThirdPartyRoute, updateThirdPartyRoute } from '@/api/thirdPartyRoute'
 import { listAllStores } from '@/api/store'
@@ -78,7 +73,7 @@ const columns: BaseTableColumn[] = [
   { key: 'name', label: '路线名称', prop: 'name', minWidth: '160px' },
   { key: 'stores', label: '门店编排', minWidth: '320px' },
   { key: 'remark', label: '备注', prop: 'remark', minWidth: '220px', ellipsis: true },
-  { key: 'actions', label: '操作', width: '250px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 const dlg = ref(false)
 const isEdit = ref(false)
@@ -86,6 +81,15 @@ const editId = ref(0)
 const saving = ref(false)
 const form = reactive<{ name: string; remark: string; store_ids: number[] }>({ name: '', remark: '', store_ids: [] })
 
+
+function routeRowActions(row: ThirdPartyRoute): TableRowAction[] {
+  return [
+    { label: '编辑', onClick: () => openEdit(row) },
+    { label: '按日期导入', onClick: () => openImport(row) },
+    { label: '历史物流单', onClick: () => openHistory(row) },
+    { label: '删除', danger: true, onClick: () => void onDelete(row) },
+  ]
+}
 
 function formatStores(route: ThirdPartyRoute): string {
   return (route.stores ?? []).map((s) => s.store?.name || `门店#${s.store_id}`).join(' -> ') || '-'

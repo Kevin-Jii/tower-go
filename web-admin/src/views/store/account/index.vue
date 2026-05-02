@@ -38,27 +38,7 @@
         {{ formatDate((row as StoreAccount).account_date) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-wrap items-center justify-end gap-2" @click.stop>
-          <BaseButton v-permission="'store:account:list'" variant="link" size="sm" @click="openView(row as StoreAccount)">详情</BaseButton>
-          <BaseButton
-            v-permission="'store:account:edit'"
-            variant="link"
-            size="sm"
-            :disabled="!canEditAccount(row as StoreAccount)"
-            @click="openConsumableDlg(row as StoreAccount)"
-          >
-            绑定消耗品
-          </BaseButton>
-          <BaseButton
-            v-permission="'store:account:edit'"
-            variant="link"
-            size="sm"
-            :disabled="!canEditAccount(row as StoreAccount)"
-            @click="openEdit(row as StoreAccount)"
-          >
-            编辑
-          </BaseButton>
-        </div>
+        <BaseTableRowActions :actions="accountRowActions(row as StoreAccount)" />
       </template>
     </BaseTable>
 
@@ -305,9 +285,10 @@ import {
   BasePagination,
   BaseSelect,
   BaseTable,
+  BaseTableRowActions,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseTableColumn } from '@/components/base/types'
+import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
 import {
   bindStoreAccountConsumables,
   createStoreAccount,
@@ -507,7 +488,7 @@ const columns: BaseTableColumn[] = [
   { key: 'total_amount', label: '销售额', prop: 'total_amount', width: '96px' },
   { key: 'net_income_amount', label: '净利润', prop: 'net_income_amount', width: '96px' },
   { key: 'account_date', label: '日期', width: '120px' },
-  { key: 'actions', label: '操作', width: '260px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
 function formatDate(v: string): string {
@@ -560,6 +541,20 @@ function canEditAccount(row: StoreAccount): boolean {
     cutoff = new Date(dayStart.getTime() + 27 * 60 * 60 * 1000)
   }
   return now < cutoff
+}
+
+function accountRowActions(row: StoreAccount): TableRowAction[] {
+  const editable = canEditAccount(row)
+  return [
+    { label: '详情', permission: 'store:account:list', onClick: () => openView(row) },
+    {
+      label: '绑定消耗品',
+      permission: 'store:account:edit',
+      disabled: !editable,
+      onClick: () => openConsumableDlg(row),
+    },
+    { label: '编辑', permission: 'store:account:edit', disabled: !editable, onClick: () => openEdit(row) },
+  ]
 }
 
 const createDlg = ref(false)

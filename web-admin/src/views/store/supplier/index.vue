@@ -10,33 +10,22 @@
           </div>
         </div>
       </template>
-      <BaseTable
-        :columns="supplierColumns"
-        :data="(list as unknown) as Record<string, unknown>[]"
-        :loading="loading"
-        min-width="420px"
-        height="calc(100vh - 325px)"
-        row-key="id"
-        :highlight-row-key="highlightSupplierId"
-        row-clickable
-        @row-click="onPickSupplierRow"
-      >
+      <BaseTable :columns="supplierColumns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
+        min-width="420px" height="calc(100vh - 325px)" row-key="id" :highlight-row-key="highlightSupplierId"
+        row-clickable @row-click="onPickSupplierRow">
         <template #cell-actions="{ row }">
           <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
             <BaseButton variant="link" size="sm" @click="openView(row as Supplier)">查看</BaseButton>
-            <BaseButton v-permission="'supplier:edit'" variant="link" size="sm" @click="openEdit(row as Supplier)">编辑</BaseButton>
-            <BaseButton v-permission="'supplier:delete'" variant="link" size="sm" @click="onDelete(row as Supplier)">删除</BaseButton>
+            <BaseButton v-permission="'supplier:edit'" variant="link" size="sm" @click="openEdit(row as Supplier)">编辑
+            </BaseButton>
+            <BaseButton v-permission="'supplier:delete'" variant="link" size="sm" @click="onDelete(row as Supplier)">删除
+            </BaseButton>
           </div>
         </template>
       </BaseTable>
       <div class="flex justify-end mt-3">
-        <BasePagination
-          :page="page"
-          :page-size="pageSize"
-          :total="total"
-          @update:page="(p) => (page = p)"
-          @update:page-size="(s) => (pageSize = s)"
-        />
+        <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+          @update:page-size="(s) => (pageSize = s)" />
       </div>
     </BaseCard>
 
@@ -44,25 +33,21 @@
       <template #header>
         <div class="flex flex-col gap-2 w-full">
           <div class="flex gap-2 items-center">
-            <BaseInput v-model="productKeywordInput" class="w-56" placeholder="商品名称" clearable @enter="applyProductKeyword" />
+            <BaseInput v-model="productKeywordInput" class="w-56" placeholder="商品名称" clearable
+              @enter="applyProductKeyword" />
             <BaseButton variant="primary" size="sm" @click="applyProductKeyword">查询</BaseButton>
-            <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openCategoryCreate">新增供应商分类</BaseButton>
+            <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openCategoryCreate">新增供应商分类
+            </BaseButton>
             <BaseButton variant="secondary" size="sm" @click="reloadProducts">刷新</BaseButton>
           </div>
         </div>
       </template>
-      <BaseTable
-        :columns="productTreeColumns"
-        :data="(productTreeRows as unknown) as Record<string, unknown>[]"
-        :loading="productsLoading || categoriesLoading"
-        min-width="760px"
-        height="calc(100vh - 290px)"
-        row-key="id"
-        tree-children-key="children"
-        :tree-default-expand-all="true"
-      >
+      <BaseTable :columns="productTreeColumns" :data="(productTreeRows as unknown) as Record<string, unknown>[]"
+        :loading="productsLoading || categoriesLoading" min-width="760px" height="calc(100vh - 290px)" row-key="id"
+        tree-children-key="children" :tree-default-expand-all="true">
         <template #cell-name="{ row }">
-          <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name }}</span>
+          <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name
+          }}</span>
           <span v-else>{{ (row as TreeRow).name }}</span>
         </template>
         <template #cell-sale_price="{ row }">
@@ -72,11 +57,14 @@
         <template #cell-actions="{ row }">
           <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
             <template v-if="(row as TreeRow).isCategory">
-              <BaseButton v-permission="'supplier:add'" variant="link" size="sm" @click="openProductCreate((row as TreeRow).categoryId)">新增商品</BaseButton>
+              <BaseButton v-permission="'supplier:add'" variant="link" size="sm"
+                @click="openProductCreate((row as TreeRow).categoryId)">新增商品</BaseButton>
             </template>
             <template v-else>
-              <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看</BaseButton>
-              <BaseButton v-permission="'supplier:delete'" variant="link" size="sm" @click="onDeleteProduct((row as TreeRow).raw!)">删除</BaseButton>
+              <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看
+              </BaseButton>
+              <BaseButton v-permission="'supplier:delete'" variant="link" size="sm"
+                @click="onDeleteProduct((row as TreeRow).raw!)">删除</BaseButton>
             </template>
           </div>
         </template>
@@ -104,13 +92,10 @@
           <BaseTextarea v-model="form.remark" :rows="2" />
         </BaseFormItem>
         <BaseFormItem v-if="isEdit" label="状态">
-          <BaseSelect
-            v-model="form.status"
-            :options="[
-              { label: '启用', value: 1 },
-              { label: '禁用', value: 0 },
-            ]"
-          />
+          <BaseSelect v-model="form.status" :options="[
+            { label: '启用', value: 1 },
+            { label: '禁用', value: 0 },
+          ]" />
         </BaseFormItem>
       </div>
       <template #footer>
@@ -202,7 +187,8 @@
       </template>
     </BaseDialog>
 
-    <a-drawer :visible="productDrawer" placement="right" :width="560" :mask-closable="true" @cancel="productDrawer = false">
+    <a-drawer :visible="productDrawer" placement="right" :width="560" :mask-closable="true"
+      @cancel="productDrawer = false">
       <template #title>商品详情与编辑</template>
       <div class="space-y-4">
         <BaseFormItem label="商品名称">
@@ -418,7 +404,7 @@ function reloadProducts(): void {
 }
 
 const productTreeColumns: BaseTableColumn[] = [
-  { key: 'name', label: '商品/分类', minWidth: '220px', ellipsis: true },
+  { key: 'name', label: '商品/分类', minWidth: '140px', ellipsis: true },
   { key: 'sale_price', label: '售价', width: '100px' },
   { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]

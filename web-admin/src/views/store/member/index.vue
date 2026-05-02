@@ -14,12 +14,7 @@
         {{ fmtMoney((row as MemberRow).balance) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'store:member:list'" variant="link" size="sm" @click="openConsumptions(row as MemberRow)">消费记录</BaseButton>
-          <BaseButton v-permission="'store:member:edit'" variant="link" size="sm" @click="openEdit(row as MemberRow)">编辑</BaseButton>
-          <BaseButton v-permission="'store:member:balance'" variant="link" size="sm" @click="openAdjust(row as MemberRow)">调余额</BaseButton>
-          <BaseButton v-permission="'store:member:delete'" variant="link" size="sm" @click="onDelete(row as MemberRow)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="memberRowActions(row as MemberRow)" />
       </template>
     </BaseTable>
 
@@ -153,8 +148,9 @@ import {
   BasePagination,
   BaseSelect,
   BaseTable,
+  BaseTableRowActions,
 } from '@/components/base'
-import type { BaseTableColumn } from '@/components/base/types'
+import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
 import { adjustMemberBalance, createMember, deleteMember, listMemberConsumptions, listMembers, updateMember } from '@/api/member'
 import type { MemberConsumptionRecord, MemberRow } from '@/api/types'
 import { toast } from '@/feedback/toast'
@@ -196,7 +192,7 @@ const columns: BaseTableColumn[] = [
   { key: 'balance', label: '余额', width: '100px' },
   { key: 'points', label: '积分', prop: 'points', width: '72px' },
   { key: 'level', label: '等级', prop: 'level', width: '72px' },
-  { key: 'actions', label: '操作', width: '260px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 const consColumns: BaseTableColumn[] = [
   { key: 'account_no', label: '记账单号', prop: 'account_no', minWidth: '140px', ellipsis: true },
@@ -328,6 +324,15 @@ async function onDelete(row: MemberRow): Promise<void> {
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
+}
+
+function memberRowActions(row: MemberRow): TableRowAction[] {
+  return [
+    { label: '消费记录', permission: 'store:member:list', onClick: () => openConsumptions(row) },
+    { label: '编辑', permission: 'store:member:edit', onClick: () => openEdit(row) },
+    { label: '调余额', permission: 'store:member:balance', onClick: () => openAdjust(row) },
+    { label: '删除', permission: 'store:member:delete', danger: true, onClick: () => void onDelete(row) },
+  ]
 }
 
 const consDlg = ref(false)

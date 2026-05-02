@@ -10,6 +10,44 @@ import {
 } from '@/utils/storage'
 
 export const useUserStore = defineStore('user', () => {
+  function hasStatisticsMenu(list: Menu[] | undefined): boolean {
+    if (!list?.length) return false
+    for (const m of list) {
+      if (m.path === '/store/statistics' || m.component === 'store/statistics/index') return true
+      if (m.children?.length && hasStatisticsMenu(m.children)) return true
+    }
+    return false
+  }
+
+  function attachStatisticsMenu(list: Menu[]): Menu[] {
+    if (hasStatisticsMenu(list)) return list
+
+    const statsMenu: Menu = {
+      id: -10001,
+      parent_id: 0,
+      name: 'statistics-dash-open',
+      title: '数据统计',
+      icon: 'apps',
+      path: '/store/statistics',
+      component: 'store/statistics/index',
+      type: 2,
+      sort: 999,
+      permission: '',
+      visible: 1,
+      status: 1,
+    }
+
+    const cloned = JSON.parse(JSON.stringify(list)) as Menu[]
+    const storeNode = cloned.find((m) => m.type === 1 && (m.path === '/store' || m.name === 'store'))
+    if (storeNode) {
+      storeNode.children = storeNode.children ?? []
+      storeNode.children.push({ ...statsMenu, parent_id: storeNode.id })
+      return cloned
+    }
+    cloned.push(statsMenu)
+    return cloned
+  }
+
   const token = ref('')
   const userInfo = ref<User | null>(null)
   const permissions = ref<string[]>([])
@@ -59,7 +97,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function setMenus(list: Menu[]): void {
-    menus.value = list ?? []
+    menus.value = attachStatisticsMenu(list ?? [])
   }
 
   function setTenantId(id: number): void {

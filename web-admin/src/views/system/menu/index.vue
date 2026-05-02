@@ -4,23 +4,13 @@
       <h2 class="page-title">菜单管理</h2>
       <BaseButton v-permission="'system:menu:add'" variant="primary" @click="openCreate()">新增</BaseButton>
     </div>
-    <BaseTable
-      :columns="columns"
-      :data="(tree as unknown) as Record<string, unknown>[]"
-      :loading="loading"
-      min-width="960px"
-      row-key="id"
-      tree-children-key="children"
-      :tree-default-expand-all="true"
-    >
+    <BaseTable :columns="columns" :data="(tree as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="960px" row-key="id" tree-children-key="children" :tree-default-expand-all="true">
       <template #cell-type="{ row }">
         {{ typeLabel(Number((row as Menu).type)) }}
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'system:menu:edit'" variant="link" size="sm" @click="openEdit(row as Menu)">编辑</BaseButton>
-          <BaseButton v-permission="'system:menu:delete'" variant="link" size="sm" @click="onDelete(row as Menu)">删除</BaseButton>
-        </div>
+        <BaseTableRowActions :actions="menuRowActions(row as Menu)" />
       </template>
     </BaseTable>
 
@@ -48,14 +38,11 @@
           <BaseInput v-model="form.permission" />
         </BaseFormItem>
         <BaseFormItem label="类型">
-          <BaseSelect
-            v-model="form.type"
-            :options="[
-              { label: '目录', value: 1 },
-              { label: '菜单', value: 2 },
-              { label: '按钮', value: 3 },
-            ]"
-          />
+          <BaseSelect v-model="form.type" :options="[
+            { label: '目录', value: 1 },
+            { label: '菜单', value: 2 },
+            { label: '按钮', value: 3 },
+          ]" />
         </BaseFormItem>
         <BaseFormItem label="排序">
           <BaseNumberInput v-model="form.sort" />
@@ -90,9 +77,10 @@ import {
   BaseSelect,
   BaseSwitch,
   BaseTable,
+  BaseTableRowActions,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
+import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import { createMenu, deleteMenu, fetchMenuTree, updateMenu } from '@/api/menu'
 import type { Menu } from '@/api/types'
 import { toast } from '@/feedback/toast'
@@ -112,7 +100,7 @@ const columns: BaseTableColumn[] = [
   { key: 'component', label: '组件路径', prop: 'component', minWidth: '160px', ellipsis: true },
   { key: 'permission', label: '权限码', prop: 'permission', minWidth: '140px', ellipsis: true },
   { key: 'type', label: '类型', width: '80px' },
-  { key: 'actions', label: '操作', width: '200px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
 const visible = ref(false)
@@ -146,6 +134,13 @@ const parentOptions = computed<BaseSelectOption[]>(() => {
   const flat = flatten(tree.value)
   return [{ label: '顶级', value: 0 }, ...flat.map((x) => ({ label: x.label, value: x.id }))]
 })
+
+function menuRowActions(row: Menu): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'system:menu:edit', onClick: () => openEdit(row) },
+    { label: '删除', permission: 'system:menu:delete', danger: true, onClick: () => void onDelete(row) },
+  ]
+}
 
 function typeLabel(t: number): string {
   if (t === 1) return '目录'

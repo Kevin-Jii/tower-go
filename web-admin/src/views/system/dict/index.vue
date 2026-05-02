@@ -5,30 +5,20 @@
       <template #header>
         <div class="flex items-center justify-between gap-2 flex-wrap w-full">
           <span class="font-semibold text-slate-800">字典类型</span>
-          <BaseButton v-permission="'system:dict:type:add'" variant="primary" size="sm" @click="openType()">新增</BaseButton>
+          <BaseButton v-permission="'system:dict:type:add'" variant="primary" size="sm" @click="openType()">新增
+          </BaseButton>
         </div>
       </template>
       <div class="min-w-0 overflow-x-auto">
-        <BaseTable
-          :columns="typeColumns"
-          :data="(types as unknown) as Record<string, unknown>[]"
-          :loading="typesLoading"
-          min-width="460px"
-          height="360px"
-          row-key="id"
-          :highlight-row-key="currentType?.id ?? null"
-          row-clickable
-          @row-click="onPickTypeRow"
-        >
-        <template #cell-status="{ row }">
-          {{ (row as DictType).status === 1 ? '启用' : '停用' }}
-        </template>
-        <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-            <BaseButton v-permission="'system:dict:type:edit'" variant="link" size="sm" @click="openType(row as DictType)">编辑</BaseButton>
-            <BaseButton v-permission="'system:dict:type:delete'" variant="link" size="sm" @click="delType(row as DictType)">删除</BaseButton>
-          </div>
-        </template>
+        <BaseTable :columns="typeColumns" :data="(types as unknown) as Record<string, unknown>[]"
+          :loading="typesLoading" min-width="460px" height="360px" row-key="id"
+          :highlight-row-key="currentType?.id ?? null" row-clickable @row-click="onPickTypeRow">
+          <template #cell-status="{ row }">
+            {{ (row as DictType).status === 1 ? '启用' : '停用' }}
+          </template>
+          <template #cell-actions="{ row }">
+            <BaseTableRowActions :actions="dictTypeRowActions(row as DictType)" />
+          </template>
         </BaseTable>
       </div>
     </BaseCard>
@@ -37,33 +27,21 @@
       <template #header>
         <div class="flex items-center justify-between gap-2 flex-wrap w-full">
           <span class="font-semibold text-slate-800">字典数据 {{ currentType ? `(${currentType.code})` : '' }}</span>
-          <BaseButton
-            v-permission="'system:dict:data:add'"
-            variant="primary"
-            size="sm"
-            :disabled="!currentType"
-            @click="openData()"
-          >
+          <BaseButton v-permission="'system:dict:data:add'" variant="primary" size="sm" :disabled="!currentType"
+            @click="openData()">
             新增
           </BaseButton>
         </div>
       </template>
       <div class=" overflow-x-auto">
-        <BaseTable
-          :columns="dataColumns"
-          :data="(dataList as unknown) as Record<string, unknown>[]"
-          :loading="dataLoading"
-          height="360px"
-        >
-        <template #cell-style="{ row }">
-          <DictTag v-if="currentType" :type="currentType.code" :value="(row as DictData).value" />
-        </template>
-        <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-            <BaseButton v-permission="'system:dict:data:edit'" variant="link" size="sm" @click="openData(row as DictData)">编辑</BaseButton>
-            <BaseButton v-permission="'system:dict:data:delete'" variant="link" size="sm" @click="delData(row as DictData)">删除</BaseButton>
-          </div>
-        </template>
+        <BaseTable :columns="dataColumns" :data="(dataList as unknown) as Record<string, unknown>[]"
+          :loading="dataLoading" height="360px">
+          <template #cell-style="{ row }">
+            <DictTag v-if="currentType" :type="currentType.code" :value="(row as DictData).value" />
+          </template>
+          <template #cell-actions="{ row }">
+            <BaseTableRowActions :actions="dictDataRowActions(row as DictData)" />
+          </template>
         </BaseTable>
       </div>
     </BaseCard>
@@ -131,9 +109,10 @@ import {
   BaseSelect,
   BaseSwitch,
   BaseTable,
+  BaseTableRowActions,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
+import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import DictTag from '@/components/DictTag.vue'
 import {
   createDictData,
@@ -155,16 +134,14 @@ const typeColumns: BaseTableColumn[] = [
   { key: 'code', label: '编码', prop: 'code', minWidth: '120px', ellipsis: true },
   { key: 'name', label: '名称', prop: 'name', minWidth: '120px', ellipsis: true },
   { key: 'status', label: '状态', width: '72px' },
-  /* 双列布局下勿 fixed:right，否则在窄容器里占位异常；给足宽度 + 按钮不换行 */
-  { key: 'actions', label: '操作', width: '148px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
 const dataColumns: BaseTableColumn[] = [
-  { key: 'label', label: '标签', prop: 'label', minWidth: '100px', ellipsis: true },
+  { key: 'label', label: '标签', prop: 'label', width: '100px', ellipsis: true },
   { key: 'value', label: '值', prop: 'value', width: '96px', ellipsis: true },
   { key: 'style', label: '样式', width: '100px' },
-  // { key: 'list_class', label: 'list_class', prop: 'list_class', minWidth: '100px', width: '120px', ellipsis: true },
-  { key: 'actions', label: '操作', width: '148px', align: 'right' },
+  { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
 const listClassOptions: BaseSelectOption[] = [
@@ -331,5 +308,19 @@ async function delData(row: DictData): Promise<void> {
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
+}
+
+function dictTypeRowActions(row: DictType): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'system:dict:type:edit', onClick: () => openType(row) },
+    { label: '删除', permission: 'system:dict:type:delete', danger: true, onClick: () => void delType(row) },
+  ]
+}
+
+function dictDataRowActions(row: DictData): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'system:dict:data:edit', onClick: () => openData(row) },
+    { label: '删除', permission: 'system:dict:data:delete', danger: true, onClick: () => void delData(row) },
+  ]
 }
 </script>

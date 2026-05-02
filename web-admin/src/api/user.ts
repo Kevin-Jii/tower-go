@@ -5,6 +5,8 @@ export async function listUsers(params: {
   page?: number
   page_size?: number
   keyword?: string
+  /** 仅总部/超级管理员有效；按门店主键筛选 */
+  store_id?: number
 }): Promise<Paginated<User>> {
   const res = await http.get<import('./types').ApiEnvelope<Paginated<User>>>('/users', { params })
   return unwrap(res)

@@ -7,6 +7,7 @@
         <BaseInput v-model="rangeEnd" class="w-full sm:w-40" type="date" />
         <BaseButton variant="primary" @click="reloadAll">查询</BaseButton>
         <BaseButton v-permission="'store:account:add'" variant="primary" @click="openCreate">快速记账</BaseButton>
+        <BaseButton v-permission="'store:account:add'" variant="secondary" @click="openCustomCreate">自定义记账</BaseButton>
       </div>
     </div>
 
@@ -51,6 +52,58 @@
         @update:page-size="(s) => (pageSize = s)"
       />
     </div>
+
+    <BaseDialog v-model="customCreateDlg" title="自定义记账" max-width="min(720px, 96vw)">
+      <p class="m-0 mb-3 text-xs text-[var(--color-text-3)]">
+        商品明细为手写描述，不关联系统商品与库存；请填写单价与小计依据。渠道、会员、支付状态、备注与快速记账一致。
+      </p>
+      <div class="space-y-4">
+        <BaseFormItem label="渠道" required>
+          <BaseSelect v-model="customForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
+        </BaseFormItem>
+        <BaseFormItem label="绑定会员">
+          <BaseSelect v-model="customForm.member_id" :options="memberOptionsWithNone" placeholder="可选，默认不绑定" />
+        </BaseFormItem>
+        <BaseFormItem label="支付状态">
+          <BaseSelect v-model="customForm.payment_status" :options="paymentStatusOptions" />
+        </BaseFormItem>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm font-medium text-slate-700">商品明细（任意描述）</span>
+          <BaseButton variant="secondary" size="sm" @click="addCustomLine">加一行</BaseButton>
+        </div>
+        <div
+          v-for="(line, idx) in customForm.lines"
+          :key="idx"
+          class="rounded border border-[var(--color-border-2)] p-3 flex flex-col gap-3"
+        >
+          <BaseFormItem label="明细描述" required class="w-full">
+            <BaseTextarea v-model="line.description" :rows="2" placeholder="可填写任意商品或服务说明" />
+          </BaseFormItem>
+          <div class="flex flex-wrap items-end gap-2">
+            <BaseFormItem label="数量" required class="w-28">
+              <BaseNumberInput v-model="line.quantity" :min="0.01" :step="0.01" />
+            </BaseFormItem>
+            <BaseFormItem label="单位" required class="w-28">
+              <BaseInput v-model="line.unit" placeholder="如 瓶、次、项" />
+            </BaseFormItem>
+            <BaseFormItem label="单价" required class="w-32">
+              <BaseNumberInput v-model="line.price" :min="0.01" :step="0.01" />
+            </BaseFormItem>
+            <BaseFormItem label="行备注" class="min-w-[140px] flex-1">
+              <BaseInput v-model="line.line_remark" placeholder="可选" />
+            </BaseFormItem>
+            <BaseButton variant="ghost" size="sm" class="shrink-0" @click="removeCustomLine(idx)">移除</BaseButton>
+          </div>
+        </div>
+        <BaseFormItem label="整单备注">
+          <BaseTextarea v-model="customForm.remark" :rows="2" />
+        </BaseFormItem>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="customCreateDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="saving" @click="submitCustomCreate">保存</BaseButton>
+      </template>
+    </BaseDialog>
 
     <BaseDialog v-model="createDlg" title="快速记账（多商品）" max-width="min(720px, 96vw)">
       <div class="space-y-4">
@@ -175,7 +228,9 @@
               </thead>
               <tbody>
                 <tr v-for="it in viewAccount.items" :key="it.id">
-                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ it.product_name || `商品#${it.product_id}` }}</td>
+                  <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">
+                    {{ it.product_name || (it.product_id ? `商品#${it.product_id}` : '—') }}
+                  </td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ it.spec || '-' }}</td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ it.quantity }}</td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-center">{{ it.unit || '-' }}</td>
@@ -558,6 +613,7 @@ function accountRowActions(row: StoreAccount): TableRowAction[] {
 }
 
 const createDlg = ref(false)
+const customCreateDlg = ref(false)
 const saving = ref(false)
 interface AccountLine {
   product_path: Array<string | number> | string | number | undefined
@@ -572,6 +628,21 @@ const cForm = reactive({
   remark: '',
 })
 
+interface CustomAccountLine {
+  description: string
+  quantity: number
+  unit: string
+  price: number
+  line_remark: string
+}
+const customForm = reactive({
+  channel: '',
+  member_id: 0,
+  payment_status: 1,
+  lines: [] as CustomAccountLine[],
+  remark: '',
+})
+
 function openCreate(): void {
   cForm.channel = ''
   cForm.member_id = 0
@@ -579,6 +650,34 @@ function openCreate(): void {
   cForm.lines = [makeAccountLine()]
   cForm.remark = ''
   createDlg.value = true
+}
+
+function makeCustomLine(): CustomAccountLine {
+  return {
+    description: '',
+    quantity: 1,
+    unit: '',
+    price: 0,
+    line_remark: '',
+  }
+}
+
+function openCustomCreate(): void {
+  customForm.channel = ''
+  customForm.member_id = 0
+  customForm.payment_status = 1
+  customForm.lines = [makeCustomLine()]
+  customForm.remark = ''
+  customCreateDlg.value = true
+}
+
+function addCustomLine(): void {
+  customForm.lines.push(makeCustomLine())
+}
+
+function removeCustomLine(idx: number): void {
+  customForm.lines = customForm.lines.filter((_, i) => i !== idx)
+  if (!customForm.lines.length) customForm.lines.push(makeCustomLine())
 }
 
 function makeAccountLine(): AccountLine {
@@ -631,6 +730,79 @@ function addCreateLine(): void {
 function removeCreateLine(idx: number): void {
   cForm.lines = cForm.lines.filter((_, i) => i !== idx)
   if (!cForm.lines.length) cForm.lines.push(makeAccountLine())
+}
+
+async function submitCustomCreate(): Promise<void> {
+  if (!customForm.channel.trim()) {
+    toast.warning('请选择渠道')
+    return
+  }
+  const items: Array<{
+    product_id: number
+    product_name: string
+    quantity: number
+    unit: string
+    price: number
+    amount: number
+    remark: string
+    spec: string
+  }> = []
+  for (const line of customForm.lines) {
+    const name = line.description.trim()
+    const unit = line.unit.trim()
+    if (!name) {
+      toast.warning('请填写每条明细的描述')
+      return
+    }
+    if (!unit) {
+      toast.warning('请填写每条明细的单位')
+      return
+    }
+    const price = Number(line.price)
+    if (!Number.isFinite(price) || price <= 0) {
+      toast.warning('自定义明细须填写大于 0 的单价')
+      return
+    }
+    const qty = Number(line.quantity)
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast.warning('请填写有效的数量')
+      return
+    }
+    const amount = Number((price * qty).toFixed(2))
+    items.push({
+      product_id: 0,
+      product_name: name,
+      quantity: qty,
+      unit,
+      price,
+      amount,
+      remark: line.line_remark.trim(),
+      spec: '',
+    })
+  }
+  if (!items.length) {
+    toast.warning('请至少添加一条明细')
+    return
+  }
+  saving.value = true
+  try {
+    await createStoreAccount({
+      store_id: tenantStoreId.value,
+      member_id: customForm.member_id > 0 ? customForm.member_id : undefined,
+      payment_status: customForm.payment_status,
+      channel: customForm.channel.trim(),
+      remark: customForm.remark.trim(),
+      other_expense_amount: 0,
+      items,
+    })
+    toast.success('已保存')
+    customCreateDlg.value = false
+    await reloadAll()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '失败')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function submitCreate(): Promise<void> {

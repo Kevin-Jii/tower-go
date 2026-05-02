@@ -145,12 +145,15 @@ func (m *UserModule) ListByStoreIDWithKeyword(storeID uint, keyword string, page
 	return users, total, nil
 }
 
-// ListAllUsers 获取所有用户（支持分页，用于总部管理员）
-func (m *UserModule) ListAllUsers(keyword string, page, pageSize int) ([]*model.User, int64, error) {
+// ListAllUsers 获取所有用户（支持分页，用于总部管理员）。storeID>0 时仅返回该门店下的用户。
+func (m *UserModule) ListAllUsers(keyword string, storeID uint, page, pageSize int) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
 
 	query := m.db.Model(&model.User{})
+	if storeID > 0 {
+		query = query.Where("store_id = ?", storeID)
+	}
 
 	if keyword != "" {
 		// 使用优化的搜索条件

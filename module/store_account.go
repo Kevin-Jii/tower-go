@@ -26,7 +26,7 @@ func (m *StoreAccountModule) Create(account *model.StoreAccount) error {
 // CreateWithInventoryOut 创建记账并自动出库（同事务）
 func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount, outOrder *model.InventoryOrder) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
-		deductItems := account.Items
+		var deductItems []model.StoreAccountItem
 		if outOrder != nil && len(outOrder.Items) > 0 {
 			deductItems = make([]model.StoreAccountItem, 0, len(outOrder.Items))
 			for _, item := range outOrder.Items {
@@ -36,6 +36,14 @@ func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount,
 					Quantity:    item.Quantity,
 					Unit:        item.Unit,
 				})
+			}
+		} else {
+			// 无出库单行（例如全部为手写明细）：仅对 product_id>0 的明细扣库存；兼容 outOrder==nil 时按记账明细过滤
+			for _, it := range account.Items {
+				if it.ProductID == model.StoreAccountItemCustomProductID {
+					continue
+				}
+				deductItems = append(deductItems, it)
 			}
 		}
 

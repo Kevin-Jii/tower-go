@@ -7,51 +7,38 @@
       </div>
     </div>
 
-    <BaseTable
-      :columns="columns"
-      :data="(list as unknown) as Record<string, unknown>[]"
-      :loading="loading"
-      min-width="1100px"
-    >
+    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="1100px">
       <template #cell-bot_type="{ row }">
         {{ (row as DingTalkBot).bot_type === 'stream' ? 'Stream' : 'Webhook' }}
       </template>
       <template #cell-webhook="{ row }">
-        <span class="font-mono text-xs" :title="(row as DingTalkBot).webhook || ''">{{ previewUrl((row as DingTalkBot).webhook) }}</span>
+        <span class="font-mono text-xs" :title="(row as DingTalkBot).webhook || ''">{{ previewUrl((row as
+          DingTalkBot).webhook) }}</span>
       </template>
       <template #cell-is_enabled="{ row }">
-        <BaseSwitch
-          v-permission="'dingtalk:robot:edit'"
-          :model-value="(row as DingTalkBot).is_enabled"
-          @update:model-value="toggleEnabled(row as DingTalkBot, coerceBool($event))"
-        />
+        <BaseSwitch v-permission="'dingtalk:robot:edit'" :model-value="(row as DingTalkBot).is_enabled"
+          @update:model-value="toggleEnabled(row as DingTalkBot, coerceBool($event))" />
       </template>
       <template #cell-actions="{ row }">
         <div class="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap shrink-0" @click.stop>
-          <BaseButton v-permission="'dingtalk:robot:test'" variant="link" size="sm" @click="onTest(row as DingTalkBot)">测试推送</BaseButton>
-          <BaseButton
-            v-if="(row as DingTalkBot).bot_type === 'stream'"
-            v-permission="'dingtalk:robot:test'"
-            variant="link"
-            size="sm"
-            @click="onTestCallback(row as DingTalkBot)"
-          >
+          <BaseButton v-permission="'dingtalk:robot:test'" variant="link" size="sm" @click="onTest(row as DingTalkBot)">
+            测试推送</BaseButton>
+          <BaseButton v-if="(row as DingTalkBot).bot_type === 'stream'" v-permission="'dingtalk:robot:test'"
+            variant="link" size="sm" @click="onTestCallback(row as DingTalkBot)">
             回调检测
           </BaseButton>
-          <BaseButton v-permission="'dingtalk:robot:edit'" variant="link" size="sm" @click="openEdit(row as DingTalkBot)">编辑</BaseButton>
-          <BaseButton v-permission="'dingtalk:robot:delete'" variant="link" size="sm" @click="onDelete(row as DingTalkBot)">删除</BaseButton>
+          <BaseButton v-permission="'dingtalk:robot:edit'" variant="link" size="sm"
+            @click="openEdit(row as DingTalkBot)">编辑</BaseButton>
+          <BaseButton v-permission="'dingtalk:robot:delete'" variant="link" size="sm"
+            @click="onDelete(row as DingTalkBot)">删除</BaseButton>
         </div>
       </template>
     </BaseTable>
 
     <div class="flex justify-end">
-      <BasePagination
-        :page="page"
-        :page-size="pageSize"
-        :total="total"
-        @update:page="(p) => (page = p)"
-        @update:page-size="(s) => (pageSize = s)"
-      />
+      <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+        @update:page-size="(s) => (pageSize = s)" />
     </div>
 
     <BaseDialog v-model="dlg" :title="isEdit ? '编辑机器人' : '新增机器人'" max-width="min(640px, 96vw)">
@@ -60,22 +47,13 @@
           <BaseInput v-model="form.name" placeholder="留空则按门店自动生成" />
         </BaseFormItem>
         <BaseFormItem label="类型" required>
-          <BaseSelect
-            v-model="form.bot_type"
-            :options="[
-              { label: 'Webhook', value: 'webhook' },
-              { label: 'Stream', value: 'stream' },
-            ]"
-            :disabled="isEdit"
-          />
+          <BaseSelect v-model="form.bot_type" :options="[
+            { label: 'Webhook', value: 'webhook' },
+            { label: 'Stream', value: 'stream' },
+          ]" :disabled="isEdit" />
         </BaseFormItem>
         <BaseFormItem label="所属门店">
-          <BaseSelect
-            v-model="formStoreId"
-            :options="storeOptions"
-            placeholder="全局（全部门店可用）"
-            allow-clear
-          />
+          <BaseSelect v-model="formStoreId" :options="storeOptions" placeholder="全局（全部门店可用）" allow-clear />
         </BaseFormItem>
         <BaseFormItem v-if="form.bot_type === 'webhook'" label="Webhook URL" required>
           <BaseInput v-model="form.webhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=..." />
@@ -98,14 +76,11 @@
           </BaseFormItem>
         </template>
         <BaseFormItem label="消息类型">
-          <BaseSelect
-            v-model="form.msg_type"
-            :options="[
-              { label: 'Markdown', value: 'markdown' },
-              { label: 'Text', value: 'text' },
-              { label: '卡片', value: 'card' },
-            ]"
-          />
+          <BaseSelect v-model="form.msg_type" :options="[
+            { label: 'Markdown', value: 'markdown' },
+            { label: 'Text', value: 'text' },
+            { label: '卡片', value: 'card' },
+          ]" />
         </BaseFormItem>
         <BaseFormItem v-if="form.msg_type === 'card'" label="卡片模板Key" required>
           <BaseInput v-model="form.card_msg_key" placeholder="如 sampleActionCard / your.card.template.key" />
@@ -173,7 +148,7 @@ const columns: BaseTableColumn[] = [
   { key: 'robot_code', label: 'RobotCode', prop: 'robot_code', width: '120px', ellipsis: true },
   { key: 'is_enabled', label: '启用', prop: 'is_enabled', width: '88px' },
   { key: 'msg_type', label: '消息', prop: 'msg_type', width: '88px' },
-  { key: 'actions', label: '操作', width: '280px', align: 'right' },
+  { key: 'actions', label: '操作', width: '330px', align: 'right' },
 ]
 
 function previewUrl(u?: string): string {

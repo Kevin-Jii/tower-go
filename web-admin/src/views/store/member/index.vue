@@ -9,7 +9,8 @@
       </div>
     </div>
 
-    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1000px">
+    <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="1000px">
       <template #cell-balance="{ row }">
         {{ fmtMoney((row as MemberRow).balance) }}
       </template>
@@ -19,13 +20,8 @@
     </BaseTable>
 
     <div class="flex justify-end">
-      <BasePagination
-        :page="page"
-        :page-size="pageSize"
-        :total="total"
-        @update:page="(p) => (page = p)"
-        @update:page-size="(s) => (pageSize = s)"
-      />
+      <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+        @update:page-size="(s) => (pageSize = s)" />
     </div>
 
     <BaseDialog v-model="dlg" :title="isEdit ? '编辑会员' : '新增会员'" max-width="min(440px, 96vw)">
@@ -56,13 +52,10 @@
       <p class="text-sm text-slate-600 m-0 mb-3">当前余额：{{ adjMember ? fmtMoney(adjMember.balance) : '-' }}</p>
       <div class="space-y-4">
         <BaseFormItem label="类型" required>
-          <BaseSelect
-            v-model="adjForm.type"
-            :options="[
-              { label: '调增', value: 4 },
-              { label: '调减', value: 5 },
-            ]"
-          />
+          <BaseSelect v-model="adjForm.type" :options="[
+            { label: '调增', value: 4 },
+            { label: '调减', value: 5 },
+          ]" />
         </BaseFormItem>
         <BaseFormItem label="金额" required>
           <BaseInput v-model="adjForm.amount" placeholder="如 10.00" />
@@ -106,27 +99,22 @@
           </div>
           <div>
             <div class="text-xs text-[var(--color-text-3)]">净利润</div>
-            <div class="text-base font-semibold text-emerald-700">{{ fmtMoney(consSummary.net_income_amount ?? 0) }}</div>
+            <div class="text-base font-semibold text-emerald-700">{{ fmtMoney(consSummary.net_income_amount ?? 0) }}
+            </div>
           </div>
         </div>
-        <BaseTable
-          :columns="consColumns"
-          :data="(consRows as unknown) as Record<string, unknown>[]"
-          :loading="consLoading"
-          min-width="860px"
-        >
-          <template #cell-total_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).total_amount) }}</template>
-          <template #cell-consumable_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).consumable_amount) }}</template>
-          <template #cell-net_income_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).net_income_amount) }}</template>
+        <BaseTable :columns="consColumns" :data="(consRows as unknown) as Record<string, unknown>[]"
+          :loading="consLoading" min-width="860px">
+          <template #cell-total_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).total_amount)
+          }}</template>
+          <template #cell-consumable_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).consumable_amount)
+          }}</template>
+          <template #cell-net_income_amount="{ row }">{{ fmtMoney((row as MemberConsumptionRecord).net_income_amount)
+          }}</template>
         </BaseTable>
         <div class="flex justify-end">
-          <BasePagination
-            :page="consPage"
-            :page-size="consPageSize"
-            :total="consTotal"
-            @update:page="(p) => (consPage = p)"
-            @update:page-size="(s) => (consPageSize = s)"
-          />
+          <BasePagination :page="consPage" :page-size="consPageSize" :total="consTotal"
+            @update:page="(p) => (consPage = p)" @update:page-size="(s) => (consPageSize = s)" />
         </div>
       </div>
       <template #footer>
@@ -186,13 +174,12 @@ watch([page, pageSize], () => {
 })
 
 const columns: BaseTableColumn[] = [
-  { key: 'id', label: 'ID', prop: 'id', width: '72px' },
-  { key: 'phone', label: '手机', prop: 'phone', width: '120px' },
-  { key: 'name', label: '姓名', prop: 'name', minWidth: '100px' },
+  { key: 'phone', label: '手机', prop: 'phone', width: '140px' },
+  { key: 'name', label: '姓名', prop: 'name', width: '100px' },
   { key: 'balance', label: '余额', width: '100px' },
   { key: 'points', label: '积分', prop: 'points', width: '72px' },
   { key: 'level', label: '等级', prop: 'level', width: '72px' },
-  { key: 'actions', label: '操作', width: '140px', align: 'right' },
+  { key: 'actions', label: '操作', width: '240px', align: 'right' },
 ]
 const consColumns: BaseTableColumn[] = [
   { key: 'account_no', label: '记账单号', prop: 'account_no', minWidth: '140px', ellipsis: true },

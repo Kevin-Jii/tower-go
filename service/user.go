@@ -51,7 +51,9 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 	}
 
 	targetStoreID := storeID
-	if (roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin) && strings.TrimSpace(req.StoreCode) != "" {
+	canPickStoreByCode := roleCode == model.RoleCodeSuperAdmin ||
+		(roleCode == model.RoleCodeAdmin && storeID == 0)
+	if canPickStoreByCode && strings.TrimSpace(req.StoreCode) != "" {
 		sid, err := s.storeModule.GetIDByStoreCode(req.StoreCode)
 		if err != nil {
 			return errors.New("无效门店编码: " + err.Error())
@@ -101,9 +103,9 @@ func (s *UserService) ListUsersByStoreIDWithKeyword(storeID uint, keyword string
 	return s.userModule.ListByStoreIDWithKeyword(storeID, keyword, page, pageSize)
 }
 
-// ListAllUsers 获取全部用户（支持分页，用于总部管理员）
-func (s *UserService) ListAllUsers(keyword string, page, pageSize int) ([]*model.User, int64, error) {
-	return s.userModule.ListAllUsers(keyword, page, pageSize)
+// ListAllUsers 获取全部用户（支持分页，用于总部管理员）。storeID>0 时按门店筛选。
+func (s *UserService) ListAllUsers(keyword string, storeID uint, page, pageSize int) ([]*model.User, int64, error) {
+	return s.userModule.ListAllUsers(keyword, storeID, page, pageSize)
 }
 
 // UpdateUserByStoreID 更新指定门店下的用户数据。

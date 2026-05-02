@@ -11,6 +11,9 @@ const (
 	StoreAccountPaymentUnpaid = 2 // 未支付
 )
 
+// StoreAccountItemCustomProductID 手写/自定义商品明细（非系统商品），不参与库存扣减
+const StoreAccountItemCustomProductID uint = 0
+
 // StoreAccount 门店记账（主表）
 type StoreAccount struct {
 	ID                 uint                     `json:"id" gorm:"primaryKey;autoIncrement"`
@@ -89,14 +92,16 @@ type CreateStoreAccountConsumableReq struct {
 }
 
 // CreateStoreAccountItemReq 创建记账明细请求
+// ProductID 为 0 时表示自定义明细：ProductName 必填，Price 必填（由用户填写），不参与规格售价校验与库存出库。
 type CreateStoreAccountItemReq struct {
-	ProductID uint    `json:"product_id" binding:"required"`
-	Spec      string  `json:"spec" binding:"max=100"`
-	Quantity  float64 `json:"quantity" binding:"required,gt=0"`
-	Unit      string  `json:"unit" binding:"max=20"`  // 单位（如“瓶”“箱”），用于自动选价
-	Price     float64 `json:"price" binding:"gte=0"`  // 可选：不传或传0时，后端按单位自动取价（瓶->bottle_price，箱->case_price）
-	Amount    float64 `json:"amount" binding:"gte=0"` // 可选：不传或传0时，后端按 price*quantity 自动计算
-	Remark    string  `json:"remark" binding:"max=500"`
+	ProductID   uint    `json:"product_id"`
+	ProductName string  `json:"product_name" binding:"max=200"`
+	Spec        string  `json:"spec" binding:"max=100"`
+	Quantity    float64 `json:"quantity" binding:"required,gt=0"`
+	Unit        string  `json:"unit" binding:"max=20"`  // 单位（如“瓶”“箱”），用于自动选价；自定义明细时由用户填写
+	Price       float64 `json:"price" binding:"gte=0"`  // 自定义明细时必填 >0；系统商品时可由后端按规格取价
+	Amount      float64 `json:"amount" binding:"gte=0"`   // 可选：不传或传0时，后端按 price*quantity 自动计算
+	Remark      string  `json:"remark" binding:"max=500"`
 }
 
 // UpdateStoreAccountReq 更新记账请求

@@ -21,7 +21,7 @@ func NewStoreAccountController(storeAccountService *service.StoreAccountService)
 
 // Create godoc
 // @Summary 创建记账
-// @Description 创建记账单，支持多个商品；items.price 不传或传0时，后端按 items.unit 自动选价（单位含“瓶”取 bottle_price，含“箱”取 case_price）；items.amount 不传或传0时自动按 price*quantity 计算
+// @Description 创建记账单，支持多个商品；items.product_id=0 时为自定义明细，items.product_name 必填且 items.price 必填，不扣库存。系统商品时 items.price 不传或传0则按 items.unit 自动选价；items.amount 不传或传0时按 price*quantity 计算
 // @Tags 门店记账
 // @Accept json
 // @Produce json

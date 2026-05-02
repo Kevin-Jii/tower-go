@@ -1,133 +1,166 @@
 <template>
-  <div class="flex flex-col gap-4">
-    <div class="flex flex-col md:flex-row md:items-end gap-3 justify-between">
-      <h2 class="page-title">库存管理</h2>
-      <div class="inline-flex rounded-lg border border-[var(--color-border-2)] p-0.5 bg-[var(--color-bg-2)]">
-        <BaseButton
-          size="sm"
-          :variant="tab === 'stock' ? 'primary' : 'ghost'"
-          class="!min-w-[7rem]"
-          @click="tab = 'stock'"
-        >
-          库存快照
-        </BaseButton>
-        <BaseButton
-          size="sm"
-          :variant="tab === 'orders' ? 'primary' : 'ghost'"
-          class="!min-w-[7rem]"
-          @click="tab = 'orders'"
-        >
-          出入库单
-        </BaseButton>
-      </div>
-    </div>
-
-    <template v-if="tab === 'stock'">
-      <div class="flex flex-col sm:flex-row gap-2">
-        <BaseInput v-model="stockKeyword" class="w-full sm:w-56" placeholder="分类 / 商品名称" clearable @enter="reloadStock" />
-        <BaseButton variant="primary" @click="reloadStock">查询</BaseButton>
-        <BaseButton v-permission="'inventory:in'" variant="secondary" @click="openOrderDlg(1)">入库登记</BaseButton>
-        <BaseButton v-permission="'inventory:out'" variant="secondary" @click="openOrderDlg(2)">出库登记</BaseButton>
-      </div>
-
-      <div v-if="stockLoading || productLoading" class="rounded border border-[var(--color-border-2)] p-6 text-center text-slate-500">
-        库存数据加载中...
-      </div>
-      <div v-else-if="groupedStockCards.length === 0" class="rounded border border-[var(--color-border-2)] p-6 text-center text-slate-400">
-        暂无库存商品
-      </div>
-      <div v-else class="space-y-4">
-        <div class="flex flex-wrap gap-2">
+  <div class="inventory-page-root flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+    <a-card
+      class="inventory-fill-card inventory-page-card flex min-h-0 min-w-0 flex-1 flex-col !bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60"
+      :bordered="true"
+      :body-style="inventoryCardBodyStyle"
+    >
+      <template #title>
+        <span class="text-base font-semibold text-slate-900">库存管理</span>
+      </template>
+      <template #extra>
+        <div class="inline-flex rounded-lg border border-[var(--color-border-2)] bg-[var(--color-bg-2)] p-0.5 shadow-sm">
           <BaseButton
             size="sm"
-            :variant="activeCategory === '' ? 'primary' : 'ghost'"
-            @click="activeCategory = ''"
+            :variant="tab === 'stock' ? 'primary' : 'ghost'"
+            class="!min-w-[7rem]"
+            @click="tab = 'stock'"
           >
-            全部分类
+            库存快照
           </BaseButton>
           <BaseButton
-            v-for="c in categoryTabs"
-            :key="c"
             size="sm"
-            :variant="activeCategory === c ? 'primary' : 'ghost'"
-            @click="activeCategory = c"
+            :variant="tab === 'orders' ? 'primary' : 'ghost'"
+            class="!min-w-[7rem]"
+            @click="tab = 'orders'"
           >
-            {{ c }}
+            出入库单
           </BaseButton>
         </div>
+      </template>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-          <div
-            v-for="item in displayStockCards"
-            :key="item.product_id"
-            :class="[
-              'rounded-xl border px-4 py-3 transition shadow-sm cursor-pointer select-none',
-              item.low
-                ? 'border-rose-200 bg-rose-50 hover:bg-rose-100'
-                : 'border-[var(--color-border-2)] bg-[var(--color-bg-2)] hover:bg-[var(--color-fill-1)]',
-            ]"
-            @dblclick="openQtyFromCard(item)"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="m-0 text-sm font-semibold text-slate-800 truncate">{{ item.product_name }}</p>
-              <span class="text-xs text-slate-500">{{ item.category }}</span>
+      <div v-if="tab === 'stock'" class="flex min-h-0 flex-1 flex-col">
+        <div
+          class="mb-4 shrink-0 rounded-xl border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+        >
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <BaseInput v-model="stockKeyword" class="w-full sm:w-56" placeholder="分类 / 商品名称" clearable @enter="reloadStock" />
+              <BaseButton variant="primary" @click="reloadStock">查询</BaseButton>
             </div>
-            <div class="mt-3 flex items-end justify-between">
-              <div class="space-y-1">
-                <p class="m-0 text-xs text-slate-500">
-                  小规格（{{ item.small_unit }}）：<span class="font-semibold">{{ item.small_qty }}</span>
-                </p>
-                <p v-if="item.large_unit && item.large_qty !== undefined" class="m-0 text-xs text-slate-500">
-                  大规格（{{ item.large_unit }}）：<span class="font-semibold">{{ item.large_qty }}</span>
+            <div class="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
+              <BaseButton v-permission="'inventory:in'" variant="secondary" @click="openOrderDlg(1)">入库登记</BaseButton>
+              <BaseButton v-permission="'inventory:out'" variant="secondary" @click="openOrderDlg(2)">出库登记</BaseButton>
+            </div>
+          </div>
+          <div
+            v-if="!stockLoading && !productLoading && categoryTabs.length > 0"
+            class="mt-3 rounded-lg border border-[var(--color-border-2)] bg-[var(--color-fill-2)] px-3 py-2.5"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="mr-1 text-xs font-medium text-slate-600">分类</span>
+              <BaseButton
+                size="sm"
+                :variant="activeCategory === '' ? 'primary' : 'ghost'"
+                @click="activeCategory = ''"
+              >
+                全部分类
+              </BaseButton>
+              <BaseButton
+                v-for="c in categoryTabs"
+                :key="c"
+                size="sm"
+                :variant="activeCategory === c ? 'primary' : 'ghost'"
+                @click="activeCategory = c"
+              >
+                {{ c }}
+              </BaseButton>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="stockLoading || productLoading"
+          class="flex flex-1 items-center justify-center rounded-xl border border-[var(--color-border-2)] bg-white p-8 text-center text-slate-500 shadow-sm"
+        >
+          库存数据加载中...
+        </div>
+        <div
+          v-else-if="groupedStockCards.length === 0"
+          class="flex flex-1 items-center justify-center rounded-xl border border-dashed border-[var(--color-border-2)] bg-white p-8 text-center text-slate-400"
+        >
+          暂无库存商品
+        </div>
+        <div v-else class="flex min-h-0 flex-1 flex-col">
+          <div class="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div
+                v-for="item in displayStockCards"
+                :key="item.product_id"
+                :class="[
+                  'rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-md transition-all duration-200 cursor-pointer select-none hover:shadow-lg',
+                  item.low ? 'inventory-stock-card--low' : 'ring-1 ring-slate-200/40 hover:border-slate-300/80 hover:ring-slate-300/50',
+                ]"
+                @dblclick="openQtyFromCard(item)"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <p class="m-0 text-sm font-semibold text-slate-800 truncate">{{ item.product_name }}</p>
+                  <span class="text-xs text-slate-500">{{ item.category }}</span>
+                </div>
+                <div class="mt-3 flex items-end justify-between">
+                  <div class="space-y-1">
+                    <p class="m-0 text-xs text-slate-500">
+                      小规格（{{ item.small_unit }}）：<span class="font-semibold">{{ item.small_qty }}</span>
+                    </p>
+                    <p v-if="item.large_unit && item.large_qty !== undefined" class="m-0 text-xs text-slate-500">
+                      大规格（{{ item.large_unit }}）：<span class="font-semibold">{{ item.large_qty }}</span>
+                    </p>
+                  </div>
+                  <p :class="['m-0 text-xl leading-none font-bold', item.low ? 'text-rose-600' : 'text-slate-800']">
+                    {{ item.display_qty }}
+                  </p>
+                </div>
+                <p class="m-0 mt-2 text-[11px]" :class="item.low ? 'text-rose-600' : 'text-slate-400'">
+                  {{ item.low ? '库存偏低，请及时补货（双击可改数量）' : '双击卡片可修改库存数量' }}
                 </p>
               </div>
-              <p :class="['m-0 text-xl leading-none font-bold', item.low ? 'text-rose-600' : 'text-slate-800']">
-                {{ item.display_qty }}
-              </p>
             </div>
-            <p class="m-0 mt-2 text-[11px]" :class="item.low ? 'text-rose-600' : 'text-slate-400'">
-              {{ item.low ? '库存偏低，请及时补货（双击可改数量）' : '双击卡片可修改库存数量' }}
-            </p>
           </div>
         </div>
       </div>
-    </template>
 
-    <template v-else>
-      <div class="flex flex-col sm:flex-row flex-wrap gap-2">
-        <BaseInput v-model="orderNo" class="w-full sm:w-44" placeholder="单号" clearable @enter="reloadOrders" />
-        <BaseInput v-model="orderDate" class="w-full sm:w-40" type="date" />
-        <BaseSelect
-          v-model="orderType"
-          class="w-full sm:w-32"
-          :options="[
-            { label: '全部类型', value: '' },
-            { label: '入库', value: 1 },
-            { label: '出库', value: 2 },
-          ]"
-        />
-        <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
-      </div>
-      <BaseTable :columns="orderCols" :data="(orderList as unknown) as Record<string, unknown>[]" :loading="orderLoading" min-width="920px">
-        <template #cell-type="{ row }">
-          {{ (row as InventoryOrder).type === 1 ? '入库' : '出库' }}
-        </template>
-        <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-            <BaseButton variant="link" size="sm" @click="openOrderDetail(row as InventoryOrder)">详情</BaseButton>
+      <div v-else class="flex min-h-0 flex-1 flex-col gap-3">
+        <div
+          class="shrink-0 rounded-xl border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+        >
+          <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <BaseInput v-model="orderNo" class="w-full sm:w-44" placeholder="单号" clearable @enter="reloadOrders" />
+            <BaseInput v-model="orderDate" class="w-full sm:w-40" type="date" />
+            <BaseSelect
+              v-model="orderType"
+              class="w-full sm:w-32"
+              :options="[
+                { label: '全部类型', value: '' },
+                { label: '入库', value: 1 },
+                { label: '出库', value: 2 },
+              ]"
+            />
+            <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
           </div>
-        </template>
-      </BaseTable>
-      <div class="flex justify-end">
-        <BasePagination
-          :page="orderPage"
-          :page-size="orderPageSize"
-          :total="orderTotal"
-          @update:page="(p) => (orderPage = p)"
-          @update:page-size="(s) => (orderPageSize = s)"
-        />
+        </div>
+        <div class="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
+          <BaseTable :columns="orderCols" :data="(orderList as unknown) as Record<string, unknown>[]" :loading="orderLoading" min-width="920px">
+            <template #cell-type="{ row }">
+              {{ (row as InventoryOrder).type === 1 ? '入库' : '出库' }}
+            </template>
+            <template #cell-actions="{ row }">
+              <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+                <BaseButton variant="link" size="sm" @click="openOrderDetail(row as InventoryOrder)">详情</BaseButton>
+              </div>
+            </template>
+          </BaseTable>
+        </div>
+        <div class="flex shrink-0 justify-end">
+          <BasePagination
+            :page="orderPage"
+            :page-size="orderPageSize"
+            :total="orderTotal"
+            @update:page="(p) => (orderPage = p)"
+            @update:page-size="(s) => (orderPageSize = s)"
+          />
+        </div>
       </div>
-    </template>
+    </a-card>
 
     <BaseDialog v-model="qtyDlg" title="调整库存数量" max-width="min(400px, 96vw)">
       <div class="space-y-4">
@@ -224,6 +257,16 @@ import { toast } from '@/feedback/toast'
 import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
+
+/** 让卡片主体纵向撑满，子区域可用 flex-1 + overflow 分配高度 */
+const inventoryCardBodyStyle = {
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column' as const,
+  overflow: 'hidden',
+}
+
 const tab = ref<'stock' | 'orders'>('stock')
 const userStore = useUserStore()
 const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
@@ -644,3 +687,19 @@ async function openOrderDetail(row: InventoryOrder): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+/* a-card 根节点纵向 flex，配合 inventoryCardBodyStyle 占满内容区高度 */
+.inventory-fill-card.arco-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 低库存：左侧固定宽红边（避免与 ring/原子类顺序冲突导致不显示） */
+.inventory-stock-card--low {
+  border-left-width: 4px;
+  border-left-style: solid;
+  border-left-color: #ef4444;
+}
+</style>

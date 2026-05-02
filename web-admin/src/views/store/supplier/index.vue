@@ -1,6 +1,6 @@
 <template>
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
-    <BaseCard class="min-w-0">
+  <div class="supplier-split-layout grid min-h-0 h-[calc(100vh-100px)] gap-4">
+    <BaseCard flush-body class="flex min-h-0 h-full min-w-0 flex-col">
       <template #header>
         <div class="flex items-center justify-between gap-2 flex-wrap w-full">
           <div class="flex flex-wrap items-center gap-2">
@@ -10,26 +10,32 @@
           </div>
         </div>
       </template>
-      <BaseTable :columns="supplierColumns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
-        min-width="420px" height="calc(100vh - 325px)" row-key="id" :highlight-row-key="highlightSupplierId"
-        row-clickable @row-click="onPickSupplierRow">
-        <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-            <BaseButton variant="link" size="sm" @click="openView(row as Supplier)">查看</BaseButton>
-            <BaseButton v-permission="'supplier:edit'" variant="link" size="sm" @click="openEdit(row as Supplier)">编辑
-            </BaseButton>
-            <BaseButton v-permission="'supplier:delete'" variant="link" size="sm" @click="onDelete(row as Supplier)">删除
-            </BaseButton>
-          </div>
-        </template>
-      </BaseTable>
-      <div class="flex justify-end mt-3">
-        <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
-          @update:page-size="(s) => (pageSize = s)" />
+      <div class="flex min-h-0 flex-1 flex-col">
+        <div ref="supplierTableHost" class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto overflow-y-hidden">
+          <BaseTable :columns="supplierColumns" :data="(list as unknown) as Record<string, unknown>[]"
+            :loading="loading" :height="supplierTableScrollY" min-width="420px" row-key="id"
+            :highlight-row-key="highlightSupplierId" row-clickable class="min-h-0 flex-1" @row-click="onPickSupplierRow"
+            @row-dblclick="onSupplierRowDblclick">
+            <template #cell-actions="{ row }">
+              <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+                <BaseButton v-permission="'supplier:edit'" variant="link" size="sm" @click="openEdit(row as Supplier)">
+                  编辑
+                </BaseButton>
+                <BaseButton v-permission="'supplier:delete'" variant="link" size="sm"
+                  @click="onDelete(row as Supplier)">删除
+                </BaseButton>
+              </div>
+            </template>
+          </BaseTable>
+        </div>
+        <div class="mt-3 flex shrink-0 justify-end">
+          <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+            @update:page-size="(s) => (pageSize = s)" />
+        </div>
       </div>
     </BaseCard>
 
-    <BaseCard class="min-w-0">
+    <BaseCard flush-body class="flex min-h-0 h-full min-w-0 flex-col">
       <template #header>
         <div class="flex flex-col gap-2 w-full">
           <div class="flex gap-2 items-center">
@@ -42,33 +48,35 @@
           </div>
         </div>
       </template>
-      <BaseTable :columns="productTreeColumns" :data="(productTreeRows as unknown) as Record<string, unknown>[]"
-        :loading="productsLoading || categoriesLoading" min-width="760px" height="calc(100vh - 290px)" row-key="id"
-        tree-children-key="children" :tree-default-expand-all="true">
-        <template #cell-name="{ row }">
-          <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name
-          }}</span>
-          <span v-else>{{ (row as TreeRow).name }}</span>
-        </template>
-        <template #cell-sale_price="{ row }">
-          <span v-if="!(row as TreeRow).isCategory">{{ (row as TreeRow).sale_price ?? '-' }}</span>
-          <span v-else class="text-slate-400">-</span>
-        </template>
-        <template #cell-actions="{ row }">
-          <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-            <template v-if="(row as TreeRow).isCategory">
-              <BaseButton v-permission="'supplier:add'" variant="link" size="sm"
-                @click="openProductCreate((row as TreeRow).categoryId)">新增商品</BaseButton>
-            </template>
-            <template v-else>
-              <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看
-              </BaseButton>
-              <BaseButton v-permission="'supplier:delete'" variant="link" size="sm"
-                @click="onDeleteProduct((row as TreeRow).raw!)">删除</BaseButton>
-            </template>
-          </div>
-        </template>
-      </BaseTable>
+      <div ref="productTableHost" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <BaseTable :columns="productTreeColumns" :data="(productTreeRows as unknown) as Record<string, unknown>[]"
+          :loading="productsLoading || categoriesLoading" :height="productTableScrollY" row-key="id"
+          tree-children-key="children" :tree-default-expand-all="true" class="min-h-0 flex-1">
+          <template #cell-name="{ row }">
+            <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name
+            }}</span>
+            <span v-else>{{ (row as TreeRow).name }}</span>
+          </template>
+          <template #cell-sale_price="{ row }">
+            <span v-if="!(row as TreeRow).isCategory">{{ (row as TreeRow).sale_price ?? '-' }}</span>
+            <span v-else class="text-slate-400">-</span>
+          </template>
+          <template #cell-actions="{ row }">
+            <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+              <template v-if="(row as TreeRow).isCategory">
+                <BaseButton v-permission="'supplier:add'" variant="link" size="sm"
+                  @click="openProductCreate((row as TreeRow).categoryId)">新增商品</BaseButton>
+              </template>
+              <template v-else>
+                <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看
+                </BaseButton>
+                <BaseButton v-permission="'supplier:delete'" variant="link" size="sm"
+                  @click="onDeleteProduct((row as TreeRow).raw!)">删除</BaseButton>
+              </template>
+            </div>
+          </template>
+        </BaseTable>
+      </div>
     </BaseCard>
 
     <BaseDialog v-model="dlg" :title="isEdit ? '编辑供应商' : '新增供应商'" max-width="min(520px, 96vw)">
@@ -241,6 +249,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useElementSize } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
@@ -287,6 +296,19 @@ interface TreeRow {
 
 const qc = useQueryClient()
 const router = useRouter()
+
+/** 表格区域撑满卡片剩余高度，用 Arco scroll.y 占满可视区 */
+const supplierTableHost = ref<HTMLElement | null>(null)
+const productTableHost = ref<HTMLElement | null>(null)
+const { height: supplierHostH } = useElementSize(supplierTableHost)
+const { height: productHostH } = useElementSize(productTableHost)
+const TABLE_HEAD_RESERVE = 48
+function scrollYpx(h: number): string {
+  const y = Math.floor(h - TABLE_HEAD_RESERVE)
+  return `${Math.max(120, y)}px`
+}
+const supplierTableScrollY = computed(() => scrollYpx(supplierHostH.value))
+const productTableScrollY = computed(() => scrollYpx(productHostH.value))
 const keyword = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -318,8 +340,8 @@ watch([page, pageSize], () => {
 })
 
 const supplierColumns: BaseTableColumn[] = [
-  { key: 'supplier_name', label: '供应商名称', prop: 'supplier_name', minWidth: '160px', ellipsis: true },
-  { key: 'actions', label: '操作', width: '220px', align: 'right' },
+  { key: 'supplier_name', label: '供应商名称', prop: 'supplier_name', },
+  { key: 'actions', label: '操作', width: '148px', align: 'right' },
 ]
 
 const activeSupplierId = ref<number | ''>('')
@@ -332,8 +354,10 @@ function onPickSupplierRow(row: Record<string, unknown>): void {
   if (s?.id != null) activeSupplierId.value = s.id
 }
 
-function openView(row: Supplier): void {
-  void router.push(`/public/supplier/${row.id}`)
+/** 双击行打开供应商档案（原「查看」入口） */
+function onSupplierRowDblclick(row: Record<string, unknown>): void {
+  const s = row as unknown as Supplier
+  if (s?.id != null) void router.push(`/public/supplier/${s.id}`)
 }
 
 function applyProductKeyword(): void {
@@ -404,9 +428,9 @@ function reloadProducts(): void {
 }
 
 const productTreeColumns: BaseTableColumn[] = [
-  { key: 'name', label: '商品/分类', minWidth: '140px', ellipsis: true },
+  { key: 'name', label: '商品/分类', minWidth: '160px', ellipsis: true },
   { key: 'sale_price', label: '售价', width: '100px' },
-  { key: 'actions', label: '操作', width: '140px', align: 'right' },
+  { key: 'actions', label: '操作', width: '168px', minWidth: '168px', align: 'right' },
 ]
 
 const dlg = ref(false)
@@ -776,3 +800,19 @@ async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+/**
+ * 不要用 Uno 的 grid-cols-1：它会一直写 grid-template-columns，覆盖掉这里的宽屏两列。
+ * 默认单列；≥768px 左右分栏（与常用 md 断点一致）。
+ */
+.supplier-split-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .supplier-split-layout {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  }
+}
+</style>

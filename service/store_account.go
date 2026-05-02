@@ -202,6 +202,40 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	productMap := make(map[uint]*model.SupplierProduct)
 
 	for _, item := range req.Items {
+		if item.ProductID == model.StoreAccountItemCustomProductID {
+			name := strings.TrimSpace(item.ProductName)
+			if name == "" {
+				return nil, fmt.Errorf("自定义明细描述不能为空")
+			}
+			unit := strings.TrimSpace(item.Unit)
+			if unit == "" {
+				return nil, fmt.Errorf("自定义明细「%s」请填写单位", name)
+			}
+			price := item.Price
+			if price <= 0 {
+				return nil, fmt.Errorf("自定义明细「%s」请填写单价", name)
+			}
+			amount := item.Amount
+			if amount <= 0 && item.Quantity > 0 {
+				amount = price * item.Quantity
+			}
+			if amount <= 0 {
+				return nil, fmt.Errorf("自定义明细「%s」金额无效", name)
+			}
+			items = append(items, model.StoreAccountItem{
+				ProductID:   model.StoreAccountItemCustomProductID,
+				ProductName: name,
+				Spec:        strings.TrimSpace(item.Spec),
+				Quantity:    item.Quantity,
+				Unit:        unit,
+				Price:       price,
+				Amount:      amount,
+				Remark:      strings.TrimSpace(item.Remark),
+			})
+			totalAmount += amount
+			continue
+		}
+
 		// 获取商品名称
 		productName := ""
 		unit := item.Unit
@@ -340,10 +374,13 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		Reason:        model.ReasonSale,
 		Remark:        fmt.Sprintf("记账自动出库，记账单号:%s", accountNo),
 		TotalQuantity: 0,
-		ItemCount:     len(items),
+		ItemCount:     0,
 		OperatorID:    operatorID,
 	}
 	for _, item := range items {
+		if item.ProductID == model.StoreAccountItemCustomProductID {
+			continue
+		}
 		var product *model.SupplierProduct
 		if s.productModule != nil {
 			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
@@ -360,6 +397,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 			Remark:      fmt.Sprintf("记账自动出库(原始: %.2f%s)", item.Quantity, item.Unit),
 		})
 	}
+	inventoryOutOrder.ItemCount = len(inventoryOutOrder.Items)
 	if store, err := s.storeModule.GetByID(storeID); err == nil && store != nil {
 		inventoryOutOrder.StoreName = store.Name
 	}
@@ -420,7 +458,11 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		}
 	}
 
-	if err := s.storeAccountModule.CreateWithInventoryOut(account, inventoryOutOrder); err != nil {
+	var outForTx *model.InventoryOrder = inventoryOutOrder
+	if len(inventoryOutOrder.Items) == 0 {
+		outForTx = nil
+	}
+	if err := s.storeAccountModule.CreateWithInventoryOut(account, outForTx); err != nil {
 		return nil, err
 	}
 

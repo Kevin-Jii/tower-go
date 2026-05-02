@@ -1,6 +1,7 @@
 <template>
   <div
     class="base-table-wrap min-w-0 overflow-x-auto rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
+    :class="{ 'h-full min-h-0': !!height }"
     :style="wrapStyle"
   >
     <a-table
@@ -16,6 +17,7 @@
       size="small"
       table-layout-fixed
       @row-click="onRowClick"
+      @row-dblclick="onRowDblclick"
     />
   </div>
 </template>
@@ -47,7 +49,10 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<{ 'row-click': [Record<string, unknown>] }>()
+const emit = defineEmits<{
+  'row-click': [Record<string, unknown>]
+  'row-dblclick': [Record<string, unknown>]
+}>()
 const slots = useSlots()
 
 const expandAll = computed(() => !!(props.treeChildrenKey && props.treeDefaultExpandAll))
@@ -60,7 +65,8 @@ const wrapStyle = computed(() => {
 const scroll = computed(() => {
   const s: { y?: string | number; minWidth?: string | number } = {}
   if (props.height) s.y = props.height
-  if (props.minWidth) s.minWidth = props.minWidth
+  // 与纵向 scroll.y 同时传 scroll.minWidth 时，Arco 在窄容器里容易把末列挤到几乎为 0；横向最小宽交给外层 wrap（minWidth + overflow-x-auto）
+  if (props.minWidth && !props.height) s.minWidth = props.minWidth
   return Object.keys(s).length ? s : undefined
 })
 
@@ -159,6 +165,10 @@ function rowClassFn(record: TableData): string | string[] {
 function onRowClick(record: TableData): void {
   if (!props.rowClickable) return
   emit('row-click', record as Record<string, unknown>)
+}
+
+function onRowDblclick(record: TableData): void {
+  emit('row-dblclick', record as Record<string, unknown>)
 }
 </script>
 

@@ -4,6 +4,13 @@
       <h2 class="page-title">用户管理</h2>
       <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
         <BaseInput v-model="keyword" class="w-full sm:w-44" placeholder="关键字" clearable @enter="reload" />
+        <BaseSelect
+          v-if="isCrossStoreAdmin"
+          v-model="filterStoreId"
+          class="w-full sm:w-56"
+          :options="storeFilterOptions"
+          placeholder="门店筛选"
+        />
         <div class="flex gap-2">
           <BaseButton variant="primary" @click="reload">查询</BaseButton>
           <BaseButton v-permission="'system:user:add'" variant="primary" @click="openCreate">新增</BaseButton>
@@ -47,7 +54,7 @@
         <BaseFormItem label="角色">
           <BaseSelect v-model="form.role_id" :options="roleOptions" placeholder="选择角色" />
         </BaseFormItem>
-        <BaseFormItem v-if="isAdmin" label="门店" required>
+        <BaseFormItem v-if="isCrossStoreAdmin" label="门店" required>
           <BaseSelect v-model="form.store_code" :options="storeOptions" placeholder="请选择门店（按编码提交）" />
         </BaseFormItem>
         <BaseFormItem v-if="mode === 'edit'" label="状态">
@@ -95,9 +102,18 @@ import { confirmDialog } from '@/feedback/confirm'
 const qc = useQueryClient()
 const userStore = useUserStore()
 
-const isAdmin = computed(() => {
+function boundStoreIdFromUser(u: User | null | undefined): number {
+  if (!u) return 0
+  const sid = u.store_id ?? u.store?.id
+  return typeof sid === 'number' && sid > 0 ? sid : 0
+}
+
+/** 可跨店管理用户：超级管理员，或未绑定门店的总部 admin */
+const isCrossStoreAdmin = computed(() => {
   const c = userStore.userInfo?.role?.code ?? ''
-  return c === 'admin' || c === 'super_admin'
+  if (c === 'super_admin') return true
+  if (c !== 'admin') return false
+  return boundStoreIdFromUser(userStore.userInfo) === 0
 })
 
 const columns: BaseTableColumn[] = [
@@ -126,7 +142,7 @@ const { data: roleListData } = useQuery({
 const { data: storeListData } = useQuery({
   queryKey: ['stores', 'all'],
   queryFn: () => listAllStores(),
-  enabled: isAdmin,
+  enabled: isCrossStoreAdmin,
 })
 
 const roleOptions = computed<BaseSelectOption[]>(() =>
@@ -142,6 +158,17 @@ const storeOptions = computed<BaseSelectOption[]>(() =>
     })),
 )
 
+/** 列表筛选：按门店 ID，0 表示全部门店 */
+const filterStoreId = ref(0)
+const storeFilterOptions = computed<BaseSelectOption[]>(() => {
+  const all: BaseSelectOption[] = [{ label: '全部门店', value: 0 }]
+  const rest = (storeListData.value ?? []).map((s) => ({
+    label: s.store_code ? `${s.name}（${String(s.store_code)}）` : s.name,
+    value: s.id,
+  }))
+  return [...all, ...rest]
+})
+
 async function load(): Promise<void> {
   loading.value = true
   try {
@@ -149,6 +176,8 @@ async function load(): Promise<void> {
       page: page.value,
       page_size: pageSize.value,
       keyword: keyword.value || undefined,
+      store_id:
+        isCrossStoreAdmin.value && filterStoreId.value > 0 ? filterStoreId.value : undefined,
     })
     list.value = res.list ?? []
     total.value = res.total ?? 0
@@ -168,6 +197,14 @@ function reload(): void {
 
 watch([page, pageSize], () => {
   void load()
+})
+
+watch(filterStoreId, () => {
+  if (page.value !== 1) {
+    page.value = 1
+  } else {
+    void load()
+  }
 })
 
 void load()
@@ -255,7 +292,7 @@ async function submit(): Promise<void> {
         toast.warning('请填写密码')
         return
       }
-      if (isAdmin.value && !String(form.store_code).trim()) {
+      if (isCrossStoreAdmin.value && !String(form.store_code).trim()) {
         toast.warning('请选择门店')
         return
       }
@@ -266,7 +303,7 @@ async function submit(): Promise<void> {
         nickname: form.nickname,
         role_id: form.role_id,
       }
-      if (isAdmin.value && String(form.store_code).trim()) {
+      if (isCrossStoreAdmin.value && String(form.store_code).trim()) {
         body.store_code = String(form.store_code).trim()
       }
       await createUser(body)
@@ -279,7 +316,7 @@ async function submit(): Promise<void> {
         status: form.status,
       }
       if (form.password) body.password = form.password
-      if (isAdmin.value && String(form.store_code).trim()) {
+      if (isCrossStoreAdmin.value && String(form.store_code).trim()) {
         body.store_code = String(form.store_code).trim()
       }
       await updateUser(editId.value, body)

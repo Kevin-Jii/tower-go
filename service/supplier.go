@@ -57,6 +57,11 @@ func (s *SupplierService) ListSuppliers(req *model.ListSupplierReq) ([]*model.Su
 	return s.supplierModule.List(req)
 }
 
+// ListSuppliersByStoreID 仅返回已与门店绑定的供应商（分页、关键词与 ListSuppliers 一致）。
+func (s *SupplierService) ListSuppliersByStoreID(storeID uint, req *model.ListSupplierReq) ([]*model.Supplier, int64, error) {
+	return s.supplierModule.ListByBoundStore(storeID, req)
+}
+
 func (s *SupplierService) UpdateSupplier(id uint, req *model.UpdateSupplierReq) error {
 	_, err := s.supplierModule.GetByID(id)
 	if err != nil {

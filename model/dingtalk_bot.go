@@ -86,3 +86,15 @@ type DingTalkMarkdownMessage struct {
 		IsAtAll   bool     `json:"isAtAll,omitempty"`
 	} `json:"at,omitempty"`
 }
+
+// DingTalkActionCardMessage 钉钉整体跳转卡片消息（Webhook 模式）
+type DingTalkActionCardMessage struct {
+	MsgType    string `json:"msgtype"`
+	ActionCard struct {
+		Title          string `json:"title"`
+		Text           string `json:"text"`
+		SingleTitle    string `json:"singleTitle,omitempty"`
+		SingleURL      string `json:"singleURL,omitempty"`
+		BtnOrientation string `json:"btnOrientation,omitempty"`
+	} `json:"actionCard"`
+}

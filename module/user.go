@@ -29,7 +29,7 @@ func (m *UserModule) Create(user *model.User) error {
 
 func (m *UserModule) GetByID(id uint) (*model.User, error) {
 	var user model.User
-	if err := m.db.First(&user, id).Error; err != nil {
+	if err := m.db.Preload("Role").Preload("Store").First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

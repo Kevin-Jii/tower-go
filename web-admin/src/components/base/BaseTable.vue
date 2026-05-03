@@ -1,8 +1,8 @@
 <template>
+  <!-- 有 minWidth 时由 Arco scroll.x 在表体内部横向滚动，便于 fixed 列；无 minWidth 时外层 overflow-x-auto 兜底 -->
   <div
-    class="base-table-wrap min-w-0 overflow-x-auto rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
-    :class="{ 'h-full min-h-0': !!height }"
-    :style="wrapStyle"
+    class="base-table-outer w-full min-w-0 max-w-full rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
+    :class="[minWidth ? 'overflow-x-hidden' : 'overflow-x-auto', height ? 'h-full min-h-0' : '']"
   >
     <a-table
       :columns="arcoColumns"
@@ -57,16 +57,10 @@ const slots = useSlots()
 
 const expandAll = computed(() => !!(props.treeChildrenKey && props.treeDefaultExpandAll))
 
-const wrapStyle = computed(() => {
-  if (!props.minWidth) return {}
-  return { minWidth: props.minWidth }
-})
-
 const scroll = computed(() => {
-  const s: { y?: string | number; minWidth?: string | number } = {}
+  const s: { x?: string | number; y?: string | number } = {}
+  if (props.minWidth) s.x = props.minWidth
   if (props.height) s.y = props.height
-  // 与纵向 scroll.y 同时传 scroll.minWidth 时，Arco 在窄容器里容易把末列挤到几乎为 0；横向最小宽交给外层 wrap（minWidth + overflow-x-auto）
-  if (props.minWidth && !props.height) s.minWidth = props.minWidth
   return Object.keys(s).length ? s : undefined
 })
 

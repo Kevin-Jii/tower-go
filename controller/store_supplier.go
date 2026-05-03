@@ -1,9 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
@@ -47,16 +44,7 @@ func (c *StoreSupplierController) UnbindSuppliers(ctx *gin.Context) {
 
 // ListSuppliers 获取门店绑定的供应商列表
 func (c *StoreSupplierController) ListSuppliers(ctx *gin.Context) {
-	// 从 token 获取 storeID
-	storeID := middleware.GetStoreID(ctx)
-
-	// 管理员可以通过 query 参数查看其他门店
-	if middleware.IsAdmin(ctx) {
-		if queryStoreID, ok := http.ParseUintQuery(ctx, "store_id"); ok && queryStoreID > 0 {
-			storeID = queryStoreID
-		}
-	}
-
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	suppliers, err := c.storeSupplierService.ListSuppliersByStoreID(storeID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -74,15 +62,7 @@ func (c *StoreSupplierController) ListSuppliers(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.SupplierCategory}
 // @Router /store-suppliers/categories [get]
 func (c *StoreSupplierController) ListCategories(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-
-	// 管理员可以通过 query 参数查看其他门店
-	if middleware.IsAdmin(ctx) {
-		if queryStoreID, ok := http.ParseUintQuery(ctx, "store_id"); ok && queryStoreID > 0 {
-			storeID = queryStoreID
-		}
-	}
-
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	supplierID, _ := http.ParseUintQuery(ctx, "supplier_id")
 
 	categories, err := c.storeSupplierService.ListCategoriesByStoreID(storeID, supplierID)
@@ -95,31 +75,15 @@ func (c *StoreSupplierController) ListCategories(ctx *gin.Context) {
 
 // ListProducts 获取门店可采购的商品列表
 func (c *StoreSupplierController) ListProducts(ctx *gin.Context) {
-	// 从 token 获取 storeID
-	storeID := middleware.GetStoreID(ctx)
-
-	// 管理员可以通过 query 参数查看其他门店
-	if middleware.IsAdmin(ctx) {
-		if queryStoreID, ok := http.ParseUintQuery(ctx, "store_id"); ok && queryStoreID > 0 {
-			storeID = queryStoreID
-		}
-	}
-
-	fmt.Printf("🔍 ListProducts: storeID=%d, isAdmin=%v\n", storeID, middleware.IsAdmin(ctx))
-
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	supplierID, _ := http.ParseUintQuery(ctx, "supplier_id")
 	categoryID, _ := http.ParseUintQuery(ctx, "category_id")
 	keyword := ctx.Query("keyword")
 	products, err := c.storeSupplierService.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
 	if err != nil {
-		fmt.Printf("❌ ListProducts error: %v\n", err)
 		http.Error(ctx, 500, err.Error())
 		return
 	}
-
-	// 打印响应数据
-	jsonData, _ := json.MarshalIndent(products, "", "  ")
-	fmt.Printf("✅ ListProducts response (%d items):\n%s\n", len(products), string(jsonData))
 
 	http.Success(ctx, products)
 }

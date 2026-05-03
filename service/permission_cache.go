@@ -12,8 +12,13 @@ import (
 const (
 	userRoleCacheKeyFormat = "tower:user:role:%d"
 	roleMenuCacheKeyFormat = "tower:role:menu:%d"
-	userPermCacheKeyFormat = "tower:user:perm:%d"
 )
+
+// userPermCacheKey 须包含门店与角色：仅 userId 会导致换店/改角色后仍命中旧权限缓存，接口 403 而菜单仍可见。
+func userPermCacheKey(userID, storeID, roleID uint) string {
+	// v2：与门店菜单闭包扩展对齐，避免沿用旧权限列表
+	return fmt.Sprintf("tower:user:perm:v2:%d:%d:%d", userID, storeID, roleID)
+}
 
 type permissionBuildUser struct {
 	ID       uint
@@ -46,7 +51,7 @@ func BuildUserPermissionCache(userID uint, storeID uint, roleID uint, roleCode s
 
 	_ = cache.CacheSet(fmt.Sprintf(userRoleCacheKeyFormat, userID), []uint{roleID}, cache.PermissionsTTL)
 	_ = cache.CacheSet(fmt.Sprintf(roleMenuCacheKeyFormat, roleID), perms, cache.PermissionsTTL)
-	_ = cache.CacheSet(fmt.Sprintf(userPermCacheKeyFormat, userID), perms, cache.PermissionsTTL)
+	_ = cache.CacheSet(userPermCacheKey(userID, storeID, roleID), perms, cache.PermissionsTTL)
 
 	return perms, nil
 }
@@ -57,7 +62,7 @@ func GetUserPermissionCodes(userID uint, storeID uint, roleID uint, roleCode str
 	}
 
 	var perms []string
-	err := cache.CacheGet(fmt.Sprintf(userPermCacheKeyFormat, userID), &perms)
+	err := cache.CacheGet(userPermCacheKey(userID, storeID, roleID), &perms)
 	if err == nil {
 		return perms, nil
 	}
@@ -69,10 +74,9 @@ func InvalidateUserPermissionCache(userID uint) {
 	if userID == 0 {
 		return
 	}
-	_ = cache.CacheDelete(
-		fmt.Sprintf(userRoleCacheKeyFormat, userID),
-		fmt.Sprintf(userPermCacheKeyFormat, userID),
-	)
+	_ = cache.CacheDelete(fmt.Sprintf(userRoleCacheKeyFormat, userID))
+	_ = cache.CacheDeleteByPattern(fmt.Sprintf("tower:user:perm:%d:*", userID))
+	_ = cache.CacheDeleteByPattern(fmt.Sprintf("tower:user:perm:v2:%d:*", userID))
 }
 
 func InvalidateRolePermissionCache(roleID uint) {

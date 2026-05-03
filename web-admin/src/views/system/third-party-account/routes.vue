@@ -8,7 +8,8 @@
       </div>
     </div>
 
-    <BaseTable :columns="columns" :data="(rows as unknown) as Record<string, unknown>[]" :loading="loading" min-width="980px">
+    <BaseTable :columns="columns" :data="(rows as unknown) as Record<string, unknown>[]" :loading="loading"
+      min-width="980px">
       <template #cell-stores="{ row }">
         <div class="max-w-[340px] truncate" :title="formatStores(row as ThirdPartyRoute)">
           {{ formatStores(row as ThirdPartyRoute) }}
@@ -26,12 +27,10 @@
         </BaseFormItem>
         <BaseFormItem label="门店编排">
           <div class="max-h-52 overflow-y-auto rounded border border-[var(--color-border-2)] p-2">
-            <label
-              v-for="opt in storeOptions"
-              :key="String(opt.value)"
-              class="mb-1 flex cursor-pointer items-center gap-2 text-sm last:mb-0"
-            >
-              <a-checkbox :model-value="form.store_ids.includes(Number(opt.value))" @change="toggleStore(Number(opt.value), $event)" />
+            <label v-for="opt in storeOptions" :key="String(opt.value)"
+              class="mb-1 flex cursor-pointer items-center gap-2 text-sm last:mb-0">
+              <a-checkbox :model-value="form.store_ids.includes(Number(opt.value))"
+                @change="toggleStore(Number(opt.value), $event)" />
               <span>{{ opt.label }}</span>
             </label>
           </div>
@@ -70,10 +69,10 @@ const { data: storesData } = useQuery({ queryKey: ['stores', 'all'], queryFn: li
 const storeOptions = computed<BaseSelectOption[]>(() => (storesData.value ?? []).map((s) => ({ label: `${s.name}（${s.store_code || s.id}）`, value: s.id })))
 
 const columns: BaseTableColumn[] = [
-  { key: 'name', label: '路线名称', prop: 'name', minWidth: '160px' },
+  { key: 'name', label: '路线名称', prop: 'name', width: '120px' },
   { key: 'stores', label: '门店编排', minWidth: '320px' },
   { key: 'remark', label: '备注', prop: 'remark', minWidth: '220px', ellipsis: true },
-  { key: 'actions', label: '操作', width: '140px', align: 'right' },
+  { key: 'actions', label: '操作', width: '250px', align: 'right' },
 ]
 const dlg = ref(false)
 const isEdit = ref(false)

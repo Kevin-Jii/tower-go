@@ -511,6 +511,24 @@ INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 2, id, 15 FROM menus WHERE permission IN ('statistics:dashboard', 'price:list', 'price:add', 'price:edit', 'price:delete')
 ON DUPLICATE KEY UPDATE permissions=15;
 
+-- 门店管理员：系统管理目录 + 图库（与路由 /galleries 的 system:gallery:* 鉴权一致；未配置 store_role_menus 时走角色默认菜单）
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus
+WHERE name IN ('system', 'gallery', 'gallery-upload', 'gallery-delete', 'gallery-edit')
+ON DUPLICATE KEY UPDATE permissions=VALUES(permissions);
+
+-- 门店管理员：本店用户管理（仅受后端 store_id 隔离影响，不可跨店）
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus
+WHERE name IN ('user', 'user-add', 'user-edit', 'user-delete', 'user-reset-password')
+   OR permission IN ('system:user:list', 'system:user:add', 'system:user:edit', 'system:user:delete')
+ON DUPLICATE KEY UPDATE permissions=VALUES(permissions);
+
+-- 普通员工：默认菜单/权限与门店管理员一致（未配置 store_role_menus 时生效；各门店可在「配置权限」中再裁剪）
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 3, menu_id, permissions FROM role_menus WHERE role_id = 2
+ON DUPLICATE KEY UPDATE permissions = VALUES(permissions);
+
 -- ============================================
 -- 演示模拟数据（供应商 / 分类 / 商品 / 门店绑定 / 库存 / 会员）
 -- 依赖：stores 已有 id=1、2；与业务种子独立，按编码/手机号幂等
@@ -588,4 +606,3 @@ WHERE NOT EXISTS (SELECT 1 FROM t_member WHERE phone = '13900009001');
 INSERT INTO t_member (uid, name, phone, balance, points, level, version, created_at, updated_at)
 SELECT 'SEED-M-09002', '演示会员·周姐', '13900009002', 56.50, 10, 1, 0, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM t_member WHERE phone = '13900009002');
-

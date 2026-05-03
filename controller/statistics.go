@@ -2,7 +2,6 @@ package controller
 
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
-	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -27,26 +26,7 @@ func NewStatisticsController(statisticsService *service.StatisticsService) *Stat
 // @Success 200 {object} http.Response{data=model.DashboardStats}
 // @Router /statistics/dashboard [get]
 func (c *StatisticsController) Dashboard(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	// 管理员可以查看指定门店或全部
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			if _, err := ctx.GetQuery("store_id"); err {
-				queryStoreID = 0 // 查看全部
-			}
-			if n, _ := ctx.GetQuery("store_id"); n != "" && n != "0" {
-				http.ParseUint(n, &sid)
-				queryStoreID = sid
-			}
-		} else {
-			queryStoreID = 0 // 默认查看全部
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	period := ctx.DefaultQuery("period", "today")
 
 	stats, err := c.statisticsService.GetDashboard(queryStoreID, period)
@@ -67,19 +47,7 @@ func (c *StatisticsController) Dashboard(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=model.InventoryStats}
 // @Router /statistics/inventory [get]
 func (c *StatisticsController) InventoryStats(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		queryStoreID = 0
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			http.ParseUint(id, &sid)
-			queryStoreID = sid
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	stats, err := c.statisticsService.GetInventoryStats(queryStoreID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -99,19 +67,7 @@ func (c *StatisticsController) InventoryStats(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=model.SalesStats}
 // @Router /statistics/sales [get]
 func (c *StatisticsController) SalesStats(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		queryStoreID = 0
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			http.ParseUint(id, &sid)
-			queryStoreID = sid
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	period := ctx.DefaultQuery("period", "today")
 
 	stats, err := c.statisticsService.GetSalesStats(queryStoreID, period)
@@ -133,19 +89,7 @@ func (c *StatisticsController) SalesStats(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.SalesTrendItem}
 // @Router /statistics/sales-trend [get]
 func (c *StatisticsController) SalesTrend(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		queryStoreID = 0
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			http.ParseUint(id, &sid)
-			queryStoreID = sid
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	period := ctx.DefaultQuery("period", "month")
 
 	trend, err := c.statisticsService.GetSalesTrend(queryStoreID, period)
@@ -167,19 +111,7 @@ func (c *StatisticsController) SalesTrend(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.ChannelStatsItem}
 // @Router /statistics/channel [get]
 func (c *StatisticsController) ChannelStats(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		queryStoreID = 0
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			http.ParseUint(id, &sid)
-			queryStoreID = sid
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	period := ctx.DefaultQuery("period", "month")
 
 	stats, err := c.statisticsService.GetChannelStats(queryStoreID, period)
@@ -202,19 +134,7 @@ func (c *StatisticsController) ChannelStats(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=model.BusinessOverviewStats}
 // @Router /statistics/business-overview [get]
 func (c *StatisticsController) BusinessOverview(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		queryStoreID = 0
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			http.ParseUint(id, &sid)
-			queryStoreID = sid
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	startDate := ctx.Query("start_date")
 	endDate := ctx.Query("end_date")
 	stats, err := c.statisticsService.GetBusinessOverview(queryStoreID, startDate, endDate)
@@ -238,19 +158,7 @@ func (c *StatisticsController) BusinessOverview(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=model.HomeChartsStats}
 // @Router /statistics/home-charts [get]
 func (c *StatisticsController) HomeCharts(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := storeID
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
-		queryStoreID = 0
-		if id := ctx.Query("store_id"); id != "" {
-			var sid uint
-			http.ParseUint(id, &sid)
-			queryStoreID = sid
-		}
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	startDate := ctx.Query("start_date")
 	endDate := ctx.Query("end_date")
 	granularity := ctx.DefaultQuery("granularity", "day")

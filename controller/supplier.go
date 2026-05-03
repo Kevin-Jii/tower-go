@@ -123,7 +123,18 @@ func (c *SupplierController) ListSuppliers(ctx *gin.Context) {
 		req.PageSize = 20
 	}
 
-	suppliers, total, err := c.supplierService.ListSuppliers(&req)
+	storeID := middleware.GetStoreID(ctx)
+	// 仅未绑定门店的总部 admin / 超级管理员看全量；其余只看本店已绑定供应商
+	var suppliers []*model.Supplier
+	var total int64
+	var err error
+	if middleware.HQUnboundAdmin(ctx) {
+		suppliers, total, err = c.supplierService.ListSuppliers(&req)
+	} else if storeID > 0 {
+		suppliers, total, err = c.supplierService.ListSuppliersByStoreID(storeID, &req)
+	} else {
+		suppliers, total = []*model.Supplier{}, 0
+	}
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return

@@ -11,7 +11,7 @@
     </div>
 
     <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
-      min-width="1240px">
+      min-width="1000px">
       <template #cell-is_enabled="{ row }">
         <BaseSwitch :model-value="(row as ThirdPartyAccount).is_enabled"
           @update:model-value="toggleEnabled(row as ThirdPartyAccount, $event)" />
@@ -22,17 +22,17 @@
         </span>
       </template>
       <template #cell-last_test_msg="{ row }">
-        <div class="max-w-[240px] truncate" :title="(row as ThirdPartyAccount).last_test_msg">
+        <div class="min-w-0 max-w-full truncate" :title="(row as ThirdPartyAccount).last_test_msg">
           {{ (row as ThirdPartyAccount).last_test_msg || '-' }}
         </div>
       </template>
       <template #cell-last_sync_msg="{ row }">
-        <div class="max-w-[240px] truncate" :title="(row as ThirdPartyAccount).last_sync_msg">
+        <div class="min-w-0 max-w-full truncate" :title="(row as ThirdPartyAccount).last_sync_msg">
           {{ (row as ThirdPartyAccount).last_sync_msg || '-' }}
         </div>
       </template>
       <template #cell-actions="{ row }">
-        <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
+        <div class="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:flex-nowrap sm:gap-3" @click.stop>
           <BaseButton variant="link" size="sm" @click="openEdit(row as ThirdPartyAccount)">编辑</BaseButton>
           <BaseSelect v-model="actionValues[(row as ThirdPartyAccount).id]" class="w-40" placeholder="更多操作"
             :options="actionOptions"
@@ -130,13 +130,12 @@ const { data: rowsData, isLoading: loading } = useQuery({
 const list = computed(() => rowsData.value ?? [])
 
 const columns: BaseTableColumn[] = [
-  { key: 'name', label: '账号名称', prop: 'name', minWidth: '140px', ellipsis: true },
-  { key: 'login_name', label: '登录名', prop: 'login_name', minWidth: '150px', ellipsis: true },
-  { key: 'phone', label: '手机号', prop: 'phone', width: '120px' },
-  { key: 'last_test_ok', label: '测试状态', width: '110px' },
-  { key: 'last_test_msg', label: '测试信息', minWidth: '220px' },
-  { key: 'last_sync_msg', label: '同步信息', minWidth: '220px' },
-  { key: 'actions', label: '操作', width: '260px', align: 'right' },
+  { key: 'name', label: '账号名称', prop: 'name', width: '128px', ellipsis: true },
+  { key: 'login_name', label: '登录名', prop: 'login_name', width: '132px', ellipsis: true },
+  { key: 'phone', label: '手机号', prop: 'phone', width: '120px', ellipsis: true },
+  { key: 'last_test_ok', label: '测试状态', width: '96px' },
+  { key: 'last_sync_msg', label: '同步信息', width: '200px', ellipsis: true },
+  { key: 'actions', label: '操作', width: '200px', minWidth: '200px', align: 'right', fixed: 'right' },
 ]
 const actionOptions = [
   { label: '测试登录', value: 'test' },

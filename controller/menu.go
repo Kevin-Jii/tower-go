@@ -465,8 +465,8 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	roleCode := middleware.GetRoleCode(ctx)
 	roleID := middleware.GetRoleID(ctx)
 
-	// 总部管理员或超级管理员获取所有菜单
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
+	// 总部未绑定 admin / super_admin 获取所有菜单；绑定门店的 admin 走本店权限。
+	if middleware.HQUnboundAdmin(ctx) {
 		tree, err := c.menuService.GetMenuTree()
 		if err != nil {
 			http.Error(ctx, 500, err.Error())
@@ -502,8 +502,8 @@ func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 	var permissions []string
 	var err error
 
-	// 总部管理员或超级管理员获取所有权限
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
+	// 总部未绑定 admin / super_admin 获取所有权限；绑定门店的 admin 走本店权限。
+	if middleware.HQUnboundAdmin(ctx) {
 		permissions, err = c.menuService.GetAllPermissions()
 	} else {
 		// 其他用户根据门店和角色获取权限

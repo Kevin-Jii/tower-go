@@ -2,6 +2,8 @@ package module
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/cache"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
@@ -119,8 +121,8 @@ func (m *MenuModule) GetMenusByRoleID(roleID uint) ([]*model.Menu, error) {
 func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model.Menu, error) {
 	var menus []*model.Menu
 
-	// 尝试从缓存获取
-	cacheKey := fmt.Sprintf(cache.CacheKeyStoreRoleMenus, storeID, roleID)
+	// 尝试从缓存获取（须含门店与角色，避免共用同一键）
+	cacheKey := fmt.Sprintf("%s:%d:%d", cache.CacheKeyStoreRoleMenus, storeID, roleID)
 	err := cache.CacheGet(cacheKey, &menus)
 	if err == nil && len(menus) > 0 {
 		return menus, nil
@@ -143,7 +145,100 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 		return nil, err
 	}
 
+	// 门店自定义菜单若只勾了模块页未勾按钮行，JOIN 结果缺子菜单，GetUserPermissions 会少 store:xxx:add 等码导致接口 403。
+	if len(menus) > 0 {
+		menus, err = m.expandStoreCustomMenuClosure(menus)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// 保存到缓存
 	cache.CacheSet(cacheKey, menus, cache.PermissionsTTL)
 	return menus, err
+}
+
+// expandStoreCustomMenuClosure 补齐祖先链与整棵后代子树，与「勾选整页即含其下按钮」的默认角色菜单语义对齐。
+func (m *MenuModule) expandStoreCustomMenuClosure(menus []*model.Menu) ([]*model.Menu, error) {
+	byID := make(map[uint]*model.Menu, len(menus))
+	for _, mu := range menus {
+		if mu == nil {
+			continue
+		}
+		byID[mu.ID] = mu
+	}
+	if len(byID) == 0 {
+		return menus, nil
+	}
+
+	const defaultPermBits uint8 = 15
+
+	for {
+		seen := make(map[uint]struct{})
+		var missing []uint
+		for _, mu := range byID {
+			if mu.ParentID == 0 {
+				continue
+			}
+			if _, ok := byID[mu.ParentID]; ok {
+				continue
+			}
+			if _, dup := seen[mu.ParentID]; dup {
+				continue
+			}
+			seen[mu.ParentID] = struct{}{}
+			missing = append(missing, mu.ParentID)
+		}
+		if len(missing) == 0 {
+			break
+		}
+		var rows []*model.Menu
+		if err := m.db.Where("id IN ? AND status = ?", missing, 1).Find(&rows).Error; err != nil {
+			return nil, err
+		}
+		added := false
+		for _, row := range rows {
+			if _, ok := byID[row.ID]; !ok {
+				row.Permissions = defaultPermBits
+				byID[row.ID] = row
+				added = true
+			}
+		}
+		if !added {
+			break
+		}
+	}
+
+	frontier := make([]uint, 0, len(byID))
+	for id := range byID {
+		frontier = append(frontier, id)
+	}
+	for i := 0; i < len(frontier); i++ {
+		pid := frontier[i]
+		var children []*model.Menu
+		if err := m.db.Where("parent_id = ? AND status = ?", pid, 1).
+			Order("sort ASC, id ASC").
+			Find(&children).Error; err != nil {
+			return nil, err
+		}
+		for _, ch := range children {
+			if _, ok := byID[ch.ID]; !ok {
+				ch.Permissions = defaultPermBits
+				byID[ch.ID] = ch
+				frontier = append(frontier, ch.ID)
+			}
+		}
+	}
+
+	out := make([]*model.Menu, 0, len(byID))
+	for _, mu := range byID {
+		out = append(out, mu)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Sort != out[j].Sort {
+			return out[i].Sort < out[j].Sort
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
 }

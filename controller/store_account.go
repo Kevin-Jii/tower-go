@@ -96,8 +96,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 	}
 
 	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
-	// 非管理员只能查看自己门店；管理员可按 query 传 store_id
-	if !middleware.IsAdmin(ctx) {
+	if !middleware.HQUnboundAdmin(ctx) {
 		req.StoreID = storeID
 	}
 
@@ -213,21 +212,7 @@ func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /store-accounts/stats [get]
 func (c *StoreAccountController) Stats(ctx *gin.Context) {
-	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
-
-	queryStoreID := uint(0)
-	if s := ctx.Query("store_id"); s != "" {
-		if id, err := strconv.ParseUint(s, 10, 32); err == nil {
-			queryStoreID = uint(id)
-		}
-	}
-
-	// 非管理员只能查看自己门店
-	if roleCode != model.RoleCodeAdmin && roleCode != model.RoleCodeSuperAdmin {
-		queryStoreID = storeID
-	}
-
+	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	startDate := ctx.Query("start_date")
 	endDate := ctx.Query("end_date")
 

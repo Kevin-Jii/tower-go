@@ -86,8 +86,7 @@ func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 	}
 
 	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
-	// 非管理员只能查看自己门店的采购单；管理员可按 query 传 store_id
-	if !middleware.IsAdmin(ctx) {
+	if !middleware.HQUnboundAdmin(ctx) {
 		req.StoreID = storeID
 	}
 

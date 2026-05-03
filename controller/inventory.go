@@ -38,7 +38,7 @@ func (c *InventoryController) ListInventory(ctx *gin.Context) {
 	}
 
 	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
-	if !middleware.IsAdmin(ctx) {
+	if !middleware.HQUnboundAdmin(ctx) {
 		req.StoreID = storeID
 	}
 
@@ -101,7 +101,7 @@ func (c *InventoryController) ListOrders(ctx *gin.Context) {
 	}
 
 	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
-	if !middleware.IsAdmin(ctx) {
+	if !middleware.HQUnboundAdmin(ctx) {
 		req.StoreID = storeID
 	}
 

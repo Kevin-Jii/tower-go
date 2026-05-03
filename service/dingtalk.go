@@ -120,6 +120,19 @@ func (s *DingTalkService) SendMarkdownToBot(bot *model.DingTalkBot, title, text 
 	return s.sendMessage(bot, msg)
 }
 
+// SendActionCardToBot Webhook 模式发送钉钉整体跳转卡片
+func (s *DingTalkService) SendActionCardToBot(bot *model.DingTalkBot, title, text, singleTitle, singleURL string) error {
+	msg := model.DingTalkActionCardMessage{
+		MsgType: "actionCard",
+	}
+	msg.ActionCard.Title = title
+	msg.ActionCard.Text = text
+	msg.ActionCard.SingleTitle = singleTitle
+	msg.ActionCard.SingleURL = singleURL
+	msg.ActionCard.BtnOrientation = "0"
+	return s.sendMessage(bot, msg)
+}
+
 // SendStreamText Stream 模式发送文本消息
 func (s *DingTalkService) SendStreamText(bot *model.DingTalkBot, content string) error {
 	return s.SendStreamTextToMobile(bot, content, "")
@@ -223,6 +236,37 @@ func (s *DingTalkService) SendStreamCardToMobile(bot *model.DingTalkBot, cardMsg
 	}
 	for k, v := range cardParam {
 		msgBody[k] = v
+	}
+	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
+}
+
+// SendStreamActionCardToMobile Stream 模式发送钉钉内置整体跳转卡片
+func (s *DingTalkService) SendStreamActionCardToMobile(bot *model.DingTalkBot, title, text, singleTitle, singleURL, mobile string) error {
+	if bot.RobotCode == "" {
+		return errors.New("robotCode is required for stream mode")
+	}
+
+	accessToken, err := s.getStreamAccessToken(bot.ClientID, bot.ClientSecret)
+	if err != nil {
+		return fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	var userIds []string
+	if mobile != "" {
+		userId, err := s.GetUserIdByMobile(mobile, accessToken)
+		if err != nil {
+			return fmt.Errorf("failed to get userId by mobile %s: %w", mobile, err)
+		}
+		userIds = []string{userId}
+	}
+
+	msgBody := map[string]interface{}{
+		"msgtype":        "sampleActionCard",
+		"title":          title,
+		"text":           text,
+		"singleTitle":    singleTitle,
+		"singleURL":      singleURL,
+		"btnOrientation": "0",
 	}
 	return s.sendStreamMessageToUsers(bot.RobotCode, accessToken, msgBody, userIds)
 }

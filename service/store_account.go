@@ -645,9 +645,11 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 		)
 	}
 
-	// 发送通知：如果有图片，先发图片再发文字；否则只发文字
+	cardTitle, cardText, cardButtonTitle, cardButtonURL := s.buildAccountActionCard(account, store.Name, operatorDisplay, channelName, itemLines, imageURL)
+
+	// 发送通知：记账通知优先使用钉钉卡片，失败后回退到 Markdown，避免通知丢失
 	var sendErr error
-	if bot.MsgType == "card" && strings.TrimSpace(bot.CardMsgKey) != "" {
+	if strings.TrimSpace(bot.CardMsgKey) != "" {
 		itemListForCard := make([]map[string]interface{}, 0, len(account.Items))
 		for _, it := range account.Items {
 			name := strings.TrimSpace(it.ProductName)
@@ -692,21 +694,35 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 			"account.account_date":  accountBlock["account_date"],
 			"account.other_expense": accountBlock["other_expense"],
 			"account.net_income":    accountBlock["net_income"],
+			"account.total_amount":  fmt.Sprintf("%.2f", account.TotalAmount),
 			"ccount.total_amount":   fmt.Sprintf("%.2f", account.TotalAmount),
 		}
 		sendErr = s.dingTalkService.SendStreamCardToMobile(bot, bot.CardMsgKey, store.Phone, cardParam)
-		if sendErr != nil {
-			// 卡片失败后回退到 Markdown，避免通知丢失
-			if imageURL != "" {
-				sendErr = s.dingTalkService.SendStreamMarkdownWithImageToMobile(bot, title, text, imageURL, store.Phone)
-			} else {
-				sendErr = s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone)
-			}
+		if sendErr != nil && logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to send custom account card, fallback to action card",
+				"storeID", storeID,
+				"accountNo", account.AccountNo,
+				"cardMsgKey", bot.CardMsgKey,
+				"error", sendErr,
+			)
 		}
-	} else if imageURL != "" {
-		sendErr = s.dingTalkService.SendStreamMarkdownWithImageToMobile(bot, title, text, imageURL, store.Phone)
-	} else {
-		sendErr = s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone)
+	}
+	if sendErr != nil || strings.TrimSpace(bot.CardMsgKey) == "" {
+		sendErr = s.dingTalkService.SendStreamActionCardToMobile(bot, cardTitle, cardText, cardButtonTitle, cardButtonURL, store.Phone)
+		if sendErr != nil && logging.SugaredLogger != nil {
+			logging.SugaredLogger.Warnw("Failed to send account action card, fallback to markdown",
+				"storeID", storeID,
+				"accountNo", account.AccountNo,
+				"error", sendErr,
+			)
+		}
+	}
+	if sendErr != nil {
+		if imageURL != "" {
+			sendErr = s.dingTalkService.SendStreamMarkdownWithImageToMobile(bot, title, text, imageURL, store.Phone)
+		} else {
+			sendErr = s.dingTalkService.SendStreamMarkdownToMobile(bot, title, text, store.Phone)
+		}
 	}
 
 	if sendErr != nil {
@@ -724,9 +740,60 @@ func (s *StoreAccountService) sendDingTalkNotification(account *model.StoreAccou
 				"accountNo", account.AccountNo,
 				"mobile", store.Phone,
 				"hasImage", imageURL != "",
+				"messageType", "card",
 			)
 		}
 	}
+}
+
+func (s *StoreAccountService) buildAccountActionCard(account *model.StoreAccount, storeName, operatorName, channelName string, itemLines []string, imageURL string) (string, string, string, string) {
+	title := fmt.Sprintf("新记账通知 - %s", storeName)
+	buttonTitle := "查看记账回单"
+	buttonURL := strings.TrimSpace(imageURL)
+	if buttonURL == "" {
+		buttonTitle = "查看详情"
+		buttonURL = "https://www.dingtalk.com/"
+	}
+
+	detailLines := itemLines
+	if len(detailLines) == 0 {
+		detailLines = []string{"暂无商品明细"}
+	}
+	if len(detailLines) > 8 {
+		detailLines = append(detailLines[:8], fmt.Sprintf("...等共 %d 项", len(itemLines)))
+	}
+
+	var b strings.Builder
+	b.WriteString("### ")
+	b.WriteString(title)
+	b.WriteString("\n\n")
+	b.WriteString(fmt.Sprintf("- 记账编号：%s\n", account.AccountNo))
+	b.WriteString(fmt.Sprintf("- 渠道来源：%s\n", channelName))
+	b.WriteString(fmt.Sprintf("- 记账日期：%s\n", account.AccountDate.Format("2006-01-02")))
+	b.WriteString(fmt.Sprintf("- 操作人：%s\n\n", operatorName))
+	b.WriteString("#### 记账明细\n")
+	for _, line := range detailLines {
+		b.WriteString("- ")
+		b.WriteString(strings.TrimSpace(line))
+		b.WriteString("\n")
+	}
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("**合计：¥%.2f**\n\n", account.TotalAmount))
+	if account.OtherExpenseAmount > 0 {
+		b.WriteString(fmt.Sprintf("- 其他支出：¥%.2f\n", account.OtherExpenseAmount))
+	}
+	b.WriteString(fmt.Sprintf("- 净收入：¥%.2f\n", account.NetIncomeAmount))
+	if strings.TrimSpace(account.Remark) != "" {
+		b.WriteString(fmt.Sprintf("\n备注：%s\n", strings.TrimSpace(account.Remark)))
+	}
+	if imageURL != "" {
+		b.WriteString("\n![记账回单](")
+		b.WriteString(imageURL)
+		b.WriteString(")\n")
+	}
+	b.WriteString("\n> 本消息由系统自动发送")
+
+	return title, b.String(), buttonTitle, buttonURL
 }
 
 // Get 获取记账详情

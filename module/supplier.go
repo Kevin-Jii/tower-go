@@ -75,6 +75,35 @@ func (m *SupplierModule) List(req *model.ListSupplierReq) ([]*model.Supplier, in
 	return suppliers, total, nil
 }
 
+// ListByBoundStore 分页列出已与指定门店绑定（启用）的供应商；用于门店侧列表与「当前门店」一致。
+func (m *SupplierModule) ListByBoundStore(storeID uint, req *model.ListSupplierReq) ([]*model.Supplier, int64, error) {
+	var suppliers []*model.Supplier
+	var total int64
+
+	query := m.db.Model(&model.Supplier{}).
+		Joins("INNER JOIN store_suppliers ON store_suppliers.supplier_id = suppliers.id AND store_suppliers.store_id = ? AND store_suppliers.status = ?", storeID, 1)
+
+	if req.Keyword != "" {
+		keyword := "%" + req.Keyword + "%"
+		query = query.Where("suppliers.supplier_name LIKE ? OR suppliers.supplier_code LIKE ?", keyword, keyword)
+	}
+
+	if req.Status != nil {
+		query = query.Where("suppliers.status = ?", *req.Status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (req.Page - 1) * req.PageSize
+	if err := query.Order("suppliers.id DESC").Offset(offset).Limit(req.PageSize).Find(&suppliers).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return suppliers, total, nil
+}
+
 func (m *SupplierModule) UpdateByID(id uint, req *model.UpdateSupplierReq) error {
 	updateMap := make(map[string]interface{})
 

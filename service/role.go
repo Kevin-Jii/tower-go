@@ -1,9 +1,14 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 )
+
+// ErrBuiltinRoleNotDeletable 尝试删除系统内置角色（super_admin / admin / store_admin / staff）
+var ErrBuiltinRoleNotDeletable = errors.New("builtin role not deletable")
 
 // CreateRole 创建角色
 func CreateRole(req *model.Role) (*model.Role, error) {
@@ -25,7 +30,14 @@ func UpdateRole(id uint, req *model.UpdateRoleReq) (*model.Role, error) {
 
 // DeleteRole 删除角色
 func DeleteRole(id uint) error {
-	err := module.DeleteRole(id)
+	role, err := module.GetRole(id)
+	if err != nil {
+		return err
+	}
+	if model.IsBuiltinRoleNonDeletable(role.Code) {
+		return ErrBuiltinRoleNotDeletable
+	}
+	err = module.DeleteRole(id)
 	if err == nil {
 		InvalidateRolePermissionCache(id)
 	}

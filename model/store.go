@@ -2,6 +2,9 @@ package model
 
 import "time"
 
+// StoreCodeHQ 系统总部门店固定编码（与 init_seed_data 一致），列表类接口不向普通前端返回该行。
+const StoreCodeHQ = "JW9999"
+
 // Store 门店表
 type Store struct {
 	ID                  uint      `json:"id" gorm:"primarykey"`

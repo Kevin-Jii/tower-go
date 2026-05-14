@@ -50,7 +50,7 @@ func RegisterSupplierRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	productUnitSpecs.Use(middleware.AuthMiddleware())
 	{
 		productUnitSpecs.POST("", middleware.Permission("supplier:edit"), c.SupplierProduct.CreateProductUnitSpec)
-		productUnitSpecs.GET("", middleware.Permission("supplier:list"), c.SupplierProduct.ListProductUnitSpecs)
+		productUnitSpecs.GET("", middleware.PermissionStoreBoundSupplierRead(), c.SupplierProduct.ListProductUnitSpecs)
 		productUnitSpecs.POST("/batch", middleware.Permission("supplier:edit"), c.SupplierProduct.BatchUpsertProductUnitSpecs)
 		productUnitSpecs.PUT("/:id", middleware.Permission("supplier:edit"), c.SupplierProduct.UpdateProductUnitSpec)
 		productUnitSpecs.DELETE("/:id", middleware.Permission("supplier:delete"), c.SupplierProduct.DeleteProductUnitSpec)
@@ -60,10 +60,10 @@ func RegisterSupplierRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	storeSuppliers := v1.Group("/store-suppliers")
 	storeSuppliers.Use(middleware.StoreAuthMiddleware())
 	{
-		storeSuppliers.POST("", middleware.Permission("store:menu"), c.StoreSupplier.BindSuppliers)               // 绑定供应商
-		storeSuppliers.DELETE("", middleware.Permission("store:menu"), c.StoreSupplier.UnbindSuppliers)           // 解绑供应商
-		storeSuppliers.GET("", middleware.Permission("supplier:list"), c.StoreSupplier.ListSuppliers)             // 获取绑定的供应商列表
-		storeSuppliers.GET("/products", middleware.Permission("supplier:list"), c.StoreSupplier.ListProducts)     // 获取可采购的商品列表
-		storeSuppliers.GET("/categories", middleware.Permission("supplier:list"), c.StoreSupplier.ListCategories) // 获取绑定供应商的分类列表
+		storeSuppliers.POST("", middleware.Permission("store:menu"), c.StoreSupplier.BindSuppliers)                      // 绑定供应商
+		storeSuppliers.DELETE("", middleware.Permission("store:menu"), c.StoreSupplier.UnbindSuppliers)                  // 解绑供应商
+		storeSuppliers.GET("", middleware.PermissionStoreBoundSupplierRead(), c.StoreSupplier.ListSuppliers)             // 获取绑定的供应商列表
+		storeSuppliers.GET("/products", middleware.PermissionStoreBoundSupplierRead(), c.StoreSupplier.ListProducts)     // 获取可采购的商品列表
+		storeSuppliers.GET("/categories", middleware.PermissionStoreBoundSupplierRead(), c.StoreSupplier.ListCategories) // 获取绑定供应商的分类列表
 	}
 }

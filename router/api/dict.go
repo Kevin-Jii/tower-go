@@ -23,7 +23,8 @@ func RegisterDictRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	dictData.Use(middleware.AuthMiddleware())
 	{
 		dictData.POST("", middleware.Permission("system:dict:data:add"), c.Dict.CreateData)
-		dictData.GET("", middleware.Permission("system:dict:list"), c.Dict.ListDataByType)
+		// 按 type_code 拉枚举（如 sales_channel）供各业务页下拉；仅需登录，不要求 system:dict:list，避免门店角色无字典菜单权限时整页不可用
+		dictData.GET("", c.Dict.ListDataByType)
 		dictData.GET("/:id", middleware.Permission("system:dict:list"), c.Dict.GetData)
 		dictData.PUT("/:id", middleware.Permission("system:dict:data:edit"), c.Dict.UpdateData)
 		dictData.DELETE("/:id", middleware.Permission("system:dict:data:delete"), c.Dict.DeleteData)

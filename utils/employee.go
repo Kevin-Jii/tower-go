@@ -5,8 +5,9 @@ import (
 	"math/rand"
 	"time"
 
-	"gorm.io/gorm"
+	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"gorm.io/gorm"
 )
 
 // GenerateEmployeeNo 生成唯一的6位数工号
@@ -87,6 +88,9 @@ func GenerateStoreCode(db *gorm.DB) (string, error) {
 
 	for i := 0; i < maxRetries; i++ {
 		code := fmt.Sprintf("JW%04d", r.Intn(10000))
+		if code == model.StoreCodeHQ {
+			continue
+		}
 
 		var count int64
 		err := db.Raw("SELECT COUNT(*) FROM stores WHERE store_code = ?", code).Scan(&count).Error

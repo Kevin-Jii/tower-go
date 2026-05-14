@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/pkg/clientsource"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +34,7 @@ func RequestLoggerMiddleware(maxBody int) gin.HandlerFunc {
 		}
 
 		// 组装日志
-		log.Printf("[REQ] %s %s query=%q pathParams=%v body=%s client=%s", c.Request.Method, c.Request.URL.Path, c.Request.URL.RawQuery, c.Params, bodySnippet, c.ClientIP())
+		log.Printf("[REQ] %s %s query=%q pathParams=%v body=%s X-Client-Source=%s client=%s", c.Request.Method, c.Request.URL.Path, c.Request.URL.RawQuery, c.Params, bodySnippet, clientsource.FromRequest(c.Request), c.ClientIP())
 
 		c.Next()
 

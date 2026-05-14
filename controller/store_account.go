@@ -95,12 +95,13 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 		return
 	}
 
-	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
 	if !middleware.HQUnboundAdmin(ctx) {
 		req.StoreID = storeID
 	}
 
-	list, total, err := c.storeAccountService.List(&req)
+	middleware.AttachAuthContextToHTTPRequest(ctx)
+
+	list, total, err := c.storeAccountService.List(ctx.Request.Context(), &req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return

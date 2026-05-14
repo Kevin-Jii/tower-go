@@ -158,7 +158,7 @@ func BuildControllers() *Controllers {
 		Menu:              controller.NewMenuController(menuService),
 		DingTalkBot:       controller.NewDingTalkBotController(dingTalkService),
 		Supplier:          controller.NewSupplierController(supplierService),
-		SupplierProduct:   controller.NewSupplierProductController(supplierProductService),
+		SupplierProduct:   controller.NewSupplierProductController(supplierProductService, storeSupplierService),
 		StoreSupplier:     controller.NewStoreSupplierController(storeSupplierService),
 		PurchaseOrder:     controller.NewPurchaseOrderController(purchaseOrderService),
 		Dict:              controller.NewDictController(dictService),

@@ -462,15 +462,20 @@ func (c *MenuController) CopyStoreMenus(ctx *gin.Context) {
 // @Router /menus/user-menus [get]
 func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 	roleID := middleware.GetRoleID(ctx)
 
-	// 总部未绑定 admin / super_admin 获取所有菜单；绑定门店的 admin 走本店权限。
+	// 未绑店总部 admin/super_admin：全量菜单；Token 已绑店则走本店角色菜单（含绑店 super_admin）
 	if middleware.HQUnboundAdmin(ctx) {
 		tree, err := c.menuService.GetMenuTree()
 		if err != nil {
 			http.Error(ctx, 500, err.Error())
 			return
+		}
+		userID := middleware.GetUserID(ctx)
+		if userID > 0 && roleID > 0 {
+			if perms, err2 := c.menuService.GetAllPermissions(); err2 == nil {
+				service.SyncUserPermissionCache(userID, storeID, roleID, perms)
+			}
 		}
 		http.Success(ctx, tree)
 		return
@@ -481,6 +486,12 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
+	}
+	userID := middleware.GetUserID(ctx)
+	if userID > 0 && roleID > 0 {
+		if perms, err2 := c.menuService.GetUserPermissions(storeID, roleID); err2 == nil {
+			service.SyncUserPermissionCache(userID, storeID, roleID, perms)
+		}
 	}
 	http.Success(ctx, tree)
 }
@@ -496,13 +507,12 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 // @Router /menus/user-permissions [get]
 func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 	roleID := middleware.GetRoleID(ctx)
 
 	var permissions []string
 	var err error
 
-	// 总部未绑定 admin / super_admin 获取所有权限；绑定门店的 admin 走本店权限。
+	// 未绑店总部 admin/super_admin：全量权限码；已绑店走门店角色权限
 	if middleware.HQUnboundAdmin(ctx) {
 		permissions, err = c.menuService.GetAllPermissions()
 	} else {
@@ -513,6 +523,12 @@ func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
+	}
+
+	// 与 Permission 中间件共用 Redis 缓存，避免菜单/权限接口读库最新而接口鉴权仍命中旧缓存
+	userID := middleware.GetUserID(ctx)
+	if userID > 0 && roleID > 0 {
+		service.SyncUserPermissionCache(userID, storeID, roleID, permissions)
 	}
 
 	http.Success(ctx, permissions)

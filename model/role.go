@@ -30,6 +30,30 @@ const (
 	RoleCodeStaff      = "staff"       // 普通员工
 )
 
+// HQUnboundAdminRole 判定「可跨店操作的总部身份」。
+//
+// 为何必须结合 store_id==0，而不能只看角色码：
+// - Token 里的 store_id 表示当前会话绑定的数据范围；同一角色码 admin 既可能是「纯总部账号」(store_id=0)，
+//   也可能是「已归属某门店的总部人员」(store_id>0)。后者在业务上应与门店管理员一致，只能看/改本店，不能扫全库。
+// - super_admin 若 Token 带 store_id>0，同样降级为仅本店，避免「挂着超管码却绑了店」仍误走全量数据接口。
+// 因此：跨店能力 =（admin 或 super_admin）且（会话未绑店 store_id==0）。
+func HQUnboundAdminRole(roleCode string, storeID uint) bool {
+	if storeID > 0 {
+		return false
+	}
+	return roleCode == RoleCodeSuperAdmin || roleCode == RoleCodeAdmin
+}
+
+// IsBuiltinRoleNonDeletable 系统内置角色，禁止删除
+func IsBuiltinRoleNonDeletable(code string) bool {
+	switch code {
+	case RoleCodeSuperAdmin, RoleCodeAdmin, RoleCodeStoreAdmin, RoleCodeStaff:
+		return true
+	default:
+		return false
+	}
+}
+
 // 数据范围（与角色 data_scope 一致）
 const (
 	DataScopeAll    int8 = 1 // 全部（总部）

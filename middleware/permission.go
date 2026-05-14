@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -10,7 +11,8 @@ import (
 // Permission 按权限码进行接口鉴权
 func Permission(code string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if HQUnboundAdmin(c) {
+		// 超管始终放行；数据范围另见 HQUnboundAdmin / GetDataScope
+		if GetRoleCode(c) == model.RoleCodeSuperAdmin || HQUnboundAdmin(c) {
 			c.Next()
 			return
 		}
@@ -47,7 +49,7 @@ func Permission(code string) gin.HandlerFunc {
 // PermissionAny 满足任意一个权限码即可通过（用于同一接口允许多种操作权限的场景）
 func PermissionAny(codes ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if HQUnboundAdmin(c) {
+		if GetRoleCode(c) == model.RoleCodeSuperAdmin || HQUnboundAdmin(c) {
 			c.Next()
 			return
 		}
@@ -83,4 +85,25 @@ func PermissionAny(codes ...string) gin.HandlerFunc {
 		http.ErrorApp(c, apicode.PermissionDenied)
 		c.Abort()
 	}
+}
+
+// PermissionStoreBoundSupplierRead 门店端只读本店已绑定供应商下的商品/分类/供应商列表等。
+// 具备供应商菜单、库存、采购或记账等相关权限之一即可，避免仅有 inventory:list 时无法加载可采购商品与库存选品。
+func PermissionStoreBoundSupplierRead() gin.HandlerFunc {
+	return PermissionAny(
+		"supplier:list",
+		"inventory:list",
+		"inventory:in",
+		"inventory:out",
+		"inventory:record",
+		"purchase:list",
+		"purchase:add",
+		"purchase:edit",
+		"store:account:list",
+		"store:account:add",
+		"store:account:edit",
+		"store:list",
+		"store:edit",
+		"store:menu",
+	)
 }

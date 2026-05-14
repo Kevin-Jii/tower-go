@@ -30,4 +30,5 @@ var (
 
 	StoreAccountEditTimeout = Code{40304, "账单创建超过24小时，无法修改"}
 	StoreClosed             = Code{40305, "门店已停业，当前不允许业务操作"}
+	BuiltinRoleNotDeletable = Code{40307, "超级管理员、总部管理员、门店管理员、普通员工为系统内置角色，不允许删除"}
 )

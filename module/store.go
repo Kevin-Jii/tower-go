@@ -50,16 +50,17 @@ func (m *StoreModule) GetIDByStoreCode(code string) (uint, error) {
 	return store.ID, nil
 }
 
-// List 获取门店列表（全部数据，不分页）
+// List 获取门店列表（全部数据，不分页；排除系统总部门店 StoreCodeHQ，不返回给前端）
 func (m *StoreModule) List() ([]*model.Store, int64, error) {
 	var stores []*model.Store
 	var total int64
 
-	if err := m.db.Model(&model.Store{}).Count(&total).Error; err != nil {
+	cond := m.db.Model(&model.Store{}).Where("store_code IS NULL OR store_code <> ?", model.StoreCodeHQ)
+	if err := cond.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-
-	if err := m.db.Preload("ThirdPartyAccount").Find(&stores).Error; err != nil {
+	if err := m.db.Model(&model.Store{}).Where("store_code IS NULL OR store_code <> ?", model.StoreCodeHQ).
+		Preload("ThirdPartyAccount").Find(&stores).Error; err != nil {
 		return nil, 0, err
 	}
 

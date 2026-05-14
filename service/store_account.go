@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -806,8 +807,9 @@ func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
 	return account, nil
 }
 
-// List 记账列表
-func (s *StoreAccountService) List(req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
+// List 记账列表（ctx 须含 AuthContext）
+func (s *StoreAccountService) List(ctx context.Context, req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
+	applyListRBACFromContextToStoreAccount(ctx, req)
 	list, total, err := s.storeAccountModule.List(req)
 	if err != nil {
 		return nil, 0, err

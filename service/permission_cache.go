@@ -16,8 +16,16 @@ const (
 
 // userPermCacheKey 须包含门店与角色：仅 userId 会导致换店/改角色后仍命中旧权限缓存，接口 403 而菜单仍可见。
 func userPermCacheKey(userID, storeID, roleID uint) string {
-	// v2：与门店菜单闭包扩展对齐，避免沿用旧权限列表
-	return fmt.Sprintf("tower:user:perm:v2:%d:%d:%d", userID, storeID, roleID)
+	return fmt.Sprintf("tower:user:perm:v3:%d:%d:%d", userID, storeID, roleID)
+}
+
+// SyncUserPermissionCache 将已计算好的权限码写入 Redis，与 Permission 中间件使用的键一致。
+// user-permissions 接口若不走本函数，而中间件仍读陈旧缓存，会出现「前端权限列表含 supplier:list、GET /suppliers 仍 403」。
+func SyncUserPermissionCache(userID, storeID, roleID uint, perms []string) {
+	if userID == 0 || roleID == 0 {
+		return
+	}
+	_ = cache.CacheSet(userPermCacheKey(userID, storeID, roleID), perms, cache.PermissionsTTL)
 }
 
 type permissionBuildUser struct {
@@ -40,7 +48,8 @@ func BuildUserPermissionCache(userID uint, storeID uint, roleID uint, roleCode s
 	var perms []string
 	var err error
 
-	if roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin {
+	// 与 HQUnboundAdmin 一致：仅 Token 未绑店的总部账号用全量权限码；绑店 admin/super 走门店角色菜单
+	if model.HQUnboundAdminRole(roleCode, storeID) {
 		perms, err = menuModule.GetAllPermissions()
 	} else {
 		perms, err = menuModule.GetUserPermissions(storeID, roleID)
@@ -63,7 +72,9 @@ func GetUserPermissionCodes(userID uint, storeID uint, roleID uint, roleCode str
 
 	var perms []string
 	err := cache.CacheGet(userPermCacheKey(userID, storeID, roleID), &perms)
-	if err == nil {
+	// Redis 未启用时 CacheGet 恒为 nil 且不填充 dest，若此处直接 return 会得到空切片，门店账号所有 Permission 路由都会 403。
+	// 与 module/menu 一致：仅当缓存命中且非空时才短路；否则走库重建。
+	if err == nil && len(perms) > 0 {
 		return perms, nil
 	}
 
@@ -77,6 +88,7 @@ func InvalidateUserPermissionCache(userID uint) {
 	_ = cache.CacheDelete(fmt.Sprintf(userRoleCacheKeyFormat, userID))
 	_ = cache.CacheDeleteByPattern(fmt.Sprintf("tower:user:perm:%d:*", userID))
 	_ = cache.CacheDeleteByPattern(fmt.Sprintf("tower:user:perm:v2:%d:*", userID))
+	_ = cache.CacheDeleteByPattern(fmt.Sprintf("tower:user:perm:v3:%d:*", userID))
 }
 
 func InvalidateRolePermissionCache(roleID uint) {

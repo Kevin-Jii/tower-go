@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/controller"
@@ -43,6 +44,10 @@ func RegisterPermissionRoutes(v1 *gin.RouterGroup, c *Controllers) {
 			return
 		}
 		if err := service.DeleteRole(uint(id)); err != nil {
+			if errors.Is(err, service.ErrBuiltinRoleNotDeletable) {
+				http.ErrorApp(ctx, apicode.BuiltinRoleNotDeletable)
+				return
+			}
 			http.Error(ctx, 500, err.Error())
 			return
 		}

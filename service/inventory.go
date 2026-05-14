@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -53,8 +54,9 @@ func (s *InventoryService) GetInventory(storeID, productID uint) (*model.Invento
 	return s.inventoryModule.GetByStoreAndProduct(storeID, productID)
 }
 
-// ListInventory 库存列表
-func (s *InventoryService) ListInventory(req *model.ListInventoryReq) ([]*model.InventoryWithProduct, int64, error) {
+// ListInventory 库存列表（ctx 须含 AuthContext）
+func (s *InventoryService) ListInventory(ctx context.Context, req *model.ListInventoryReq) ([]*model.InventoryWithProduct, int64, error) {
+	applyListRBACFromContextToInventory(ctx, req)
 	return s.inventoryModule.List(req)
 }
 
@@ -282,7 +284,8 @@ func (s *InventoryService) GetOrderByID(id uint) (*model.InventoryOrder, error) 
 }
 
 // ListOrders 出入库单列表
-func (s *InventoryService) ListOrders(req *model.ListInventoryOrderReq) ([]*model.InventoryOrder, int64, error) {
+func (s *InventoryService) ListOrders(ctx context.Context, req *model.ListInventoryOrderReq) ([]*model.InventoryOrder, int64, error) {
+	applyListRBACFromContextToInventoryOrder(ctx, req)
 	return s.inventoryModule.ListOrders(req)
 }
 

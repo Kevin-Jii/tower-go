@@ -89,3 +89,8 @@ func (s *StoreSupplierService) ListProductsByStoreID(storeID, supplierID, catego
 func (s *StoreSupplierService) ListCategoriesByStoreID(storeID, supplierID uint) ([]*model.SupplierCategory, error) {
 	return s.storeSupplierModule.ListCategoriesByStoreID(storeID, supplierID)
 }
+
+// ValidateStoreProducts 校验商品是否属于门店已绑定的供应商（返回不可用的商品 ID）
+func (s *StoreSupplierService) ValidateStoreProducts(storeID uint, productIDs []uint) ([]uint, error) {
+	return s.storeSupplierModule.ValidateStoreProducts(storeID, productIDs)
+}

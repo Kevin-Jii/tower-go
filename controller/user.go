@@ -113,7 +113,6 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.User} "支持 keyword 模糊匹配用户名或手机号；未绑定门店的总部管理员与超级管理员可跨店；其余账号仅本店"
 // @Router /users [get]
 func (c *UserController) ListUsers(ctx *gin.Context) {
-	roleCode := middleware.GetRoleCode(ctx)
 	keyword := ctx.Query("keyword")
 	page := http.GetPage(ctx)
 	pageSize := http.GetPageSize(ctx)
@@ -134,8 +133,8 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		return 0
 	}
 
-	// 超级管理员：全平台用户，支持按门店筛选
-	if roleCode == model.RoleCodeSuperAdmin {
+	// 未绑定门店的总部 admin / super_admin：跨店全量，支持按门店筛选；绑店账号一律走下方本店分支
+	if middleware.HQUnboundAdmin(ctx) {
 		filterStore := parseFilterStore()
 		users, total, err = c.userService.ListAllUsers(keyword, filterStore, page, pageSize)
 		if err != nil {
@@ -146,19 +145,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		return
 	}
 
-	// 总部管理员且 Token 未绑定门店：跨店全量，支持按门店筛选
-	if roleCode == model.RoleCodeAdmin && storeIDCtx == 0 {
-		filterStore := parseFilterStore()
-		users, total, err = c.userService.ListAllUsers(keyword, filterStore, page, pageSize)
-		if err != nil {
-			http.Error(ctx, 500, err.Error())
-			return
-		}
-		http.SuccessWithPagination(ctx, users, total, page, pageSize)
-		return
-	}
-
-	// 门店管理员、员工、或绑定了门店的 admin：仅能查看本门店用户（忽略 store_id 查询参数）
+	// 门店管理员、员工、或已绑定门店的 admin/super_admin：仅能查看本门店用户（忽略 store_id 查询参数）
 	if storeIDCtx == 0 {
 		http.Error(ctx, 403, "当前账号未绑定门店，无法查看用户列表")
 		return
@@ -221,7 +208,6 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Router /users/{id} [delete]
 func (c *UserController) DeleteUser(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
-	roleCode := middleware.GetRoleCode(ctx)
 	idStr := ctx.Param("id")
 	log.Printf("Attempting to delete user with ID string: %s", idStr)
 
@@ -231,10 +217,8 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 		return
 	}
 
-	// 超级管理员，或未绑定门店的总部管理员：可删除任意用户
-	hqUnbound := roleCode == model.RoleCodeSuperAdmin ||
-		(roleCode == model.RoleCodeAdmin && storeID == 0)
-	if hqUnbound {
+	// 未绑定门店的总部 admin / super_admin：可删除任意用户
+	if middleware.HQUnboundAdmin(ctx) {
 		if err := c.userService.DeleteUser(uint(id)); err != nil {
 			http.Error(ctx, 500, err.Error())
 			return
@@ -267,9 +251,8 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /users/{id}/reset-password [post]
 func (c *UserController) ResetUserPassword(ctx *gin.Context) {
-	// 仅总部管理员或同门店管理员才能重置（此处：若为 admin 放行；否则必须该用户同门店）
+	// 未绑店总部 admin/super_admin 可跨店重置；否则仅本店
 	requesterStoreID := middleware.GetStoreID(ctx)
-	requesterRoleCode := middleware.GetRoleCode(ctx)
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
@@ -283,9 +266,7 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 		return
 	}
 
-	canCrossStore := requesterRoleCode == model.RoleCodeSuperAdmin ||
-		(requesterRoleCode == model.RoleCodeAdmin && requesterStoreID == 0)
-	if !canCrossStore && targetUser.StoreID != requesterStoreID {
+	if !middleware.HQUnboundAdmin(ctx) && targetUser.StoreID != requesterStoreID {
 		http.Error(ctx, 403, "无权重置其他门店用户密码")
 		return
 	}

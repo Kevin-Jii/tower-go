@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Kevin-Jii/tower-go/internal/authctx"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/auth"
@@ -53,11 +54,34 @@ func AuthMiddleware() gin.HandlerFunc {
 			}
 		}
 
+		// 统一 AuthContext（数据权限 Pipeline P0，供 internal/datascope 与后续 Repository 使用）
+		c.Set(authctx.GinKey, buildAuthContext(c, claims))
+
 		// 同时保存请求头中的值（供日志或特殊场景使用）
 		c.Set("headerUserID", c.GetHeader("X-User-Id"))
 		c.Set("headerStoreID", c.GetHeader("X-Store-Id"))
 
 		c.Next()
+	}
+}
+
+func buildAuthContext(c *gin.Context, claims *auth.Claims) *authctx.Context {
+	return &authctx.Context{
+		UserID:             claims.UserID,
+		StoreID:            claims.StoreID,
+		RoleID:             claims.RoleID,
+		RoleCode:           claims.RoleCode,
+		EffectiveDataScope: GetDataScope(c),
+		HQUnbound:          HQUnboundAdmin(c),
+	}
+}
+
+// AttachAuthContextToHTTPRequest 将 Gin 上的 AuthContext 写入标准 http.Request.Context，
+// 供 service / repository 使用 authctx.FromContext(r.Context())。
+func AttachAuthContextToHTTPRequest(c *gin.Context) {
+	if ac := authctx.FromGin(c); ac != nil {
+		r := c.Request
+		c.Request = r.WithContext(authctx.WithContext(r.Context(), ac))
 	}
 }
 
@@ -105,12 +129,10 @@ func IsAdmin(c *gin.Context) bool {
 	return roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin
 }
 
-// HQUnboundAdmin 未绑定门店的总部 admin 或超级管理员：可跨店查看/操作数据。
-// 已绑定门店的 admin 与 store_admin、staff 一样按 Token 门店隔离（避免列表查全库、本店数据为空）。
+// HQUnboundAdmin 未绑定门店的总部 admin / super_admin：可跨店查看/操作数据。
+// Token 中 store_id>0 时一律视为已绑店，与角色码无关（绑店 super_admin 也仅本店）。
 func HQUnboundAdmin(c *gin.Context) bool {
-	roleCode := GetRoleCode(c)
-	storeID := GetStoreID(c)
-	return roleCode == model.RoleCodeSuperAdmin || (roleCode == model.RoleCodeAdmin && storeID == 0)
+	return model.HQUnboundAdminRole(GetRoleCode(c), GetStoreID(c))
 }
 
 // ResolveQueryStoreID 解析列表/统计接口可访问的门店范围。
@@ -159,7 +181,8 @@ func GetDataScope(c *gin.Context) int8 {
 	return model.DataScopeStore
 }
 
-// ListRBAC 列表接口注入：数据范围、当前用户、角色码（门店 ID 由调用方按是否管理员自行处理）
+// ListRBAC 列表接口注入：数据范围、当前用户、角色码。
+// 门店 ID 请对非 HQUnboundAdmin 请求固定为 Token 门店（或 ResolveQueryStoreID）；数据范围与角色码勿单独用于「全库」分支，应配合 pkg/datascope 中 DataScopeAll 判断。
 func ListRBAC(c *gin.Context) (dataScope int8, userID uint, roleCode string) {
 	userID = GetUserID(c)
 	roleCode = GetRoleCode(c)

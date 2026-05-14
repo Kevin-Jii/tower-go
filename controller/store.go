@@ -72,7 +72,7 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 
 // ListStores godoc
 // @Summary 门店列表
-// @Description 获取全部门店列表（不分页）
+// @Description 获取门店列表（不分页；不含系统总部门店编码 JW9999）
 // @Tags 门店管理
 // @Accept json
 // @Produce json

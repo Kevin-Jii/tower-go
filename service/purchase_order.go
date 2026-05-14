@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -175,8 +176,9 @@ func (s *PurchaseOrderService) GetOrder(id uint) (*model.PurchaseOrder, error) {
 	return s.orderModule.GetByIDWithDetails(id)
 }
 
-// ListOrders 获取采购单列表
-func (s *PurchaseOrderService) ListOrders(req *model.ListPurchaseOrderReq) ([]*model.PurchaseOrder, int64, error) {
+// ListOrders 获取采购单列表（ctx 须含 AuthContext，见 middleware.AttachAuthContextToHTTPRequest）
+func (s *PurchaseOrderService) ListOrders(ctx context.Context, req *model.ListPurchaseOrderReq) ([]*model.PurchaseOrder, int64, error) {
+	applyListRBACFromContextToPurchaseOrder(ctx, req)
 	return s.orderModule.List(req)
 }
 

@@ -85,10 +85,11 @@ func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 		return
 	}
 
-	req.DataScope, req.UserID, req.RoleCode = middleware.ListRBAC(ctx)
 	if !middleware.HQUnboundAdmin(ctx) {
 		req.StoreID = storeID
 	}
+
+	middleware.AttachAuthContextToHTTPRequest(ctx)
 
 	if req.Page == 0 {
 		req.Page = 1
@@ -97,7 +98,7 @@ func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 		req.PageSize = 20
 	}
 
-	orders, total, err := c.orderService.ListOrders(&req)
+	orders, total, err := c.orderService.ListOrders(ctx.Request.Context(), &req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return

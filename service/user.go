@@ -51,9 +51,7 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 	}
 
 	targetStoreID := storeID
-	canPickStoreByCode := roleCode == model.RoleCodeSuperAdmin ||
-		(roleCode == model.RoleCodeAdmin && storeID == 0)
-	if canPickStoreByCode && strings.TrimSpace(req.StoreCode) != "" {
+	if model.HQUnboundAdminRole(roleCode, storeID) && strings.TrimSpace(req.StoreCode) != "" {
 		sid, err := s.storeModule.GetIDByStoreCode(req.StoreCode)
 		if err != nil {
 			return errors.New("无效门店编码: " + err.Error())

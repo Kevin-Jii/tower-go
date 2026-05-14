@@ -1,9 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"strconv"
 
+	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 
@@ -67,12 +70,13 @@ func UpdateRole(c *gin.Context) {
 
 // DeleteRole 删除角色
 // @Summary 删除角色
-// @Description 根据ID删除角色
+// @Description 根据ID删除角色；超级管理员、总部管理员、门店管理员、普通员工为内置角色不可删
 // @Tags 角色管理
 // @Produce json
 // @Param id path int true "角色ID"
 // @Success 200 {object} http.Response
 // @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string "内置角色"
 // @Router /roles/{id} [delete]
 func DeleteRole(c *gin.Context) {
 	idStr := c.Param("id")
@@ -82,6 +86,10 @@ func DeleteRole(c *gin.Context) {
 		return
 	}
 	if err := service.DeleteRole(uint(id)); err != nil {
+		if errors.Is(err, service.ErrBuiltinRoleNotDeletable) {
+			http.ErrorApp(c, apicode.BuiltinRoleNotDeletable)
+			return
+		}
 		http.Error(c, 500, err.Error())
 		return
 	}
@@ -109,12 +117,17 @@ func GetRole(c *gin.Context) {
 		http.Error(c, 404, err.Error())
 		return
 	}
+	// 超级管理员角色不对非超管暴露（避免枚举/误配）
+	if role.Code == model.RoleCodeSuperAdmin && middleware.GetRoleCode(c) != model.RoleCodeSuperAdmin {
+		http.Error(c, 404, "not found")
+		return
+	}
 	http.Success(c, role)
 }
 
 // ListRoles 获取角色列表
 // @Summary 获取角色列表
-// @Description 获取角色列表（排除admin），支持 keyword 模糊查询 name/code/description，status=0|1 过滤
+// @Description 获取角色列表（排除 admin、super_admin），支持 keyword 模糊查询 name/code/description，status=0|1 过滤
 // @Tags 角色管理
 // @Produce json
 // @Param keyword query string false "关键字(模糊匹配 name/code/description)"

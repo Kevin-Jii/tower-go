@@ -66,13 +66,14 @@ func ListRoles() ([]model.Role, error) {
 	return roles, nil
 }
 
-// ListRolesFiltered 带关键字与状态过滤（排除admin）
+// ListRolesFiltered 带关键字与状态过滤（排除总部管理员与超级管理员，不暴露给前端选人/角色管理列表）
 // keyword 模糊匹配 name/code/description；status 为 0/1 可选
 func ListRolesFiltered(keyword string, status *int8) ([]model.Role, error) {
 	var roles []model.Role
 
 	qb := database.NewQueryBuilder(db).
 		Where("code <> ?", model.RoleCodeAdmin).
+		Where("code <> ?", model.RoleCodeSuperAdmin).
 		WhereIf(status != nil, "status = ?", func() interface{} {
 			if status != nil {
 				return *status

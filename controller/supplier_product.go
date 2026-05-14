@@ -1,18 +1,27 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
 
 type SupplierProductController struct {
-	productService *service.SupplierProductService
+	productService       *service.SupplierProductService
+	storeSupplierService *service.StoreSupplierService
 }
 
-func NewSupplierProductController(productService *service.SupplierProductService) *SupplierProductController {
-	return &SupplierProductController{productService: productService}
+func NewSupplierProductController(
+	productService *service.SupplierProductService,
+	storeSupplierService *service.StoreSupplierService,
+) *SupplierProductController {
+	return &SupplierProductController{
+		productService:       productService,
+		storeSupplierService: storeSupplierService,
+	}
 }
 
 // CreateProduct godoc
@@ -272,6 +281,19 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 	if !ok {
 		http.Error(ctx, 400, "product_id is required")
 		return
+	}
+	// 门店账号：仅允许查询本店已绑定供应商下的商品单位，防止凭 product_id 枚举其它供应商商品
+	storeID := middleware.GetStoreID(ctx)
+	if storeID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
+		invalid, err := c.storeSupplierService.ValidateStoreProducts(storeID, []uint{productID})
+		if err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+		if len(invalid) > 0 {
+			http.ErrorApp(ctx, apicode.PermissionDenied)
+			return
+		}
 	}
 	specs, err := c.productService.ListUnitSpecs(productID)
 	if err != nil {

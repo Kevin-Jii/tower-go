@@ -166,8 +166,14 @@ func GetRoleModel(c *gin.Context) *model.Role {
 	return nil
 }
 
-// GetDataScope 当前请求的数据范围。只有总部未绑定 admin / super_admin 视为全部；
-// 绑定门店的 admin 即使角色 data_scope=全部，也必须降级为本门店。
+// GetDataScope 返回本请求用于「行级数据范围」的 DataScope 枚举（D4：单一真源，勿在 Controller 用角色码推断全库）。
+//
+// 规则摘要：
+//  1) HQUnboundAdmin(c) 为真（admin 或 super_admin 且 token 中 store_id==0）→ DataScopeAll；列表可再按 query store_id 筛店。
+//  2) token 中 store_id>0 且角色在库中为「全部」→ 强制降为 DataScopeStore。
+//  3) 其余使用 roles.data_scope；无角色模型时默认 DataScopeStore。
+//
+// 同步写入 authctx.Context.EffectiveDataScope；HTTP 列表请求的 DataScope 字段由 service 从 authctx 注入（见 list_authctx.go）。
 func GetDataScope(c *gin.Context) int8 {
 	if HQUnboundAdmin(c) {
 		return model.DataScopeAll
@@ -181,8 +187,8 @@ func GetDataScope(c *gin.Context) int8 {
 	return model.DataScopeStore
 }
 
-// ListRBAC 列表接口注入：数据范围、当前用户、角色码。
-// 门店 ID 请对非 HQUnboundAdmin 请求固定为 Token 门店（或 ResolveQueryStoreID）；数据范围与角色码勿单独用于「全库」分支，应配合 pkg/datascope 中 DataScopeAll 判断。
+// ListRBAC 返回 dataScope、userID、roleCode（dataScope 同 GetDataScope）。
+// 注意：HTTP 列表路径已改为 authctx + service 注入 req，新代码勿在 Controller 调用本函数写 DataScope；保留供尚未迁移的 handler / 脚本使用。
 func ListRBAC(c *gin.Context) (dataScope int8, userID uint, roleCode string) {
 	userID = GetUserID(c)
 	roleCode = GetRoleCode(c)

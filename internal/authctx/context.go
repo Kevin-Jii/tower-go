@@ -14,7 +14,9 @@ type GinGetter interface {
 }
 
 // Context 权限与数据范围快照（JWT + 角色解析后的有效值）。
-// EffectiveDataScope 与 middleware.GetDataScope 一致：绑店 admin 即使角色为「全部」也会降级为门店。
+//
+// EffectiveDataScope（D4 单一真源之一）：与 middleware.GetDataScope(c) 同步写入，表示行级范围枚举。
+// 「全库」仅当总部未绑店 admin/super_admin（见 HQUnboundAdmin）；绑店超管/管理员一律按门店降级，禁止在 Controller 用 role_code 手写全库分支。
 type Context struct {
 	UserID             uint
 	StoreID            uint

@@ -9,9 +9,10 @@ import (
 )
 
 // TablePolicy 描述当前查询主表上用于数据隔离的列（须带表名或别名，如 purchase_orders.store_id）。
+// CreatorColumn 表示「仅本人」维度列：可为 created_by、operator_id 等；为空且列表场景需 SELF≈STORE 时由 listDataScopeScope 的 selfSameAsStore 控制。
 type TablePolicy struct {
 	StoreColumn   string
-	CreatorColumn string // 可选；SELF 时使用
+	CreatorColumn string
 }
 
 // DataPermission 按 AuthContext 的有效数据范围追加 WHERE（不含「总部按 query 筛门店」等特殊逻辑，见各业务 Scope）。

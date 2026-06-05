@@ -61,6 +61,17 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 	if !ok {
 		return
 	}
+	if !middleware.HQUnboundAdmin(ctx) {
+		currentStoreID := middleware.GetStoreID(ctx)
+		if currentStoreID == 0 {
+			http.Error(ctx, 403, "当前账号未绑定门店")
+			return
+		}
+		if id != currentStoreID {
+			http.Error(ctx, 403, "无权查看其他门店")
+			return
+		}
+	}
 	store, err := c.storeService.GetStore(id)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -80,6 +91,21 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.Store} "返回全部门店数据，meta 包含 total"
 // @Router /stores [get]
 func (c *StoreController) ListStores(ctx *gin.Context) {
+	if !middleware.HQUnboundAdmin(ctx) {
+		storeID := middleware.GetStoreID(ctx)
+		if storeID == 0 {
+			http.Error(ctx, 403, "当前账号未绑定门店")
+			return
+		}
+		store, err := c.storeService.GetStore(storeID)
+		if err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+		http.SuccessWithPagination(ctx, []*model.Store{store}, 1, 1, 1)
+		return
+	}
+
 	stores, total, err := c.storeService.ListStores()
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -99,8 +125,8 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.Store}
 // @Router /stores/all [get]
 func (c *StoreController) ListAllStores(ctx *gin.Context) {
-	// 权限限制：仅 admin，避免普通门店账号看到其他门店
-	if !middleware.IsAdmin(ctx) {
+	// 权限限制：仅总部未绑定门店管理员，避免门店管理员看到其他门店
+	if !middleware.HQUnboundAdmin(ctx) {
 		http.Error(ctx, 403, "Only admin can list all stores")
 		return
 	}

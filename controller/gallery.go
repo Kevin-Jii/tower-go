@@ -135,8 +135,12 @@ func (c *GalleryController) List(ctx *gin.Context) {
 		req.PageSize = 20
 	}
 
-	// 非管理员只能看自己门店的图片
-	if !middleware.IsAdmin(ctx) {
+	// 只有总部未绑定门店的管理员可跨店查询；绑定门店账号始终锁定本店。
+	if middleware.HQUnboundAdmin(ctx) {
+		if storeID := middleware.ResolveQueryStoreID(ctx, "store_id"); storeID > 0 {
+			req.StoreID = storeID
+		}
+	} else {
 		req.StoreID = middleware.GetStoreID(ctx)
 	}
 

@@ -50,6 +50,17 @@ func (m *StoreSupplierModule) ListSuppliersByStoreID(storeID uint) ([]*model.Sto
 	return bindings, nil
 }
 
+// IsSupplierBound 判断供应商是否已绑定到门店。
+func (m *StoreSupplierModule) IsSupplierBound(storeID, supplierID uint) (bool, error) {
+	var count int64
+	if err := m.db.Model(&model.StoreSupplier{}).
+		Where("store_id = ? AND supplier_id = ? AND status = ?", storeID, supplierID, 1).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // ListProductsByStoreID 获取门店可采购的商品列表（绑定供应商的所有商品）
 func (m *StoreSupplierModule) ListProductsByStoreID(storeID, supplierID, categoryID uint, keyword string) ([]*model.SupplierProduct, error) {
 	// 先获取门店绑定的供应商ID列表

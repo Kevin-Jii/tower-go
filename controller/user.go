@@ -90,7 +90,17 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.GetUser(uint(id))
+	var user *model.User
+	if middleware.HQUnboundAdmin(ctx) {
+		user, err = c.userService.GetUser(uint(id))
+	} else {
+		storeID := middleware.GetStoreID(ctx)
+		if storeID == 0 {
+			http.Error(ctx, 403, "当前账号未绑定门店")
+			return
+		}
+		user, err = c.userService.GetUserByStoreID(uint(id), storeID)
+	}
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -188,7 +198,23 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.userService.UpdateUser(uint(id), &req); err != nil {
+	if middleware.HQUnboundAdmin(ctx) {
+		if err := c.userService.UpdateUser(uint(id), &req); err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+		http.Success(ctx, nil)
+		return
+	}
+
+	storeID := middleware.GetStoreID(ctx)
+	if storeID == 0 {
+		http.Error(ctx, 403, "当前账号未绑定门店")
+		return
+	}
+	req.StoreID = nil
+	req.StoreCode = ""
+	if err := c.userService.UpdateUserByStoreID(uint(id), storeID, &req); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
@@ -383,12 +409,32 @@ func (c *UserController) AssignUserRole(ctx *gin.Context) {
 	updateReq := &model.UpdateUserReq{
 		RoleID: &req.RoleID,
 	}
-	if err := c.userService.UpdateUser(req.UserID, updateReq); err != nil {
+	if middleware.HQUnboundAdmin(ctx) {
+		if err := c.userService.UpdateUser(req.UserID, updateReq); err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+	} else {
+		storeID := middleware.GetStoreID(ctx)
+		if storeID == 0 {
+			http.Error(ctx, 403, "当前账号未绑定门店")
+			return
+		}
+		if err := c.userService.UpdateUserByStoreID(req.UserID, storeID, updateReq); err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+	}
+
+	user, err := c.userService.GetUser(req.UserID)
+	if err != nil && !middleware.HQUnboundAdmin(ctx) {
+		user, err = c.userService.GetUserByStoreID(req.UserID, middleware.GetStoreID(ctx))
+	}
+	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 
-	user, err := c.userService.GetUser(req.UserID)
 	if err == nil && user != nil {
 		roleCode := ""
 		if user.Role != nil {

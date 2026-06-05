@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -278,9 +279,43 @@ func (s *InventoryService) GetOrderByNo(orderNo string) (*model.InventoryOrder, 
 	return s.inventoryModule.GetOrderByNo(orderNo)
 }
 
+func (s *InventoryService) GetOrderByNoScoped(orderNo string, storeID uint, hqUnbound bool) (*model.InventoryOrder, error) {
+	order, err := s.inventoryModule.GetOrderByNo(orderNo)
+	if err != nil {
+		return nil, err
+	}
+	if hqUnbound {
+		return order, nil
+	}
+	if storeID == 0 {
+		return nil, errors.New("current user has no store")
+	}
+	if order.StoreID != storeID {
+		return nil, errors.New("inventory order not found in current store")
+	}
+	return order, nil
+}
+
 // GetOrderByID 根据ID获取出入库单详情
 func (s *InventoryService) GetOrderByID(id uint) (*model.InventoryOrder, error) {
 	return s.inventoryModule.GetOrderByID(id)
+}
+
+func (s *InventoryService) GetOrderByIDScoped(id, storeID uint, hqUnbound bool) (*model.InventoryOrder, error) {
+	order, err := s.inventoryModule.GetOrderByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if hqUnbound {
+		return order, nil
+	}
+	if storeID == 0 {
+		return nil, errors.New("current user has no store")
+	}
+	if order.StoreID != storeID {
+		return nil, errors.New("inventory order not found in current store")
+	}
+	return order, nil
 }
 
 // ListOrders 出入库单列表
@@ -297,4 +332,21 @@ func (s *InventoryService) UpdateInventory(id uint, quantity float64) error {
 // GetInventoryByID 根据ID获取库存
 func (s *InventoryService) GetInventoryByID(id uint) (*model.Inventory, error) {
 	return s.inventoryModule.GetByID(id)
+}
+
+func (s *InventoryService) GetInventoryByIDScoped(id, storeID uint, hqUnbound bool) (*model.Inventory, error) {
+	inv, err := s.inventoryModule.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if hqUnbound {
+		return inv, nil
+	}
+	if storeID == 0 {
+		return nil, errors.New("current user has no store")
+	}
+	if inv.StoreID != storeID {
+		return nil, errors.New("inventory not found in current store")
+	}
+	return inv, nil
 }

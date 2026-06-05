@@ -176,6 +176,28 @@ func (s *PurchaseOrderService) GetOrder(id uint) (*model.PurchaseOrder, error) {
 	return s.orderModule.GetByIDWithDetails(id)
 }
 
+func (s *PurchaseOrderService) GetOrderScoped(id, storeID uint, hqUnbound bool) (*model.PurchaseOrder, error) {
+	order, err := s.orderModule.GetByIDWithDetails(id)
+	if err != nil {
+		return nil, err
+	}
+	if hqUnbound {
+		return order, nil
+	}
+	if storeID == 0 {
+		return nil, errors.New("current user has no store")
+	}
+	if order.StoreID != storeID {
+		return nil, errors.New("purchase order not found in current store")
+	}
+	return order, nil
+}
+
+func (s *PurchaseOrderService) ensureOrderAccess(id, storeID uint, hqUnbound bool) error {
+	_, err := s.GetOrderScoped(id, storeID, hqUnbound)
+	return err
+}
+
 // ListOrders 获取采购单列表（ctx 须含 AuthContext，见 middleware.AttachAuthContextToHTTPRequest）
 func (s *PurchaseOrderService) ListOrders(ctx context.Context, req *model.ListPurchaseOrderReq) ([]*model.PurchaseOrder, int64, error) {
 	applyListRBACFromContextToPurchaseOrder(ctx, req)
@@ -204,6 +226,13 @@ func (s *PurchaseOrderService) UpdateOrder(id uint, req *model.UpdatePurchaseOrd
 	}
 
 	return s.orderModule.UpdateByID(id, req)
+}
+
+func (s *PurchaseOrderService) UpdateOrderScoped(id, storeID uint, hqUnbound bool, req *model.UpdatePurchaseOrderReq) error {
+	if err := s.ensureOrderAccess(id, storeID, hqUnbound); err != nil {
+		return err
+	}
+	return s.UpdateOrder(id, req)
 }
 
 // getActionForStatus 根据目标状态获取对应的动作
@@ -235,10 +264,22 @@ func (s *PurchaseOrderService) GetAvailableActions(id uint) ([]string, error) {
 	return result, nil
 }
 
+func (s *PurchaseOrderService) GetAvailableActionsScoped(id, storeID uint, hqUnbound bool) ([]string, error) {
+	if err := s.ensureOrderAccess(id, storeID, hqUnbound); err != nil {
+		return nil, err
+	}
+	return s.GetAvailableActions(id)
+}
+
 // ConfirmOrder 确认采购单（便捷方法）
 func (s *PurchaseOrderService) ConfirmOrder(id uint) error {
 	status := model.PurchaseStatusConfirmed
 	return s.UpdateOrder(id, &model.UpdatePurchaseOrderReq{Status: &status})
+}
+
+func (s *PurchaseOrderService) ConfirmOrderScoped(id, storeID uint, hqUnbound bool) error {
+	status := model.PurchaseStatusConfirmed
+	return s.UpdateOrderScoped(id, storeID, hqUnbound, &model.UpdatePurchaseOrderReq{Status: &status})
 }
 
 // CompleteOrder 完成采购单（便捷方法）
@@ -247,10 +288,20 @@ func (s *PurchaseOrderService) CompleteOrder(id uint) error {
 	return s.UpdateOrder(id, &model.UpdatePurchaseOrderReq{Status: &status})
 }
 
+func (s *PurchaseOrderService) CompleteOrderScoped(id, storeID uint, hqUnbound bool) error {
+	status := model.PurchaseStatusCompleted
+	return s.UpdateOrderScoped(id, storeID, hqUnbound, &model.UpdatePurchaseOrderReq{Status: &status})
+}
+
 // CancelOrder 取消采购单（便捷方法）
 func (s *PurchaseOrderService) CancelOrder(id uint, reason string) error {
 	status := model.PurchaseStatusCancelled
 	return s.UpdateOrder(id, &model.UpdatePurchaseOrderReq{Status: &status, Remark: reason})
+}
+
+func (s *PurchaseOrderService) CancelOrderScoped(id, storeID uint, hqUnbound bool, reason string) error {
+	status := model.PurchaseStatusCancelled
+	return s.UpdateOrderScoped(id, storeID, hqUnbound, &model.UpdatePurchaseOrderReq{Status: &status, Remark: reason})
 }
 
 // DeleteOrder 删除采购单
@@ -263,6 +314,13 @@ func (s *PurchaseOrderService) DeleteOrder(id uint) error {
 		return errors.New("order cannot be deleted: only pending or cancelled orders can be deleted, current status is " + getStatusName(order.Status))
 	}
 	return s.orderModule.Delete(id)
+}
+
+func (s *PurchaseOrderService) DeleteOrderScoped(id, storeID uint, hqUnbound bool) error {
+	if err := s.ensureOrderAccess(id, storeID, hqUnbound); err != nil {
+		return err
+	}
+	return s.DeleteOrder(id)
 }
 
 // getStatusName 获取状态名称
@@ -317,6 +375,13 @@ func (s *PurchaseOrderService) GetOrdersBySupplier(orderID uint) ([]model.Suppli
 	}
 
 	return result, nil
+}
+
+func (s *PurchaseOrderService) GetOrdersBySupplierScoped(orderID, storeID uint, hqUnbound bool) ([]model.SupplierGroupedItems, error) {
+	if err := s.ensureOrderAccess(orderID, storeID, hqUnbound); err != nil {
+		return nil, err
+	}
+	return s.GetOrdersBySupplier(orderID)
 }
 
 // sendDingTalkNotification 采购单创建后异步推送钉钉通知

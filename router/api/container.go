@@ -104,7 +104,7 @@ func BuildControllers() *Controllers {
 	storeService := service.NewStoreService(storeModule, thirdPartyAccountModule)
 	dingTalkService := service.NewDingTalkService(dingTalkBotModule, dingTalkUserModule)
 	menuService := service.NewMenuService(menuModule, roleMenuModule, storeRoleMenuModule)
-	supplierService := service.NewSupplierService(supplierModule)
+	supplierService := service.NewSupplierService(supplierModule, storeSupplierModule)
 	supplierProductService := service.NewSupplierProductService(supplierProductModule, productUnitSpecModule, dictModule, supplierCategoryModule, supplierModule)
 	storeSupplierService := service.NewStoreSupplierService(storeSupplierModule, productUnitSpecModule)
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule, storeModule, dingTalkBotModule, dingTalkService)

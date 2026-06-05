@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 
+	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -135,8 +136,9 @@ func (c *PriceListController) GetPriceList(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.PriceList}
 // @Router /price-lists [get]
 func (c *PriceListController) ListPriceLists(ctx *gin.Context) {
-	storeID, ok := http.ParseUintQuery(ctx, "store_id")
-	if !ok {
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	if storeID == 0 {
+		http.Error(ctx, 400, "store_id is required")
 		return
 	}
 

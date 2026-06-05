@@ -46,6 +46,11 @@ func (s *StoreSupplierService) ListSuppliersByStoreID(storeID uint) ([]*model.St
 	return s.storeSupplierModule.ListSuppliersByStoreID(storeID)
 }
 
+// IsSupplierBound 判断供应商是否已绑定到门店。
+func (s *StoreSupplierService) IsSupplierBound(storeID, supplierID uint) (bool, error) {
+	return s.storeSupplierModule.IsSupplierBound(storeID, supplierID)
+}
+
 // ListProductsByStoreID 获取门店可采购的商品列表（绑定供应商的所有商品）
 func (s *StoreSupplierService) ListProductsByStoreID(storeID, supplierID, categoryID uint, keyword string) ([]*model.SupplierProduct, error) {
 	products, err := s.storeSupplierModule.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)

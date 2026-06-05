@@ -19,6 +19,19 @@ func NewPrinterController(printerService *service.PrinterService) *PrinterContro
 	return &PrinterController{printerService: printerService}
 }
 
+func resolvePrinterStoreID(ctx *gin.Context) (uint, bool) {
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	if middleware.HQUnboundAdmin(ctx) && storeID == 0 {
+		http.Error(ctx, 400, "store_id is required")
+		return 0, false
+	}
+	if storeID == 0 {
+		http.Error(ctx, 403, "当前账号未绑定门店")
+		return 0, false
+	}
+	return storeID, true
+}
+
 // BindPrinter godoc
 // @Summary 绑定打印机到门店
 // @Description 将打印机绑定到指定门店，同时推送到芯烨云
@@ -158,9 +171,8 @@ func (c *PrinterController) GetPrinter(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=[]model.Printer}
 // @Router /printers [get]
 func (c *PrinterController) ListPrinters(ctx *gin.Context) {
-	storeID, ok := http.ParseUintQuery(ctx, "store_id")
+	storeID, ok := resolvePrinterStoreID(ctx)
 	if !ok {
-		http.Error(ctx, 400, "store_id is required")
 		return
 	}
 
@@ -183,7 +195,7 @@ func (c *PrinterController) ListPrinters(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /printers/all [get]
 func (c *PrinterController) ListAllPrinters(ctx *gin.Context) {
-	if !middleware.IsAdmin(ctx) {
+	if !middleware.HQUnboundAdmin(ctx) {
 		http.Error(ctx, 403, "admin only")
 		return
 	}
@@ -208,9 +220,8 @@ func (c *PrinterController) ListAllPrinters(ctx *gin.Context) {
 // @Success 200 {object} http.Response{data=model.Printer}
 // @Router /printers/default [get]
 func (c *PrinterController) GetStoreDefaultPrinter(ctx *gin.Context) {
-	storeID, ok := http.ParseUintQuery(ctx, "store_id")
+	storeID, ok := resolvePrinterStoreID(ctx)
 	if !ok {
-		http.Error(ctx, 400, "store_id is required")
 		return
 	}
 
@@ -264,9 +275,8 @@ func (c *PrinterController) QueryPrinterStatus(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /printers/status/batch [get]
 func (c *PrinterController) BatchQueryStatus(ctx *gin.Context) {
-	storeID, ok := http.ParseUintQuery(ctx, "store_id")
+	storeID, ok := resolvePrinterStoreID(ctx)
 	if !ok {
-		http.Error(ctx, 400, "store_id is required")
 		return
 	}
 

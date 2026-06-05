@@ -131,7 +131,7 @@ func (c *InventoryController) GetOrderByNo(ctx *gin.Context) {
 		return
 	}
 
-	order, err := c.inventoryService.GetOrderByNo(orderNo)
+	order, err := c.inventoryService.GetOrderByNoScoped(orderNo, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, "未找到该单据")
 		return
@@ -154,7 +154,7 @@ func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
 		return
 	}
 
-	order, err := c.inventoryService.GetOrderByID(id)
+	order, err := c.inventoryService.GetOrderByIDScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
 		http.Error(ctx, 500, "未找到该单据")
 		return
@@ -191,7 +191,7 @@ func (c *InventoryController) UpdateInventory(ctx *gin.Context) {
 	}
 
 	// 检查库存是否存在
-	if _, err := c.inventoryService.GetInventoryByID(id); err != nil {
+	if _, err := c.inventoryService.GetInventoryByIDScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
 		http.Error(ctx, 404, "库存记录不存在")
 		return
 	}

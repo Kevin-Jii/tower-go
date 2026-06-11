@@ -30,18 +30,23 @@ const (
 	RoleCodeStaff      = "staff"       // 普通员工
 )
 
+// IsSuperAdminRole 超级管理员：不绑定门店，始终拥有全库数据与跨店操作能力。
+func IsSuperAdminRole(roleCode string) bool {
+	return roleCode == RoleCodeSuperAdmin
+}
+
 // HQUnboundAdminRole 判定「可跨店操作的总部身份」。
 //
-// 为何必须结合 store_id==0，而不能只看角色码：
-// - Token 里的 store_id 表示当前会话绑定的数据范围；同一角色码 admin 既可能是「纯总部账号」(store_id=0)，
-//   也可能是「已归属某门店的总部人员」(store_id>0)。后者在业务上应与门店管理员一致，只能看/改本店，不能扫全库。
-// - super_admin 若 Token 带 store_id>0，同样降级为仅本店，避免「挂着超管码却绑了店」仍误走全量数据接口。
-// 因此：跨店能力 =（admin 或 super_admin）且（会话未绑店 store_id==0）。
+// - super_admin：始终视为未绑店总部，不校验 store_id。
+// - admin：须 store_id==0 才可跨店；store_id>0 时与门店管理员一致，仅本店。
 func HQUnboundAdminRole(roleCode string, storeID uint) bool {
+	if IsSuperAdminRole(roleCode) {
+		return true
+	}
 	if storeID > 0 {
 		return false
 	}
-	return roleCode == RoleCodeSuperAdmin || roleCode == RoleCodeAdmin
+	return roleCode == RoleCodeAdmin
 }
 
 // IsBuiltinRoleNonDeletable 系统内置角色，禁止删除

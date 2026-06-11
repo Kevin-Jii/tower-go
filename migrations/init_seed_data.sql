@@ -335,7 +335,7 @@ ON DUPLICATE KEY UPDATE
 
 -- 用户数据 (密码: Admin@123456)（使用主键 id 幂等；同时 phone/employee_no 也有唯一索引）
 INSERT INTO users (id, employee_no, username, phone, password, nickname, email, store_id, role_id, status, gender, created_at, updated_at) VALUES
-(999, '999999', 'admin', '13082848180', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '超级管理员', 'admin@tower.com', 999, 999, 1, 1, NOW(), NOW()),
+(999, '999999', 'admin', '13082848180', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '超级管理员', 'admin@tower.com', 0, 999, 1, 1, NOW(), NOW()),
 (1, '000001', 'store1_admin', '13800000001', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '门店1管理员', 'store1@tower.com', 1, 2, 1, 1, NOW(), NOW()),
 (2, '000002', 'store2_admin', '13800000002', '$2a$10$6xWaEeNOICc0wmCcTS8Ac.5Iam7.zR4W.vWoUVbjHIsobDTB6L02W', '门店2管理员', 'store2@tower.com', 2, 2, 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE

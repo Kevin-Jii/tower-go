@@ -2,13 +2,13 @@
   <section
     id="dash-analytics"
     ref="screenRoot"
-    class="dash-screen rounded-2xl border border-cyan-500/25 shadow-xl"
+    class="dash-screen box-border w-full min-w-0 max-w-full overflow-x-hidden rounded-2xl border border-cyan-500/25 shadow-xl"
   >
     <div
       class="dash-screen__bg absolute inset-0 pointer-events-none opacity-90"
       aria-hidden="true"
     />
-    <div class="relative z-10 p-4 md:p-6 space-y-5">
+    <div class="relative z-10 box-border w-full min-w-0 p-4 md:p-6 space-y-5">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <h3 class="m-0 text-lg md:text-xl font-semibold tracking-wide text-cyan-100 flex items-center gap-2">
@@ -31,25 +31,25 @@
 
       <p v-if="dashPending" class="m-0 text-sm text-cyan-100/90">正在加载周期概览…</p>
       <p v-else-if="dashError" class="m-0 text-sm text-rose-300">{{ dashError }} · 可点「刷新周期」重试</p>
-      <div v-else-if="dash" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div v-else-if="dash" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 min-w-0">
         <div v-for="k in kpiCards" :key="k.label" class="dash-kpi rounded-lg px-3 py-3.5 border border-cyan-400/35 bg-slate-950/75">
           <p class="m-0 text-sm font-medium text-cyan-100 tracking-wide">{{ k.label }}</p>
           <p class="m-0 mt-2 text-xl md:text-2xl font-semibold text-white tabular-nums drop-shadow-sm">{{ k.value }}</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-0">
-        <div class="xl:col-span-8 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[280px]">
-          <div ref="lineRef" class="w-full h-[280px] md:h-[320px]" />
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-0 min-w-0">
+        <div class="xl:col-span-8 min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[280px]">
+          <div ref="lineRef" class="w-full min-w-0 h-[280px] md:h-[320px]" />
         </div>
-        <div class="xl:col-span-4 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[280px]">
-          <div ref="pieRef" class="w-full h-[280px] md:h-[320px]" />
+        <div class="xl:col-span-4 min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[280px]">
+          <div ref="pieRef" class="w-full min-w-0 h-[280px] md:h-[320px]" />
         </div>
-        <div class="xl:col-span-5 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[260px]">
-          <div ref="radarRef" class="w-full h-[260px]" />
+        <div class="xl:col-span-5 min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[260px]">
+          <div ref="radarRef" class="w-full min-w-0 h-[260px]" />
         </div>
-        <div class="xl:col-span-7 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
-          <div class="flex flex-wrap gap-2 items-center mb-3">
+        <div class="xl:col-span-7 min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
+          <div class="flex flex-wrap gap-2 items-center mb-3 min-w-0">
             <span class="text-base font-semibold text-cyan-50">经营总览区间</span>
             <BaseInput v-model="ovStart" type="date" class="dash-date w-40" />
             <span class="text-cyan-200 text-base font-medium px-0.5">—</span>
@@ -205,6 +205,7 @@ const radarRef = ref<HTMLElement | null>(null)
 let lineChart: echarts.ECharts | null = null
 let pieChart: echarts.ECharts | null = null
 let radarChart: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const axisText = '#e2e8f0'
 const splitLine = 'rgba(148, 163, 184, 0.22)'
@@ -369,6 +370,15 @@ function onWinResize(): void {
   radarChart?.resize()
 }
 
+function bindResizeObserver(): void {
+  if (!screenRoot.value || typeof ResizeObserver === 'undefined') return
+  resizeObserver?.disconnect()
+  resizeObserver = new ResizeObserver(() => {
+    onWinResize()
+  })
+  resizeObserver.observe(screenRoot.value)
+}
+
 watch(
   () => homeCharts.value,
   (hc) => {
@@ -379,6 +389,7 @@ watch(
 
 onMounted(() => {
   window.addEventListener('resize', onWinResize)
+  bindResizeObserver()
   void (async () => {
     await nextTick()
     await nextTick()
@@ -388,6 +399,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onWinResize)
+  resizeObserver?.disconnect()
+  resizeObserver = null
   disposeCharts()
 })
 </script>
@@ -395,6 +408,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .dash-screen {
   position: relative;
+  box-sizing: border-box;
   background: linear-gradient(145deg, #070b14 0%, #0b1220 45%, #0a1628 100%);
 }
 .dash-screen__bg {

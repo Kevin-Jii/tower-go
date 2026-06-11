@@ -129,8 +129,8 @@ func IsAdmin(c *gin.Context) bool {
 	return roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin
 }
 
-// HQUnboundAdmin 未绑定门店的总部 admin / super_admin：可跨店查看/操作数据。
-// Token 中 store_id>0 时一律视为已绑店，与角色码无关（绑店 super_admin 也仅本店）。
+// HQUnboundAdmin 可跨店查看/操作数据的总部身份。
+// super_admin 始终跨店；admin 须 token 中 store_id==0。
 func HQUnboundAdmin(c *gin.Context) bool {
 	return model.HQUnboundAdminRole(GetRoleCode(c), GetStoreID(c))
 }
@@ -169,8 +169,8 @@ func GetRoleModel(c *gin.Context) *model.Role {
 // GetDataScope 返回本请求用于「行级数据范围」的 DataScope 枚举（D4：单一真源，勿在 Controller 用角色码推断全库）。
 //
 // 规则摘要：
-//  1) HQUnboundAdmin(c) 为真（admin 或 super_admin 且 token 中 store_id==0）→ DataScopeAll；列表可再按 query store_id 筛店。
-//  2) token 中 store_id>0 且角色在库中为「全部」→ 强制降为 DataScopeStore。
+//  1) HQUnboundAdmin(c) 为真（super_admin 始终；admin 且 token store_id==0）→ DataScopeAll；列表可再按 query store_id 筛店。
+//  2) token 中 store_id>0 且角色在库中为「全部」→ 强制降为 DataScopeStore（admin 绑店场景）。
 //  3) 其余使用 roles.data_scope；无角色模型时默认 DataScopeStore。
 //
 // 同步写入 authctx.Context.EffectiveDataScope；HTTP 列表请求的 DataScope 字段由 service 从 authctx 注入（见 list_authctx.go）。

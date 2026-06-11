@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/Kevin-Jii/tower-go/utils/session"
 
@@ -27,6 +28,7 @@ func Run() {
 	defer closeRedis()
 
 	AutoMigrateAndSeeds()
+	applyUserStorePatches(database.GetDB())
 	RunSeedSQL()
 	InitDefaultDicts() // 与 RunSeedSQL 共用 SKIP_SEED_DATA=1
 

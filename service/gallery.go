@@ -33,12 +33,25 @@ func (s *GalleryService) Create(req *model.CreateGalleryReq, uploadBy uint) (*mo
 	if err := s.galleryModule.Create(gallery); err != nil {
 		return nil, err
 	}
+	s.refreshGalleryURL(gallery)
 	return gallery, nil
+}
+
+func (s *GalleryService) refreshGalleryURL(g *model.Gallery) {
+	if s.rustfsService == nil || g == nil || g.Path == "" {
+		return
+	}
+	g.URL = s.rustfsService.GetPublicURL(g.Path)
 }
 
 // Get 获取图库详情
 func (s *GalleryService) Get(id uint) (*model.Gallery, error) {
-	return s.galleryModule.GetByID(id)
+	gallery, err := s.galleryModule.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	s.refreshGalleryURL(gallery)
+	return gallery, nil
 }
 
 // List 获取图库列表
@@ -49,7 +62,14 @@ func (s *GalleryService) List(req *model.GalleryListReq) ([]*model.Gallery, int6
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}
-	return s.galleryModule.List(req)
+	list, total, err := s.galleryModule.List(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, g := range list {
+		s.refreshGalleryURL(g)
+	}
+	return list, total, nil
 }
 
 // Update 更新图库

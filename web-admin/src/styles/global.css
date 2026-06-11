@@ -96,8 +96,9 @@ body {
   box-sizing: border-box;
   flex: 1;
   min-height: 0;
-  /* 与侧栏+主列 flex 配合，避免宽表把白卡片撑出视口 */
+  /* 与侧栏+主列 flex 配合，避免宽表/大屏把白卡片撑出视口 */
   min-width: 0;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   border-radius: 12px;

@@ -707,6 +707,32 @@ PREPARE stmt_add_stores_third_party_account_idx FROM @sql_add_stores_third_party
 EXECUTE stmt_add_stores_third_party_account_idx;
 DEALLOCATE PREPARE stmt_add_stores_third_party_account_idx;
 
+-- 超级管理员 store_id=0 不引用 stores，移除 GORM 自动创建的外键（若存在）
+SET @db_name = DATABASE();
+SET @sql_drop_users_store_fk = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.TABLE_CONSTRAINTS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'users'
+        AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+        AND CONSTRAINT_NAME = 'fk_users_store'
+    ),
+    'ALTER TABLE `users` DROP FOREIGN KEY `fk_users_store`',
+    'SELECT ''skip drop fk_users_store'''
+  )
+);
+PREPARE stmt_drop_users_store_fk FROM @sql_drop_users_store_fk;
+EXECUTE stmt_drop_users_store_fk;
+DEALLOCATE PREPARE stmt_drop_users_store_fk;
+
+-- 历史超级管理员账号归一化为未绑店
+UPDATE users u
+INNER JOIN roles r ON u.role_id = r.id
+SET u.store_id = 0
+WHERE r.code = 'super_admin' AND u.store_id <> 0;
+
 -- 列补齐后的历史行回填（非 INSERT，随结构脚本执行一次即可）
 UPDATE supplier_products
 SET bottle_price = price

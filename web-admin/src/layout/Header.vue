@@ -1,7 +1,9 @@
 <template>
   <div class="layout-header">
     <a-button type="text" class="md:!hidden" @click="$emit('toggle-mobile-menu')">
-      <template #icon><IconMenu /></template>
+      <template #icon>
+        <IconMenu />
+      </template>
     </a-button>
 
     <a-button type="text" class="!hidden md:!inline-flex" @click="layout.toggleSidebar()">
@@ -13,7 +15,8 @@
 
     <a-breadcrumb class="min-w-0 flex-1 !hidden sm:!flex">
       <a-breadcrumb-item v-for="(b, i) in crumbs" :key="i">
-        <RouterLink v-if="b.to && i < crumbs.length - 1" :to="b.to" class="text-[var(--color-text-2)] hover:text-[rgb(var(--primary-6))]">
+        <RouterLink v-if="b.to && i < crumbs.length - 1" :to="b.to"
+          class="text-[var(--color-text-2)] hover:text-[rgb(var(--primary-6))]">
           {{ b.label }}
         </RouterLink>
         <span v-else class="text-[var(--color-text-1)] font-medium">{{ b.label }}</span>
@@ -21,7 +24,8 @@
     </a-breadcrumb>
 
     <div class="flex items-center gap-2 shrink-0 ml-auto">
-      <TenantSwitcher />
+      <!-- <TenantSwitcher /> -->
+      <div>你好，<b>{{ userStore.userInfo?.nickname }}</b></div>
       <a-button type="outline" size="small" @click="onLogout">退出</a-button>
     </div>
   </div>
@@ -31,7 +35,7 @@
 import { IconMenu, IconMenuFold, IconMenuUnfold } from '@arco-design/web-vue/es/icon'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import TenantSwitcher from './TenantSwitcher.vue'
+// import TenantSwitcher from './TenantSwitcher.vue'
 import { useLayoutStore } from '@/store/layout'
 import { useUserStore } from '@/store/user'
 

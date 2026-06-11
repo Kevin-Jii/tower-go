@@ -21,20 +21,21 @@ type Config struct {
 
 // XpyunConfig 芯烨云打印机配置
 type XpyunConfig struct {
-	User     string
-	UserKey  string
-	BaseURL  string
+	User    string
+	UserKey string
+	BaseURL string
 }
 
 // RustFSConfig RustFS对象存储配置（S3兼容）
 type RustFSConfig struct {
-	Enabled      bool
-	Endpoint     string
-	AccessKey    string
-	SecretKey    string
-	Bucket       string
-	NotifyBucket string // 通知图片专用bucket（不加密）
-	UseSSL       bool
+	Enabled       bool
+	Endpoint      string // SDK 连接地址（可为内网 IP:9000）
+	AccessKey     string
+	SecretKey     string
+	Bucket        string
+	NotifyBucket  string // 通知图片专用bucket（不加密）
+	UseSSL        bool   // SDK 是否 HTTPS 连接 Endpoint
+	PublicBaseURL string // 对外访问根 URL，如 https://tower.usove.online；空则回退为 http(s)://Endpoint
 }
 
 // AppConfig 应用配置
@@ -288,13 +289,14 @@ func getAppBool(key string, defaultValue bool) bool {
 // loadRustFSConfig 加载RustFS配置
 func loadRustFSConfig() RustFSConfig {
 	return RustFSConfig{
-		Enabled:      getAppBool("RUSTFS_ENABLED", false),
-		Endpoint:     getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
-		AccessKey:    getAppString("RUSTFS_ACCESS_KEY", ""),
-		SecretKey:    getAppString("RUSTFS_SECRET_KEY", ""),
-		Bucket:       getAppString("RUSTFS_BUCKET", "tower"),
-		NotifyBucket: getAppString("RUSTFS_NOTIFY_BUCKET", "notify"),
-		UseSSL:       getAppBool("RUSTFS_USE_SSL", false),
+		Enabled:       getAppBool("RUSTFS_ENABLED", false),
+		Endpoint:      getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
+		AccessKey:     getAppString("RUSTFS_ACCESS_KEY", ""),
+		SecretKey:     getAppString("RUSTFS_SECRET_KEY", ""),
+		Bucket:        getAppString("RUSTFS_BUCKET", "tower"),
+		NotifyBucket:  getAppString("RUSTFS_NOTIFY_BUCKET", "notify"),
+		UseSSL:        getAppBool("RUSTFS_USE_SSL", false),
+		PublicBaseURL: strings.TrimRight(getAppString("RUSTFS_PUBLIC_BASE_URL", ""), "/"),
 	}
 }
 

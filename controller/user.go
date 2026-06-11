@@ -371,13 +371,18 @@ func (c *UserController) Login(ctx *gin.Context) {
 		roleID = user.RoleID
 	}
 
+	tokenStoreID := user.StoreID
+	if model.IsSuperAdminRole(roleCode) {
+		tokenStoreID = 0
+	}
+
 	// 生成token（包含StoreID、RoleCode 和 RoleID）
-	token, expiresIn, err := auth.GenerateToken(user.ID, user.Username, user.StoreID, roleCode, roleID)
+	token, expiresIn, err := auth.GenerateToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
 	if err != nil {
 		http.Error(ctx, 500, "Failed to generate token")
 		return
 	}
-	_, _ = service.BuildUserPermissionCache(user.ID, user.StoreID, roleID, roleCode)
+	_, _ = service.BuildUserPermissionCache(user.ID, tokenStoreID, roleID, roleCode)
 
 	// 如果会话管理器策略为 single，则登录时踢出旧会话（可选增强）
 	strategy := ""

@@ -2,6 +2,7 @@ package module
 
 import (
 	"log"
+	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	searchPkg "github.com/Kevin-Jii/tower-go/utils/search"
@@ -199,6 +200,11 @@ func (m *UserModule) DeleteByUserIDAndStoreID(userID uint, storeID uint) error {
 // UpdatePasswordByID 仅更新密码字段
 func (m *UserModule) UpdatePasswordByID(id uint, hashed string) error {
 	return m.db.Model(&model.User{}).Where("id = ?", id).Update("password", hashed).Error
+}
+
+// UpdateLastLoginAt 仅更新最后登录时间，避免 Save 全量写回触发关联保存与外键校验。
+func (m *UserModule) UpdateLastLoginAt(id uint, t time.Time) error {
+	return m.db.Model(&model.User{}).Where("id = ?", id).Update("last_login_at", t).Error
 }
 
 // GetByDingTalkID 根据钉钉用户ID获取用户（通过手机号关联）

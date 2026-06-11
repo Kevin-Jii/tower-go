@@ -84,6 +84,7 @@ func BuildControllers() *Controllers {
 			rustfsConfig.SecretKey,
 			rustfsConfig.Bucket,
 			rustfsConfig.NotifyBucket,
+			rustfsConfig.PublicBaseURL,
 			rustfsConfig.UseSSL,
 		)
 		if err != nil {

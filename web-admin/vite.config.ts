@@ -11,14 +11,16 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
           if (id.includes("@arco-design")) return "vendor-arco";
-          if (id.includes("echarts") || id.includes("zrender")) return "vendor-echarts";
+          if (id.includes("echarts") || id.includes("zrender"))
+            return "vendor-echarts";
           if (id.includes("handsontable")) return "vendor-handsontable";
           if (id.includes("@tanstack")) return "vendor-vue-query";
           if (id.includes("@vueuse")) return "vendor-vueuse";
           if (id.includes("axios")) return "vendor-axios";
           if (id.includes("vue-router")) return "vendor-vue-runtime";
           if (id.includes("pinia")) return "vendor-vue-runtime";
-          if (id.includes("/vue/") || id.includes("\\vue\\")) return "vendor-vue-runtime";
+          if (id.includes("/vue/") || id.includes("\\vue\\"))
+            return "vendor-vue-runtime";
         },
       },
     },
@@ -41,7 +43,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://47.120.27.64:10024",
+        target: "https://tower.usove.online",
         changeOrigin: true,
       },
     },

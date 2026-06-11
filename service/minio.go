@@ -17,11 +17,12 @@ import (
 
 // RustFSService RustFS文件服务（S3兼容）
 type RustFSService struct {
-	client       *minio.Client
-	bucketName   string
-	notifyBucket string // 通知图片专用bucket
-	endpoint     string
-	useSSL       bool
+	client        *minio.Client
+	bucketName    string
+	notifyBucket  string // 通知图片专用bucket
+	endpoint      string
+	useSSL        bool
+	publicBaseURL string // 对外 URL 根（不含 bucket），如 https://tower.usove.online
 }
 
 // RustFSUploadResult 上传结果
@@ -35,11 +36,11 @@ type RustFSUploadResult struct {
 
 // NewRustFSService 创建RustFS服务实例
 func NewRustFSService(endpoint, accessKey, secretKey, bucketName string, useSSL bool) (*RustFSService, error) {
-	return NewRustFSServiceWithNotify(endpoint, accessKey, secretKey, bucketName, "", useSSL)
+	return NewRustFSServiceWithNotify(endpoint, accessKey, secretKey, bucketName, "", "", useSSL)
 }
 
-// NewRustFSServiceWithNotify 创建RustFS服务实例（支持通知bucket）
-func NewRustFSServiceWithNotify(endpoint, accessKey, secretKey, bucketName, notifyBucket string, useSSL bool) (*RustFSService, error) {
+// NewRustFSServiceWithNotify 创建RustFS服务实例（支持通知bucket与对外访问域名）
+func NewRustFSServiceWithNotify(endpoint, accessKey, secretKey, bucketName, notifyBucket, publicBaseURL string, useSSL bool) (*RustFSService, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
@@ -50,11 +51,12 @@ func NewRustFSServiceWithNotify(endpoint, accessKey, secretKey, bucketName, noti
 	}
 
 	service := &RustFSService{
-		client:       client,
-		bucketName:   bucketName,
-		notifyBucket: notifyBucket,
-		endpoint:     endpoint,
-		useSSL:       useSSL,
+		client:        client,
+		bucketName:    bucketName,
+		notifyBucket:  notifyBucket,
+		endpoint:      endpoint,
+		useSSL:        useSSL,
+		publicBaseURL: strings.TrimRight(publicBaseURL, "/"),
 	}
 
 	// 确保主bucket存在
@@ -176,6 +178,10 @@ func (s *RustFSService) GetPublicURL(objectName string) string {
 
 // GetPublicURLForBucket 获取指定bucket的公开访问URL
 func (s *RustFSService) GetPublicURLForBucket(bucket, objectName string) string {
+	objectName = strings.TrimPrefix(strings.ReplaceAll(objectName, "\\", "/"), "/")
+	if s.publicBaseURL != "" {
+		return fmt.Sprintf("%s/%s/%s", s.publicBaseURL, bucket, objectName)
+	}
 	protocol := "http"
 	if s.useSSL {
 		protocol = "https"

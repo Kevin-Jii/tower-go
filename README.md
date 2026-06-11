@@ -280,6 +280,7 @@ DINGTALK_ROBOT_WEBHOOK=https://oapi.dingtalk.com/robot/send
 # RustFS/MinIO 配置（可选）
 RUSTFS_ENABLED=true
 RUSTFS_ENDPOINT=your.rustfs.server:9000
+RUSTFS_PUBLIC_BASE_URL=https://tower.usove.online
 RUSTFS_ACCESS_KEY=your_access_key
 RUSTFS_SECRET_KEY=your_secret_key
 RUSTFS_BUCKET=tower

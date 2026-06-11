@@ -12,8 +12,8 @@ type User struct {
 	Email      string `json:"email" gorm:"type:varchar(255)"`
 
 	// --- 门店关联 ---
-	StoreID uint   `json:"store_id" gorm:"uniqueIndex:idx_store_username"` // 允许为空(0)，避免迁移外键失败
-	Store   *Store `json:"store,omitempty" gorm:"foreignKey:StoreID"`      // 门店关联
+	StoreID uint   `json:"store_id" gorm:"uniqueIndex:idx_store_username"`                          // 0=未绑店（超管/总部）；>0 绑定门店
+	Store   *Store `json:"store,omitempty" gorm:"foreignKey:StoreID;references:ID;constraint:-"` // 不建外键，允许 store_id=0
 
 	// --- 权限管理 (RBAC) ---
 	RoleID uint  `json:"role_id" gorm:"not null;default:3"`       // 角色ID：1=总部管理员，2=门店管理员，3=普通员工

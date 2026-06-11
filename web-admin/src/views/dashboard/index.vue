@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
     <StoreAnalyticsScreen />
   </div>
 </template>

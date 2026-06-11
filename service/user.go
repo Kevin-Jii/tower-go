@@ -80,6 +80,13 @@ func (s *UserService) CreateUser(storeID uint, roleCode string, req *model.Creat
 		user.RoleID = req.RoleID
 	}
 
+	if user.RoleID > 0 {
+		var role model.Role
+		if err := s.userModule.GetDB().Select("code").First(&role, user.RoleID).Error; err == nil && model.IsSuperAdminRole(role.Code) {
+			user.StoreID = 0
+		}
+	}
+
 	return s.userModule.Create(user)
 }
 
@@ -170,6 +177,13 @@ func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
 		req.StoreID = &sid
 		req.StoreCode = ""
 	}
+	if req.RoleID != nil && *req.RoleID > 0 {
+		var role model.Role
+		if err := s.userModule.GetDB().Select("code").First(&role, *req.RoleID).Error; err == nil && model.IsSuperAdminRole(role.Code) {
+			zero := uint(0)
+			req.StoreID = &zero
+		}
+	}
 	return s.userModule.UpdateByID(id, req)
 }
 
@@ -185,8 +199,12 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 		return nil, errors.New("该账号已经被禁用，请联系管理员")
 	}
 
-	// 检查门店状态：如果用户有门店且门店已停业，禁止登录
-	if user.Store != nil && user.Store.Status == 2 {
+	// 检查门店状态：超级管理员不校验；其他账号若绑店且门店停业则禁止登录
+	roleCode := ""
+	if user.Role != nil {
+		roleCode = user.Role.Code
+	}
+	if !model.IsSuperAdminRole(roleCode) && user.StoreID > 0 && user.Store != nil && user.Store.Status == 2 {
 		return nil, errors.New("该门店已停业，暂时无法登录")
 	}
 
@@ -195,11 +213,17 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 		return nil, errors.New("invalid password")
 	}
 
-	// 更新最后登录时间（仅后端维护）
+	// 更新最后登录时间（仅后端维护，避免 Save 全量写回）
 	loginTime := time.Now()
 	user.LastLoginAt = &loginTime
-	if err := s.userModule.Update(user); err != nil {
+	if err := s.userModule.UpdateLastLoginAt(user.ID, loginTime); err != nil {
 		return nil, err
+	}
+
+	// 超级管理员对外始终视为未绑店
+	if model.IsSuperAdminRole(roleCode) {
+		user.StoreID = 0
+		user.Store = nil
 	}
 
 	// **🔑 关键：返回的 user 必须包含 StoreID 字段**

@@ -1,6 +1,22 @@
 import { http, unwrap } from './http'
 import type { Paginated, User } from './types'
 
+export async function getProfile(): Promise<User> {
+  const res = await http.get<import('./types').ApiEnvelope<User>>('/users/profile')
+  return unwrap(res)
+}
+
+export async function updateProfile(body: {
+  nickname?: string
+  username?: string
+  email?: string
+  phone?: string
+  gender?: number
+  password?: string
+}): Promise<void> {
+  await http.put<import('./types').ApiEnvelope<unknown>>('/users/profile', body)
+}
+
 export async function listUsers(params: {
   page?: number
   page_size?: number

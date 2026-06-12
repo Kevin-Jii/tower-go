@@ -164,21 +164,15 @@ body {
   letter-spacing: 0.06em;
   color: #4338ca;
 }
-.app-boot-splash__spinner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 3px solid rgba(67, 56, 202, 0.15);
-  border-top-color: #4338ca;
-  animation: app-boot-splash-spin 0.72s linear infinite;
+.app-boot-splash__loader {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  color: #4338ca;
 }
 .app-boot-splash__hint {
   margin: 0;
   font-size: 14px;
   color: #64748b;
-}
-@keyframes app-boot-splash-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }

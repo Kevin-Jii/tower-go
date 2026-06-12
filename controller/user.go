@@ -359,7 +359,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 
 	user, err := c.userService.ValidateUser(req.Phone, req.Password)
 	if err != nil {
-		http.Error(ctx, 401, "Invalid phone number or password")
+		http.Error(ctx, 401, "账号或密码错误，请输入正确的账号和密码")
 		return
 	}
 
@@ -493,7 +493,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.userService.UpdateUser(userID.(uint), &req); err != nil {
+	if err := c.userService.UpdateProfile(userID.(uint), &req); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}

@@ -53,6 +53,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '工作台' },
       },
       {
+        path: 'profile',
+        name: 'UserProfile',
+        component: () => import('@/views/profile/index.vue'),
+        meta: { title: '个人资料' },
+      },
+      {
         path: 'system/third-party-account',
         name: 'ThirdPartyAccount',
         component: () => import('@/views/system/third-party-account/index.vue'),

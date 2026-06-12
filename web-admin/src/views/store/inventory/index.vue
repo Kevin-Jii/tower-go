@@ -71,9 +71,9 @@
 
         <div
           v-if="stockLoading || productLoading"
-          class="flex flex-1 items-center justify-center rounded-xl border border-[var(--color-border-2)] bg-white p-8 text-center text-slate-500 shadow-sm"
+          class="flex flex-1 items-center justify-center rounded-xl border border-[var(--color-border-2)] bg-white p-8 shadow-sm"
         >
-          库存数据加载中...
+          <MathCurveLoader size="md" text="库存数据加载中…" />
         </div>
         <div
           v-else-if="groupedStockCards.length === 0"
@@ -254,6 +254,7 @@ import { listDictDataByTypeCode } from '@/api/dict'
 import { listProductUnitSpecs } from '@/api/supplierProduct'
 import type { DictData, InventoryOrder, InventoryRow, ProductUnitSpec } from '@/api/types'
 import { toast } from '@/feedback/toast'
+import { MathCurveLoader } from '@/components/loading'
 import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()

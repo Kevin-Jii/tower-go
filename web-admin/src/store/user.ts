@@ -105,6 +105,15 @@ export const useUserStore = defineStore('user', () => {
     setStoredTenantId(id)
   }
 
+  function patchUserInfo(partial: User): void {
+    if (!userInfo.value) {
+      userInfo.value = partial
+    } else {
+      userInfo.value = { ...userInfo.value, ...partial }
+    }
+    localStorage.setItem('tower_user', JSON.stringify(userInfo.value))
+  }
+
   async function loadMenusAndPermissions(): Promise<void> {
     const [m, p] = await Promise.all([fetchUserMenus(), fetchUserPermissions()])
     setMenus(m)
@@ -142,6 +151,7 @@ export const useUserStore = defineStore('user', () => {
     setPermissions,
     setMenus,
     setTenantId,
+    patchUserInfo,
     loadMenusAndPermissions,
     logout,
     markDynamicRoutes,

@@ -9,7 +9,9 @@
           </div>
         </template>
 
-        <div v-if="loading" class="py-10 text-center text-slate-500">加载中...</div>
+        <div v-if="loading" class="py-10 flex justify-center">
+          <MathCurveLoader size="md" text="加载中…" />
+        </div>
         <div v-else-if="!supplier" class="py-10 text-center text-slate-400">未找到该供应商</div>
         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div class="rounded bg-[var(--color-fill-1)] p-3"><span class="text-slate-500">供应商编码：</span>{{ supplier.supplier_code || '-' }}</div>
@@ -34,6 +36,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BaseButton, BaseCard } from '@/components/base'
+import { MathCurveLoader } from '@/components/loading'
 import { getPublicSupplier } from '@/api/supplier'
 import type { Supplier } from '@/api/types'
 

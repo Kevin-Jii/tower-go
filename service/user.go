@@ -184,7 +184,33 @@ func (s *UserService) UpdateUser(id uint, req *model.UpdateUserReq) error {
 			req.StoreID = &zero
 		}
 	}
+	if req.Password != "" {
+		hashed, err := auth.HashPassword(req.Password)
+		if err != nil {
+			return err
+		}
+		req.Password = hashed
+	}
 	return s.userModule.UpdateByID(id, req)
+}
+
+// UpdateProfile 当前用户更新个人资料（仅允许昵称/邮箱/用户名/手机号/性别/密码）。
+func (s *UserService) UpdateProfile(userID uint, req *model.UpdateUserReq) error {
+	safe := &model.UpdateUserReq{
+		Username: req.Username,
+		Nickname: req.Nickname,
+		Email:    req.Email,
+		Phone:    req.Phone,
+		Gender:   req.Gender,
+	}
+	if req.Password != "" {
+		hashed, err := auth.HashPassword(req.Password)
+		if err != nil {
+			return err
+		}
+		safe.Password = hashed
+	}
+	return s.userModule.UpdateByID(userID, safe)
 }
 
 // ValidateUser 登录验证，跨门店查询，用于身份识别。

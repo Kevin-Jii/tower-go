@@ -1,13 +1,22 @@
 <template>
   <!-- 有 minWidth 时由 Arco scroll.x 在表体内部横向滚动，便于 fixed 列；无 minWidth 时外层 overflow-x-auto 兜底 -->
   <div
-    class="base-table-outer w-full min-w-0 max-w-full rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
+    class="base-table-outer relative w-full min-w-0 max-w-full rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
     :class="[minWidth ? 'overflow-x-hidden' : 'overflow-x-auto', height ? 'h-full min-h-0' : '']"
   >
+    <div
+      v-if="loading"
+      class="base-table-loading-mask"
+      role="status"
+      aria-live="polite"
+      aria-label="加载中"
+    >
+      <MathCurveLoader size="md" />
+    </div>
     <a-table
       :columns="arcoColumns"
       :data="tableData"
-      :loading="loading"
+      :loading="false"
       :row-key="rowKey"
       :pagination="false"
       :bordered="{ wrapper: true, cell: true }"
@@ -25,6 +34,7 @@
 <script setup lang="ts">
 import { computed, useSlots } from 'vue'
 import type { TableColumnData, TableData } from '@arco-design/web-vue/es/table/interface'
+import { MathCurveLoader } from '@/components/loading'
 import type { BaseTableColumn } from './types'
 
 const props = withDefaults(
@@ -203,5 +213,17 @@ function onRowDblclick(record: TableData): void {
 :deep(td.base-table-actions-cell .arco-select),
 :deep(td.base-table-actions-cell .arco-input-wrapper) {
   max-width: 100%;
+}
+
+.base-table-loading-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-bg-2) 82%, transparent);
+  backdrop-filter: blur(1px);
+  border-radius: inherit;
 }
 </style>

@@ -127,7 +127,7 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="productDlg" title="新增供应商商品（大/小规格）" max-width="min(720px, 96vw)">
+    <BaseDialog v-model="productDlg" title="新增供应商商品（多规格）" max-width="min(1100px, 96vw)">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
         <p class="m-0 text-sm text-slate-600">
           供应商：<span class="font-medium">{{ currentSupplierName || '-' }}</span>
@@ -145,47 +145,27 @@
         </BaseFormItem>
 
         <div class="rounded border border-[var(--color-border-2)] p-3">
-          <h4 class="m-0 mb-3 text-sm font-semibold">基础单位（小规格）</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <BaseFormItem label="单位编码" required>
-              <BaseSelect v-model="smallSpec.unit_code" :options="unitOptions" placeholder="product_unit" />
-            </BaseFormItem>
-            <BaseFormItem label="换算系数(=1)">
-              <BaseNumberInput v-model="smallSpec.factor_to_base" :min="1" :max="1" :step="1" />
-            </BaseFormItem>
-            <BaseFormItem label="数量精度(0~6)">
-              <BaseNumberInput v-model="smallSpec.precision" :min="0" :max="6" :step="1" />
-            </BaseFormItem>
-            <BaseFormItem label="成本价">
-              <BaseNumberInput v-model="smallSpec.cost_price" :min="0" :step="0.01" />
-            </BaseFormItem>
-            <BaseFormItem label="销售价">
-              <BaseNumberInput v-model="smallSpec.sale_price" :min="0" :step="0.01" />
-            </BaseFormItem>
-          </div>
-        </div>
-
-        <div class="rounded border border-[var(--color-border-2)] p-3">
           <div class="flex items-center justify-between mb-3">
-            <h4 class="m-0 text-sm font-semibold">大规格单位</h4>
-            <BaseSwitch v-model="enableLargeSpec" />
+            <h4 class="m-0 text-sm font-semibold">规格价格</h4>
+            <BaseButton variant="secondary" size="sm" @click="addCreateUnit">添加规格</BaseButton>
           </div>
-          <div v-if="enableLargeSpec" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <BaseFormItem label="单位编码" required>
-              <BaseSelect v-model="largeSpec.unit_code" :options="unitOptions" placeholder="product_unit" />
-            </BaseFormItem>
-            <BaseFormItem label="换算系数(>1)" required>
-              <BaseNumberInput v-model="largeSpec.factor_to_base" :min="2" :step="1" />
-            </BaseFormItem>
-            <BaseFormItem label="数量精度(0~6)">
-              <BaseNumberInput v-model="largeSpec.precision" :min="0" :max="6" :step="1" />
-            </BaseFormItem>
-            <BaseFormItem label="成本价">
-              <BaseNumberInput v-model="largeSpec.cost_price" :min="0" :step="0.01" />
-            </BaseFormItem>
-            <BaseFormItem label="销售价">
-              <BaseNumberInput v-model="largeSpec.sale_price" :min="0" :step="0.01" />
-            </BaseFormItem>
+          <div class="unit-spec-editor">
+            <div class="unit-spec-editor__head">
+              <span>单位编码</span>
+              <span>规格名称</span>
+              <span>换算基础量</span>
+              <span>成本价</span>
+              <span>销售价</span>
+              <span>操作</span>
+            </div>
+            <div v-for="(u, idx) in createUnits" :key="idx" class="unit-spec-editor__row">
+              <BaseSelect v-model="u.unit_code" class="unit-spec-editor__control" :options="unitOptions" />
+              <BaseInput v-model="u.unit_name" class="unit-spec-editor__control" placeholder="如 2L桶" />
+              <BaseNumberInput v-model="u.factor_to_base" class="unit-spec-editor__control" :min="0.000001" :step="0.01" />
+              <BaseNumberInput v-model="u.cost_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
+              <BaseNumberInput v-model="u.sale_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
+              <BaseButton variant="ghost" size="sm" :disabled="createUnits.length <= 1" @click="removeCreateUnit(idx)">移除</BaseButton>
+            </div>
           </div>
         </div>
       </div>
@@ -195,7 +175,7 @@
       </template>
     </BaseDialog>
 
-    <a-drawer :visible="productDrawer" placement="right" :width="560" :mask-closable="true"
+    <a-drawer :visible="productDrawer" placement="right" width="min(1080px, 96vw)" :mask-closable="true"
       @cancel="productDrawer = false">
       <template #title>商品详情与编辑</template>
       <div class="space-y-4">
@@ -221,19 +201,26 @@
         </div>
         <div class="rounded border border-[var(--color-border-2)] p-3">
           <h4 class="m-0 mb-3 text-sm font-semibold">单位配置</h4>
-          <div v-for="(u, idx) in editUnits" :key="idx" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <BaseFormItem label="单位编码">
-              <BaseSelect v-model="u.unit_code" :options="unitOptions" />
-            </BaseFormItem>
-            <BaseFormItem label="换算系数">
-              <BaseNumberInput v-model="u.factor_to_base" :min="1" :step="1" />
-            </BaseFormItem>
-            <BaseFormItem label="成本价">
-              <BaseNumberInput v-model="u.cost_price" :min="0" :step="0.01" />
-            </BaseFormItem>
-            <BaseFormItem label="销售价">
-              <BaseNumberInput v-model="u.sale_price" :min="0" :step="0.01" />
-            </BaseFormItem>
+          <div class="mb-3 flex justify-end">
+            <BaseButton variant="secondary" size="sm" @click="addEditUnit">添加规格</BaseButton>
+          </div>
+          <div class="unit-spec-editor">
+            <div class="unit-spec-editor__head">
+              <span>单位编码</span>
+              <span>规格名称</span>
+              <span>换算基础量</span>
+              <span>成本价</span>
+              <span>销售价</span>
+              <span>操作</span>
+            </div>
+            <div v-for="(u, idx) in editUnits" :key="idx" class="unit-spec-editor__row">
+              <BaseSelect v-model="u.unit_code" class="unit-spec-editor__control" :options="unitOptions" />
+              <BaseInput v-model="u.unit_name" class="unit-spec-editor__control" placeholder="如 2L桶" />
+              <BaseNumberInput v-model="u.factor_to_base" class="unit-spec-editor__control" :min="0.000001" :step="0.01" />
+              <BaseNumberInput v-model="u.cost_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
+              <BaseNumberInput v-model="u.sale_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
+              <BaseButton variant="ghost" size="sm" :disabled="editUnits.length <= 1" @click="removeEditUnit(idx)">移除</BaseButton>
+            </div>
           </div>
         </div>
       </div>
@@ -261,7 +248,6 @@ import {
   BaseNumberInput,
   BasePagination,
   BaseSelect,
-  BaseSwitch,
   BaseTable,
   BaseTextarea,
 } from '@/components/base'
@@ -575,47 +561,53 @@ const productForm = reactive({
   name: '',
   spec: '',
 })
-const enableLargeSpec = ref(false)
-const smallSpec = reactive({
-  unit_code: '',
-  factor_to_base: 1,
-  precision: 0,
-  cost_price: 0,
-  sale_price: 0,
-})
-const largeSpec = reactive({
-  unit_code: '',
-  factor_to_base: 2,
-  precision: 0,
-  cost_price: 0,
-  sale_price: 0,
-})
+type UnitFormLine = {
+  unit_code: string
+  unit_name: string
+  factor_to_base: number
+  precision: number
+  cost_price: number
+  sale_price: number
+}
+
+function makeUnitLine(overrides: Partial<UnitFormLine> = {}): UnitFormLine {
+  return {
+    unit_code: '',
+    unit_name: '',
+    factor_to_base: 1,
+    precision: 0,
+    cost_price: 0,
+    sale_price: 0,
+    ...overrides,
+  }
+}
+
+const createUnits = ref<UnitFormLine[]>([makeUnitLine()])
+
+function addCreateUnit(): void {
+  createUnits.value.push(makeUnitLine())
+}
+
+function removeCreateUnit(idx: number): void {
+  createUnits.value = createUnits.value.filter((_, i) => i !== idx)
+  if (!createUnits.value.length) createUnits.value.push(makeUnitLine())
+}
+
+function addEditUnit(): void {
+  editUnits.value.push(makeUnitLine())
+}
+
+function removeEditUnit(idx: number): void {
+  editUnits.value = editUnits.value.filter((_, i) => i !== idx)
+  if (!editUnits.value.length) editUnits.value.push(makeUnitLine())
+}
 
 function resetProductForm(categoryId?: number): void {
   productForm.category_id = categoryId
   productForm.name = ''
   productForm.spec = ''
-  enableLargeSpec.value = false
-  smallSpec.unit_code = ''
-  smallSpec.factor_to_base = 1
-  smallSpec.precision = 0
-  smallSpec.cost_price = 0
-  smallSpec.sale_price = 0
-  largeSpec.unit_code = ''
-  largeSpec.factor_to_base = 2
-  largeSpec.precision = 0
-  largeSpec.cost_price = 0
-  largeSpec.sale_price = 0
+  createUnits.value = [makeUnitLine()]
 }
-
-watch(enableLargeSpec, (enabled) => {
-  if (enabled) return
-  largeSpec.unit_code = ''
-  largeSpec.factor_to_base = 2
-  largeSpec.precision = 0
-  largeSpec.cost_price = 0
-  largeSpec.sale_price = 0
-})
 
 async function openProductCreate(categoryId?: number): Promise<void> {
   if (activeSupplierId.value === '') {
@@ -637,30 +629,56 @@ function unitNameByCode(code: string): string {
   return unitDict.value.find((d) => String(d.value) === code)?.label ?? code
 }
 
+function normalizeUnitLines(lines: UnitFormLine[]): UnitFormLine[] {
+  return lines
+    .map((u) => ({
+      unit_code: String(u.unit_code || '').trim(),
+      unit_name: String(u.unit_name || '').trim(),
+      factor_to_base: Number(u.factor_to_base || 0),
+      precision: Number(u.precision || 0),
+      cost_price: Number(u.cost_price || 0),
+      sale_price: Number(u.sale_price || 0),
+    }))
+    .filter((u) => u.unit_code && u.factor_to_base > 0)
+}
+
+function duplicatedUnitLine(units: UnitFormLine[]): UnitFormLine | null {
+  const seen = new Set<string>()
+  for (const u of units) {
+    const name = u.unit_name || unitNameByCode(u.unit_code)
+    const key = `${u.unit_code.trim().toLowerCase()}\u0000${name.trim().toLowerCase()}`
+    if (seen.has(key)) return u
+    seen.add(key)
+  }
+  return null
+}
+
 async function submitCreateProduct(): Promise<void> {
   if (activeSupplierId.value === '' || !productForm.category_id || !productForm.name.trim()) {
     toast.warning('请先选择供应商并填写分类/商品名称')
     return
   }
-  if (!smallSpec.unit_code) {
-    toast.warning('请设置基础单位编码')
+  const units = normalizeUnitLines(createUnits.value)
+  if (!units.length) {
+    toast.warning('请至少配置一个规格')
     return
   }
-  if (enableLargeSpec.value && (!largeSpec.unit_code || largeSpec.factor_to_base <= 1)) {
-    toast.warning('请设置大规格单位及换算系数(>1)')
+  if (duplicatedUnitLine(units)) {
+    toast.warning('同一商品下规格编码和规格名称不能重复，请填写如 1L桶、2L桶')
     return
   }
 
   productSaving.value = true
   try {
+    const defaultUnit = units[0]
     await createSupplierProduct({
       supplier_id: activeSupplierId.value as number,
       category_id: productForm.category_id,
       name: productForm.name.trim(),
-      unit: unitNameByCode(smallSpec.unit_code),
-      bottle_price: Number(smallSpec.sale_price) || 0,
-      case_price: enableLargeSpec.value ? Number(largeSpec.sale_price) || 0 : Number(smallSpec.sale_price) || 0,
-      bottles_per_case: enableLargeSpec.value ? Math.max(2, Math.round(largeSpec.factor_to_base)) : 1,
+      unit: defaultUnit.unit_name || unitNameByCode(defaultUnit.unit_code),
+      bottle_price: Number(defaultUnit.sale_price) || 0,
+      case_price: Number(defaultUnit.sale_price) || 0,
+      bottles_per_case: Math.max(1, Math.round(defaultUnit.factor_to_base || 1)),
       spec: productForm.spec.trim(),
       remark: '',
     })
@@ -673,29 +691,18 @@ async function submitCreateProduct(): Promise<void> {
       listRes.find((p) => p.name === productForm.name.trim() && p.category_id === productForm.category_id) ?? listRes[0]
     if (!created?.id) throw new Error('商品已创建，但未获取到商品ID')
 
-    const units = [
-      {
-        unit_code: smallSpec.unit_code,
-        unit_name: unitNameByCode(smallSpec.unit_code),
-        factor_to_base: 1,
-        precision: smallSpec.precision,
-        cost_price: Number(smallSpec.cost_price) || 0,
-        sale_price: Number(smallSpec.sale_price) || 0,
+    await batchUpsertProductUnitSpecs({
+      product_id: created.id,
+      units: units.map((u) => ({
+        unit_code: u.unit_code,
+        unit_name: u.unit_name || unitNameByCode(u.unit_code),
+        factor_to_base: u.factor_to_base,
+        precision: u.precision,
+        cost_price: u.cost_price,
+        sale_price: u.sale_price,
         is_enabled: true,
-      },
-    ]
-    if (enableLargeSpec.value) {
-      units.push({
-        unit_code: largeSpec.unit_code,
-        unit_name: unitNameByCode(largeSpec.unit_code),
-        factor_to_base: Number(largeSpec.factor_to_base),
-        precision: largeSpec.precision,
-        cost_price: Number(largeSpec.cost_price) || 0,
-        sale_price: Number(largeSpec.sale_price) || 0,
-        is_enabled: true,
-      })
-    }
-    await batchUpsertProductUnitSpecs({ product_id: created.id, units })
+      })),
+    })
 
     toast.success('商品与规格配置已保存')
     productDlg.value = false
@@ -719,13 +726,7 @@ const productEdit = reactive({
   unit: '',
 })
 const editUnits = ref<
-  Array<{
-    unit_code: string
-    factor_to_base: number
-    precision: number
-    cost_price: number
-    sale_price: number
-  }>
+  UnitFormLine[]
 >([])
 
 async function openProductDrawer(productId: number): Promise<void> {
@@ -743,11 +744,21 @@ async function openProductDrawer(productId: number): Promise<void> {
     editUnits.value =
       units.map((u: ProductUnitSpec) => ({
         unit_code: u.unit_code,
+        unit_name: u.unit_name || unitNameByCode(u.unit_code),
         factor_to_base: Number(u.factor_to_base),
         precision: Number(u.precision),
         cost_price: Number(u.cost_price),
         sale_price: Number(u.sale_price),
       })) ?? []
+    if (!editUnits.value.length) {
+      editUnits.value = [
+        makeUnitLine({
+          unit_code: unitOptions.value[0]?.value != null ? String(unitOptions.value[0].value) : '',
+          unit_name: p.unit ?? '',
+          sale_price: Number(p.bottle_price ?? p.price ?? 0),
+        }),
+      ]
+    }
     productDrawer.value = true
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '加载商品详情失败')
@@ -756,21 +767,31 @@ async function openProductDrawer(productId: number): Promise<void> {
 
 async function submitEditProduct(): Promise<void> {
   if (!productEditingId.value) return
+  const units = normalizeUnitLines(editUnits.value)
+  if (!units.length) {
+    toast.warning('请至少配置一个规格')
+    return
+  }
+  if (duplicatedUnitLine(units)) {
+    toast.warning('同一商品下规格编码和规格名称不能重复，请填写如 1L桶、2L桶')
+    return
+  }
+  const defaultUnit = units[0]
   productEditSaving.value = true
   try {
     await updateSupplierProduct(productEditingId.value, {
       name: productEdit.name.trim(),
       spec: productEdit.spec.trim(),
-      bottle_price: productEdit.bottle_price,
-      case_price: productEdit.case_price,
-      bottles_per_case: productEdit.bottles_per_case,
-      unit: productEdit.unit.trim(),
+      bottle_price: Number(defaultUnit.sale_price) || productEdit.bottle_price,
+      case_price: Number(defaultUnit.sale_price) || productEdit.case_price,
+      bottles_per_case: Math.max(1, Math.round(defaultUnit.factor_to_base || productEdit.bottles_per_case || 1)),
+      unit: defaultUnit.unit_name || unitNameByCode(defaultUnit.unit_code) || productEdit.unit.trim(),
     })
     await batchUpsertProductUnitSpecs({
       product_id: productEditingId.value,
-      units: editUnits.value.map((u) => ({
+      units: units.map((u) => ({
         unit_code: u.unit_code,
-        unit_name: unitNameByCode(u.unit_code),
+        unit_name: u.unit_name || unitNameByCode(u.unit_code),
         factor_to_base: u.factor_to_base,
         precision: u.precision,
         cost_price: u.cost_price,
@@ -814,5 +835,35 @@ async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
   .supplier-split-layout {
     grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
   }
+}
+
+.unit-spec-editor {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.unit-spec-editor__head,
+.unit-spec-editor__row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(150px, 1.1fr) minmax(130px, 0.9fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) 72px;
+  gap: 12px;
+  align-items: center;
+  min-width: 840px;
+}
+
+.unit-spec-editor__head {
+  margin-bottom: 8px;
+  color: var(--color-text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.unit-spec-editor__row {
+  margin-bottom: 10px;
+}
+
+.unit-spec-editor__control {
+  width: 100%;
+  min-width: 0;
 }
 </style>

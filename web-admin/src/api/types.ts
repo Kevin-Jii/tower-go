@@ -337,6 +337,62 @@ export interface InventoryOrder {
   created_at?: string
 }
 
+export type InventoryLossType = 'loss' | 'self_use' | 'gift'
+
+export interface InventoryLossOrderItem {
+  id: number
+  order_id?: number
+  product_id: number
+  product_name?: string
+  unit: string
+  quantity: number
+  base_quantity?: number
+  base_unit?: string
+  cost_price: number
+  cost_amount: number
+  remark?: string
+  created_at?: string
+}
+
+export interface InventoryLossOrder {
+  id: number
+  order_no: string
+  store_id: number
+  type: InventoryLossType
+  member_id?: number
+  member?: {
+    id: number
+    name?: string
+    phone?: string
+  }
+  reason?: string
+  total_cost: number
+  item_count: number
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
+  updated_at?: string
+  items?: InventoryLossOrderItem[]
+}
+
+export interface InventoryLossOrderDetail extends InventoryLossOrder {
+  items: InventoryLossOrderItem[]
+}
+
+export interface MemberGiftRecord {
+  id: number
+  order_id?: number
+  order_no: string
+  product_id: number
+  product_name?: string
+  unit: string
+  quantity: number
+  cost_amount: number
+  reason?: string
+  operator_name?: string
+  created_at?: string
+}
+
 export interface StoreAccountItem {
   id: number
   account_id?: number

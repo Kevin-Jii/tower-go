@@ -421,6 +421,51 @@ CREATE TABLE IF NOT EXISTS `inventory_order_items` (
   KEY `idx_inventory_order_items_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='出入库单明细';
 
+CREATE TABLE IF NOT EXISTS `inventory_loss_orders` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_no` VARCHAR(50) NOT NULL,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `type` VARCHAR(20) NOT NULL,
+  `member_id` BIGINT UNSIGNED DEFAULT NULL,
+  `reason` VARCHAR(200) DEFAULT NULL,
+  `total_cost` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `item_count` INT NOT NULL DEFAULT 0,
+  `operator_id` BIGINT UNSIGNED NOT NULL,
+  `operator_name` VARCHAR(50) DEFAULT NULL,
+  `is_canceled` TINYINT(1) NOT NULL DEFAULT 0,
+  `canceled_at` DATETIME(3) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_inventory_loss_orders_order_no` (`order_no`),
+  KEY `idx_inventory_loss_orders_store_id` (`store_id`),
+  KEY `idx_inventory_loss_orders_type` (`type`),
+  KEY `idx_inventory_loss_orders_member_id` (`member_id`),
+  KEY `idx_inventory_loss_orders_is_canceled` (`is_canceled`),
+  KEY `idx_inventory_loss_orders_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存报损/自用/赠送单';
+
+CREATE TABLE IF NOT EXISTS `inventory_loss_order_items` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` BIGINT UNSIGNED NOT NULL,
+  `product_id` BIGINT UNSIGNED NOT NULL,
+  `product_name` VARCHAR(200) DEFAULT NULL,
+  `unit` VARCHAR(50) DEFAULT NULL,
+  `quantity` DECIMAL(10,2) NOT NULL,
+  `base_quantity` DECIMAL(10,2) NOT NULL,
+  `base_unit` VARCHAR(20) DEFAULT NULL,
+  `cost_price` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `cost_amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_inventory_loss_order_items_order_id` (`order_id`),
+  KEY `idx_inventory_loss_order_items_product_id` (`product_id`),
+  KEY `idx_inventory_loss_order_items_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存报损/自用/赠送明细';
+
 -- ============================================
 -- 1. 性能索引优化（依赖业务表已存在）
 -- ============================================
@@ -636,7 +681,7 @@ CREATE TABLE IF NOT EXISTS product_unit_specs (
   updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_product_unit_specs_product_id (product_id),
-  UNIQUE KEY uk_product_unit_specs_product_unit (product_id, unit_code)
+  UNIQUE KEY uk_product_unit_specs_product_unit_name (product_id, unit_code, unit_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品多单位换算与价格表';
 
 SET @sql_add_product_unit_precision = (

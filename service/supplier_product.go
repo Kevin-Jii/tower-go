@@ -8,29 +8,6 @@ import (
 	"github.com/Kevin-Jii/tower-go/module"
 )
 
-func (s *SupplierProductService) ensureSingleLargeSpec(productID uint, currentUnitCode string, factorToBase float64, excludeID uint) error {
-	if factorToBase <= 1 {
-		return nil
-	}
-	specs, err := s.unitSpecModule.ListByProductID(productID)
-	if err != nil {
-		return err
-	}
-	current := strings.TrimSpace(currentUnitCode)
-	for _, spec := range specs {
-		if spec == nil || !spec.IsEnabled || spec.FactorToBase <= 1 {
-			continue
-		}
-		if excludeID > 0 && spec.ID == excludeID {
-			continue
-		}
-		if strings.TrimSpace(spec.UnitCode) != current {
-			return errors.New("同一商品只能配置一个大规格单位，请先修改或停用原有大规格")
-		}
-	}
-	return nil
-}
-
 func (s *SupplierProductService) validateUnitCodeAndGetName(unitCode string) (string, error) {
 	if s.dictModule == nil {
 		return "", nil
@@ -191,9 +168,6 @@ func (s *SupplierProductService) CreateUnitSpec(req *model.CreateProductUnitSpec
 	if err != nil {
 		return err
 	}
-	if err := s.ensureSingleLargeSpec(req.ProductID, req.UnitCode, req.FactorToBase, 0); err != nil {
-		return err
-	}
 	unitName := strings.TrimSpace(req.UnitName)
 	if unitName == "" {
 		unitName = dictUnitName
@@ -218,21 +192,13 @@ func (s *SupplierProductService) ListUnitSpecs(productID uint) ([]*model.Product
 	if _, err := s.productModule.GetByID(productID); err != nil {
 		return nil, errors.New("product not found")
 	}
-	return s.unitSpecModule.ListByProductID(productID)
+	return s.unitSpecModule.ListEnabledByProductID(productID)
 }
 
 func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProductUnitSpecReq) error {
-	existing, err := s.unitSpecModule.GetByID(id)
+	_, err := s.unitSpecModule.GetByID(id)
 	if err != nil {
 		return errors.New("unit spec not found")
-	}
-	nextUnitCode := existing.UnitCode
-	if req.UnitCode != nil {
-		nextUnitCode = *req.UnitCode
-	}
-	nextFactor := existing.FactorToBase
-	if req.FactorToBase != nil {
-		nextFactor = *req.FactorToBase
 	}
 	if req.UnitCode != nil {
 		dictUnitName, err := s.validateUnitCodeAndGetName(*req.UnitCode)
@@ -243,10 +209,6 @@ func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProduc
 			req.UnitName = &dictUnitName
 		}
 	}
-	if err := s.ensureSingleLargeSpec(existing.ProductID, nextUnitCode, nextFactor, id); err != nil {
-		return err
-	}
-
 	updates := map[string]interface{}{}
 	if req.UnitCode != nil {
 		updates["unit_code"] = *req.UnitCode
@@ -283,24 +245,11 @@ func (s *SupplierProductService) BatchUpsertUnitSpecs(req *model.BatchUpsertProd
 	if _, err := s.productModule.GetByID(req.ProductID); err != nil {
 		return errors.New("product not found")
 	}
-	largeUnitCode := ""
-	for _, unit := range req.Units {
-		if unit.FactorToBase <= 1 {
-			continue
-		}
-		if largeUnitCode == "" {
-			largeUnitCode = unit.UnitCode
-			continue
-		}
-		if strings.TrimSpace(largeUnitCode) != strings.TrimSpace(unit.UnitCode) {
-			return errors.New("同一商品只能配置一个大规格单位")
-		}
+	existingSpecs, err := s.unitSpecModule.ListByProductID(req.ProductID)
+	if err != nil {
+		return err
 	}
-	if largeUnitCode != "" {
-		if err := s.ensureSingleLargeSpec(req.ProductID, largeUnitCode, 2, 0); err != nil {
-			return err
-		}
-	}
+	seen := make(map[string]struct{}, len(req.Units))
 	for _, unit := range req.Units {
 		dictUnitName, err := s.validateUnitCodeAndGetName(unit.UnitCode)
 		if err != nil {
@@ -310,6 +259,11 @@ func (s *SupplierProductService) BatchUpsertUnitSpecs(req *model.BatchUpsertProd
 		if unitName == "" {
 			unitName = dictUnitName
 		}
+		dupKey := strings.ToLower(strings.TrimSpace(unit.UnitCode)) + "\x00" + strings.ToLower(unitName)
+		if _, ok := seen[dupKey]; ok {
+			return errors.New("同一商品下规格编码和规格名称不能重复")
+		}
+		seen[dupKey] = struct{}{}
 		spec := &model.ProductUnitSpec{
 			ProductID:    req.ProductID,
 			UnitCode:     unit.UnitCode,
@@ -324,6 +278,18 @@ func (s *SupplierProductService) BatchUpsertUnitSpecs(req *model.BatchUpsertProd
 			spec.IsEnabled = *unit.IsEnabled
 		}
 		if err := s.unitSpecModule.UpsertByProductAndUnit(spec); err != nil {
+			return err
+		}
+	}
+	for _, spec := range existingSpecs {
+		if spec == nil {
+			continue
+		}
+		key := strings.ToLower(strings.TrimSpace(spec.UnitCode)) + "\x00" + strings.ToLower(strings.TrimSpace(spec.UnitName))
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		if err := s.unitSpecModule.UpdateByID(spec.ID, map[string]interface{}{"is_enabled": false}); err != nil {
 			return err
 		}
 	}

@@ -18,10 +18,27 @@ func NewProductUnitSpecModule(db *gorm.DB) *ProductUnitSpecModule {
 func (m *ProductUnitSpecModule) GetByProductAndUnit(productID uint, unit string) (*model.ProductUnitSpec, error) {
 	var spec model.ProductUnitSpec
 	u := strings.TrimSpace(unit)
-	err := m.db.Where("product_id = ? AND is_enabled = 1 AND (unit_name = ? OR unit_code = ?)", productID, u, u).
+	err := m.db.Where("product_id = ? AND is_enabled = 1 AND unit_name = ?", productID, u).
 		Order("id asc").
 		First(&spec).Error
-	if err != nil {
+	if err == nil {
+		return &spec, nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	var count int64
+	if err := m.db.Model(&model.ProductUnitSpec{}).
+		Where("product_id = ? AND is_enabled = 1 AND unit_code = ?", productID, u).
+		Count(&count).Error; err != nil {
+		return nil, err
+	}
+	if count != 1 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if err := m.db.Where("product_id = ? AND is_enabled = 1 AND unit_code = ?", productID, u).
+		First(&spec).Error; err != nil {
 		return nil, err
 	}
 	return &spec, nil
@@ -47,13 +64,21 @@ func (m *ProductUnitSpecModule) ListByProductID(productID uint) ([]*model.Produc
 	return specs, nil
 }
 
+func (m *ProductUnitSpecModule) ListEnabledByProductID(productID uint) ([]*model.ProductUnitSpec, error) {
+	var specs []*model.ProductUnitSpec
+	if err := m.db.Where("product_id = ? AND is_enabled = 1", productID).Order("factor_to_base asc, id asc").Find(&specs).Error; err != nil {
+		return nil, err
+	}
+	return specs, nil
+}
+
 // ListByProductIDs 批量查询多个商品的单位规格（按 product_id、id 排序）
 func (m *ProductUnitSpecModule) ListByProductIDs(productIDs []uint) ([]*model.ProductUnitSpec, error) {
 	if len(productIDs) == 0 {
 		return nil, nil
 	}
 	var specs []*model.ProductUnitSpec
-	if err := m.db.Where("product_id IN ?", productIDs).Order("product_id asc, id asc").Find(&specs).Error; err != nil {
+	if err := m.db.Where("product_id IN ? AND is_enabled = 1", productIDs).Order("product_id asc, factor_to_base asc, id asc").Find(&specs).Error; err != nil {
 		return nil, err
 	}
 	return specs, nil
@@ -72,11 +97,11 @@ func (m *ProductUnitSpecModule) DeleteByID(id uint) error {
 
 func (m *ProductUnitSpecModule) UpsertByProductAndUnit(spec *model.ProductUnitSpec) error {
 	var existing model.ProductUnitSpec
-	err := m.db.Where("product_id = ? AND unit_code = ?", spec.ProductID, spec.UnitCode).First(&existing).Error
+	err := m.db.Where("product_id = ? AND unit_code = ? AND unit_name = ?", spec.ProductID, spec.UnitCode, spec.UnitName).First(&existing).Error
 	if err == nil {
 		return m.db.Model(&existing).Updates(map[string]interface{}{
-			"unit_name":      spec.UnitName,
 			"factor_to_base": spec.FactorToBase,
+			"precision":      spec.Precision,
 			"cost_price":     spec.CostPrice,
 			"sale_price":     spec.SalePrice,
 			"is_enabled":     spec.IsEnabled,

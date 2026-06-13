@@ -35,7 +35,6 @@
                 <CountUpNumber :value="overview?.net_profit_amount" :decimals="2" />
               </strong>
               <span>净利</span>
-
             </div>
             <div class="dash-overview-metrics">
               <div v-for="(metric, idx) in overviewCards" :key="metric.label" class="dash-overview-card"
@@ -189,7 +188,6 @@ function rangeGranularity(range: { start: string; end: string }): 'day' | 'month
 }
 
 const activeRange = computed(() => periodRange(period.value))
-const periodRangeText = computed(() => `${activeRange.value.start} 至 ${activeRange.value.end}`)
 
 const homeCharts = ref<HomeChartsStats | null>(null)
 const homeLoading = ref(false)
@@ -227,18 +225,6 @@ const avgOrderAmount = computed(() => {
   const orders = Number(overview.value?.sales_order_count ?? 0)
   return orders > 0 ? sales / orders : 0
 })
-const pulseMetrics = computed(() => {
-  const o = overview.value
-  const net = Number(o?.net_profit_amount ?? 0)
-  return [
-    { label: '毛利率', value: grossMargin.value, decimals: 1, suffix: '%', tone: grossMargin.value >= 0 ? 'tone-good' : 'tone-bad' },
-    { label: '客单价', value: avgOrderAmount.value, decimals: 2, suffix: '', tone: '' },
-    { label: '净利', value: net, decimals: 2, suffix: '', tone: net >= 0 ? 'tone-good' : 'tone-bad' },
-    { label: '库存记录', value: Number(dash.value?.inventory.total_records ?? 0), decimals: 0, suffix: '', tone: '' },
-    { label: '入库单数', value: Number(o?.inventory_in_count ?? 0), decimals: 0, suffix: '', tone: '' },
-    { label: '出库单数', value: Number(o?.inventory_out_count ?? 0), decimals: 0, suffix: '', tone: '' },
-  ]
-})
 const topCategories = computed(() => {
   const list = [...(overview.value?.categories ?? [])]
     .map((item) => ({
@@ -262,11 +248,6 @@ let resizeObserver: ResizeObserver | null = null
 const axisText = '#e2e8f0'
 const splitLine = 'rgba(148, 163, 184, 0.22)'
 const axisFont = 13
-
-function num(v: number | undefined): string {
-  if (v == null || Number.isNaN(v)) return '-'
-  return Number(v).toFixed(2)
-}
 
 function disposeCharts(): void {
   lineChart?.dispose()
@@ -419,9 +400,11 @@ async function paintChartsWhenReady(hc: HomeChartsStats): Promise<void> {
 }
 
 function onWinResize(): void {
-  lineChart?.resize()
-  pieChart?.resize()
-  radarChart?.resize()
+  requestAnimationFrame(() => {
+    lineChart?.resize()
+    pieChart?.resize()
+    radarChart?.resize()
+  })
 }
 
 function bindResizeObserver(): void {
@@ -554,12 +537,13 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.88fr);
   gap: clamp(10px, 1vw, 16px);
 }
 
 .dash-panel {
   position: relative;
+  box-sizing: border-box;
   min-height: 0;
   overflow: hidden;
   animation: dash-panel-rise 0.7s ease both;
@@ -576,18 +560,18 @@ onBeforeUnmount(() => {
 }
 
 .dash-panel--line {
-  grid-column: 8 / 13;
+  grid-column: 9 / 13;
   grid-row: 2;
 }
 
 .dash-panel--pie {
-  grid-column: 8 / 13;
+  grid-column: 6 / 10;
   grid-row: 1;
 }
 
 .dash-panel--radar {
-  grid-column: 6 / 8;
-  grid-row: 2;
+  grid-column: 10 / 13;
+  grid-row: 1;
 }
 
 .dash-panel--overview {
@@ -597,7 +581,7 @@ onBeforeUnmount(() => {
 }
 
 .dash-panel--flow {
-  grid-column: 8 / 13;
+  grid-column: 6 / 9;
   grid-row: 2;
   overflow: hidden;
 }
@@ -624,6 +608,7 @@ onBeforeUnmount(() => {
 .dash-pulse-item,
 .dash-overview-card,
 .dash-mini-stat {
+  box-sizing: border-box;
   border: 1px solid rgba(34, 211, 238, 0.18);
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.44);
@@ -742,25 +727,32 @@ onBeforeUnmount(() => {
 .dash-overview-metrics {
   position: relative;
   z-index: 1;
+  min-height: 0;
+  overflow: hidden;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(8px, 0.7vw, 12px);
+  gap: clamp(7px, 0.58vw, 10px);
+  align-content: start;
 }
 
 .dash-overview-focus {
   position: relative;
   z-index: 1;
   display: grid;
-  height: calc(100% - 54px);
+  height: 100%;
+  min-height: 0;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(150px, 0.82fr) minmax(0, 1.18fr);
-  gap: clamp(12px, 1vw, 18px);
+  grid-template-rows: clamp(132px, 18vh, 210px) minmax(0, 1fr);
+  gap: clamp(10px, 0.78vw, 14px);
   align-items: stretch;
 }
 
 .dash-primary-stat {
+  box-sizing: border-box;
   display: flex;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   flex-direction: column;
   justify-content: center;
   border: 1px solid rgba(34, 211, 238, 0.22);
@@ -773,6 +765,7 @@ onBeforeUnmount(() => {
 }
 
 .dash-primary-stat span {
+  display: block;
   color: rgba(207, 250, 254, 0.78);
   font-size: clamp(14px, 0.9vw, 18px);
   font-weight: 800;
@@ -780,9 +773,17 @@ onBeforeUnmount(() => {
 
 .dash-primary-stat strong {
   display: block;
-  margin-top: 10px;
-  font-size: clamp(42px, 4.2vw, 82px);
+  margin-top: 8px;
+  font-size: clamp(36px, 3.15vw, 64px);
   line-height: 0.95;
+}
+
+:deep(.dash-primary-stat .count-up-number),
+:deep(.dash-overview-card .count-up-number),
+:deep(.dash-flow-row .count-up-number) {
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
 }
 
 .dash-primary-stat small {
@@ -795,7 +796,8 @@ onBeforeUnmount(() => {
 .dash-overview-card {
   position: relative;
   overflow: hidden;
-  padding: clamp(9px, 0.72vw, 14px);
+  min-height: 0;
+  padding: clamp(8px, 0.62vw, 12px);
   animation: dash-card-in 0.65s ease both;
   animation-delay: var(--delay, 0ms);
 }
@@ -812,9 +814,9 @@ onBeforeUnmount(() => {
 
 .dash-overview-card strong {
   display: block;
-  margin-top: 6px;
+  margin-top: 5px;
   color: #fff;
-  font-size: clamp(18px, 1.35vw, 28px);
+  font-size: clamp(16px, 1.05vw, 23px);
   line-height: 1.05;
 }
 
@@ -898,7 +900,7 @@ onBeforeUnmount(() => {
 @media (max-width: 1180px) {
   .dash-chart-grid {
     grid-template-columns: repeat(8, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.75fr) minmax(0, 0.78fr);
   }
 
   .dash-panel--overview {
@@ -907,22 +909,22 @@ onBeforeUnmount(() => {
   }
 
   .dash-panel--pie {
-    grid-column: 1 / 4;
+    grid-column: 1 / 5;
     grid-row: 2;
   }
 
   .dash-panel--radar {
-    grid-column: 4 / 6;
+    grid-column: 5 / 9;
     grid-row: 2;
   }
 
   .dash-panel--flow {
-    grid-column: 6 / 9;
-    grid-row: 2;
+    grid-column: 1 / 4;
+    grid-row: 3;
   }
 
   .dash-panel--line {
-    grid-column: 1 / 9;
+    grid-column: 4 / 9;
     grid-row: 3;
   }
 

@@ -701,15 +701,26 @@ function getProductId(path: Array<string | number> | string | number | undefined
   return null
 }
 
+function specOptionLabel(s: ProductUnitSpec): string {
+  const name = s.unit_name || s.unit_code
+  const factor = Number(s.factor_to_base || 0)
+  const price = Number(s.sale_price || 0)
+  const parts = [name]
+  if (factor > 0) parts.push(`换算${factor}`)
+  if (price > 0) parts.push(`售价${formatMoney(price)}`)
+  return parts.join(' / ')
+}
+
+function specOptionValue(s: ProductUnitSpec): string {
+  return String(s.unit_name || s.unit_code || '').trim()
+}
+
 function lineUnitOptions(line: AccountLine): Array<{ label: string; value: string | number }> {
   const pid = getProductId(line.product_path)
   if (!pid) return []
   const specs = specsByProduct.value.get(pid) ?? []
   if (specs.length > 0) {
-    return specs.map((s) => ({
-      label: s.unit_name,
-      value: s.unit_code,
-    }))
+    return specs.map((s) => ({ label: specOptionLabel(s), value: specOptionValue(s) }))
   }
   const product = productById.value.get(pid)
   const defaultUnit = product?.unit || unitDict.value[0]?.value || '件'

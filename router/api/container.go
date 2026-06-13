@@ -25,6 +25,7 @@ type Controllers struct {
 	PurchaseOrder     *controller.PurchaseOrderController
 	Dict              *controller.DictController
 	Inventory         *controller.InventoryController
+	InventoryLoss     *controller.InventoryLossController
 	File              *controller.FileController
 	Gallery           *controller.GalleryController
 	StoreAccount      *controller.StoreAccountController
@@ -57,6 +58,7 @@ func BuildControllers() *Controllers {
 	purchaseOrderModule := userModulePkg.NewPurchaseOrderModule(database.DB)
 	dictModule := userModulePkg.NewDictModule(database.DB)
 	inventoryModule := userModulePkg.NewInventoryModule(database.DB)
+	inventoryLossModule := userModulePkg.NewInventoryLossModule(database.DB)
 	galleryModule := userModulePkg.NewGalleryModule(database.DB)
 	storeAccountModule := userModulePkg.NewStoreAccountModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
@@ -112,6 +114,7 @@ func BuildControllers() *Controllers {
 	dictService := service.NewDictService(dictModule)
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
+	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 	memberService := service.NewMemberService(memberModule)
@@ -164,6 +167,7 @@ func BuildControllers() *Controllers {
 		PurchaseOrder:     controller.NewPurchaseOrderController(purchaseOrderService),
 		Dict:              controller.NewDictController(dictService),
 		Inventory:         controller.NewInventoryController(inventoryService),
+		InventoryLoss:     controller.NewInventoryLossController(inventoryLossService),
 		File:              fileController,
 		Gallery:           galleryController,
 		StoreAccount:      controller.NewStoreAccountController(storeAccountService),

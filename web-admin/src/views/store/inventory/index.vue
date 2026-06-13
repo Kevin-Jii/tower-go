@@ -41,6 +41,7 @@
             <div class="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
               <BaseButton v-permission="'inventory:in'" variant="secondary" @click="openOrderDlg(1)">入库登记</BaseButton>
               <BaseButton v-permission="'inventory:out'" variant="secondary" @click="openOrderDlg(2)">出库登记</BaseButton>
+              <BaseButton variant="secondary" @click="goLossOrders">报损/自用/赠送</BaseButton>
             </div>
           </div>
           <div
@@ -237,6 +238,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   BaseButton,
@@ -258,6 +260,7 @@ import { MathCurveLoader } from '@/components/loading'
 import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
+const router = useRouter()
 
 /** 让卡片主体纵向撑满，子区域可用 flex-1 + overflow 分配高度 */
 const inventoryCardBodyStyle = {
@@ -271,6 +274,10 @@ const inventoryCardBodyStyle = {
 const tab = ref<'stock' | 'orders'>('stock')
 const userStore = useUserStore()
 const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
+
+function goLossOrders(): void {
+  void router.push('/store/inventory-loss')
+}
 
 const stockKeyword = ref('')
 const LOW_STOCK_THRESHOLD = 5
@@ -384,6 +391,24 @@ function formatQty(v: number): string {
   return String(Number(v.toFixed(2)))
 }
 
+function unitLabelByCode(code: string | undefined): string {
+  const normalized = String(code || '').trim()
+  if (!normalized) return ''
+  return unitDict.value.find((d) => String(d.value) === normalized)?.label || normalized
+}
+
+function displayUnitName(spec: ProductUnitSpec | undefined, fallback = '件'): string {
+  if (!spec) return fallback
+  const codeLabel = unitLabelByCode(spec.unit_code)
+  const rawName = String(spec.unit_name || '').trim()
+  if (!rawName) return codeLabel || fallback
+  if (codeLabel && rawName.endsWith(codeLabel)) return codeLabel
+  const parenMatch = rawName.match(/[（(]\s*(?:\d+(?:\.\d+)?)?\s*([^（）()0-9.\s]+)\s*[）)]$/)
+  if (parenMatch?.[1]) return parenMatch[1]
+  const suffixMatch = rawName.match(/[^0-9.\s]+$/)
+  return suffixMatch?.[0] || codeLabel || fallback
+}
+
 const groupedStockCards = computed(() => {
   const invMap = new Map<number, InventoryRow>()
   for (const inv of stockList.value) invMap.set(inv.product_id, inv)
@@ -396,18 +421,20 @@ const groupedStockCards = computed(() => {
     const specs = specsByProduct.value.get(p.id) ?? []
     const smallSpec = specs[0]
     const largeSpec = specs.length > 1 ? specs[specs.length - 1] : undefined
+    const smallUnit = displayUnitName(smallSpec, p.unit || '件')
+    const largeUnit = largeSpec ? displayUnitName(largeSpec, p.unit || smallUnit) : undefined
     const smallFactor = Number(smallSpec?.factor_to_base || 1)
     const largeFactor = Number(largeSpec?.factor_to_base || 0)
     const smallQty = Number((qty / (smallFactor > 0 ? smallFactor : 1)).toFixed(2))
     const largeQty = largeFactor > smallFactor ? Number((qty / largeFactor).toFixed(2)) : undefined
-    let displayQty = `${formatQty(smallQty)}${smallSpec?.unit_name || p.unit || '件'}`
+    let displayQty = `${formatQty(smallQty)}${smallUnit}`
     if (largeSpec && largeFactor > smallFactor) {
       const ratio = largeFactor / (smallFactor > 0 ? smallFactor : 1)
       if (ratio > 1) {
         const largeCount = Math.floor(smallQty / ratio)
         const remainSmall = Number((smallQty - largeCount * ratio).toFixed(2))
         if (largeCount > 0 || remainSmall > 0) {
-          displayQty = `${largeCount > 0 ? `${formatQty(largeCount)}${largeSpec.unit_name}` : ''}${remainSmall > 0 ? `${formatQty(remainSmall)}${smallSpec?.unit_name || p.unit || '件'}` : ''}` || `0${smallSpec?.unit_name || p.unit || '件'}`
+          displayQty = `${largeCount > 0 ? `${formatQty(largeCount)}${largeUnit || smallUnit}` : ''}${remainSmall > 0 ? `${formatQty(remainSmall)}${smallUnit}` : ''}` || `0${smallUnit}`
         }
       }
     }
@@ -416,8 +443,8 @@ const groupedStockCards = computed(() => {
       product_id: p.id,
       category,
       product_name: p.name,
-      small_unit: smallSpec?.unit_name || p.unit || '件',
-      large_unit: largeSpec?.unit_name,
+      small_unit: smallUnit,
+      large_unit: largeUnit,
       small_qty: smallQty,
       large_qty: largeQty,
       display_qty: displayQty,
@@ -530,7 +557,7 @@ function openQtyFromCard(item: StockCardItem): void {
     store_id: 0,
     product_id: item.product_id,
     product_name: item.product_name,
-    quantity: item.small_qty,
+    quantity: item.quantity,
     unit: item.small_unit,
   })
 }
@@ -590,15 +617,31 @@ function getProductId(path: Array<string | number> | string | number | undefined
   return null
 }
 
+function formatMoney(v: number | string | undefined | null): string {
+  const n = Number(v ?? 0)
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+
+function specOptionLabel(s: ProductUnitSpec): string {
+  const name = s.unit_name || s.unit_code
+  const factor = Number(s.factor_to_base || 0)
+  const price = Number(s.sale_price || 0)
+  const parts = [name]
+  if (factor > 0) parts.push(`换算${factor}`)
+  if (price > 0) parts.push(`售价${formatMoney(price)}`)
+  return parts.join(' / ')
+}
+
+function specOptionValue(s: ProductUnitSpec): string {
+  return String(s.unit_name || s.unit_code || '').trim()
+}
+
 function lineUnitOptions(line: OrderLine): Array<{ label: string; value: string | number }> {
   const pid = getProductId(line.product_path)
   if (!pid) return unitOptions.value
   const specs = specsByProduct.value.get(pid) ?? []
   if (!specs.length) return unitOptions.value
-  return specs.map((s) => ({
-    label: s.unit_name,
-    value: s.unit_code,
-  }))
+  return specs.map((s) => ({ label: specOptionLabel(s), value: specOptionValue(s) }))
 }
 
 function lineUnitDisabled(line: OrderLine): boolean {

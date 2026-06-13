@@ -36,6 +36,8 @@ var autoMigrateModels = []interface{}{
 	&model.Inventory{},
 	&model.InventoryOrder{},
 	&model.InventoryOrderItem{},
+	&model.InventoryLossOrder{},
+	&model.InventoryLossOrderItem{},
 	&model.Gallery{},
 	&model.StoreAccount{},
 	&model.StoreAccountItem{},
@@ -116,6 +118,14 @@ func shouldSkipMigration() bool {
 		if !migrator.HasColumn(&model.SupplierProduct{}, "bottle_price") ||
 			!migrator.HasColumn(&model.SupplierProduct{}, "case_price") ||
 			!migrator.HasColumn(&model.SupplierProduct{}, "bottles_per_case") {
+			return false
+		}
+	}
+
+	// 商品规格允许同单位编码下配置多个规格名，旧唯一索引需替换。
+	if migrator.HasTable(&model.ProductUnitSpec{}) {
+		if migrator.HasIndex(&model.ProductUnitSpec{}, "uk_product_unit_specs_product_unit") ||
+			!migrator.HasIndex(&model.ProductUnitSpec{}, "uk_product_unit_specs_product_unit_name") {
 			return false
 		}
 	}

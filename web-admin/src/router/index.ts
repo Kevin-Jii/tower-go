@@ -68,6 +68,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '个人资料' },
       },
       {
+        path: 'store/inventory-loss',
+        name: 'InventoryLossOrders',
+        component: () => import('@/views/store/inventory-loss/index.vue'),
+        meta: { title: '报损/自用/赠送' },
+      },
+      {
         path: 'system/third-party-account',
         name: 'ThirdPartyAccount',
         component: () => import('@/views/system/third-party-account/index.vue'),

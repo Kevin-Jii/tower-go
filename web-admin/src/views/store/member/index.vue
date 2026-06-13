@@ -121,6 +121,43 @@
         <BaseButton variant="ghost" @click="consDlg = false">关闭</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="giftDlg" title="会员赠品记录" max-width="min(960px, 96vw)">
+      <div class="space-y-4">
+        <div class="text-sm text-slate-600">
+          会员：{{ giftMember ? `${giftMember.phone}${giftMember.name ? `（${giftMember.name}）` : ''}` : '-' }}
+        </div>
+        <div class="flex flex-wrap items-end gap-2">
+          <BaseFormItem label="开始日期" class="w-44">
+            <BaseInput v-model="giftStart" type="date" />
+          </BaseFormItem>
+          <BaseFormItem label="结束日期" class="w-44">
+            <BaseInput v-model="giftEnd" type="date" />
+          </BaseFormItem>
+          <BaseButton variant="primary" :loading="giftLoading" @click="reloadGifts">查询</BaseButton>
+        </div>
+        <BaseTable
+          :columns="giftColumns"
+          :data="(giftRows as unknown) as Record<string, unknown>[]"
+          :loading="giftLoading"
+          min-width="860px"
+        >
+          <template #cell-cost_amount="{ row }">{{ fmtMoney((row as MemberGiftRecord).cost_amount) }}</template>
+        </BaseTable>
+        <div class="flex justify-end">
+          <BasePagination
+            :page="giftPage"
+            :page-size="giftPageSize"
+            :total="giftTotal"
+            @update:page="(p) => (giftPage = p)"
+            @update:page-size="(s) => (giftPageSize = s)"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="giftDlg = false">关闭</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -139,8 +176,8 @@ import {
   BaseTableRowActions,
 } from '@/components/base'
 import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
-import { adjustMemberBalance, createMember, deleteMember, listMemberConsumptions, listMembers, updateMember } from '@/api/member'
-import type { MemberConsumptionRecord, MemberRow } from '@/api/types'
+import { adjustMemberBalance, createMember, deleteMember, listMemberConsumptions, listMemberGiftRecords, listMembers, updateMember } from '@/api/member'
+import type { MemberConsumptionRecord, MemberGiftRecord, MemberRow } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 
@@ -189,6 +226,16 @@ const consColumns: BaseTableColumn[] = [
   { key: 'total_amount', label: '销售额', width: '100px' },
   { key: 'consumable_amount', label: '消耗品', width: '100px' },
   { key: 'net_income_amount', label: '净利润', width: '100px' },
+]
+const giftColumns: BaseTableColumn[] = [
+  { key: 'created_at', label: '日期', prop: 'created_at', width: '170px' },
+  { key: 'order_no', label: '单号', prop: 'order_no', minWidth: '150px', ellipsis: true },
+  { key: 'product_name', label: '商品', prop: 'product_name', minWidth: '160px', ellipsis: true },
+  { key: 'unit', label: '规格', prop: 'unit', width: '110px' },
+  { key: 'quantity', label: '数量', prop: 'quantity', width: '90px' },
+  { key: 'cost_amount', label: '成本金额', width: '110px' },
+  { key: 'reason', label: '原因', prop: 'reason', minWidth: '180px', ellipsis: true },
+  { key: 'operator_name', label: '操作人', prop: 'operator_name', width: '100px' },
 ]
 
 function fmtMoney(v: string | number): string {
@@ -316,6 +363,7 @@ async function onDelete(row: MemberRow): Promise<void> {
 function memberRowActions(row: MemberRow): TableRowAction[] {
   return [
     { label: '消费记录', permission: 'store:member:list', onClick: () => openConsumptions(row) },
+    { label: '赠品记录', permission: 'store:member:list', onClick: () => openGifts(row) },
     { label: '编辑', permission: 'store:member:edit', onClick: () => openEdit(row) },
     { label: '调余额', permission: 'store:member:balance', onClick: () => openAdjust(row) },
     { label: '删除', permission: 'store:member:delete', danger: true, onClick: () => void onDelete(row) },
@@ -397,6 +445,59 @@ function openConsumptions(row: MemberRow): void {
 watch([consPage, consPageSize], () => {
   if (consDlg.value) {
     void loadConsumptions()
+  }
+})
+
+const giftDlg = ref(false)
+const giftLoading = ref(false)
+const giftMember = ref<MemberRow | null>(null)
+const giftStart = ref('')
+const giftEnd = ref('')
+const giftPage = ref(1)
+const giftPageSize = ref(10)
+const giftTotal = ref(0)
+const giftRows = ref<MemberGiftRecord[]>([])
+
+async function loadGifts(): Promise<void> {
+  if (!giftMember.value) return
+  giftLoading.value = true
+  try {
+    const data = await listMemberGiftRecords(giftMember.value.id, {
+      start_date: giftStart.value || undefined,
+      end_date: giftEnd.value || undefined,
+      page: giftPage.value,
+      page_size: giftPageSize.value,
+    })
+    giftRows.value = data.list ?? []
+    giftTotal.value = Number(data.total ?? 0)
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载赠品记录失败')
+  } finally {
+    giftLoading.value = false
+  }
+}
+
+function reloadGifts(): void {
+  giftPage.value = 1
+  void loadGifts()
+}
+
+function openGifts(row: MemberRow): void {
+  giftMember.value = row
+  const r = currentMonthRange()
+  giftStart.value = r.start
+  giftEnd.value = r.end
+  giftPage.value = 1
+  giftPageSize.value = 10
+  giftTotal.value = 0
+  giftRows.value = []
+  giftDlg.value = true
+  void loadGifts()
+}
+
+watch([giftPage, giftPageSize], () => {
+  if (giftDlg.value) {
+    void loadGifts()
   }
 })
 </script>

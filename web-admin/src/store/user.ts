@@ -19,6 +19,15 @@ export const useUserStore = defineStore('user', () => {
     return false
   }
 
+  function hasInventoryLossMenu(list: Menu[] | undefined): boolean {
+    if (!list?.length) return false
+    for (const m of list) {
+      if (m.path === '/store/inventory-loss' || m.component === 'store/inventory-loss/index') return true
+      if (m.children?.length && hasInventoryLossMenu(m.children)) return true
+    }
+    return false
+  }
+
   function attachStatisticsMenu(list: Menu[]): Menu[] {
     if (hasStatisticsMenu(list)) return list
 
@@ -45,6 +54,35 @@ export const useUserStore = defineStore('user', () => {
       return cloned
     }
     cloned.push(statsMenu)
+    return cloned
+  }
+
+  function attachInventoryLossMenu(list: Menu[]): Menu[] {
+    if (hasInventoryLossMenu(list)) return list
+
+    const lossMenu: Menu = {
+      id: -10002,
+      parent_id: 0,
+      name: 'inventory-loss-open',
+      title: '报损/赠送',
+      icon: 'storage',
+      path: '/store/inventory-loss',
+      component: 'store/inventory-loss/index',
+      type: 2,
+      sort: 998,
+      permission: '',
+      visible: 1,
+      status: 1,
+    }
+
+    const cloned = JSON.parse(JSON.stringify(list)) as Menu[]
+    const storeNode = cloned.find((m) => m.type === 1 && (m.path === '/store' || m.name === 'store'))
+    if (storeNode) {
+      storeNode.children = storeNode.children ?? []
+      storeNode.children.push({ ...lossMenu, parent_id: storeNode.id })
+      return cloned
+    }
+    cloned.push(lossMenu)
     return cloned
   }
 
@@ -97,7 +135,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function setMenus(list: Menu[]): void {
-    menus.value = attachStatisticsMenu(list ?? [])
+    menus.value = attachInventoryLossMenu(attachStatisticsMenu(list ?? []))
   }
 
   function setTenantId(id: number): void {

@@ -5,9 +5,9 @@ import "time"
 // ProductUnitSpec 商品多单位配置（基础单位：L）
 type ProductUnitSpec struct {
 	ID           uint      `json:"id" gorm:"primaryKey;autoIncrement"`
-	ProductID    uint      `json:"product_id" gorm:"not null;index;comment:商品ID"`
-	UnitCode     string    `json:"unit_code" gorm:"type:varchar(50);not null;comment:单位编码，如 bottle/case/barrel/liter"`
-	UnitName     string    `json:"unit_name" gorm:"type:varchar(50);not null;comment:单位名称，如 瓶/箱/桶/L"`
+	ProductID    uint      `json:"product_id" gorm:"not null;index;uniqueIndex:uk_product_unit_specs_product_unit_name,priority:1;comment:商品ID"`
+	UnitCode     string    `json:"unit_code" gorm:"type:varchar(50);not null;uniqueIndex:uk_product_unit_specs_product_unit_name,priority:2;comment:单位编码，如 bottle/case/barrel/liter"`
+	UnitName     string    `json:"unit_name" gorm:"type:varchar(50);not null;uniqueIndex:uk_product_unit_specs_product_unit_name,priority:3;comment:单位名称，如 瓶/箱/桶/L"`
 	FactorToBase float64   `json:"factor_to_base" gorm:"type:decimal(12,6);not null;default:1;comment:换算到基础单位L的系数"`
 	Precision    int       `json:"precision" gorm:"not null;default:0;comment:数量精度(小数位)"`
 	CostPrice    float64   `json:"cost_price" gorm:"type:decimal(10,2);not null;default:0;comment:单位成本价"`

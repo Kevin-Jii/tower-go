@@ -1,5 +1,5 @@
 import { http, unwrap } from './http'
-import type { MemberConsumptionPage, MemberRow, Paginated } from './types'
+import type { MemberConsumptionPage, MemberGiftRecord, MemberRow, Paginated } from './types'
 
 export async function listMembers(params?: {
   page?: number
@@ -42,5 +42,15 @@ export async function listMemberConsumptions(
   params?: { start_date?: string; end_date?: string; page?: number; page_size?: number },
 ): Promise<MemberConsumptionPage> {
   const res = await http.get<import('./types').ApiEnvelope<MemberConsumptionPage>>(`/members/${id}/consumptions`, { params })
+  return unwrap(res)
+}
+
+export async function listMemberGiftRecords(
+  id: number,
+  params?: { start_date?: string; end_date?: string; page?: number; page_size?: number },
+): Promise<Paginated<MemberGiftRecord>> {
+  const res = await http.get<import('./types').ApiEnvelope<Paginated<MemberGiftRecord>>>(`/members/${id}/gift-records`, {
+    params,
+  })
   return unwrap(res)
 }

@@ -461,7 +461,19 @@ func GetRawConnectionPoolStats() (*sql.DBStats, error) {
 
 // CreateOptimizedIndexes 创建优化后的数据库索引
 func CreateOptimizedIndexes(db *gorm.DB) error {
-	// 这里的实现需要根据实际需求添加
-	// 可以使用 db.Exec() 执行 CREATE INDEX 语句
+	if db.Migrator().HasTable("product_unit_specs") {
+		if db.Migrator().HasIndex("product_unit_specs", "uk_product_unit_specs_product_unit") {
+			if err := db.Migrator().DropIndex("product_unit_specs", "uk_product_unit_specs_product_unit"); err != nil {
+				return err
+			}
+		}
+		if !db.Migrator().HasIndex("product_unit_specs", "uk_product_unit_specs_product_unit_name") {
+			if err := db.Exec(
+				"CREATE UNIQUE INDEX uk_product_unit_specs_product_unit_name ON product_unit_specs (product_id, unit_code, unit_name)",
+			).Error; err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }

@@ -135,6 +135,24 @@ func resolveUnitCostFromSpecs(unit string, specs []*model.ProductUnitSpec) float
 	return 0
 }
 
+func isTakeoutChannelValue(value string) bool {
+	v := strings.ToLower(strings.TrimSpace(value))
+	if v == "" {
+		return false
+	}
+	tokens := []string{
+		"takeout", "waimai", "meituan", "eleme", "elm",
+		"taobao", "tb", "flash", "shangou", "jd", "jingdong",
+		"外卖", "美团", "饿了么", "淘宝", "闪购", "京东",
+	}
+	for _, token := range tokens {
+		if strings.Contains(v, strings.ToLower(token)) {
+			return true
+		}
+	}
+	return false
+}
+
 type StoreAccountService struct {
 	storeAccountModule    *module.StoreAccountModule
 	inventoryModule       *module.InventoryModule
@@ -189,7 +207,10 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	}
 
 	accountNo := s.storeAccountModule.GenerateAccountNo()
-	orderNo := fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
+	orderNo := strings.TrimSpace(req.OrderNo)
+	if orderNo == "" {
+		orderNo = fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
+	}
 
 	// 记账日期由后端默认当前时间
 	accountDate := time.Now()
@@ -346,6 +367,13 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 			Remark:      item.Remark,
 		})
 		consumableAmount += amount
+	}
+
+	if req.IncomeAmount != nil {
+		if !s.isTakeoutChannel(req.Channel) {
+			return nil, fmt.Errorf("仅外卖平台渠道支持自定义收入金额")
+		}
+		totalAmount = *req.IncomeAmount
 	}
 
 	account := &model.StoreAccount{
@@ -797,6 +825,18 @@ func (s *StoreAccountService) buildAccountActionCard(account *model.StoreAccount
 	return title, b.String(), buttonTitle, buttonURL
 }
 
+func (s *StoreAccountService) isTakeoutChannel(channel string) bool {
+	if isTakeoutChannelValue(channel) {
+		return true
+	}
+	if s.dictModule != nil && strings.TrimSpace(channel) != "" {
+		if dictData, err := s.dictModule.GetDataByTypeAndValue("sales_channel", channel); err == nil && dictData != nil {
+			return isTakeoutChannelValue(dictData.Label) || isTakeoutChannelValue(dictData.Remark)
+		}
+	}
+	return false
+}
+
 // Get 获取记账详情
 func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
 	account, err := s.storeAccountModule.GetByID(id)
@@ -831,9 +871,14 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	}
 
 	updates := make(map[string]interface{})
+	nextChannel := account.Channel
+	nextTotalAmount := account.TotalAmount
+	nextOtherExpenseAmount := account.OtherExpenseAmount
+	shouldRecalculateNetIncome := false
 
 	if req.Channel != "" {
 		updates["channel"] = req.Channel
+		nextChannel = req.Channel
 	}
 	if req.PaymentStatus != nil {
 		updates["payment_status"] = resolvePaymentStatus(*req.PaymentStatus)
@@ -851,7 +896,7 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 		}
 	}
 	if req.OrderNo != "" {
-		updates["order_no"] = req.OrderNo
+		updates["order_no"] = strings.TrimSpace(req.OrderNo)
 	}
 	if req.TagCode != "" {
 		updates["tag_code"] = req.TagCode
@@ -869,12 +914,24 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	}
 	if req.OtherExpenseAmount != nil {
 		updates["other_expense_amount"] = *req.OtherExpenseAmount
+		nextOtherExpenseAmount = *req.OtherExpenseAmount
+		shouldRecalculateNetIncome = true
+	}
+	if req.IncomeAmount != nil {
+		if !s.isTakeoutChannel(nextChannel) {
+			return fmt.Errorf("仅外卖平台渠道支持自定义收入金额")
+		}
+		updates["total_amount"] = *req.IncomeAmount
+		nextTotalAmount = *req.IncomeAmount
+		shouldRecalculateNetIncome = true
+	}
+	if shouldRecalculateNetIncome {
 		var consumableTotal float64
 		for _, c := range account.Consumables {
 			consumableTotal += c.Amount
 		}
 		itemCostTotal := s.calculateAccountItemCost(account.Items)
-		updates["net_income_amount"] = account.TotalAmount - *req.OtherExpenseAmount - consumableTotal - itemCostTotal
+		updates["net_income_amount"] = nextTotalAmount - nextOtherExpenseAmount - consumableTotal - itemCostTotal
 	}
 
 	if len(updates) == 0 {

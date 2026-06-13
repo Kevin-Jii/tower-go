@@ -61,6 +61,14 @@
         <BaseFormItem label="渠道" required>
           <BaseSelect v-model="customForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
         </BaseFormItem>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <BaseFormItem label="订单编号">
+            <BaseInput v-model="customForm.order_no" placeholder="如 美团1号、淘宝闪购1号" />
+          </BaseFormItem>
+          <BaseFormItem v-if="isTakeoutChannel(customForm.channel)" label="收入金额">
+            <BaseNumberInput v-model="customForm.income_amount" :min="0" :step="0.01" placeholder="留空按明细合计" />
+          </BaseFormItem>
+        </div>
         <BaseFormItem label="绑定会员">
           <BaseSelect v-model="customForm.member_id" :options="memberOptionsWithNone" placeholder="可选，默认不绑定" />
         </BaseFormItem>
@@ -110,6 +118,14 @@
         <BaseFormItem label="渠道" required>
           <BaseSelect v-model="cForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
         </BaseFormItem>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <BaseFormItem label="订单编号">
+            <BaseInput v-model="cForm.order_no" placeholder="如 美团1号、淘宝闪购1号" />
+          </BaseFormItem>
+          <BaseFormItem v-if="isTakeoutChannel(cForm.channel)" label="收入金额">
+            <BaseNumberInput v-model="cForm.income_amount" :min="0" :step="0.01" placeholder="留空按明细合计" />
+          </BaseFormItem>
+        </div>
         <BaseFormItem label="绑定会员">
           <BaseSelect v-model="cForm.member_id" :options="memberOptionsWithNone" placeholder="可选，默认不绑定" />
         </BaseFormItem>
@@ -163,6 +179,12 @@
       <div class="space-y-4">
         <BaseFormItem label="渠道">
           <BaseSelect v-model="eForm.channel" :options="channelOptions" placeholder="请选择销售渠道" />
+        </BaseFormItem>
+        <BaseFormItem label="订单编号">
+          <BaseInput v-model="eForm.order_no" placeholder="如 美团1号、淘宝闪购1号" />
+        </BaseFormItem>
+        <BaseFormItem v-if="isTakeoutChannel(eForm.channel)" label="收入金额">
+          <BaseNumberInput v-model="eForm.income_amount" :min="0" :step="0.01" placeholder="留空不修改" />
         </BaseFormItem>
         <BaseFormItem label="绑定会员">
           <BaseSelect v-model="eForm.member_id" :options="memberOptionsWithNone" placeholder="可选，默认不绑定" />
@@ -475,6 +497,14 @@ const channelDictMap = computed(() => {
   }
   return map
 })
+const takeoutChannelTokens = ['takeout', 'waimai', 'meituan', 'eleme', 'elm', 'taobao', 'tb', 'flash', 'shangou', 'jd', 'jingdong', '外卖', '美团', '饿了么', '淘宝', '闪购', '京东']
+function isTakeoutChannel(channel: string | undefined): boolean {
+  const raw = String(channel || '').trim()
+  if (!raw) return false
+  const label = channelDictMap.value.get(raw) || ''
+  const text = `${raw} ${label}`.toLowerCase()
+  return takeoutChannelTokens.some((token) => text.includes(token.toLowerCase()))
+}
 const { data: membersPageData } = useQuery({
   queryKey: ['store-account-members'],
   queryFn: () => listMembers({ page: 1, page_size: 200 }),
@@ -535,15 +565,11 @@ watch(
 )
 
 const columns: BaseTableColumn[] = [
-  { key: 'account_no', label: '记账编号', prop: 'account_no', minWidth: '140px', ellipsis: true },
   { key: 'channel', label: '渠道', prop: 'channel', width: '100px' },
   { key: 'member', label: '会员', width: '150px', ellipsis: true },
   { key: 'payment_status', label: '支付状态', width: '96px' },
-  { key: 'order_no', label: '订单号', prop: 'order_no', minWidth: '120px', ellipsis: true },
   { key: 'total_amount', label: '销售额', prop: 'total_amount', width: '96px' },
-  { key: 'net_income_amount', label: '净利润', prop: 'net_income_amount', width: '96px' },
-  { key: 'account_date', label: '日期', width: '120px' },
-  { key: 'actions', label: '操作', width: '140px', align: 'right' },
+  { key: 'actions', label: '操作', width: '190px', minWidth: '190px', align: 'right', fixed: 'right' },
 ]
 
 function formatDate(v: string): string {
@@ -622,6 +648,8 @@ interface AccountLine {
 }
 const cForm = reactive({
   channel: '',
+  order_no: '',
+  income_amount: undefined as number | undefined,
   member_id: 0,
   payment_status: 1,
   lines: [] as AccountLine[],
@@ -637,6 +665,8 @@ interface CustomAccountLine {
 }
 const customForm = reactive({
   channel: '',
+  order_no: '',
+  income_amount: undefined as number | undefined,
   member_id: 0,
   payment_status: 1,
   lines: [] as CustomAccountLine[],
@@ -645,6 +675,8 @@ const customForm = reactive({
 
 function openCreate(): void {
   cForm.channel = ''
+  cForm.order_no = ''
+  cForm.income_amount = undefined
   cForm.member_id = 0
   cForm.payment_status = 1
   cForm.lines = [makeAccountLine()]
@@ -664,6 +696,8 @@ function makeCustomLine(): CustomAccountLine {
 
 function openCustomCreate(): void {
   customForm.channel = ''
+  customForm.order_no = ''
+  customForm.income_amount = undefined
   customForm.member_id = 0
   customForm.payment_status = 1
   customForm.lines = [makeCustomLine()]
@@ -795,6 +829,11 @@ async function submitCustomCreate(): Promise<void> {
     toast.warning('请至少添加一条明细')
     return
   }
+  const incomeAmount = isTakeoutChannel(customForm.channel) ? customForm.income_amount : undefined
+  if (incomeAmount !== undefined && (!Number.isFinite(Number(incomeAmount)) || Number(incomeAmount) < 0)) {
+    toast.warning('请填写有效的收入金额')
+    return
+  }
   saving.value = true
   try {
     await createStoreAccount({
@@ -802,6 +841,8 @@ async function submitCustomCreate(): Promise<void> {
       member_id: customForm.member_id > 0 ? customForm.member_id : undefined,
       payment_status: customForm.payment_status,
       channel: customForm.channel.trim(),
+      order_no: customForm.order_no.trim() || undefined,
+      income_amount: incomeAmount,
       remark: customForm.remark.trim(),
       other_expense_amount: 0,
       items,
@@ -841,6 +882,11 @@ async function submitCreate(): Promise<void> {
     toast.warning('请至少选择一条有效商品明细')
     return
   }
+  const incomeAmount = isTakeoutChannel(cForm.channel) ? cForm.income_amount : undefined
+  if (incomeAmount !== undefined && (!Number.isFinite(Number(incomeAmount)) || Number(incomeAmount) < 0)) {
+    toast.warning('请填写有效的收入金额')
+    return
+  }
   saving.value = true
   try {
     await createStoreAccount({
@@ -848,6 +894,8 @@ async function submitCreate(): Promise<void> {
       member_id: cForm.member_id > 0 ? cForm.member_id : undefined,
       payment_status: cForm.payment_status,
       channel: cForm.channel.trim(),
+      order_no: cForm.order_no.trim() || undefined,
+      income_amount: incomeAmount,
       remark: cForm.remark.trim(),
       other_expense_amount: 0,
       items,
@@ -868,6 +916,8 @@ const eForm = reactive({
   member_id: 0,
   payment_status: 1,
   channel: '',
+  order_no: '',
+  income_amount: undefined as number | undefined,
   tag_code: '',
   tag_name: '',
   remark: '',
@@ -882,6 +932,8 @@ function openEdit(row: StoreAccount): void {
   eForm.member_id = Number(row.member_id || 0)
   eForm.payment_status = Number(row.payment_status || 1)
   eForm.channel = row.channel ?? ''
+  eForm.order_no = row.order_no ?? ''
+  eForm.income_amount = isTakeoutChannel(eForm.channel) ? Number(row.total_amount || 0) : undefined
   eForm.tag_code = row.tag_code ?? ''
   eForm.tag_name = row.tag_name ?? ''
   eForm.remark = row.remark ?? ''
@@ -889,12 +941,19 @@ function openEdit(row: StoreAccount): void {
 }
 
 async function submitEdit(): Promise<void> {
+  const incomeAmount = isTakeoutChannel(eForm.channel) ? eForm.income_amount : undefined
+  if (incomeAmount !== undefined && (!Number.isFinite(Number(incomeAmount)) || Number(incomeAmount) < 0)) {
+    toast.warning('请填写有效的收入金额')
+    return
+  }
   saving.value = true
   try {
     await updateStoreAccount(editId.value, {
       member_id: eForm.member_id,
       payment_status: eForm.payment_status,
       channel: eForm.channel.trim(),
+      order_no: eForm.order_no.trim() || undefined,
+      income_amount: incomeAmount,
       tag_code: eForm.tag_code.trim(),
       tag_name: eForm.tag_name.trim(),
       remark: eForm.remark.trim(),

@@ -327,6 +327,107 @@ CREATE TABLE IF NOT EXISTS `third_party_orders` (
   KEY `idx_third_party_orders_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方同步订单';
 
+CREATE TABLE IF NOT EXISTS `meituan_ai_accounts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `shop_name` VARCHAR(100) NOT NULL,
+  `shop_id` VARCHAR(100) DEFAULT NULL,
+  `login_name` VARCHAR(100) DEFAULT NULL,
+  `auth_status` VARCHAR(20) NOT NULL DEFAULT 'manual',
+  `is_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `last_imported_at` DATETIME(3) DEFAULT NULL,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_meituan_ai_accounts_store_id` (`store_id`),
+  KEY `idx_meituan_ai_accounts_shop_id` (`shop_id`),
+  KEY `idx_meituan_ai_accounts_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='美团AI运营账号';
+
+CREATE TABLE IF NOT EXISTS `meituan_ai_orders` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `account_id` BIGINT UNSIGNED NOT NULL,
+  `order_no` VARCHAR(100) NOT NULL,
+  `order_time` DATETIME(3) NOT NULL,
+  `customer_name` VARCHAR(100) DEFAULT NULL,
+  `product_summary` VARCHAR(500) DEFAULT NULL,
+  `original_amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `actual_amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `delivery_fee` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `platform_fee` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `status` VARCHAR(50) DEFAULT NULL,
+  `store_account_id` BIGINT UNSIGNED DEFAULT NULL,
+  `imported_at` DATETIME(3) DEFAULT NULL,
+  `raw_json` LONGTEXT,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_meituan_ai_orders_account_order` (`account_id`, `order_no`),
+  KEY `idx_meituan_ai_orders_store_id` (`store_id`),
+  KEY `idx_meituan_ai_orders_account_id` (`account_id`),
+  KEY `idx_meituan_ai_orders_order_no` (`order_no`),
+  KEY `idx_meituan_ai_orders_order_time` (`order_time`),
+  KEY `idx_meituan_ai_orders_store_account_id` (`store_account_id`),
+  KEY `idx_meituan_ai_orders_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='美团AI运营订单';
+
+CREATE TABLE IF NOT EXISTS `meituan_ai_reviews` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `account_id` BIGINT UNSIGNED NOT NULL,
+  `review_id` VARCHAR(100) DEFAULT NULL,
+  `order_no` VARCHAR(100) DEFAULT NULL,
+  `rating` INT NOT NULL DEFAULT 0,
+  `content` TEXT,
+  `sentiment` VARCHAR(20) DEFAULT NULL,
+  `tags` VARCHAR(255) DEFAULT NULL,
+  `suggested_reply` TEXT,
+  `review_time` DATETIME(3) NOT NULL,
+  `reply_status` VARCHAR(20) DEFAULT 'pending',
+  `imported_at` DATETIME(3) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_meituan_ai_reviews_account_review` (`account_id`, `review_id`),
+  KEY `idx_meituan_ai_reviews_store_id` (`store_id`),
+  KEY `idx_meituan_ai_reviews_account_id` (`account_id`),
+  KEY `idx_meituan_ai_reviews_review_id` (`review_id`),
+  KEY `idx_meituan_ai_reviews_order_no` (`order_no`),
+  KEY `idx_meituan_ai_reviews_review_time` (`review_time`),
+  KEY `idx_meituan_ai_reviews_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='美团AI运营评价';
+
+CREATE TABLE IF NOT EXISTS `meituan_ai_suggestions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `account_id` BIGINT UNSIGNED NOT NULL,
+  `type` VARCHAR(30) NOT NULL,
+  `title` VARCHAR(120) NOT NULL,
+  `content` TEXT,
+  `reason` TEXT,
+  `impact_score` INT NOT NULL DEFAULT 0,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+  `action_payload` TEXT,
+  `generated_at` DATETIME(3) DEFAULT NULL,
+  `approved_at` DATETIME(3) DEFAULT NULL,
+  `done_at` DATETIME(3) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_meituan_ai_suggestions_store_id` (`store_id`),
+  KEY `idx_meituan_ai_suggestions_account_id` (`account_id`),
+  KEY `idx_meituan_ai_suggestions_type` (`type`),
+  KEY `idx_meituan_ai_suggestions_status` (`status`),
+  KEY `idx_meituan_ai_suggestions_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='美团AI运营建议';
+
 CREATE TABLE IF NOT EXISTS `third_party_routes` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,

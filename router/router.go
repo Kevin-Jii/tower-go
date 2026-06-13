@@ -39,6 +39,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterFileRoutes(v1, c.File)
 	api.RegisterGalleryRoutes(v1, c.Gallery)
 	api.RegisterStoreAccountRoutes(v1, c)
+	api.RegisterMeituanAIRoutes(v1, c)
 	api.RegisterStatisticsRoutes(v1, c)
 	api.RegisterMessageTemplateRoutes(v1, c)
 	api.RegisterMemberRoutes(v1, c)

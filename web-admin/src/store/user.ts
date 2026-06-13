@@ -28,6 +28,15 @@ export const useUserStore = defineStore('user', () => {
     return false
   }
 
+  function hasMeituanAIMenu(list: Menu[] | undefined): boolean {
+    if (!list?.length) return false
+    for (const m of list) {
+      if (m.path === '/store/meituan-ai' || m.component === 'store/meituan-ai/index') return true
+      if (m.children?.length && hasMeituanAIMenu(m.children)) return true
+    }
+    return false
+  }
+
   function attachStatisticsMenu(list: Menu[]): Menu[] {
     if (hasStatisticsMenu(list)) return list
 
@@ -86,6 +95,35 @@ export const useUserStore = defineStore('user', () => {
     return cloned
   }
 
+  function attachMeituanAIMenu(list: Menu[]): Menu[] {
+    if (hasMeituanAIMenu(list)) return list
+
+    const aiMenu: Menu = {
+      id: -10003,
+      parent_id: 0,
+      name: 'meituan-ai-operation',
+      title: 'AI运营',
+      icon: 'robot',
+      path: '/store/meituan-ai',
+      component: 'store/meituan-ai/index',
+      type: 2,
+      sort: 997,
+      permission: '',
+      visible: 1,
+      status: 1,
+    }
+
+    const cloned = JSON.parse(JSON.stringify(list)) as Menu[]
+    const storeNode = cloned.find((m) => m.type === 1 && (m.path === '/store' || m.name === 'store'))
+    if (storeNode) {
+      storeNode.children = storeNode.children ?? []
+      storeNode.children.push({ ...aiMenu, parent_id: storeNode.id })
+      return cloned
+    }
+    cloned.push(aiMenu)
+    return cloned
+  }
+
   const token = ref('')
   const userInfo = ref<User | null>(null)
   const permissions = ref<string[]>([])
@@ -135,7 +173,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function setMenus(list: Menu[]): void {
-    menus.value = attachInventoryLossMenu(attachStatisticsMenu(list ?? []))
+    menus.value = attachMeituanAIMenu(attachInventoryLossMenu(attachStatisticsMenu(list ?? [])))
   }
 
   function setTenantId(id: number): void {

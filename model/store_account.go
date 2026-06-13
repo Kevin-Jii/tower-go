@@ -73,6 +73,8 @@ type CreateStoreAccountReq struct {
 	MemberID           *uint                             `json:"member_id"`
 	PaymentStatus      int                               `json:"payment_status" binding:"omitempty,oneof=1 2"`
 	Channel            string                            `json:"channel" binding:"required,max=50"`
+	OrderNo            string                            `json:"order_no" binding:"max=100"`
+	IncomeAmount       *float64                          `json:"income_amount" binding:"omitempty,gte=0"`
 	TagCode            string                            `json:"tag_code" binding:"max=50"`
 	TagName            string                            `json:"tag_name" binding:"max=100"`
 	Remark             string                            `json:"remark" binding:"max=500"`
@@ -100,7 +102,7 @@ type CreateStoreAccountItemReq struct {
 	Quantity    float64 `json:"quantity" binding:"required,gt=0"`
 	Unit        string  `json:"unit" binding:"max=20"`  // 单位（如“瓶”“箱”），用于自动选价；自定义明细时由用户填写
 	Price       float64 `json:"price" binding:"gte=0"`  // 自定义明细时必填 >0；系统商品时可由后端按规格取价
-	Amount      float64 `json:"amount" binding:"gte=0"`   // 可选：不传或传0时，后端按 price*quantity 自动计算
+	Amount      float64 `json:"amount" binding:"gte=0"` // 可选：不传或传0时，后端按 price*quantity 自动计算
 	Remark      string  `json:"remark" binding:"max=500"`
 }
 
@@ -110,6 +112,7 @@ type UpdateStoreAccountReq struct {
 	PaymentStatus      *int     `json:"payment_status" binding:"omitempty,oneof=1 2"`
 	Channel            string   `json:"channel" binding:"max=50"`
 	OrderNo            string   `json:"order_no" binding:"max=100"`
+	IncomeAmount       *float64 `json:"income_amount" binding:"omitempty,gte=0"`
 	TagCode            string   `json:"tag_code" binding:"max=50"`
 	TagName            string   `json:"tag_name" binding:"max=100"`
 	Remark             string   `json:"remark" binding:"max=500"`

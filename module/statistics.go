@@ -304,6 +304,28 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount); err != nil {
 		return nil, err
 	}
+	var consumableAmount float64
+	consumableQuery := m.db.Table("store_account_consumables AS sac").
+		Joins("JOIN store_accounts AS sa ON sa.id = sac.account_id AND sa.deleted_at IS NULL").
+		Where("sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
+	if storeID > 0 {
+		consumableQuery = consumableQuery.Where("sa.store_id = ?", storeID)
+	}
+	if err := consumableQuery.Select("COALESCE(SUM(sac.amount), 0)").Scan(&consumableAmount).Error; err != nil {
+		return nil, err
+	}
+
+	var itemCostAmount float64
+	itemCostQuery := m.db.Table("store_account_items AS sai").
+		Joins("JOIN store_accounts AS sa ON sa.id = sai.account_id AND sa.deleted_at IS NULL").
+		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
+		Where("sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
+	if storeID > 0 {
+		itemCostQuery = itemCostQuery.Where("sa.store_id = ?", storeID)
+	}
+	if err := itemCostQuery.Select("COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price, 0)), 0)").Scan(&itemCostAmount).Error; err != nil {
+		return nil, err
+	}
 
 	inOutQuery := m.db.Model(&model.InventoryOrder{}).
 		Where("deleted_at IS NULL AND DATE(created_at) >= ? AND DATE(created_at) <= ?", startDate, endDate)
@@ -317,8 +339,8 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 		return nil, err
 	}
 
-	stats.GrossProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount
-	stats.NetProfitAmount = stats.GrossProfitAmount - stats.OutboundAmount
+	stats.GrossProfitAmount = stats.SalesAmount - itemCostAmount
+	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - consumableAmount - itemCostAmount
 
 	return stats, nil
 }

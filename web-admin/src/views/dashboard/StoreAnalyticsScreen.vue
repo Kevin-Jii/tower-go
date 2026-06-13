@@ -106,7 +106,7 @@ defineProps<{
   fullscreen?: boolean
 }>()
 
-const period = ref('today')
+const period = ref('month')
 const periodOptions = [
   { label: '今日', value: 'today' },
   { label: '本周', value: 'week' },

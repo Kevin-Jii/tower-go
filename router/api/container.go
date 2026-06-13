@@ -29,6 +29,7 @@ type Controllers struct {
 	File              *controller.FileController
 	Gallery           *controller.GalleryController
 	StoreAccount      *controller.StoreAccountController
+	MeituanAI         *controller.MeituanAIController
 	Statistics        *controller.StatisticsController
 	MessageTemplate   *controller.MessageTemplateController
 	Member            *controller.MemberController
@@ -61,6 +62,7 @@ func BuildControllers() *Controllers {
 	inventoryLossModule := userModulePkg.NewInventoryLossModule(database.DB)
 	galleryModule := userModulePkg.NewGalleryModule(database.DB)
 	storeAccountModule := userModulePkg.NewStoreAccountModule(database.DB)
+	meituanAIModule := userModulePkg.NewMeituanAIModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
 	memberModule := userModulePkg.NewMemberModule(database.DB)
@@ -116,6 +118,7 @@ func BuildControllers() *Controllers {
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
+	meituanAIService := service.NewMeituanAIService(meituanAIModule)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 	memberService := service.NewMemberService(memberModule)
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
@@ -171,6 +174,7 @@ func BuildControllers() *Controllers {
 		File:              fileController,
 		Gallery:           galleryController,
 		StoreAccount:      controller.NewStoreAccountController(storeAccountService),
+		MeituanAI:         controller.NewMeituanAIController(meituanAIService),
 		Statistics:        controller.NewStatisticsController(statisticsService),
 		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
 		Member:            controller.NewMemberController(memberService),

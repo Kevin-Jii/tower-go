@@ -74,6 +74,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '报损/自用/赠送' },
       },
       {
+        path: 'store/meituan-ai',
+        name: 'MeituanAIOperation',
+        component: () => import('@/views/store/meituan-ai/index.vue'),
+        meta: { title: 'AI运营' },
+      },
+      {
         path: 'system/third-party-account',
         name: 'ThirdPartyAccount',
         component: () => import('@/views/system/third-party-account/index.vue'),

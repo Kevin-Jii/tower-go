@@ -222,6 +222,83 @@ export interface ThirdPartyLogisticsSheet {
   updated_at?: string
 }
 
+export interface MeituanAIAccount {
+  id: number
+  store_id: number
+  shop_name: string
+  shop_id?: string
+  login_name?: string
+  auth_status?: string
+  is_enabled: boolean
+  last_imported_at?: string
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface MeituanAIOrder {
+  id: number
+  store_id: number
+  account_id: number
+  order_no: string
+  order_time: string
+  customer_name?: string
+  product_summary?: string
+  original_amount: number
+  actual_amount: number
+  delivery_fee: number
+  platform_fee: number
+  refund_amount: number
+  status?: string
+  store_account_id?: number
+  imported_at?: string
+}
+
+export interface MeituanAIReview {
+  id: number
+  store_id: number
+  account_id: number
+  review_id?: string
+  order_no?: string
+  rating: number
+  content?: string
+  sentiment?: string
+  tags?: string
+  suggested_reply?: string
+  review_time: string
+  reply_status?: string
+  imported_at?: string
+}
+
+export interface MeituanAISuggestion {
+  id: number
+  store_id: number
+  account_id: number
+  type: string
+  title: string
+  content?: string
+  reason?: string
+  impact_score: number
+  status: 'pending' | 'approved' | 'done' | 'ignored'
+  action_payload?: string
+  generated_at?: string
+  approved_at?: string
+  done_at?: string
+}
+
+export interface MeituanAIDashboard {
+  order_count: number
+  sales_amount: number
+  refund_amount: number
+  platform_fee: number
+  avg_order_amount: number
+  review_count: number
+  negative_count: number
+  negative_rate: number
+  pending_suggestions: number
+  top_products?: string[]
+}
+
 /** 供应商 */
 export interface Supplier {
   id: number

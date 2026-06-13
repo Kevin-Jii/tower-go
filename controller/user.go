@@ -1,14 +1,15 @@
 package controller
 
 import (
+	"log"
+	"strconv"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/auth"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/Kevin-Jii/tower-go/utils/session"
-	"log"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -359,7 +360,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 
 	user, err := c.userService.ValidateUser(req.Phone, req.Password)
 	if err != nil {
-		http.Error(ctx, 401, "账号或密码错误，请输入正确的账号和密码")
+		http.Error(ctx, 401, "认证失败，用户名或密码不匹配！")
 		return
 	}
 

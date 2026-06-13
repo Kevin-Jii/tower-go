@@ -27,6 +27,12 @@
     </a-breadcrumb>
 
     <div class="flex items-center gap-2 shrink-0 ml-auto">
+      <a-button class="data-center-btn" @click="goDataCenter">
+        <template #icon>
+          <IconApps />
+        </template>
+        数据中心
+      </a-button>
       <a-dropdown trigger="click" position="br" @select="onMenuSelect">
         <button type="button" class="user-menu-trigger" aria-label="用户菜单">
           <a-avatar :size="32" class="!bg-[rgb(var(--primary-6))] shrink-0">
@@ -53,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { IconDown, IconExport, IconMenu, IconMenuFold, IconMenuUnfold, IconUser } from '@arco-design/web-vue/es/icon'
+import { IconApps, IconDown, IconExport, IconMenu, IconMenuFold, IconMenuUnfold, IconUser } from '@arco-design/web-vue/es/icon'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLayoutStore } from '@/store/layout'
@@ -79,6 +85,10 @@ const displayName = computed(() => userStore.userInfo?.nickname || userStore.use
 
 const avatarText = computed(() => displayName.value.slice(0, 1).toUpperCase())
 
+function goDataCenter(): void {
+  void router.push('/dashboard')
+}
+
 async function onMenuSelect(value: string | number | Record<string, unknown> | undefined): Promise<void> {
   if (value === 'profile') {
     await router.push({ name: 'UserProfile' })
@@ -91,6 +101,17 @@ async function onMenuSelect(value: string | number | Record<string, unknown> | u
 </script>
 
 <style scoped>
+.data-center-btn {
+  height: 34px;
+  border-color: rgba(var(--primary-6), 0.22) !important;
+  background: rgba(var(--primary-6), 0.08) !important;
+  color: rgb(var(--primary-6)) !important;
+  font-weight: 600;
+}
+.data-center-btn:hover {
+  border-color: rgb(var(--primary-6)) !important;
+  background: rgba(var(--primary-6), 0.14) !important;
+}
 .user-menu-trigger {
   display: inline-flex;
   align-items: center;

@@ -42,15 +42,24 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    redirect: '/dashboard',
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('@/views/dashboard/index.vue'),
+    meta: { title: '经营数据大屏' },
+  },
+  {
+    path: '/',
     name: 'Layout',
     component: LayoutAdmin,
-    redirect: { name: 'Dashboard' },
     children: [
       {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('@/views/dashboard/index.vue'),
-        meta: { title: '工作台' },
+        path: 'admin',
+        name: 'AdminEntry',
+        component: () => import('@/views/AdminEntryRedirect.vue'),
+        meta: { title: '后台' },
       },
       {
         path: 'profile',

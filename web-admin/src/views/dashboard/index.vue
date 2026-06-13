@@ -1,6 +1,6 @@
 <template>
-  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
-    <StoreAnalyticsScreen />
+  <div class="dashboard-fullscreen-shell">
+    <StoreAnalyticsScreen fullscreen />
   </div>
 </template>
 
@@ -41,3 +41,14 @@ function scrollToAnalytics(): void {
 onMounted(scrollToAnalytics)
 watch(() => route.query.section, scrollToAnalytics)
 </script>
+
+<style scoped>
+.dashboard-fullscreen-shell {
+  width: 100vw;
+  height: 100vh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #050914;
+}
+</style>

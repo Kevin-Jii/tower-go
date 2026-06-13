@@ -1,107 +1,87 @@
 <template>
-  <section
-    id="dash-analytics"
-    ref="screenRoot"
-    class="dash-screen box-border w-full min-w-0 max-w-full overflow-x-hidden rounded-2xl border border-cyan-500/25 shadow-xl"
-  >
-    <div
-      class="dash-screen__bg absolute inset-0 pointer-events-none opacity-90"
-      aria-hidden="true"
-    />
-    <div class="relative z-10 box-border w-full min-w-0 p-4 md:p-6 space-y-5">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+  <section id="dash-analytics" ref="screenRoot"
+    class="dash-screen box-border w-full min-w-0 max-w-full overflow-hidden border border-cyan-500/25 shadow-xl"
+    :class="{ 'dash-screen--fullscreen': fullscreen }">
+    <div class="dash-screen__bg absolute inset-0 pointer-events-none opacity-90" aria-hidden="true" />
+    <div class="dash-scanline absolute inset-x-0 top-0 pointer-events-none" aria-hidden="true" />
+    <div class="dash-screen__content relative z-10 box-border w-full min-w-0">
+      <div class="dash-screen__topbar">
         <div>
-          <h3 class="m-0 text-lg md:text-xl font-semibold tracking-wide text-cyan-100 flex items-center gap-2">
-            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee]" />
+          <h3 class="dash-screen__title">
+            <span class="dash-screen__pulse" />
             经营数据大屏
           </h3>
-          <p class="m-0 mt-1 text-sm md:text-base text-cyan-100/95 leading-snug">销售趋势 · 渠道占比 · 经营雷达 · 库存概览</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 dash-controls">
-          <a-select
-            v-model="period"
-            class="dash-select w-40"
-            :options="periodOptions"
-            :allow-clear="false"
-            :popup-container="screenRoot ?? undefined"
-          />
+          <select v-model="period" class="dash-native-control dash-native-select" aria-label="统计周期">
+            <option v-for="option in periodOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
           <BaseButton size="sm" class="dash-btn-period" @click="refreshDash">刷新周期</BaseButton>
+          <BaseButton size="sm" class="dash-btn-admin" @click="goAdmin">后台入口</BaseButton>
         </div>
       </div>
 
       <p v-if="dashPending" class="m-0 text-sm text-cyan-100/90">正在加载周期概览…</p>
       <p v-else-if="dashError" class="m-0 text-sm text-rose-300">{{ dashError }} · 可点「刷新周期」重试</p>
-      <div v-else-if="dash" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 min-w-0">
-        <div v-for="k in kpiCards" :key="k.label" class="dash-kpi rounded-lg px-3 py-3.5 border border-cyan-400/35 bg-slate-950/75">
-          <p class="m-0 text-sm font-medium text-cyan-100 tracking-wide">{{ k.label }}</p>
-          <p class="m-0 mt-2 text-xl md:text-2xl font-semibold text-white tabular-nums drop-shadow-sm">{{ k.value }}</p>
-        </div>
-      </div>
 
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-0 min-w-0">
-        <div class="xl:col-span-8 min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[280px]">
-          <div ref="lineRef" class="w-full min-w-0 h-[280px] md:h-[320px]" />
-        </div>
-        <div class="xl:col-span-4 min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[280px]">
-          <div ref="pieRef" class="w-full min-w-0 h-[280px] md:h-[320px]" />
-        </div>
-        <div class="xl:col-span-5 min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2 min-h-[260px]">
-          <div ref="radarRef" class="w-full min-w-0 h-[260px]" />
-        </div>
-        <div class="xl:col-span-7 min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
-          <div class="flex flex-wrap gap-2 items-center mb-3 min-w-0">
-            <span class="text-base font-semibold text-cyan-50">经营总览区间</span>
-            <BaseInput v-model="ovStart" type="date" class="dash-date w-40" />
-            <span class="text-cyan-200 text-base font-medium px-0.5">—</span>
-            <BaseInput v-model="ovEnd" type="date" class="dash-date w-40" />
-            <a-select
-              v-model="granularity"
-              class="dash-select w-32"
-              :options="granularityOptions"
-              :allow-clear="false"
-              :popup-container="screenRoot ?? undefined"
-            />
-            <BaseButton size="sm" class="dash-btn-apply" @click="loadHomeCharts">应用</BaseButton>
-          </div>
-          <div v-if="overview" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-base mb-4">
-            <div>
-              <span class="block text-base font-semibold text-cyan-200 mb-1">销售收入</span>
-              <strong class="text-xl text-white tabular-nums">{{ num(overview.sales_amount) }}</strong>
+      <div class="dash-chart-grid min-h-0 min-w-0">
+        <div class="dash-panel dash-panel--overview min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
+          <div v-if="overview || dash" class="dash-overview-focus">
+            <div class="dash-primary-stat">
+              <strong class="tabular-nums"
+                :class="Number(overview?.net_profit_amount ?? 0) >= 0 ? 'tone-good' : 'tone-bad'">
+                <CountUpNumber :value="overview?.net_profit_amount" :decimals="2" />
+              </strong>
+              <span>净利</span>
+
             </div>
-            <div>
-              <span class="block text-base font-semibold text-cyan-200 mb-1">毛利</span>
-              <strong class="text-xl text-white tabular-nums">{{ num(overview.gross_profit_amount) }}</strong>
-            </div>
-            <div>
-              <span class="block text-base font-semibold text-cyan-200 mb-1">净利</span>
-              <strong class="text-xl text-emerald-200 tabular-nums">{{ num(overview.net_profit_amount) }}</strong>
-            </div>
-            <div>
-              <span class="block text-base font-semibold text-cyan-200 mb-1">销售单数</span>
-              <strong class="text-xl text-white tabular-nums">{{ overview.sales_order_count ?? 0 }}</strong>
+            <div class="dash-overview-metrics">
+              <div v-for="(metric, idx) in overviewCards" :key="metric.label" class="dash-overview-card"
+                :style="{ '--delay': `${idx * 45}ms` }">
+                <span>{{ metric.label }}</span>
+                <strong class="tabular-nums" :class="metric.tone">
+                  <CountUpNumber :value="metric.value" :decimals="metric.decimals" :suffix="metric.suffix || ''" />
+                </strong>
+              </div>
             </div>
           </div>
-          <div v-if="(overview?.categories?.length ?? 0) > 0" class="overflow-x-auto rounded-lg border border-cyan-400/25">
-            <table class="w-full min-w-[480px] text-base border-collapse">
-              <thead>
-                <tr class="bg-slate-900/95 text-cyan-100">
-                  <th class="text-left px-3 py-2.5 font-semibold">品类</th>
-                  <th class="text-right px-3 py-2.5 font-semibold">入库金额</th>
-                  <th class="text-right px-3 py-2.5 font-semibold">出库金额</th>
-                  <th class="text-right px-3 py-2.5 font-semibold">净额</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(c, i) in overview?.categories" :key="i" class="border-t border-cyan-500/20 text-slate-100">
-                  <td class="px-3 py-2 font-medium">{{ c.category_name }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ num(c.in_amount) }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ num(c.out_amount) }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums font-medium">{{ num(c.net_amount) }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <p v-if="homeLoading" class="m-0 text-base text-cyan-100">加载图表数据…</p>
+        </div>
+
+        <div class="dash-panel dash-panel--pie min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2">
+          <div ref="pieRef" class="dash-chart w-full min-w-0" />
+        </div>
+
+        <div class="dash-panel dash-panel--radar min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-3">
+          <div class="dash-radar-layout">
+            <div ref="radarRef" class="dash-chart dash-radar-chart w-full min-w-0" />
           </div>
-          <p v-else-if="homeLoading" class="m-0 text-base text-cyan-100">加载图表数据…</p>
+        </div>
+
+        <div class="dash-panel dash-panel--flow min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
+          <div class="dash-flow-layout">
+            <div class="dash-category-flow">
+              <div class="dash-section-title">品类流动</div>
+              <div v-if="topCategories.length" class="dash-flow-list">
+                <div v-for="item in topCategories" :key="item.category_name" class="dash-flow-row">
+                  <span class="dash-flow-name">{{ item.category_name }}</span>
+                  <span class="dash-flow-track">
+                    <i :style="{ width: `${item.percent}%` }" />
+                  </span>
+                  <strong class="tabular-nums">
+                    <CountUpNumber :value="item.amount" :decimals="2" />
+                  </strong>
+                </div>
+              </div>
+              <p v-else class="m-0 text-sm text-cyan-100/70">暂无品类流动数据</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-panel dash-panel--line min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2">
+          <div ref="lineRef" class="dash-chart w-full min-w-0" />
         </div>
       </div>
     </div>
@@ -112,14 +92,20 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import * as echarts from 'echarts'
-import { BaseButton, BaseInput } from '@/components/base'
+import { useRouter } from 'vue-router'
+import { BaseButton } from '@/components/base'
+import CountUpNumber from '@/components/CountUpNumber.vue'
 import { getHomeCharts, getStatisticsDashboard } from '@/api/statistics'
 import type { HomeChartsStats } from '@/api/types'
 import { useUserStore } from '@/store/user'
-import { toast } from '@/feedback/toast'
 
 const userStore = useUserStore()
 const qc = useQueryClient()
+const router = useRouter()
+
+defineProps<{
+  fullscreen?: boolean
+}>()
 
 const period = ref('today')
 const periodOptions = [
@@ -128,11 +114,6 @@ const periodOptions = [
   { label: '本月', value: 'month' },
   { label: '本季', value: 'quarter' },
   { label: '本年', value: 'year' },
-]
-
-const granularityOptions = [
-  { label: '按日', value: 'day' },
-  { label: '按月', value: 'month' },
 ]
 
 const screenRoot = ref<HTMLElement | null>(null)
@@ -163,41 +144,112 @@ const dashError = computed(() => {
 function refreshDash(): void {
   void refetchDash()
   void qc.invalidateQueries({ queryKey: ['statistics', 'dashboard'] })
+  void loadHomeCharts()
+}
+
+function goAdmin(): void {
+  void router.push('/admin')
 }
 
 watch(period, () => {
   void qc.invalidateQueries({ queryKey: ['statistics', 'dashboard'] })
+  void loadHomeCharts()
 })
 
-const kpiCards = computed(() => {
-  const d = dash.value
-  if (!d) return []
-  return [
-    { label: '库存 SKU', value: String(d.inventory.total_products ?? 0) },
-    { label: '库存数量', value: String(d.inventory.total_quantity ?? 0) },
-    { label: '今日入库', value: String(d.inventory.today_in ?? 0) },
-    { label: '今日出库', value: String(d.inventory.today_out ?? 0) },
-    { label: d.sales.period_label ? `${d.sales.period_label}销售` : '周期销售', value: num(d.sales.total_amount) },
-    { label: '今日销售', value: num(d.sales.today_amount) },
-  ]
-})
-
-function monthRange(): { start: string; end: string } {
-  const t = new Date()
+function dateText(t: Date): string {
   const y = t.getFullYear()
   const m = String(t.getMonth() + 1).padStart(2, '0')
-  const day = String(t.getDate()).padStart(2, '0')
-  return { start: `${y}-${m}-01`, end: `${y}-${m}-${day}` }
+  const d = String(t.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-const r = monthRange()
-const ovStart = ref(r.start)
-const ovEnd = ref(r.end)
-const granularity = ref<'day' | 'month'>('day')
+function periodRange(value: string): { start: string; end: string } {
+  const t = new Date()
+  const end = dateText(t)
+  if (value === 'today') return { start: end, end }
+  if (value === 'week') {
+    const weekday = t.getDay() || 7
+    const start = new Date(t)
+    start.setDate(t.getDate() - weekday + 1)
+    return { start: dateText(start), end }
+  }
+  if (value === 'quarter') {
+    const quarter = Math.floor(t.getMonth() / 3)
+    return { start: dateText(new Date(t.getFullYear(), quarter * 3, 1)), end }
+  }
+  if (value === 'year') return { start: `${t.getFullYear()}-01-01`, end }
+  return { start: dateText(new Date(t.getFullYear(), t.getMonth(), 1)), end }
+}
+
+function rangeGranularity(range: { start: string; end: string }): 'day' | 'month' {
+  const start = new Date(`${range.start}T00:00:00`)
+  const end = new Date(`${range.end}T00:00:00`)
+  const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1)
+  return days > 92 ? 'month' : 'day'
+}
+
+const activeRange = computed(() => periodRange(period.value))
+const periodRangeText = computed(() => `${activeRange.value.start} 至 ${activeRange.value.end}`)
 
 const homeCharts = ref<HomeChartsStats | null>(null)
 const homeLoading = ref(false)
 const overview = computed(() => homeCharts.value?.overview ?? null)
+const overviewCards = computed(() => {
+  const o = overview.value
+  const d = dash.value
+  return [
+    { label: '销售收入', value: Number(o?.sales_amount ?? d?.sales.total_amount ?? 0), decimals: 2, tone: '' },
+    { label: '毛利', value: Number(o?.gross_profit_amount ?? 0), decimals: 2, tone: '' },
+    { label: '销售单数', value: Number(o?.sales_order_count ?? d?.sales.total_orders ?? 0), decimals: 0, tone: '' },
+    { label: '库存 SKU', value: Number(d?.inventory.total_products ?? 0), decimals: 0, tone: '' },
+    { label: '库存数量', value: Number(d?.inventory.total_quantity ?? 0), decimals: 0, tone: '' },
+    { label: '今日销售', value: Number(d?.sales.today_amount ?? 0), decimals: 2, tone: '' },
+    { label: '今日入库', value: Number(d?.inventory.today_in ?? 0), decimals: 0, tone: '' },
+    { label: '今日出库', value: Number(d?.inventory.today_out ?? 0), decimals: 0, tone: '' },
+    { label: '毛利率', value: grossMargin.value, decimals: 1, suffix: '%', tone: grossMargin.value >= 0 ? 'tone-good' : 'tone-bad' },
+    { label: '客单价', value: avgOrderAmount.value, decimals: 2, tone: '' },
+    { label: '库存记录', value: Number(d?.inventory.total_records ?? 0), decimals: 0, tone: '' },
+    { label: '入库单数', value: Number(o?.inventory_in_count ?? 0), decimals: 0, tone: '' },
+    { label: '出库单数', value: Number(o?.inventory_out_count ?? 0), decimals: 0, tone: '' },
+    { label: '入库金额', value: Number(o?.inbound_amount ?? 0), decimals: 2, tone: '' },
+    { label: '出库金额', value: Number(o?.outbound_amount ?? 0), decimals: 2, tone: '' },
+    { label: '其他支出', value: Number(o?.other_expense_amount ?? 0), decimals: 2, tone: '' },
+    { label: '品类数', value: Number(o?.categories?.length ?? 0), decimals: 0, tone: '' },
+  ]
+})
+const grossMargin = computed(() => {
+  const sales = Number(overview.value?.sales_amount ?? 0)
+  const gross = Number(overview.value?.gross_profit_amount ?? 0)
+  return sales > 0 ? (gross / sales) * 100 : 0
+})
+const avgOrderAmount = computed(() => {
+  const sales = Number(overview.value?.sales_amount ?? 0)
+  const orders = Number(overview.value?.sales_order_count ?? 0)
+  return orders > 0 ? sales / orders : 0
+})
+const pulseMetrics = computed(() => {
+  const o = overview.value
+  const net = Number(o?.net_profit_amount ?? 0)
+  return [
+    { label: '毛利率', value: grossMargin.value, decimals: 1, suffix: '%', tone: grossMargin.value >= 0 ? 'tone-good' : 'tone-bad' },
+    { label: '客单价', value: avgOrderAmount.value, decimals: 2, suffix: '', tone: '' },
+    { label: '净利', value: net, decimals: 2, suffix: '', tone: net >= 0 ? 'tone-good' : 'tone-bad' },
+    { label: '库存记录', value: Number(dash.value?.inventory.total_records ?? 0), decimals: 0, suffix: '', tone: '' },
+    { label: '入库单数', value: Number(o?.inventory_in_count ?? 0), decimals: 0, suffix: '', tone: '' },
+    { label: '出库单数', value: Number(o?.inventory_out_count ?? 0), decimals: 0, suffix: '', tone: '' },
+  ]
+})
+const topCategories = computed(() => {
+  const list = [...(overview.value?.categories ?? [])]
+    .map((item) => ({
+      ...item,
+      amount: Math.max(Number(item.in_amount ?? 0), Number(item.out_amount ?? 0), Math.abs(Number(item.net_amount ?? 0))),
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 4)
+  const max = Math.max(...list.map((x) => x.amount), 1)
+  return list.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.amount / max) * 100)) }))
+})
 
 const lineRef = ref<HTMLElement | null>(null)
 const pieRef = ref<HTMLElement | null>(null)
@@ -237,6 +289,8 @@ function applyChartOptions(hc: HomeChartsStats): void {
   const line = hc.line ?? []
   lineChart.setOption({
     backgroundColor: 'transparent',
+    animationDuration: 900,
+    animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: '#22d3ee', textStyle: { color: '#e2e8f0' } },
     grid: { left: 56, right: 20, top: 36, bottom: line.length > 10 ? 52 : 44 },
     xAxis: {
@@ -272,6 +326,8 @@ function applyChartOptions(hc: HomeChartsStats): void {
   const pie = hc.pie ?? []
   pieChart.setOption({
     backgroundColor: 'transparent',
+    animationDuration: 900,
+    animationEasing: 'quarticOut',
     tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: '#a78bfa', textStyle: { color: '#e2e8f0' } },
     legend: { bottom: 4, textStyle: { color: axisText, fontSize: 13, fontWeight: 600 } },
     series: [
@@ -299,6 +355,8 @@ function applyChartOptions(hc: HomeChartsStats): void {
   const indicators = radar.map((x) => ({ name: x.name, max: Math.max(Math.abs(Number(x.value)) * 1.35, 1) }))
   radarChart.setOption({
     backgroundColor: 'transparent',
+    animationDuration: 900,
+    animationEasing: 'cubicOut',
     tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: '#22d3ee', textStyle: { color: '#e2e8f0' } },
     radar: {
       indicator: indicators.length ? indicators : [{ name: '暂无', max: 1 }],
@@ -324,22 +382,18 @@ function applyChartOptions(hc: HomeChartsStats): void {
 }
 
 async function loadHomeCharts(): Promise<void> {
-  if (!ovStart.value || !ovEnd.value) {
-    toast.warning('请选择起止日期')
-    return
-  }
+  const range = activeRange.value
   homeLoading.value = true
   try {
     const hc = await getHomeCharts({
-      start_date: ovStart.value,
-      end_date: ovEnd.value,
-      granularity: granularity.value,
+      start_date: range.start,
+      end_date: range.end,
+      granularity: rangeGranularity(range),
       ...storeParam.value,
     })
     homeCharts.value = hc
     await paintChartsWhenReady(hc)
-  } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '加载失败')
+  } catch {
     homeCharts.value = null
   } finally {
     homeLoading.value = false
@@ -410,60 +464,411 @@ onBeforeUnmount(() => {
   position: relative;
   box-sizing: border-box;
   background: linear-gradient(145deg, #070b14 0%, #0b1220 45%, #0a1628 100%);
+  border-radius: 16px;
+  height: 100%;
+  min-height: 0;
 }
+
+.dash-screen--fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  border: 0;
+}
+
+.dash-screen__content {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.1vh, 18px);
+  padding: clamp(12px, 1.45vw, 28px);
+  overflow: hidden;
+}
+
 .dash-screen__bg {
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.18), transparent),
     linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
   background-size: 100% 100%, 24px 24px, 24px 24px;
-}
-.dash-kpi {
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.06);
+  animation: dash-bg-drift 18s linear infinite;
 }
 
-/* 大屏内 Arco 控件：高对比深色，避免白底下拉与灰字 */
-.dash-screen :deep(.arco-select-view-single) {
-  min-height: 36px;
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(34, 211, 238, 0.55) !important;
-  color: #f0fdfa !important;
+.dash-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(34, 211, 238, 0.16), transparent 20%),
+    radial-gradient(circle at 82% 38%, rgba(167, 139, 250, 0.12), transparent 24%);
+  opacity: 0.68;
+  animation: dash-glow-drift 12s ease-in-out infinite alternate;
 }
-.dash-screen :deep(.arco-select-view-value),
-.dash-screen :deep(.arco-select-view-suffix) {
-  color: #f0fdfa !important;
-  font-size: 15px;
-  font-weight: 600;
+
+.dash-scanline {
+  height: 120px;
+  background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.08), transparent);
+  animation: dash-scan 7s ease-in-out infinite;
 }
-.dash-screen :deep(.arco-select-dropdown) {
-  background: #0f172a !important;
-  border: 1px solid rgba(34, 211, 238, 0.5) !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+.dash-screen__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 0;
 }
-.dash-screen :deep(.arco-select-option) {
-  color: #f1f5f9 !important;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.5;
+
+.dash-screen__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #cffafe;
+  font-size: clamp(18px, 1.55vw, 30px);
+  font-weight: 700;
+  line-height: 1.15;
 }
-.dash-screen :deep(.arco-select-option-selected) {
-  background: rgba(34, 211, 238, 0.22) !important;
-  color: #fff !important;
+
+.dash-screen__pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #22d3ee;
+  box-shadow: 0 0 12px #22d3ee;
+}
+
+.dash-screen__subtitle {
+  margin: 6px 0 0;
+  color: rgba(207, 250, 254, 0.94);
+  font-size: clamp(12px, 1.1vw, 18px);
+  line-height: 1.25;
+}
+
+.dash-chart-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: clamp(10px, 1vw, 16px);
+}
+
+.dash-panel {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  animation: dash-panel-rise 0.7s ease both;
+}
+
+.dash-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), transparent 38%, rgba(167, 139, 250, 0.08));
+  opacity: 0.52;
+}
+
+.dash-panel--line {
+  grid-column: 8 / 13;
+  grid-row: 2;
+}
+
+.dash-panel--pie {
+  grid-column: 8 / 13;
+  grid-row: 1;
+}
+
+.dash-panel--radar {
+  grid-column: 6 / 8;
+  grid-row: 2;
+}
+
+.dash-panel--overview {
+  grid-column: 1 / 6;
+  grid-row: 1 / 3;
+  overflow: hidden;
+}
+
+.dash-panel--flow {
+  grid-column: 8 / 13;
+  grid-row: 2;
+  overflow: hidden;
+}
+
+.dash-chart {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.dash-radar-layout {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+  display: block;
+}
+
+.dash-radar-chart {
+  height: 100%;
+}
+
+.dash-pulse-item,
+.dash-overview-card,
+.dash-mini-stat {
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.44);
+  box-shadow: inset 0 0 18px rgba(34, 211, 238, 0.025);
+}
+
+.dash-pulse-item {
+  padding: 10px 12px;
+}
+
+.dash-pulse-item span,
+.dash-overview-card span,
+.dash-mini-stat span {
+  display: block;
+  color: rgba(207, 250, 254, 0.76);
+  font-size: 12px;
   font-weight: 700;
 }
-.dash-screen :deep(.arco-select-option:not(.arco-select-option-disabled):hover) {
-  background: rgba(34, 211, 238, 0.14) !important;
+
+.dash-pulse-item strong {
+  display: block;
+  margin-top: 5px;
+  color: #f8fafc;
+  font-size: clamp(17px, 1.25vw, 24px);
+  line-height: 1.1;
 }
 
-.dash-screen :deep(.dash-date .arco-input-wrapper) {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid rgba(34, 211, 238, 0.5) !important;
-  min-height: 36px;
+.tone-good {
+  color: #a7f3d0 !important;
 }
-.dash-screen :deep(.dash-date .arco-input) {
-  color: #f8fafc !important;
+
+.tone-bad {
+  color: #fca5a5 !important;
+}
+
+.dash-category-flow {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dash-section-title {
+  color: #ecfeff;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.dash-flow-list {
+  display: grid;
+  gap: clamp(8px, 0.8vh, 12px);
+  margin-top: 12px;
+}
+
+.dash-flow-row {
+  display: grid;
+  grid-template-columns: minmax(4em, 0.8fr) minmax(80px, 1fr) minmax(64px, auto);
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+  font-size: clamp(13px, 0.8vw, 16px);
+}
+
+.dash-flow-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-flow-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.dash-flow-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
+  animation: dash-bar-grow 0.9s ease both;
+}
+
+.dash-overview-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dash-section-title--main {
+  font-size: clamp(20px, 1.75vw, 34px);
+}
+
+.dash-live-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgba(34, 211, 238, 0.34);
+  border-radius: 999px;
+  color: #a5f3fc;
+  background: rgba(8, 145, 178, 0.14);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dash-overview-metrics {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 0.7vw, 12px);
+}
+
+.dash-overview-focus {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: calc(100% - 54px);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(150px, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(12px, 1vw, 18px);
+  align-items: stretch;
+}
+
+.dash-primary-stat {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(34, 211, 238, 0.14), transparent 55%),
+    rgba(15, 23, 42, 0.48);
+  padding: clamp(18px, 1.4vw, 28px);
+  box-shadow: inset 0 0 30px rgba(34, 211, 238, 0.04), 0 0 26px rgba(34, 211, 238, 0.05);
+}
+
+.dash-primary-stat span {
+  color: rgba(207, 250, 254, 0.78);
+  font-size: clamp(14px, 0.9vw, 18px);
+  font-weight: 800;
+}
+
+.dash-primary-stat strong {
+  display: block;
+  margin-top: 10px;
+  font-size: clamp(42px, 4.2vw, 82px);
+  line-height: 0.95;
+}
+
+.dash-primary-stat small {
+  margin-top: 14px;
+  color: rgba(207, 250, 254, 0.72);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dash-overview-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(9px, 0.72vw, 14px);
+  animation: dash-card-in 0.65s ease both;
+  animation-delay: var(--delay, 0ms);
+}
+
+.dash-overview-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent, rgba(125, 211, 252, 0.12), transparent);
+  animation: dash-shimmer 4.6s ease-in-out infinite;
+}
+
+.dash-overview-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #fff;
+  font-size: clamp(18px, 1.35vw, 28px);
+  line-height: 1.05;
+}
+
+.dash-flow-layout {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+  display: block;
+}
+
+.dash-native-control {
+  height: 36px;
+  box-sizing: border-box;
+  border: 1px solid rgba(34, 211, 238, 0.58);
+  border-radius: 4px;
+  outline: none;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(8, 13, 27, 0.98));
+  color: #f0fdfa;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.04), 0 0 18px rgba(34, 211, 238, 0.05);
+}
+
+.dash-native-control:focus {
+  border-color: rgba(125, 211, 252, 0.95);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.16), 0 0 18px rgba(34, 211, 238, 0.08);
+}
+
+.dash-native-select {
+  width: 160px;
+  padding: 0 34px 0 12px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #cffafe 50%),
+    linear-gradient(135deg, #cffafe 50%, transparent 50%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(8, 13, 27, 0.98));
+  background-position:
+    calc(100% - 18px) 15px,
+    calc(100% - 12px) 15px,
+    0 0;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.dash-native-select--short {
+  width: 128px;
+}
+
+.dash-native-select option {
+  background: #0f172a;
+  color: #e0f2fe;
+  font-weight: 700;
 }
 
 .dash-btn-period {
@@ -473,11 +878,198 @@ onBeforeUnmount(() => {
   font-weight: 700 !important;
   font-size: 14px !important;
 }
+
 .dash-btn-apply {
   background: rgba(109, 40, 217, 0.55) !important;
   border: 1px solid rgba(167, 139, 250, 0.75) !important;
   color: #faf5ff !important;
   font-weight: 700 !important;
   font-size: 14px !important;
+}
+
+.dash-btn-admin {
+  background: rgba(15, 23, 42, 0.88) !important;
+  border: 1px solid rgba(125, 211, 252, 0.75) !important;
+  color: #ecfeff !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+}
+
+@media (max-width: 1180px) {
+  .dash-chart-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr);
+  }
+
+  .dash-panel--overview {
+    grid-column: 1 / 9;
+    grid-row: 1;
+  }
+
+  .dash-panel--pie {
+    grid-column: 1 / 4;
+    grid-row: 2;
+  }
+
+  .dash-panel--radar {
+    grid-column: 4 / 6;
+    grid-row: 2;
+  }
+
+  .dash-panel--flow {
+    grid-column: 6 / 9;
+    grid-row: 2;
+  }
+
+  .dash-panel--line {
+    grid-column: 1 / 9;
+    grid-row: 3;
+  }
+
+  .dash-overview-focus {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.7fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .dash-screen__content {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .dash-screen__topbar {
+    align-items: flex-start;
+  }
+
+  .dash-controls {
+    justify-content: flex-end;
+  }
+
+  .dash-chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+  }
+
+  .dash-overview-focus {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dash-overview-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash-radar-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .dash-panel--overview,
+  .dash-panel--pie,
+  .dash-panel--radar,
+  .dash-panel--flow,
+  .dash-panel--line {
+    grid-column: 1;
+  }
+
+  .dash-panel--overview {
+    grid-row: 1;
+  }
+
+  .dash-panel--pie {
+    grid-row: 2;
+  }
+
+  .dash-panel--line {
+    grid-row: 3;
+  }
+
+  .dash-panel--radar,
+  .dash-panel--flow {
+    display: none;
+  }
+
+  .dash-native-select {
+    width: 116px !important;
+  }
+}
+
+@keyframes dash-bg-drift {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+
+  to {
+    background-position: 0 0, 0 24px, 24px 0;
+  }
+}
+
+@keyframes dash-glow-drift {
+  from {
+    transform: translate3d(-1%, -1%, 0);
+  }
+
+  to {
+    transform: translate3d(1%, 1%, 0);
+  }
+}
+
+@keyframes dash-scan {
+  0% {
+    transform: translateY(-140px);
+    opacity: 0;
+  }
+
+  18%,
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes dash-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dash-panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dash-shimmer {
+
+  0%,
+  58% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes dash-bar-grow {
+  from {
+    width: 0;
+  }
 }
 </style>

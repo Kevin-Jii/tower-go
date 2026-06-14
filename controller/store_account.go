@@ -79,6 +79,8 @@ func (c *StoreAccountController) Get(ctx *gin.Context) {
 // @Param store_id query int false "门店ID"
 // @Param channel query string false "渠道来源"
 // @Param order_no query string false "订单编号"
+// @Param payment_status query int false "支付状态 1=已支付 2=未支付"
+// @Param member_keyword query string false "会员搜索（手机号/姓名/会员ID）"
 // @Param tag_code query string false "标签编码"
 // @Param start_date query string false "开始日期"
 // @Param end_date query string false "结束日期"

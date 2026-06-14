@@ -2,6 +2,8 @@ package module
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -119,6 +121,18 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	}
 	if req.OrderNo != "" {
 		query = query.Where("order_no LIKE ?", "%"+req.OrderNo+"%")
+	}
+	if req.PaymentStatus > 0 {
+		query = query.Where("payment_status = ?", req.PaymentStatus)
+	}
+	if kw := strings.TrimSpace(req.MemberKeyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Joins("LEFT JOIN t_member AS member_search ON member_search.id = store_accounts.member_id")
+		if memberID, err := strconv.ParseUint(kw, 10, 64); err == nil && memberID > 0 {
+			query = query.Where("(member_search.phone LIKE ? OR member_search.name LIKE ? OR store_accounts.member_id = ?)", like, like, memberID)
+		} else {
+			query = query.Where("(member_search.phone LIKE ? OR member_search.name LIKE ?)", like, like)
+		}
 	}
 	if req.TagCode != "" {
 		query = query.Where("tag_code = ?", req.TagCode)

@@ -7,6 +7,8 @@ export async function listStoreAccounts(params?: {
   store_id?: number
   channel?: string
   order_no?: string
+  payment_status?: number
+  member_keyword?: string
   tag_code?: string
   start_date?: string
   end_date?: string

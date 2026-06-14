@@ -126,14 +126,16 @@ type BindStoreAccountConsumablesReq struct {
 
 // ListStoreAccountReq 记账列表查询
 type ListStoreAccountReq struct {
-	StoreID   uint   `form:"store_id"`
-	Channel   string `form:"channel"`
-	OrderNo   string `form:"order_no"`
-	TagCode   string `form:"tag_code"`
-	StartDate string `form:"start_date"`
-	EndDate   string `form:"end_date"`
-	Page      int    `form:"page,default=1" binding:"min=1"`
-	PageSize  int    `form:"page_size,default=20" binding:"min=1,max=100"`
+	StoreID       uint   `form:"store_id"`
+	Channel       string `form:"channel"`
+	OrderNo       string `form:"order_no"`
+	PaymentStatus int    `form:"payment_status" binding:"omitempty,oneof=1 2"`
+	MemberKeyword string `form:"member_keyword"`
+	TagCode       string `form:"tag_code"`
+	StartDate     string `form:"start_date"`
+	EndDate       string `form:"end_date"`
+	Page          int    `form:"page,default=1" binding:"min=1"`
+	PageSize      int    `form:"page_size,default=20" binding:"min=1,max=100"`
 
 	DataScope int8   `json:"-"`
 	UserID    uint   `json:"-"`

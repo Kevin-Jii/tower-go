@@ -19,6 +19,13 @@ type MeituanAIOperatorAccount struct {
 	ShopName       string         `json:"shop_name" gorm:"type:varchar(100);not null;comment:美团店铺名称"`
 	ShopID         string         `json:"shop_id" gorm:"type:varchar(100);index;comment:美团店铺ID"`
 	LoginName      string         `json:"login_name" gorm:"type:varchar(100);comment:登录账号"`
+	DeveloperID    string         `json:"developer_id" gorm:"type:varchar(100);comment:美团开放平台DeveloperId"`
+	SignKey        string         `json:"sign_key,omitempty" gorm:"type:varchar(255);comment:美团开放平台SignKey"`
+	AppAuthToken   string         `json:"app_auth_token,omitempty" gorm:"type:varchar(500);comment:美团门店授权Token"`
+	BusinessID     int            `json:"business_id" gorm:"not null;default:2;comment:美团业务ID 2外卖"`
+	APIVersion     string         `json:"api_version" gorm:"type:varchar(20);not null;default:'2';comment:美团开放平台版本"`
+	APIBaseURL     string         `json:"api_base_url" gorm:"type:varchar(255);not null;default:'https://api-open-cater.meituan.com';comment:美团开放平台地址"`
+	QueryOrderPath string         `json:"query_order_path" gorm:"type:varchar(120);not null;default:'/api/order/queryById';comment:订单详情接口路径"`
 	AuthStatus     string         `json:"auth_status" gorm:"type:varchar(20);not null;default:'manual';comment:授权状态 manual/oauth/expired"`
 	IsEnabled      bool           `json:"is_enabled" gorm:"not null;default:true;comment:是否启用"`
 	LastImportedAt *time.Time     `json:"last_imported_at,omitempty" gorm:"comment:最后导入时间"`
@@ -35,8 +42,8 @@ func (MeituanAIOperatorAccount) TableName() string {
 type MeituanAIOrder struct {
 	ID             uint           `json:"id" gorm:"primaryKey;autoIncrement"`
 	StoreID        uint           `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	AccountID      uint           `json:"account_id" gorm:"not null;index;comment:美团账号ID"`
-	OrderNo        string         `json:"order_no" gorm:"type:varchar(100);not null;index;comment:美团订单号"`
+	AccountID      uint           `json:"account_id" gorm:"not null;index;uniqueIndex:uk_meituan_ai_orders_account_order;comment:美团账号ID"`
+	OrderNo        string         `json:"order_no" gorm:"type:varchar(100);not null;index;uniqueIndex:uk_meituan_ai_orders_account_order;comment:美团订单号"`
 	OrderTime      time.Time      `json:"order_time" gorm:"not null;index;comment:下单时间"`
 	CustomerName   string         `json:"customer_name" gorm:"type:varchar(100);comment:顾客昵称"`
 	ProductSummary string         `json:"product_summary" gorm:"type:varchar(500);comment:商品摘要"`
@@ -61,8 +68,8 @@ func (MeituanAIOrder) TableName() string {
 type MeituanAIReview struct {
 	ID             uint           `json:"id" gorm:"primaryKey;autoIncrement"`
 	StoreID        uint           `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	AccountID      uint           `json:"account_id" gorm:"not null;index;comment:美团账号ID"`
-	ReviewID       string         `json:"review_id" gorm:"type:varchar(100);index;comment:评价ID"`
+	AccountID      uint           `json:"account_id" gorm:"not null;index;uniqueIndex:uk_meituan_ai_reviews_account_review;comment:美团账号ID"`
+	ReviewID       string         `json:"review_id" gorm:"type:varchar(100);index;uniqueIndex:uk_meituan_ai_reviews_account_review;comment:评价ID"`
 	OrderNo        string         `json:"order_no" gorm:"type:varchar(100);index;comment:订单号"`
 	Rating         int            `json:"rating" gorm:"not null;default:0;comment:评分"`
 	Content        string         `json:"content" gorm:"type:text;comment:评价内容"`
@@ -105,24 +112,48 @@ func (MeituanAISuggestion) TableName() string {
 }
 
 type CreateMeituanAIAccountReq struct {
-	StoreID   uint   `json:"store_id"`
-	ShopName  string `json:"shop_name" binding:"required,max=100"`
-	ShopID    string `json:"shop_id" binding:"max=100"`
-	LoginName string `json:"login_name" binding:"max=100"`
-	IsEnabled *bool  `json:"is_enabled"`
-	Remark    string `json:"remark" binding:"max=500"`
+	StoreID        uint   `json:"store_id"`
+	ShopName       string `json:"shop_name" binding:"required,max=100"`
+	ShopID         string `json:"shop_id" binding:"max=100"`
+	LoginName      string `json:"login_name" binding:"max=100"`
+	DeveloperID    string `json:"developer_id" binding:"max=100"`
+	SignKey        string `json:"sign_key" binding:"max=255"`
+	AppAuthToken   string `json:"app_auth_token" binding:"max=500"`
+	BusinessID     int    `json:"business_id"`
+	APIVersion     string `json:"api_version" binding:"max=20"`
+	APIBaseURL     string `json:"api_base_url" binding:"max=255"`
+	QueryOrderPath string `json:"query_order_path" binding:"max=120"`
+	IsEnabled      *bool  `json:"is_enabled"`
+	Remark         string `json:"remark" binding:"max=500"`
 }
 
 type UpdateMeituanAIAccountReq struct {
-	ShopName  string `json:"shop_name" binding:"max=100"`
-	ShopID    string `json:"shop_id" binding:"max=100"`
-	LoginName string `json:"login_name" binding:"max=100"`
-	IsEnabled *bool  `json:"is_enabled"`
-	Remark    string `json:"remark" binding:"max=500"`
+	ShopName       string `json:"shop_name" binding:"max=100"`
+	ShopID         string `json:"shop_id" binding:"max=100"`
+	LoginName      string `json:"login_name" binding:"max=100"`
+	DeveloperID    string `json:"developer_id" binding:"max=100"`
+	SignKey        string `json:"sign_key" binding:"max=255"`
+	AppAuthToken   string `json:"app_auth_token" binding:"max=500"`
+	BusinessID     int    `json:"business_id"`
+	APIVersion     string `json:"api_version" binding:"max=20"`
+	APIBaseURL     string `json:"api_base_url" binding:"max=255"`
+	QueryOrderPath string `json:"query_order_path" binding:"max=120"`
+	IsEnabled      *bool  `json:"is_enabled"`
+	Remark         string `json:"remark" binding:"max=500"`
 }
 
 type ImportMeituanAIOrdersReq struct {
 	Orders []ImportMeituanAIOrderItem `json:"orders" binding:"required,min=1,dive"`
+}
+
+type SyncMeituanAIOrdersResp struct {
+	Imported int `json:"imported"`
+	Skipped  int `json:"skipped"`
+}
+
+type SyncMeituanAIOpenAPIOrdersReq struct {
+	OrderID  string   `json:"order_id"`
+	OrderIDs []string `json:"order_ids"`
 }
 
 type ImportMeituanAIOrderItem struct {

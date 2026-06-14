@@ -33,6 +33,18 @@ export async function importMeituanAIOrders(accountId: number, body: Record<stri
   return unwrap(res)
 }
 
+export async function syncMeituanAIOrders(accountId: number, body: FormData): Promise<{ imported: number; skipped: number }> {
+  const res = await http.post<ApiEnvelope<{ imported: number; skipped: number }>>(`/meituan-ai/accounts/${accountId}/orders/sync`, body, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return unwrap(res)
+}
+
+export async function syncMeituanAIOpenAPIOrders(accountId: number, body: { order_id?: string; order_ids?: string[] }): Promise<{ imported: number; skipped: number }> {
+  const res = await http.post<ApiEnvelope<{ imported: number; skipped: number }>>(`/meituan-ai/accounts/${accountId}/orders/sync-openapi`, body)
+  return unwrap(res)
+}
+
 export async function importMeituanAIReviews(accountId: number, body: Record<string, unknown>): Promise<{ imported: number }> {
   const res = await http.post<ApiEnvelope<{ imported: number }>>(`/meituan-ai/accounts/${accountId}/reviews/import`, body)
   return unwrap(res)
@@ -48,8 +60,8 @@ export async function listMeituanAIReviews(params?: Record<string, unknown>): Pr
   return unwrap(res)
 }
 
-export async function generateMeituanAISuggestions(accountId: number, params?: Record<string, unknown>): Promise<{ generated: number }> {
-  const res = await http.post<ApiEnvelope<{ generated: number }>>(`/meituan-ai/accounts/${accountId}/suggestions/generate`, undefined, { params })
+export async function generateMeituanAISuggestions(accountId: number, params?: Record<string, unknown>): Promise<{ generated: number; ai_enabled?: boolean; source?: string }> {
+  const res = await http.post<ApiEnvelope<{ generated: number; ai_enabled?: boolean; source?: string }>>(`/meituan-ai/accounts/${accountId}/suggestions/generate`, undefined, { params })
   return unwrap(res)
 }
 

@@ -85,6 +85,42 @@ func (c *MeituanAIController) ImportOrders(ctx *gin.Context) {
 	http.Success(ctx, res)
 }
 
+func (c *MeituanAIController) SyncOrders(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	file, header, err := ctx.Request.FormFile("file")
+	if err != nil {
+		http.Error(ctx, 400, "请选择美团订单导出文件")
+		return
+	}
+	defer file.Close()
+	res, err := c.svc.SyncOrdersFromFile(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), header.Filename, file)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, res)
+}
+
+func (c *MeituanAIController) SyncOrdersFromOpenAPI(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req model.SyncMeituanAIOpenAPIOrdersReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	res, err := c.svc.SyncOrdersFromOpenAPI(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, res)
+}
+
 func (c *MeituanAIController) ImportReviews(ctx *gin.Context) {
 	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {

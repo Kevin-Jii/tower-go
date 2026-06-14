@@ -228,6 +228,13 @@ export interface MeituanAIAccount {
   shop_name: string
   shop_id?: string
   login_name?: string
+  developer_id?: string
+  sign_key?: string
+  app_auth_token?: string
+  business_id?: number
+  api_version?: string
+  api_base_url?: string
+  query_order_path?: string
   auth_status?: string
   is_enabled: boolean
   last_imported_at?: string

@@ -13,6 +13,8 @@ func RegisterMeituanAIRoutes(r *gin.RouterGroup, c *Controllers) {
 		group.PUT("/accounts/:id", middleware.Permission("store:account:edit"), c.MeituanAI.UpdateAccount)
 		group.GET("/dashboard", middleware.Permission("store:account:list"), c.MeituanAI.Dashboard)
 		group.POST("/accounts/:id/orders/import", middleware.Permission("store:account:add"), c.MeituanAI.ImportOrders)
+		group.POST("/accounts/:id/orders/sync", middleware.Permission("store:account:add"), c.MeituanAI.SyncOrders)
+		group.POST("/accounts/:id/orders/sync-openapi", middleware.Permission("store:account:add"), c.MeituanAI.SyncOrdersFromOpenAPI)
 		group.POST("/accounts/:id/reviews/import", middleware.Permission("store:account:add"), c.MeituanAI.ImportReviews)
 		group.GET("/orders", middleware.Permission("store:account:list"), c.MeituanAI.ListOrders)
 		group.GET("/reviews", middleware.Permission("store:account:list"), c.MeituanAI.ListReviews)

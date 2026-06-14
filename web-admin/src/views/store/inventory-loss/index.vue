@@ -167,7 +167,7 @@ import {
 } from '@/api/inventoryLoss'
 import { listMembers } from '@/api/member'
 import { listPurchasableProducts } from '@/api/storeSupplier'
-import { listProductUnitSpecs } from '@/api/supplierProduct'
+import { batchListProductUnitSpecs } from '@/api/supplierProduct'
 import type {
   InventoryLossOrder,
   InventoryLossOrderDetail,
@@ -247,8 +247,7 @@ const { data: specsData } = useQuery({
   queryFn: async () => {
     const ids = products.value.map((p) => p.id)
     if (!ids.length) return [] as ProductUnitSpec[]
-    const rows = await Promise.all(ids.map((id) => listProductUnitSpecs(id)))
-    return rows.flat()
+    return batchListProductUnitSpecs(ids)
   },
   enabled: computed(() => products.value.length > 0),
 })

@@ -70,3 +70,12 @@ export async function listProductUnitSpecs(productId: number): Promise<ProductUn
   })
   return unwrap(res)
 }
+
+export async function batchListProductUnitSpecs(productIds: number[]): Promise<ProductUnitSpec[]> {
+  const ids = Array.from(new Set(productIds.filter((id) => Number.isFinite(id) && id > 0)))
+  if (!ids.length) return []
+  const res = await http.get<import('./types').ApiEnvelope<ProductUnitSpec[]>>('/product-unit-specs/batch', {
+    params: { product_ids: ids.join(',') },
+  })
+  return unwrap(res)
+}

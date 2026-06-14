@@ -375,7 +375,7 @@ import {
   updateStoreAccount,
 } from '@/api/storeAccount'
 import { listDictDataByTypeCode } from '@/api/dict'
-import { listProductUnitSpecs } from '@/api/supplierProduct'
+import { batchListProductUnitSpecs } from '@/api/supplierProduct'
 import { listPurchasableProducts } from '@/api/storeSupplier'
 import { listMembers } from '@/api/member'
 import type { DictData, MemberRow, ProductUnitSpec, StoreAccount } from '@/api/types'
@@ -463,8 +463,7 @@ const { data: unitSpecsData } = useQuery({
   queryFn: async () => {
     const ids = productList.value.map((p) => p.id)
     if (!ids.length) return [] as ProductUnitSpec[]
-    const rows = await Promise.all(ids.map((id) => listProductUnitSpecs(id)))
-    return rows.flat()
+    return batchListProductUnitSpecs(ids)
   },
   enabled: computed(() => productList.value.length > 0),
 })

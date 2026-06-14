@@ -57,9 +57,15 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Arco Pro 风格：侧栏与顶栏区域 */
+/* 后台导航配色：浅雾蓝侧栏 + 白色顶栏 + 青蓝选中态 */
 .layout-sider {
-  box-shadow: 1px 0 0 0 var(--color-border-2);
+  --tower-nav-text: #334155;
+  --tower-nav-muted: #7890a8;
+  --tower-nav-active-bg: rgba(37, 99, 235, 0.1);
+  --tower-nav-active-border: #2563eb;
+  --tower-nav-active-text: #0f172a;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 52%, #f5f9fc 100%) !important;
+  box-shadow: 1px 0 0 0 rgba(148, 163, 184, 0.24), 10px 0 28px rgba(15, 23, 42, 0.04);
 }
 
 .layout-sider-logo {
@@ -67,10 +73,39 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  padding: 0 14px;
   font-weight: 600;
   font-size: 15px;
-  color: var(--color-text-1);
-  border-bottom: 1px solid var(--color-border-2);
+  color: #172033;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.layout-sider-logo__mark {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.layout-sider-logo__mark img {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.layout-sider-logo__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0;
 }
 
 .layout-header {
@@ -79,8 +114,101 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-bg-2);
-  border-bottom: 1px solid var(--color-border-2);
+  background: linear-gradient(90deg, #ffffff 0%, #f7fbff 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.035);
+}
+
+.layout-sider .arco-menu,
+.layout-sider .arco-menu-light {
+  color: var(--tower-nav-text) !important;
+  background: transparent !important;
+}
+
+.layout-sider .arco-menu-inner {
+  padding: 8px 8px;
+}
+
+.layout-sider .arco-menu-item,
+.layout-sider .arco-menu-group-title,
+.layout-sider .arco-menu-inline-header {
+  color: var(--tower-nav-text) !important;
+  background: transparent !important;
+}
+
+.layout-sider .arco-menu-item,
+.layout-sider .arco-menu-inline-header {
+  height: 40px;
+  margin: 2px 8px;
+  width: calc(100% - 16px);
+  border-radius: 7px;
+  box-sizing: border-box;
+  transition: color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.layout-sider .arco-menu-inline-header {
+  padding-right: 12px;
+}
+
+.layout-sider .arco-menu-inline-content {
+  background: transparent !important;
+  padding: 2px 0 6px;
+}
+
+.layout-sider .arco-menu-inline-content .arco-menu-item {
+  color: #52677f !important;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.layout-sider .arco-menu-inline-content .arco-menu-item.arco-menu-selected {
+  color: #ffffff !important;
+}
+
+.layout-sider .arco-menu-icon {
+  color: var(--tower-nav-muted) !important;
+}
+
+.layout-sider .arco-menu-item:hover,
+.layout-sider .arco-menu-inline-header:hover {
+  color: #0f172a !important;
+  background: rgba(37, 99, 235, 0.07) !important;
+}
+
+.layout-sider .arco-menu-item:hover .arco-menu-icon,
+.layout-sider .arco-menu-inline-header:hover .arco-menu-icon {
+  color: #2563eb !important;
+}
+
+.layout-sider .arco-menu-item.arco-menu-selected {
+  position: relative;
+  color: #ffffff !important;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%) !important;
+  border: 0;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+}
+
+.layout-sider .arco-menu-item.arco-menu-selected .arco-menu-icon {
+  color: #ffffff !important;
+}
+
+.layout-sider .arco-menu-inline-header.arco-menu-selected {
+  color: #172033 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.layout-sider .arco-menu-inline-header.arco-menu-selected .arco-menu-icon {
+  color: #2563eb !important;
+}
+
+.layout-sider .arco-menu .arco-icon {
+  color: inherit;
+}
+
+.layout-sider .arco-menu-item.arco-menu-selected .arco-icon,
+.layout-sider .arco-menu-item.arco-menu-selected svg {
+  color: #ffffff !important;
 }
 
 .layout-content {

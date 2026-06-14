@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
@@ -301,6 +304,71 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 		return
 	}
 	http.Success(ctx, specs)
+}
+
+// BatchListProductUnitSpecs godoc
+// @Summary 批量查询商品单位配置
+// @Tags 商品单位配置
+// @Produce json
+// @Security Bearer
+// @Param product_ids query string true "商品ID列表，逗号分隔，如 1,2,3"
+// @Success 200 {object} http.Response{data=[]model.ProductUnitSpec}
+// @Router /product-unit-specs/batch [get]
+func (c *SupplierProductController) BatchListProductUnitSpecs(ctx *gin.Context) {
+	productIDs := parseProductIDs(ctx)
+	if len(productIDs) == 0 {
+		http.Error(ctx, 400, "product_ids is required")
+		return
+	}
+
+	storeID := middleware.GetStoreID(ctx)
+	if storeID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
+		invalid, err := c.storeSupplierService.ValidateStoreProducts(storeID, productIDs)
+		if err != nil {
+			http.Error(ctx, 500, err.Error())
+			return
+		}
+		if len(invalid) > 0 {
+			http.ErrorApp(ctx, apicode.PermissionDenied)
+			return
+		}
+	}
+
+	specs, err := c.productService.ListUnitSpecsByProductIDs(productIDs)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, specs)
+}
+
+func parseProductIDs(ctx *gin.Context) []uint {
+	rawValues := ctx.QueryArray("product_ids")
+	if single := strings.TrimSpace(ctx.Query("product_ids")); single != "" && len(rawValues) == 0 {
+		rawValues = []string{single}
+	}
+
+	seen := make(map[uint]struct{})
+	ids := make([]uint, 0)
+	for _, raw := range rawValues {
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			v, err := strconv.ParseUint(part, 10, 32)
+			if err != nil || v == 0 {
+				continue
+			}
+			id := uint(v)
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
 
 // UpdateProductUnitSpec godoc

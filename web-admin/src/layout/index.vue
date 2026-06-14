@@ -2,7 +2,7 @@
   <a-layout class="layout-root layout-root--fill">
     <a-layout-sider
       v-show="isDesktop"
-      class="layout-sider layout-sider--fill !bg-[var(--color-bg-1)]"
+      class="layout-sider layout-sider--fill"
       :width="220"
       :collapsed-width="64"
       collapsible
@@ -16,7 +16,7 @@
 
     <a-layout class="layout-main-column">
       <a-layout-header
-        class="layout-main-header !h-[52px] shrink-0 !p-0 !leading-[52px] !bg-[var(--color-bg-2)] !border-b !border-[var(--color-border-2)]"
+        class="layout-main-header !h-[52px] shrink-0 !p-0 !leading-[52px]"
       >
         <LayoutHeader @toggle-mobile-menu="layout.setMobileDrawer(true)" />
       </a-layout-header>

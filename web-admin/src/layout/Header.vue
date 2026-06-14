@@ -35,13 +35,13 @@
       </a-button>
       <a-dropdown trigger="click" position="br" @select="onMenuSelect">
         <button type="button" class="user-menu-trigger" aria-label="用户菜单">
-          <a-avatar :size="32" class="!bg-[rgb(var(--primary-6))] shrink-0">
+          <a-avatar :size="32" class="user-menu-avatar shrink-0">
             {{ avatarText }}
           </a-avatar>
-          <span class="hidden md:inline max-w-[8rem] truncate text-sm text-[var(--color-text-1)]">
+          <span class="hidden md:inline max-w-[8rem] truncate text-sm user-menu-name">
             {{ displayName }}
           </span>
-          <IconDown class="hidden md:block text-[var(--color-text-3)]" />
+          <IconDown class="hidden md:block user-menu-caret" />
         </button>
         <template #content>
           <a-doption value="profile">
@@ -103,28 +103,41 @@ async function onMenuSelect(value: string | number | Record<string, unknown> | u
 <style scoped>
 .data-center-btn {
   height: 34px;
-  border-color: rgba(var(--primary-6), 0.22) !important;
-  background: rgba(var(--primary-6), 0.08) !important;
-  color: rgb(var(--primary-6)) !important;
+  border-color: rgba(37, 99, 235, 0.18) !important;
+  background: #eef6ff !important;
+  color: #1d4ed8 !important;
   font-weight: 600;
+  box-shadow: none;
 }
 .data-center-btn:hover {
-  border-color: rgb(var(--primary-6)) !important;
-  background: rgba(var(--primary-6), 0.14) !important;
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  background: #e2efff !important;
 }
 .user-menu-trigger {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 4px 8px 4px 4px;
-  border: 1px solid var(--color-border-2);
+  border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 999px;
-  background: var(--color-bg-2);
+  background: #ffffff;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 .user-menu-trigger:hover {
-  border-color: rgb(var(--primary-6));
-  background: var(--color-fill-1);
+  border-color: rgba(37, 99, 235, 0.32);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+}
+.user-menu-avatar {
+  background: linear-gradient(135deg, #2563eb, #14b8a6) !important;
+}
+.user-menu-name {
+  color: #1f2a44;
+  font-weight: 600;
+}
+.user-menu-caret {
+  color: #64748b;
 }
 </style>

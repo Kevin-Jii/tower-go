@@ -253,7 +253,7 @@ import type { BaseTableColumn } from '@/components/base/types'
 import { createInventoryOrder, getInventoryOrder, listInventories, listInventoryOrders, updateInventoryQuantity } from '@/api/inventory'
 import { listPurchasableProducts } from '@/api/storeSupplier'
 import { listDictDataByTypeCode } from '@/api/dict'
-import { listProductUnitSpecs } from '@/api/supplierProduct'
+import { batchListProductUnitSpecs } from '@/api/supplierProduct'
 import type { DictData, InventoryOrder, InventoryRow, ProductUnitSpec } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { MathCurveLoader } from '@/components/loading'
@@ -316,8 +316,7 @@ const { data: unitSpecsData } = useQuery({
   queryFn: async () => {
     const ids = productList.value.map((p) => p.id)
     if (!ids.length) return [] as ProductUnitSpec[]
-    const rows = await Promise.all(ids.map((id) => listProductUnitSpecs(id)))
-    return rows.flat()
+    return batchListProductUnitSpecs(ids)
   },
   enabled: computed(() => productList.value.length > 0 && tab.value === 'stock'),
 })

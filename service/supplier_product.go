@@ -195,6 +195,10 @@ func (s *SupplierProductService) ListUnitSpecs(productID uint) ([]*model.Product
 	return s.unitSpecModule.ListEnabledByProductID(productID)
 }
 
+func (s *SupplierProductService) ListUnitSpecsByProductIDs(productIDs []uint) ([]*model.ProductUnitSpec, error) {
+	return s.unitSpecModule.ListByProductIDs(productIDs)
+}
+
 func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProductUnitSpecReq) error {
 	_, err := s.unitSpecModule.GetByID(id)
 	if err != nil {

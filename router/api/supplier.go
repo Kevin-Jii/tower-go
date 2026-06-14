@@ -51,6 +51,7 @@ func RegisterSupplierRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		productUnitSpecs.POST("", middleware.Permission("supplier:edit"), c.SupplierProduct.CreateProductUnitSpec)
 		productUnitSpecs.GET("", middleware.PermissionStoreBoundSupplierRead(), c.SupplierProduct.ListProductUnitSpecs)
+		productUnitSpecs.GET("/batch", middleware.PermissionStoreBoundSupplierRead(), c.SupplierProduct.BatchListProductUnitSpecs)
 		productUnitSpecs.POST("/batch", middleware.Permission("supplier:edit"), c.SupplierProduct.BatchUpsertProductUnitSpecs)
 		productUnitSpecs.PUT("/:id", middleware.Permission("supplier:edit"), c.SupplierProduct.UpdateProductUnitSpec)
 		productUnitSpecs.DELETE("/:id", middleware.Permission("supplier:delete"), c.SupplierProduct.DeleteProductUnitSpec)

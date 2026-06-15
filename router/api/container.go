@@ -35,6 +35,7 @@ type Controllers struct {
 	Member            *controller.MemberController
 	Printer           *controller.PrinterController
 	PriceList         *controller.PriceListController
+	B2B               *controller.B2BController
 	ThirdPartyAccount *controller.ThirdPartyAccountController
 	ThirdPartyRoute   *controller.ThirdPartyRouteController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
@@ -67,6 +68,7 @@ func BuildControllers() *Controllers {
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
 	memberModule := userModulePkg.NewMemberModule(database.DB)
 	priceListModule := userModulePkg.NewPriceListModule(database.DB)
+	b2bModule := userModulePkg.NewB2BModule(database.DB)
 	thirdPartyAccountModule := userModulePkg.NewThirdPartyAccountModule(database.DB)
 	thirdPartyOrderModule := userModulePkg.NewThirdPartyOrderModule(database.DB)
 	thirdPartyRouteModule := userModulePkg.NewThirdPartyRouteModule(database.DB)
@@ -123,6 +125,7 @@ func BuildControllers() *Controllers {
 	memberService := service.NewMemberService(memberModule)
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
 	priceListService := service.NewPriceListService(priceListModule, storeModule, supplierProductModule)
+	b2bService := service.NewB2BService(b2bModule, storeModule, supplierProductModule, productUnitSpecModule, userModule)
 	thirdPartyAccountService := service.NewThirdPartyAccountService(thirdPartyAccountModule, thirdPartyOrderModule)
 	thirdPartyRouteService := service.NewThirdPartyRouteService(thirdPartyRouteModule, storeModule, thirdPartyOrderModule)
 
@@ -180,6 +183,7 @@ func BuildControllers() *Controllers {
 		Member:            controller.NewMemberController(memberService),
 		Printer:           controller.NewPrinterController(printerService),
 		PriceList:         controller.NewPriceListController(priceListService),
+		B2B:               controller.NewB2BController(b2bService),
 		ThirdPartyAccount: controller.NewThirdPartyAccountController(thirdPartyAccountService),
 		ThirdPartyRoute:   controller.NewThirdPartyRouteController(thirdPartyRouteService),
 		DingTalkBotModule: dingTalkBotModule,

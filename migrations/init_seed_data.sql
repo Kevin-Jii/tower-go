@@ -247,9 +247,40 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @store_member_id, 'store-member-balance', '调整余额', '', '', '', 3, 4, 'store:member:balance', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_member_id AND name='store-member-balance' AND type=3);
 
+-- B2B 供货业务
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'b2b-supply', 'B2B供货', 'apps', '', '', 1, 8, '', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='b2b-supply' AND type=1);
+SET @b2b_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='b2b-supply' AND type=1 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-dashboard', '供货管理', '', '/store/b2b', 'store/b2b/index', 2, 1, 'b2b:order:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-dashboard' AND type=2);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-customer-list', '客户列表', '', '', '', 3, 1, 'b2b:customer:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-customer-list' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-customer-add', '新增客户', '', '', '', 3, 2, 'b2b:customer:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-customer-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-customer-edit', '编辑客户', '', '', '', 3, 3, 'b2b:customer:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-customer-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-price-list', '供货价格', '', '', '', 3, 4, 'b2b:price:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-price-list' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-price-edit', '编辑供货价', '', '', '', 3, 5, 'b2b:price:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-price-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-price-delete', '删除供货价', '', '', '', 3, 6, 'b2b:price:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-price-delete' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-order-add', '新增供货单', '', '', '', 3, 7, 'b2b:order:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-add' AND type=3);
+
 -- 打印机管理（目录）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
-SELECT @store_id, 'printer', '打印机管理', 'printer', '', '', 1, 8, '', 1, 1, NOW(), NOW()
+SELECT @store_id, 'printer', '打印机管理', 'printer', '', '', 1, 9, '', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='printer' AND type=1);
 SET @printer_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='printer' AND type=1 ORDER BY id LIMIT 1);
 
@@ -498,7 +529,13 @@ ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员(ID:2): 门店相关权限
 INSERT INTO role_menus (role_id, menu_id, permissions)
-SELECT 2, id, 15 FROM menus WHERE name LIKE 'store%' OR name LIKE 'supplier%' OR name LIKE 'purchase%' OR name LIKE 'inventory%'
+SELECT 2, id, 15 FROM menus
+WHERE name LIKE 'store%'
+   OR name LIKE 'supplier%'
+   OR name LIKE 'purchase%'
+   OR name LIKE 'inventory%'
+   OR name LIKE 'printer%'
+   OR name LIKE 'b2b-%'
 ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员赋予会员管理权限

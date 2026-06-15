@@ -94,6 +94,14 @@ export interface AssignMenusToRoleReq {
   perms?: Record<number, number>
 }
 
+export interface AssignMenusToStoreRoleReq {
+  store_id: number
+  role_id: number
+  /** 允许空数组表示清空该门店角色菜单 */
+  menu_ids: number[]
+  perms?: Record<number, number>
+}
+
 export interface DictData {
   id: number
   type_id: number
@@ -353,6 +361,7 @@ export interface StorePurchasableProduct {
   status?: number
   supplier?: { supplier_name?: string; supplier_code?: string }
   category?: { name?: string }
+  unit_specs?: ProductUnitSpec[]
 }
 
 export interface ProductUnitSpec {
@@ -365,6 +374,84 @@ export interface ProductUnitSpec {
   cost_price: number
   sale_price: number
   is_enabled: boolean
+}
+
+export interface B2BCustomer {
+  id: number
+  store_id: number
+  name: string
+  customer_type?: string
+  contact_person?: string
+  phone?: string
+  address?: string
+  settlement?: string
+  price_level?: string
+  credit_limit: number
+  receivable: number
+  status: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface B2BCustomerProductPrice {
+  id: number
+  store_id: number
+  customer_id?: number | null
+  price_level?: string
+  product_id: number
+  unit_spec_id: number
+  unit_name: string
+  supply_price: number
+  min_quantity: number
+  is_enabled: boolean
+  remark?: string
+  customer?: B2BCustomer
+  product?: StorePurchasableProduct
+  unit_spec?: ProductUnitSpec
+  created_at?: string
+  updated_at?: string
+}
+
+export interface B2BSupplyOrderItem {
+  id: number
+  order_id: number
+  product_id: number
+  product_name: string
+  unit_spec_id: number
+  unit_name: string
+  factor_to_base: number
+  quantity: number
+  base_quantity: number
+  supply_price: number
+  cost_price: number
+  amount: number
+  cost_amount: number
+  profit_amount: number
+  remark?: string
+}
+
+export interface B2BSupplyOrder {
+  id: number
+  order_no: string
+  store_id: number
+  customer_id: number
+  customer_name: string
+  order_date: string
+  total_amount: number
+  paid_amount: number
+  unpaid_amount: number
+  cost_amount: number
+  profit_amount: number
+  payment_status: number
+  delivery_status: number
+  remark?: string
+  operator_id: number
+  operator_name?: string
+  items?: B2BSupplyOrderItem[]
+  customer?: B2BCustomer
+  created_at?: string
+  updated_at?: string
 }
 
 export interface PurchaseOrderItem {

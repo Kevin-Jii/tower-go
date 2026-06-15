@@ -116,4 +116,5 @@ func InvalidateAllPermissionCache() {
 	_ = cache.CacheDeleteByPattern("tower:user:perm:*")
 	_ = cache.CacheDeleteByPattern("tower:user:role:*")
 	_ = cache.CacheDeleteByPattern("tower:role:menu:*")
+	_ = cache.CacheDeleteByPattern("tower:store:role:menus:*")
 }

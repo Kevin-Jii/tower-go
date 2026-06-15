@@ -809,6 +809,112 @@ PREPARE stmt_add_product_unit_precision FROM @sql_add_product_unit_precision;
 EXECUTE stmt_add_product_unit_precision;
 DEALLOCATE PREPARE stmt_add_product_unit_precision;
 
+-- B2B 客户表
+CREATE TABLE IF NOT EXISTS b2b_customers (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id BIGINT UNSIGNED NOT NULL COMMENT '所属门店ID',
+  name VARCHAR(100) NOT NULL COMMENT '客户名称',
+  customer_type VARCHAR(50) NOT NULL DEFAULT '' COMMENT '客户类型',
+  contact_person VARCHAR(50) NOT NULL DEFAULT '' COMMENT '联系人',
+  phone VARCHAR(20) NOT NULL DEFAULT '' COMMENT '联系电话',
+  address VARCHAR(255) NOT NULL DEFAULT '' COMMENT '地址',
+  settlement VARCHAR(30) NOT NULL DEFAULT 'cash' COMMENT '结算方式 cash/week/month',
+  price_level VARCHAR(30) NOT NULL DEFAULT '' COMMENT '价格等级',
+  credit_limit DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '信用额度',
+  receivable DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '当前应收余额',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '状态 1=启用 2=停用',
+  remark TEXT NULL COMMENT '备注',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_b2b_customers_store_id (store_id),
+  KEY idx_b2b_customers_phone (phone),
+  KEY idx_b2b_customers_status (status),
+  KEY idx_b2b_customers_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='B2B客户表';
+
+-- B2B 客户供货价
+CREATE TABLE IF NOT EXISTS b2b_customer_product_prices (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  store_id BIGINT UNSIGNED NOT NULL COMMENT '所属门店ID',
+  customer_id BIGINT UNSIGNED DEFAULT NULL COMMENT '客户ID，为空表示价格等级价',
+  price_level VARCHAR(30) NOT NULL DEFAULT '' COMMENT '价格等级',
+  product_id BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
+  unit_spec_id BIGINT UNSIGNED NOT NULL COMMENT '规格ID',
+  unit_name VARCHAR(50) NOT NULL DEFAULT '' COMMENT '规格名称',
+  supply_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '供货价',
+  min_quantity DECIMAL(10,2) NOT NULL DEFAULT 1 COMMENT '起订数量',
+  is_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+  remark VARCHAR(500) NOT NULL DEFAULT '' COMMENT '备注',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_b2b_prices_store_id (store_id),
+  KEY idx_b2b_prices_customer_id (customer_id),
+  KEY idx_b2b_prices_price_level (price_level),
+  KEY idx_b2b_prices_product_id (product_id),
+  KEY idx_b2b_prices_unit_spec_id (unit_spec_id),
+  KEY idx_b2b_prices_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='B2B客户商品供货价';
+
+-- B2B 供货单
+CREATE TABLE IF NOT EXISTS b2b_supply_orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_no VARCHAR(50) NOT NULL COMMENT '供货单号',
+  store_id BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+  customer_id BIGINT UNSIGNED NOT NULL COMMENT '客户ID',
+  customer_name VARCHAR(100) NOT NULL DEFAULT '' COMMENT '客户名称快照',
+  order_date DATE NOT NULL COMMENT '供货日期',
+  total_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '订单金额',
+  paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '已收金额',
+  unpaid_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '未收金额',
+  cost_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '成本金额',
+  profit_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '毛利金额',
+  payment_status TINYINT NOT NULL DEFAULT 1 COMMENT '收款状态 1=未收 2=部分 3=已收',
+  delivery_status TINYINT NOT NULL DEFAULT 1 COMMENT '配送状态 1=待配送 2=已配送 3=已取消',
+  remark TEXT NULL COMMENT '备注',
+  operator_id BIGINT UNSIGNED NOT NULL COMMENT '操作人ID',
+  operator_name VARCHAR(50) NOT NULL DEFAULT '' COMMENT '操作人名称',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_b2b_supply_orders_order_no (order_no),
+  KEY idx_b2b_supply_orders_store_id (store_id),
+  KEY idx_b2b_supply_orders_customer_id (customer_id),
+  KEY idx_b2b_supply_orders_order_date (order_date),
+  KEY idx_b2b_supply_orders_payment_status (payment_status),
+  KEY idx_b2b_supply_orders_delivery_status (delivery_status),
+  KEY idx_b2b_supply_orders_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='B2B供货单';
+
+CREATE TABLE IF NOT EXISTS b2b_supply_order_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id BIGINT UNSIGNED NOT NULL COMMENT '供货单ID',
+  product_id BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
+  product_name VARCHAR(200) NOT NULL DEFAULT '' COMMENT '商品名称快照',
+  unit_spec_id BIGINT UNSIGNED NOT NULL COMMENT '规格ID',
+  unit_name VARCHAR(50) NOT NULL DEFAULT '' COMMENT '规格名称快照',
+  factor_to_base DECIMAL(12,6) NOT NULL DEFAULT 1 COMMENT '换算基础库存系数',
+  quantity DECIMAL(10,2) NOT NULL COMMENT '下单数量',
+  base_quantity DECIMAL(12,2) NOT NULL COMMENT '扣减基础库存数量',
+  supply_price DECIMAL(10,2) NOT NULL COMMENT '供货单价',
+  cost_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '成本单价',
+  amount DECIMAL(12,2) NOT NULL COMMENT '行金额',
+  cost_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '行成本',
+  profit_amount DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '行毛利',
+  remark VARCHAR(500) NOT NULL DEFAULT '' COMMENT '备注',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_b2b_supply_order_items_order_id (order_id),
+  KEY idx_b2b_supply_order_items_product_id (product_id),
+  KEY idx_b2b_supply_order_items_unit_spec_id (unit_spec_id),
+  KEY idx_b2b_supply_order_items_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='B2B供货单明细';
+
 SET @sql_add_roles_data_scope = (
   SELECT IF(
     EXISTS(
@@ -899,6 +1005,68 @@ WHERE bottles_per_case IS NULL OR bottles_per_case <= 0;
 -- 3. 业务种子数据（INSERT）
 -- ============================================
 -- 已全部迁移至 migrations/init_seed_data.sql
+-- B2B 供货菜单/按钮权限也保留在 init.sql 中，避免仅执行 init.sql 时后台权限树缺失。
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT 0, 'store', '门店管理', 'shop', '', '', 1, 2, '', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=0 AND name='store' AND type=1);
+SET @store_id = (SELECT id FROM menus WHERE parent_id=0 AND name='store' AND type=1 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'b2b-supply', 'B2B供货', 'apps', '', '', 1, 8, '', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='b2b-supply' AND type=1);
+SET @b2b_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='b2b-supply' AND type=1 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-dashboard', '供货管理', '', '/store/b2b', 'store/b2b/index', 2, 1, 'b2b:order:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-dashboard' AND type=2);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-customer-list', '客户列表', '', '', '', 3, 1, 'b2b:customer:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-customer-list' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-customer-add', '新增客户', '', '', '', 3, 2, 'b2b:customer:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-customer-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-customer-edit', '编辑客户', '', '', '', 3, 3, 'b2b:customer:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-customer-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-price-list', '供货价格', '', '', '', 3, 4, 'b2b:price:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-price-list' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-price-edit', '编辑供货价', '', '', '', 3, 5, 'b2b:price:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-price-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-price-delete', '删除供货价', '', '', '', 3, 6, 'b2b:price:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-price-delete' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-order-add', '新增供货单', '', '', '', 3, 7, 'b2b:order:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-add' AND type=3);
+
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 1, id, 15 FROM menus WHERE name LIKE 'b2b-%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 999, id, 15 FROM menus WHERE name LIKE 'b2b-%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE name LIKE 'b2b-%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 3, id, 15 FROM menus WHERE name LIKE 'b2b-%'
+ON DUPLICATE KEY UPDATE permissions=15;
+
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 1, id, 15 FROM menus WHERE name LIKE 'printer%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 999, id, 15 FROM menus WHERE name LIKE 'printer%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE name LIKE 'printer%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 3, id, 15 FROM menus WHERE name LIKE 'printer%'
+ON DUPLICATE KEY UPDATE permissions=15;
 
 -- ============================================
 -- 4. 价目单模块表结构

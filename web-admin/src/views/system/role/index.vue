@@ -17,9 +17,8 @@
       </template>
     </BaseTable>
 
-    <BaseDialog v-model="dlg" :title="dlgTitle"
-      :max-width="mode === 'assign' ? 'min(560px, 96vw)' : 'min(480px, 96vw)'">
-      <div v-if="mode !== 'assign'" class="space-y-4">
+    <BaseDialog v-model="dlg" :title="dlgTitle" max-width="min(480px, 96vw)">
+      <div class="space-y-4">
         <BaseFormItem label="名称" required>
           <BaseInput v-model="form.name" />
         </BaseFormItem>
@@ -41,14 +40,33 @@
           <BaseSwitch v-model="form.status" :active-value="1" :inactive-value="0" />
         </BaseFormItem>
       </div>
-      <div v-else class="max-h-[60vh] overflow-y-auto pr-1 rounded-xl border border-slate-100 bg-slate-50/40 p-3">
-        <BaseTreeCheck v-model="checkedMenuIds" :nodes="menuTreeNodes" />
-      </div>
       <template #footer>
         <BaseButton variant="ghost" @click="dlg = false">取消</BaseButton>
         <BaseButton variant="primary" :loading="saving" @click="submit">确定</BaseButton>
       </template>
     </BaseDialog>
+
+    <a-drawer
+      :visible="assignDrawer"
+      placement="right"
+      :width="560"
+      :drawer-style="{ maxWidth: '96vw' }"
+      :mask-closable="true"
+      unmount-on-close
+      @cancel="assignDrawer = false"
+      @update:visible="assignDrawer = $event"
+    >
+      <template #title>分配菜单</template>
+      <div class="menu-assign-panel">
+        <BaseTreeCheck v-model="checkedMenuIds" :nodes="menuTreeNodes" :check-strictly="false" />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <BaseButton variant="ghost" @click="assignDrawer = false">取消</BaseButton>
+          <BaseButton variant="primary" :loading="saving" @click="submitAssign">确定</BaseButton>
+        </div>
+      </template>
+    </a-drawer>
   </div>
 </template>
 
@@ -96,8 +114,9 @@ const { data: rawMenuTree } = useQuery({
 })
 
 const dlg = ref(false)
+const assignDrawer = ref(false)
 const saving = ref(false)
-const mode = ref<'create' | 'edit' | 'assign'>('create')
+const mode = ref<'create' | 'edit'>('create')
 const editId = ref(0)
 const assignRoleId = ref(0)
 const checkedMenuIds = ref<number[]>([])
@@ -113,13 +132,23 @@ const form = reactive({
 })
 
 const dlgTitle = computed(() => {
-  if (mode.value === 'assign') return '分配菜单'
   return mode.value === 'edit' ? '编辑角色' : '新增角色'
 })
 
 const menuTreeData = computed(() => filterTree(rawMenuTree.value ?? []))
 
 const menuTreeNodes = computed(() => menuTreeData.value as unknown as BaseTreeNode[])
+
+type TreeCheckedValue = (string | number)[] | { checked?: (string | number)[]; halfChecked?: (string | number)[] }
+
+function normalizeCheckedMenuIds(value: unknown): (string | number)[] {
+  if (Array.isArray(value)) return value
+  if (value && typeof value === 'object') {
+    const record = value as TreeCheckedValue
+    if ('checked' in record && Array.isArray(record.checked)) return record.checked
+  }
+  return []
+}
 
 function filterTree(nodes: Menu[]): Menu[] {
   return (nodes ?? [])
@@ -166,7 +195,6 @@ function openEdit(row: Role): void {
 }
 
 async function openAssign(row: Role): Promise<void> {
-  mode.value = 'assign'
   assignRoleId.value = row.id
   roleMenuPermSnapshot.value = {}
   try {
@@ -179,26 +207,12 @@ async function openAssign(row: Role): Promise<void> {
   } catch {
     checkedMenuIds.value = []
   }
-  dlg.value = true
+  assignDrawer.value = true
 }
 
 async function submit(): Promise<void> {
   saving.value = true
   try {
-    if (mode.value === 'assign') {
-      const keys = checkedMenuIds.value.map((x) => Number(x))
-      const perms: Record<number, number> = {}
-      for (const id of keys) {
-        perms[id] = roleMenuPermSnapshot.value[id] ?? 15
-      }
-      await assignRoleMenus({ role_id: assignRoleId.value, menu_ids: keys, perms })
-      toast.success('已保存菜单权限')
-      dlg.value = false
-      await qc.invalidateQueries({ queryKey: ['menus'] })
-      await qc.invalidateQueries({ queryKey: ['menus', 'tree'] })
-      await qc.invalidateQueries({ queryKey: ['roles'] })
-      return
-    }
     if (!form.name || !form.code) {
       toast.warning('请填写名称与编码')
       return
@@ -229,6 +243,27 @@ async function submit(): Promise<void> {
   }
 }
 
+async function submitAssign(): Promise<void> {
+  saving.value = true
+  try {
+    const keys = normalizeCheckedMenuIds(checkedMenuIds.value).map((x) => Number(x))
+    const perms: Record<number, number> = {}
+    for (const id of keys) {
+      perms[id] = roleMenuPermSnapshot.value[id] ?? 15
+    }
+    await assignRoleMenus({ role_id: assignRoleId.value, menu_ids: keys, perms })
+    toast.success('已保存菜单权限')
+    assignDrawer.value = false
+    await qc.invalidateQueries({ queryKey: ['menus'] })
+    await qc.invalidateQueries({ queryKey: ['menus', 'tree'] })
+    await qc.invalidateQueries({ queryKey: ['roles'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '操作失败')
+  } finally {
+    saving.value = false
+  }
+}
+
 async function onDelete(row: Role): Promise<void> {
   const ok = await confirmDialog({ message: `删除角色「${row.name}」？` })
   if (!ok) return
@@ -241,3 +276,15 @@ async function onDelete(row: Role): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+.menu-assign-panel {
+  min-height: calc(100vh - 160px);
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-fill-1);
+}
+</style>

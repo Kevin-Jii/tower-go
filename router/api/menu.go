@@ -12,7 +12,7 @@ func RegisterMenuRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		menus.POST("", middleware.Permission("system:menu:add"), c.Menu.CreateMenu)
 		menus.GET("", middleware.Permission("system:menu:list"), c.Menu.ListMenus)
-		menus.GET("/tree", middleware.Permission("system:menu:list"), c.Menu.GetMenuTree)
+		menus.GET("/tree", middleware.PermissionAny("system:menu:list", "store:menu"), c.Menu.GetMenuTree)
 		menus.GET("/:id", middleware.Permission("system:menu:list"), c.Menu.GetMenu)
 		menus.PUT("/:id", middleware.Permission("system:menu:edit"), c.Menu.UpdateMenu)
 		menus.DELETE("/:id", middleware.Permission("system:menu:delete"), c.Menu.DeleteMenu)

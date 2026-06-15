@@ -17,7 +17,16 @@
     <BaseDialog v-model="visible" :title="isEdit ? '编辑菜单' : '新增菜单'" max-width="min(520px, 96vw)">
       <div class="max-h-[70vh] overflow-y-auto space-y-4 pr-1">
         <BaseFormItem label="父级">
-          <BaseSelect v-model="form.parent_id" :options="parentOptions" placeholder="0 为顶级" />
+          <a-tree-select
+            v-model="form.parent_id"
+            :data="parentTreeOptions"
+            :field-names="{ key: 'id', title: 'title', children: 'children' }"
+            placeholder="请选择父级目录或菜单"
+            allow-clear
+            allow-search
+            class="w-full"
+            @clear="form.parent_id = 0"
+          />
         </BaseFormItem>
         <BaseFormItem label="名称 name" required>
           <BaseInput v-model="form.name" />
@@ -80,7 +89,7 @@ import {
   BaseTableRowActions,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
+import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
 import { createMenu, deleteMenu, fetchMenuTree, updateMenu } from '@/api/menu'
 import type { Menu } from '@/api/types'
 import { toast } from '@/feedback/toast'
@@ -122,24 +131,38 @@ const form = reactive({
   remark: '',
 })
 
-function flatten(menus: Menu[], acc: { id: number; label: string }[] = [], prefix = ''): { id: number; label: string }[] {
-  for (const m of menus) {
-    acc.push({ id: m.id, label: `${prefix}${m.title} (#${m.id})` })
-    if (m.children?.length) flatten(m.children, acc, `${prefix}  `)
-  }
-  return acc
+interface ParentTreeOption {
+  id: number
+  title: string
+  children?: ParentTreeOption[]
 }
 
-const parentOptions = computed<BaseSelectOption[]>(() => {
-  const flat = flatten(tree.value)
-  return [{ label: '顶级', value: 0 }, ...flat.map((x) => ({ label: x.label, value: x.id }))]
-})
+function buildParentTreeOptions(menus: Menu[], editingID = 0): ParentTreeOption[] {
+  return (menus ?? [])
+    .filter((m) => m.type !== 3 && m.id !== editingID)
+    .map((m) => {
+      const children = buildParentTreeOptions(m.children ?? [], editingID)
+      return {
+        id: m.id,
+        title: `${m.title}（${typeLabel(m.type)}）`,
+        children: children.length ? children : undefined,
+      }
+    })
+}
+
+const parentTreeOptions = computed<ParentTreeOption[]>(() => [
+  { id: 0, title: '顶级' },
+  ...buildParentTreeOptions(tree.value, isEdit.value ? editId.value : 0),
+])
 
 function menuRowActions(row: Menu): TableRowAction[] {
-  return [
-    { label: '编辑', permission: 'system:menu:edit', onClick: () => openEdit(row) },
-    { label: '删除', permission: 'system:menu:delete', danger: true, onClick: () => void onDelete(row) },
-  ]
+  const actions: TableRowAction[] = []
+  if (row.type === 1 || row.type === 2) {
+    actions.push({ label: '新增下级', permission: 'system:menu:add', onClick: () => openCreate(row) })
+  }
+  actions.push({ label: '编辑', permission: 'system:menu:edit', onClick: () => openEdit(row) })
+  actions.push({ label: '删除', permission: 'system:menu:delete', danger: true, onClick: () => void onDelete(row) })
+  return actions
 }
 
 function typeLabel(t: number): string {
@@ -164,9 +187,13 @@ function resetForm(): void {
   form.remark = ''
 }
 
-function openCreate(): void {
+function openCreate(parent?: Menu): void {
   isEdit.value = false
   resetForm()
+  if (parent) {
+    form.parent_id = parent.id
+    form.type = parent.type === 1 ? 2 : 3
+  }
   visible.value = true
 }
 

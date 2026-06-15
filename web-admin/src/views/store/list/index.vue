@@ -47,6 +47,10 @@
               @click="openBindSupplier(row)">
               绑定供应商
             </BaseButton>
+            <BaseButton size="sm" class="store-card-btn store-card-btn--permission" v-permission="'store:menu'"
+              @click="openPermissionDrawer(row)">
+              配置权限
+            </BaseButton>
             <BaseButton size="sm" class="store-card-btn store-card-btn--edit" v-permission="'store:edit'"
               @click="openEdit(row)">
               编辑
@@ -161,6 +165,36 @@
         <BaseButton variant="primary" :loading="bindThirdSaving" @click="onBindThirdAccount">保存</BaseButton>
       </template>
     </BaseDialog>
+
+    <a-drawer
+      :visible="permissionDrawer"
+      placement="right"
+      :width="620"
+      :drawer-style="{ maxWidth: '96vw' }"
+      :mask-closable="true"
+      unmount-on-close
+      @cancel="permissionDrawer = false"
+      @update:visible="permissionDrawer = $event"
+    >
+      <template #title>配置门店权限</template>
+      <div class="space-y-4">
+        <div class="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          当前门店：<span class="font-semibold text-slate-900">{{ permissionStore?.name || '-' }}</span>
+        </div>
+        <BaseFormItem label="角色">
+          <BaseSelect v-model="permissionRoleId" :options="roleOptions" @update:model-value="onPermissionRoleChange" />
+        </BaseFormItem>
+        <div class="permission-tree-panel">
+          <BaseTreeCheck v-model="checkedMenuIds" :nodes="menuTreeNodes" :check-strictly="false" />
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <BaseButton variant="ghost" @click="permissionDrawer = false">取消</BaseButton>
+          <BaseButton variant="primary" :loading="permissionSaving" @click="saveStoreRoleMenus">保存</BaseButton>
+        </div>
+      </template>
+    </a-drawer>
   </div>
 </template>
 
@@ -175,14 +209,17 @@ import {
   BasePagination,
   BaseSelect,
   BaseTextarea,
+  BaseTreeCheck,
 } from '@/components/base'
+import { assignStoreRoleMenus, fetchMenuTree, fetchStoreRoleMenuIds, fetchStoreRoleMenuPermissions } from '@/api/menu'
 import { bindStoreThirdPartyAccount, createStore, listStores, updateStore } from '@/api/store'
 import { bindStoreSuppliers, listStoreBoundSuppliers, unbindStoreSuppliers } from '@/api/storeSupplier'
 import { listSuppliers } from '@/api/supplier'
 import { listThirdPartyAccounts } from '@/api/thirdPartyAccount'
+import { listRoles } from '@/api/role'
 import { listDictDataByTypeCode } from '@/api/dict'
-import type { DictData, Store, StoreSupplierBinding } from '@/api/types'
-import type { BaseSelectOption } from '@/components/base/types'
+import type { DictData, Menu, Role, Store, StoreSupplierBinding } from '@/api/types'
+import type { BaseSelectOption, BaseTreeNode } from '@/components/base/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 
@@ -345,6 +382,24 @@ const { data: administrativeUnitDictData } = useQuery({
   queryFn: () => listDictDataByTypeCode('ADMINISTRATIVEUNIT'),
 })
 
+const { data: rawMenuTree } = useQuery({
+  queryKey: ['menus', 'tree'],
+  queryFn: fetchMenuTree,
+})
+
+const { data: rolesData } = useQuery({
+  queryKey: ['roles', 'store-permission'],
+  queryFn: () => listRoles(),
+})
+
+const roleOptions = computed<BaseSelectOption[]>(() =>
+  (rolesData.value ?? [])
+    .filter((role: Role) => role.code === 'store_admin' || role.code === 'staff')
+    .map((role: Role) => ({ label: `${role.name}（${role.code}）`, value: role.id })),
+)
+
+const menuTreeNodes = computed(() => filterMenuTree(rawMenuTree.value ?? []) as unknown as BaseTreeNode[])
+
 const administrativeUnitOptions = computed<BaseSelectOption[]>(() => {
   const rows = (administrativeUnitDictData.value ?? []) as DictData[]
   return rows
@@ -465,6 +520,91 @@ async function onUnbindThirdAccount(): Promise<void> {
     bindThirdSaving.value = false
   }
 }
+
+const permissionDrawer = ref(false)
+const permissionSaving = ref(false)
+const permissionStore = ref<Store | null>(null)
+const permissionRoleId = ref<number | undefined>(undefined)
+const checkedMenuIds = ref<number[]>([])
+const storeRolePermSnapshot = ref<Record<number, number>>({})
+
+function normalizeCheckedMenuIds(value: unknown): number[] {
+  if (Array.isArray(value)) return value.map((x) => Number(x)).filter((x) => Number.isFinite(x))
+  if (value && typeof value === 'object' && 'checked' in value) {
+    const checked = (value as { checked?: unknown }).checked
+    if (Array.isArray(checked)) return checked.map((x: unknown) => Number(x)).filter((x: number) => Number.isFinite(x))
+  }
+  return []
+}
+
+function filterMenuTree(nodes: Menu[]): Menu[] {
+  return (nodes ?? [])
+    .filter((n) => n.status !== 0)
+    .map((n) => ({
+      ...n,
+      children: n.children?.length ? filterMenuTree(n.children) : [],
+    }))
+}
+
+async function openPermissionDrawer(row: Store): Promise<void> {
+  permissionStore.value = row
+  permissionDrawer.value = true
+  const defaultRole = (rolesData.value ?? []).find((role) => role.code === 'store_admin') ?? (rolesData.value ?? [])[0]
+  permissionRoleId.value = defaultRole?.id
+  if (permissionRoleId.value) {
+    await loadStoreRoleMenus()
+  } else {
+    checkedMenuIds.value = []
+  }
+}
+
+function onPermissionRoleChange(): void {
+  void loadStoreRoleMenus()
+}
+
+async function loadStoreRoleMenus(): Promise<void> {
+  if (!permissionStore.value?.id || !permissionRoleId.value) return
+  try {
+    const [ids, permMap] = await Promise.all([
+      fetchStoreRoleMenuIds(permissionStore.value.id, permissionRoleId.value),
+      fetchStoreRoleMenuPermissions(permissionStore.value.id, permissionRoleId.value).catch(() => ({} as Record<number, number>)),
+    ])
+    checkedMenuIds.value = ids.map((x) => Number(x))
+    storeRolePermSnapshot.value = permMap
+  } catch (e: unknown) {
+    checkedMenuIds.value = []
+    storeRolePermSnapshot.value = {}
+    toast.error(e instanceof Error ? e.message : '加载门店权限失败')
+  }
+}
+
+async function saveStoreRoleMenus(): Promise<void> {
+  if (!permissionStore.value?.id || !permissionRoleId.value) {
+    toast.warning('请选择门店和角色')
+    return
+  }
+  const keys = normalizeCheckedMenuIds(checkedMenuIds.value)
+  const perms: Record<number, number> = {}
+  for (const id of keys) {
+    perms[id] = storeRolePermSnapshot.value[id] ?? 15
+  }
+  permissionSaving.value = true
+  try {
+    await assignStoreRoleMenus({
+      store_id: permissionStore.value.id,
+      role_id: permissionRoleId.value,
+      menu_ids: keys,
+      perms,
+    })
+    toast.success('门店权限已保存，相关账号重新登录后生效')
+    permissionDrawer.value = false
+    await qc.invalidateQueries({ queryKey: ['menus'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '保存门店权限失败')
+  } finally {
+    permissionSaving.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -487,6 +627,11 @@ async function onUnbindThirdAccount(): Promise<void> {
   color: #0e7490 !important;
 }
 
+:deep(.store-card-btn--permission) {
+  background: #f5f3ff !important;
+  color: #6d28d9 !important;
+}
+
 :deep(.store-card-btn--edit) {
   background: #f0fdf4 !important;
   color: #166534 !important;
@@ -495,5 +640,15 @@ async function onUnbindThirdAccount(): Promise<void> {
 :deep(.store-card-btn--status) {
   background: #fff1f2 !important;
   color: #be123c !important;
+}
+
+.permission-tree-panel {
+  min-height: calc(100vh - 230px);
+  max-height: calc(100vh - 230px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-fill-1);
 }
 </style>

@@ -1,5 +1,5 @@
 import { http, unwrap } from './http'
-import type { AssignMenusToRoleReq, Menu } from './types'
+import type { AssignMenusToRoleReq, AssignMenusToStoreRoleReq, Menu } from './types'
 
 export async function fetchUserMenus(): Promise<Menu[]> {
   const res = await http.get<import('./types').ApiEnvelope<Menu[]>>('/menus/user-menus')
@@ -39,6 +39,31 @@ export async function fetchRoleMenuIds(roleId: number): Promise<number[]> {
 
 export async function assignRoleMenus(body: AssignMenusToRoleReq): Promise<void> {
   await http.post<import('./types').ApiEnvelope<unknown>>('/menus/assign-role', body)
+}
+
+export async function fetchStoreRoleMenuIds(storeId: number, roleId: number): Promise<number[]> {
+  const res = await http.get<import('./types').ApiEnvelope<number[]>>('/menus/store-role-ids', {
+    params: { store_id: storeId, role_id: roleId },
+  })
+  return unwrap(res)
+}
+
+export async function assignStoreRoleMenus(body: AssignMenusToStoreRoleReq): Promise<void> {
+  await http.post<import('./types').ApiEnvelope<unknown>>('/menus/assign-store-role', body)
+}
+
+/** 门店角色在各菜单上的权限位（用于分配菜单回显） */
+export async function fetchStoreRoleMenuPermissions(storeId: number, roleId: number): Promise<Record<number, number>> {
+  const res = await http.get<import('./types').ApiEnvelope<Record<string, number>>>(
+    '/menus/store-role-permissions',
+    { params: { store_id: storeId, role_id: roleId } },
+  )
+  const raw = unwrap(res) ?? {}
+  const out: Record<number, number> = {}
+  for (const [k, v] of Object.entries(raw)) {
+    out[Number(k)] = v
+  }
+  return out
 }
 
 /** 角色在各菜单上的权限位（用于分配菜单回显） */

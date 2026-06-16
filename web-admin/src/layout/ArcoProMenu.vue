@@ -35,16 +35,7 @@
 import type { Component } from 'vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  IconApps,
-  IconBook,
-  IconFile,
-  IconImage,
-  IconMenu,
-  IconSettings,
-  IconUser,
-  IconUserGroup,
-} from '@arco-design/web-vue/es/icon'
+import * as ArcoIcons from '@arco-design/web-vue/es/icon'
 import type { Menu } from '@/api/types'
 import ArcoProMenu from './ArcoProMenu.vue'
 
@@ -67,20 +58,30 @@ const selectedKeys = computed(() => {
   return p && p !== '/' ? [p] : []
 })
 
-const iconMap: Record<string, Component> = {
-  setting: IconSettings,
-  user: IconUser,
-  usergroup: IconUserGroup,
-  'menu-fold': IconMenu,
-  read: IconBook,
-  picture: IconImage,
-  document: IconFile,
-  apps: IconApps,
+const iconComponents = ArcoIcons as Record<string, Component>
+const legacyIconMap: Record<string, string> = {
+  setting: 'IconSettings',
+  user: 'IconUser',
+  usergroup: 'IconUserGroup',
+  read: 'IconBook',
+  picture: 'IconImage',
+  document: 'IconFile',
+  apps: 'IconApps',
 }
 
 function iconCmp(name?: string): Component | undefined {
   if (!name) return undefined
-  return iconMap[name] ?? IconFile
+  const exportName = legacyIconMap[name] ?? iconValueToExport(name)
+  return iconComponents[exportName] ?? iconComponents.IconFile
+}
+
+function iconValueToExport(value: string): string {
+  if (value.startsWith('Icon')) return value
+  return `Icon${value
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')}`
 }
 
 function visibleChildren(node: Menu): Menu[] {

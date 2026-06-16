@@ -142,6 +142,53 @@ CREATE TABLE IF NOT EXISTS `role_menus` (
   KEY `idx_role_menus_menu_id` (`menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色菜单关联';
 
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `trace_id` VARCHAR(64) DEFAULT NULL COMMENT '请求链路ID',
+  `user_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '操作人ID',
+  `username` VARCHAR(191) DEFAULT NULL COMMENT '操作人账号快照',
+  `nickname` VARCHAR(100) DEFAULT NULL COMMENT '操作人昵称快照',
+  `phone` VARCHAR(20) DEFAULT NULL COMMENT '操作人手机号快照',
+  `role_name` VARCHAR(100) DEFAULT NULL COMMENT '角色名称快照',
+  `role_code` VARCHAR(50) DEFAULT NULL COMMENT '角色编码快照',
+  `store_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '门店ID',
+  `store_name` VARCHAR(100) DEFAULT NULL COMMENT '门店名称快照',
+  `module` VARCHAR(64) DEFAULT NULL COMMENT '模块编码',
+  `module_name` VARCHAR(100) DEFAULT NULL COMMENT '模块名称',
+  `action` VARCHAR(64) DEFAULT NULL COMMENT '动作编码',
+  `action_name` VARCHAR(100) DEFAULT NULL COMMENT '动作名称',
+  `resource_type` VARCHAR(64) DEFAULT NULL COMMENT '资源类型',
+  `resource_id` VARCHAR(64) DEFAULT NULL COMMENT '资源ID',
+  `resource_no` VARCHAR(100) DEFAULT NULL COMMENT '业务编号',
+  `resource_name` VARCHAR(191) DEFAULT NULL COMMENT '资源名称',
+  `method` VARCHAR(16) DEFAULT NULL COMMENT 'HTTP方法',
+  `path` VARCHAR(255) DEFAULT NULL COMMENT '接口路径',
+  `query` TEXT COMMENT '查询参数',
+  `request_body` LONGTEXT COMMENT '请求体摘要',
+  `before_data` LONGTEXT COMMENT '修改前JSON',
+  `after_data` LONGTEXT COMMENT '修改后JSON',
+  `diff_data` LONGTEXT COMMENT '字段差异JSON',
+  `status` VARCHAR(16) DEFAULT NULL COMMENT 'success/fail',
+  `status_code` BIGINT DEFAULT NULL COMMENT 'HTTP状态码',
+  `error_message` TEXT COMMENT '错误信息',
+  `latency_ms` BIGINT DEFAULT NULL COMMENT '请求耗时毫秒',
+  `client_ip` VARCHAR(64) DEFAULT NULL COMMENT '客户端IP',
+  `client_source` VARCHAR(64) DEFAULT NULL COMMENT '客户端来源',
+  `device_type` VARCHAR(32) DEFAULT NULL COMMENT '设备类型 desktop/mobile/tablet/bot/unknown',
+  `os` VARCHAR(64) DEFAULT NULL COMMENT '操作系统',
+  `browser` VARCHAR(64) DEFAULT NULL COMMENT '浏览器/客户端',
+  `user_agent` VARCHAR(512) DEFAULT NULL COMMENT 'User-Agent',
+  `created_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_created_at` (`created_at`),
+  KEY `idx_audit_user_time` (`user_id`, `created_at`),
+  KEY `idx_audit_store_time` (`store_id`, `created_at`),
+  KEY `idx_audit_module_time` (`module`, `created_at`),
+  KEY `idx_audit_action_time` (`action`, `created_at`),
+  KEY `idx_audit_resource` (`resource_id`, `resource_no`),
+  KEY `idx_audit_logs_trace_id` (`trace_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志';
+
 CREATE TABLE IF NOT EXISTS `suppliers` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `supplier_code` VARCHAR(50) NOT NULL,
@@ -213,6 +260,8 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   `order_no` VARCHAR(100) DEFAULT NULL,
   `total_amount` DECIMAL(10,2) DEFAULT NULL,
   `other_expense_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '其他支出金额',
+  `is_errand_order` TINYINT NOT NULL DEFAULT 0 COMMENT '是否跑腿订单 1=是 0=否',
+  `errand_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '跑腿费用',
   `net_income_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '净收入金额',
   `item_count` INT DEFAULT NULL,
   `tag_code` VARCHAR(50) DEFAULT NULL,
@@ -228,6 +277,7 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   KEY `idx_store_accounts_store_id` (`store_id`),
   KEY `idx_store_accounts_member_id` (`member_id`),
   KEY `idx_store_accounts_payment_status` (`payment_status`),
+  KEY `idx_store_accounts_is_errand_order` (`is_errand_order`),
   KEY `idx_store_accounts_channel` (`channel`),
   KEY `idx_store_accounts_order_no` (`order_no`),
   KEY `idx_store_accounts_tag_code` (`tag_code`),
@@ -271,6 +321,75 @@ CREATE TABLE IF NOT EXISTS `store_account_consumables` (
   KEY `idx_store_account_consumables_product_id` (`product_id`),
   KEY `idx_store_account_consumables_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店记账消耗品明细';
+
+CREATE TABLE IF NOT EXISTS `store_account_consumable_products` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `name` VARCHAR(200) NOT NULL,
+  `cost_price` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_store_account_consumable_products_store_id` (`store_id`),
+  KEY `idx_store_account_consumable_products_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店记账消耗品档案';
+
+CREATE TABLE IF NOT EXISTS `store_returns` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `return_no` VARCHAR(50) NOT NULL,
+  `client_req_id` VARCHAR(64) DEFAULT NULL,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `return_date` DATE DEFAULT NULL,
+  `logistics_fee` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `total_deposit` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `item_count` INT NOT NULL DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `operator_id` BIGINT UNSIGNED NOT NULL,
+  `operator_name` VARCHAR(50) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_store_returns_return_no` (`return_no`),
+  UNIQUE KEY `idx_store_returns_client_req_id` (`client_req_id`),
+  KEY `idx_store_returns_store_id` (`store_id`),
+  KEY `idx_store_returns_return_date` (`return_date`),
+  KEY `idx_store_returns_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店返厂单';
+
+CREATE TABLE IF NOT EXISTS `store_return_items` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `return_id` BIGINT UNSIGNED NOT NULL,
+  `product_id` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  `product_name` VARCHAR(200) NOT NULL,
+  `quantity` DECIMAL(10,2) NOT NULL DEFAULT 1,
+  `deposit` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_store_return_items_return_id` (`return_id`),
+  KEY `idx_store_return_items_product_id` (`product_id`),
+  KEY `idx_store_return_items_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店返厂商品明细';
+
+CREATE TABLE IF NOT EXISTS `store_return_products` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL,
+  `product_name` VARCHAR(200) NOT NULL,
+  `deposit` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `remark` VARCHAR(500) DEFAULT NULL,
+  `status` BIGINT NOT NULL DEFAULT 1,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_store_return_products_store_id` (`store_id`),
+  KEY `idx_store_return_products_status` (`status`),
+  KEY `idx_store_return_products_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店返厂商品档案';
 
 CREATE TABLE IF NOT EXISTS `third_party_accounts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -723,6 +842,57 @@ PREPARE stmt_add_net_income_amount FROM @sql_add_net_income_amount;
 EXECUTE stmt_add_net_income_amount;
 DEALLOCATE PREPARE stmt_add_net_income_amount;
 
+SET @sql_add_is_errand_order = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'is_errand_order'
+    ),
+    'SELECT ''skip add is_errand_order''',
+    'ALTER TABLE store_accounts ADD COLUMN is_errand_order TINYINT NOT NULL DEFAULT 0 COMMENT ''是否跑腿订单 1=是 0=否'' AFTER other_expense_amount'
+  )
+);
+PREPARE stmt_add_is_errand_order FROM @sql_add_is_errand_order;
+EXECUTE stmt_add_is_errand_order;
+DEALLOCATE PREPARE stmt_add_is_errand_order;
+
+SET @sql_add_errand_fee = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'errand_fee'
+    ),
+    'SELECT ''skip add errand_fee''',
+    'ALTER TABLE store_accounts ADD COLUMN errand_fee DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''跑腿费用'' AFTER is_errand_order'
+  )
+);
+PREPARE stmt_add_errand_fee FROM @sql_add_errand_fee;
+EXECUTE stmt_add_errand_fee;
+DEALLOCATE PREPARE stmt_add_errand_fee;
+
+SET @sql_add_idx_store_accounts_is_errand_order = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND INDEX_NAME = 'idx_store_accounts_is_errand_order'
+    ),
+    'SELECT ''skip add idx_store_accounts_is_errand_order''',
+    'CREATE INDEX idx_store_accounts_is_errand_order ON store_accounts(is_errand_order)'
+  )
+);
+PREPARE stmt_add_idx_store_accounts_is_errand_order FROM @sql_add_idx_store_accounts_is_errand_order;
+EXECUTE stmt_add_idx_store_accounts_is_errand_order;
+DEALLOCATE PREPARE stmt_add_idx_store_accounts_is_errand_order;
+
 SET @sql_add_bottle_price = (
   SELECT IF(
     EXISTS(
@@ -1041,6 +1211,27 @@ WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-pric
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @b2b_id, 'b2b-order-add', '新增供货单', '', '', '', 3, 7, 'b2b:order:add', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-order-edit', '修改供货单状态', '', '', '', 3, 8, 'b2b:order:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-edit' AND type=3);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'store-return', '门店返厂管理', 'Van', '/store/return', 'store/return/index', 2, 7, 'store:return:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='store-return' AND type=2);
+SET @store_return_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='store-return' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-add', '新增返厂', '', '', '', 3, 1, 'store:return:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-edit', '编辑返厂', '', '', '', 3, 2, 'store:return:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-delete', '删除返厂', '', '', '', 3, 3, 'store:return:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-delete' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-product', '维护返厂商品', '', '', '', 3, 4, 'store:return:product', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-product' AND type=3);
 
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 1, id, 15 FROM menus WHERE name LIKE 'b2b-%'
@@ -1053,6 +1244,19 @@ SELECT 2, id, 15 FROM menus WHERE name LIKE 'b2b-%'
 ON DUPLICATE KEY UPDATE permissions=15;
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 3, id, 15 FROM menus WHERE name LIKE 'b2b-%'
+ON DUPLICATE KEY UPDATE permissions=15;
+
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 1, id, 15 FROM menus WHERE name LIKE 'store-return%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 999, id, 15 FROM menus WHERE name LIKE 'store-return%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE name LIKE 'store-return%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 3, id, 15 FROM menus WHERE name LIKE 'store-return%'
 ON DUPLICATE KEY UPDATE permissions=15;
 
 INSERT INTO role_menus (role_id, menu_id, permissions)

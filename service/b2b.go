@@ -285,6 +285,48 @@ func (s *B2BService) GetSupplyOrder(id, storeID uint, isHQ bool) (*model.B2BSupp
 	return order, nil
 }
 
+func (s *B2BService) UpdateSupplyOrderDelivery(id, storeID uint, isHQ bool, req *model.UpdateB2BSupplyOrderDeliveryReq) (*model.B2BSupplyOrder, error) {
+	order, err := s.GetSupplyOrder(id, storeID, isHQ)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.b2bModule.UpdateSupplyOrderDelivery(order.ID, req.DeliveryStatus); err != nil {
+		return nil, err
+	}
+	return s.GetSupplyOrder(id, storeID, isHQ)
+}
+
+func (s *B2BService) UpdateSupplyOrderPayment(id, storeID uint, isHQ bool, req *model.UpdateB2BSupplyOrderPaymentReq) (*model.B2BSupplyOrder, error) {
+	order, err := s.GetSupplyOrder(id, storeID, isHQ)
+	if err != nil {
+		return nil, err
+	}
+
+	total := roundMoney(order.TotalAmount)
+	paid := roundMoney(req.PaidAmount)
+	switch req.PaymentStatus {
+	case model.B2BPaymentUnpaid:
+		paid = 0
+	case model.B2BPaymentPaid:
+		paid = total
+	case model.B2BPaymentPartial:
+		if paid <= 0 || paid >= total {
+			return nil, errors.New("部分收款时已收金额必须大于0且小于订单金额")
+		}
+	default:
+		return nil, errors.New("invalid payment status")
+	}
+	if paid > total {
+		paid = total
+	}
+	unpaid := roundMoney(total - paid)
+	receivableDelta := roundMoney(unpaid - order.UnpaidAmount)
+	if err := s.b2bModule.UpdateSupplyOrderPayment(order.ID, order.CustomerID, req.PaymentStatus, paid, unpaid, receivableDelta); err != nil {
+		return nil, err
+	}
+	return s.GetSupplyOrder(id, storeID, isHQ)
+}
+
 func normalizeSettlement(v string) string {
 	switch strings.TrimSpace(v) {
 	case "week", "month":

@@ -207,13 +207,13 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		return 0, 0, 0, err
 	}
 
-	// 实时净利润：销售额 - 其他支出 - 消耗品金额（不依赖历史 net_income_amount 存量值）
+	// 实时净利润：销售额 - 其他支出 - 跑腿费 - 消耗品金额 - 商品成本（不依赖历史 net_income_amount 存量值）
 	costSub := m.db.Table("store_account_items AS sai").
 		Select("sai.account_id, COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price,0)),0) AS cost_amount").
 		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
 		Group("sai.account_id")
 	netQuery := m.db.Model(&model.StoreAccount{}).
-		Select("COALESCE(SUM(store_accounts.total_amount - store_accounts.other_expense_amount - COALESCE(cons.sum_amount, 0) - COALESCE(costs.cost_amount,0)), 0)").
+		Select("COALESCE(SUM(store_accounts.total_amount - store_accounts.other_expense_amount - store_accounts.errand_fee - COALESCE(cons.sum_amount, 0) - COALESCE(costs.cost_amount,0)), 0)").
 		Joins("LEFT JOIN (SELECT account_id, COALESCE(SUM(amount),0) AS sum_amount FROM store_account_consumables GROUP BY account_id) AS cons ON cons.account_id = store_accounts.id").
 		Joins("LEFT JOIN (?) AS costs ON costs.account_id = store_accounts.id", costSub)
 	if storeID > 0 {
@@ -268,4 +268,78 @@ func (m *StoreAccountModule) ReplaceConsumables(accountID uint, consumables []mo
 		netIncome := account.TotalAmount - account.OtherExpenseAmount - consumableTotal - itemCostTotal
 		return tx.Model(&model.StoreAccount{}).Where("id = ?", accountID).Update("net_income_amount", netIncome).Error
 	})
+}
+
+func (m *StoreAccountModule) CreateConsumableProduct(product *model.StoreAccountConsumableProduct) error {
+	return m.db.Create(product).Error
+}
+
+func (m *StoreAccountModule) GetConsumableProductByIDScoped(id, storeID uint, hqUnbound bool) (*model.StoreAccountConsumableProduct, error) {
+	var product model.StoreAccountConsumableProduct
+	query := m.db.Where("id = ?", id)
+	if !hqUnbound {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if err := query.First(&product).Error; err != nil {
+		return nil, err
+	}
+	return &product, nil
+}
+
+func (m *StoreAccountModule) GetConsumableProductMap(ids []uint, storeID uint, hqUnbound bool) (map[uint]*model.StoreAccountConsumableProduct, error) {
+	result := make(map[uint]*model.StoreAccountConsumableProduct)
+	if len(ids) == 0 {
+		return result, nil
+	}
+	var products []*model.StoreAccountConsumableProduct
+	query := m.db.Where("id IN ?", ids)
+	if !hqUnbound {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if err := query.Find(&products).Error; err != nil {
+		return nil, err
+	}
+	for _, product := range products {
+		result[product.ID] = product
+	}
+	return result, nil
+}
+
+func (m *StoreAccountModule) ListConsumableProducts(req *model.ListStoreAccountConsumableProductReq) ([]*model.StoreAccountConsumableProduct, int64, error) {
+	products := make([]*model.StoreAccountConsumableProduct, 0)
+	var total int64
+
+	query := m.db.Model(&model.StoreAccountConsumableProduct{}).Preload("Store")
+	if req.StoreID > 0 {
+		query = query.Where("store_id = ?", req.StoreID)
+	}
+	if keyword := strings.TrimSpace(req.Keyword); keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where("name LIKE ? OR remark LIKE ?", like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return products, 0, err
+	}
+	offset := (req.Page - 1) * req.PageSize
+	if err := query.Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&products).Error; err != nil {
+		return products, 0, err
+	}
+	return products, total, nil
+}
+
+func (m *StoreAccountModule) UpdateConsumableProduct(product *model.StoreAccountConsumableProduct) error {
+	return m.db.Model(&model.StoreAccountConsumableProduct{}).Where("id = ?", product.ID).Updates(map[string]interface{}{
+		"store_id":   product.StoreID,
+		"name":       product.Name,
+		"cost_price": product.CostPrice,
+		"remark":     product.Remark,
+	}).Error
+}
+
+func (m *StoreAccountModule) DeleteConsumableProduct(id, storeID uint, hqUnbound bool) error {
+	query := m.db.Where("id = ?", id)
+	if !hqUnbound {
+		query = query.Where("store_id = ?", storeID)
+	}
+	return query.Delete(&model.StoreAccountConsumableProduct{}).Error
 }

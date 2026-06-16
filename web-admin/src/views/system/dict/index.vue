@@ -1,60 +1,84 @@
 <template>
-  <!-- xl 以下单列占满宽，避免双列时表格被压得过窄；双列用 minmax 允许列在网格内正确收缩而不挤爆表格 -->
-  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-    <BaseCard class="min-w-0">
-      <template #header>
-        <div class="flex items-center justify-between gap-2 flex-wrap w-full">
-          <span class="font-semibold text-slate-800">字典类型</span>
-          <BaseButton v-permission="'system:dict:type:add'" variant="primary" size="sm" @click="openType()">新增
-          </BaseButton>
+  <div class="dict-page">
+    <aside class="dict-type-panel">
+      <div class="dict-panel-head">
+        <div>
+          <h2 class="dict-panel-title">字典类型</h2>
+          <p class="dict-panel-sub">{{ filteredTypes.length }} / {{ types.length }}</p>
         </div>
-      </template>
-      <div class="min-w-0 overflow-x-auto">
-        <BaseTable :columns="typeColumns" :data="(types as unknown) as Record<string, unknown>[]"
-          :loading="typesLoading" min-width="460px" height="360px" row-key="id"
-          :highlight-row-key="currentType?.id ?? null" row-clickable @row-click="onPickTypeRow">
-          <template #cell-status="{ row }">
-            {{ (row as DictType).status === 1 ? '启用' : '停用' }}
-          </template>
-          <template #cell-actions="{ row }">
-            <BaseTableRowActions :actions="dictTypeRowActions(row as DictType)" />
-          </template>
-        </BaseTable>
+        <BaseButton v-permission="'system:dict:type:add'" variant="primary" size="sm" @click="openType()">新增</BaseButton>
       </div>
-    </BaseCard>
 
-    <BaseCard class="min-w-0">
-      <template #header>
-        <div class="flex items-center justify-between gap-2 flex-wrap w-full">
-          <span class="font-semibold text-slate-800">字典数据 {{ currentType ? `(${currentType.code})` : '' }}</span>
-          <BaseButton v-permission="'system:dict:data:add'" variant="primary" size="sm" :disabled="!currentType"
-            @click="openData()">
-            新增
-          </BaseButton>
+      <BaseInput v-model="typeKeyword" placeholder="搜索编码 / 名称" clearable />
+
+      <div class="dict-type-list">
+        <div
+          v-for="item in filteredTypes"
+          :key="item.id"
+          class="dict-type-item"
+          :class="{ 'is-active': currentType?.id === item.id }"
+          @click="pickType(item)"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="dict-type-main">
+              <span class="truncate font-medium">{{ item.name }}</span>
+              <span class="dict-status" :class="item.status === 1 ? 'is-on' : 'is-off'">{{ statusText(item.status) }}</span>
+            </div>
+            <div class="dict-type-code">{{ item.code }}</div>
+          </div>
+          <div class="dict-type-actions" @click.stop>
+            <BaseButton v-permission="'system:dict:type:edit'" variant="link" size="sm" @click="openType(item)">编辑</BaseButton>
+            <BaseButton v-permission="'system:dict:type:delete'" variant="link" size="sm" class="!text-rose-600" @click="delType(item)">删除</BaseButton>
+          </div>
         </div>
-      </template>
-      <div class=" overflow-x-auto">
-        <BaseTable :columns="dataColumns" :data="(dataList as unknown) as Record<string, unknown>[]"
-          :loading="dataLoading" height="360px">
-          <template #cell-style="{ row }">
-            <DictTag v-if="currentType" :type="currentType.code" :value="(row as DictData).value" />
-          </template>
-          <template #cell-actions="{ row }">
-            <BaseTableRowActions :actions="dictDataRowActions(row as DictData)" />
-          </template>
-        </BaseTable>
-      </div>
-    </BaseCard>
 
-    <BaseDialog v-model="typeDlg" :title="typeEditId ? '编辑类型' : '新增类型'" max-width="min(440px, 96vw)">
-      <div class="space-y-4">
+        <div v-if="!typesLoading && filteredTypes.length === 0" class="dict-empty">暂无数据</div>
+      </div>
+    </aside>
+
+    <section class="dict-data-panel">
+      <div class="dict-panel-head">
+        <div class="min-w-0">
+          <h2 class="dict-panel-title truncate">{{ currentType?.name || '字典数据' }}</h2>
+          <p class="dict-panel-sub truncate">
+            <template v-if="currentType">{{ currentType.code }}{{ currentType.remark ? ` · ${currentType.remark}` : '' }}</template>
+            <template v-else>请选择字典类型</template>
+          </p>
+        </div>
+        <BaseButton v-permission="'system:dict:data:add'" variant="primary" size="sm" :disabled="!currentType" @click="openData()">新增数据</BaseButton>
+      </div>
+
+      <BaseTable
+        v-if="currentType"
+        :columns="dataColumns"
+        :data="(dataList as unknown) as Record<string, unknown>[]"
+        :loading="dataLoading"
+        min-width="720px"
+        height="calc(100vh - 260px)"
+      >
+        <template #cell-style="{ row }">
+          <DictTag :type="currentType.code" :value="(row as DictData).value" />
+        </template>
+        <template #cell-status="{ row }">
+          <span class="dict-status" :class="(row as DictData).status === 1 ? 'is-on' : 'is-off'">{{ statusText((row as DictData).status) }}</span>
+        </template>
+        <template #cell-actions="{ row }">
+          <BaseTableRowActions :actions="dictDataRowActions(row as DictData)" :max-inline="2" />
+        </template>
+      </BaseTable>
+
+      <div v-else class="dict-empty dict-empty-large">请选择字典类型</div>
+    </section>
+
+    <BaseDialog v-model="typeDlg" :title="typeEditId ? '编辑类型' : '新增类型'" max-width="min(520px, 96vw)">
+      <div class="dict-form-grid">
         <BaseFormItem label="编码" required>
           <BaseInput v-model="typeForm.code" :disabled="!!typeEditId" />
         </BaseFormItem>
         <BaseFormItem label="名称" required>
           <BaseInput v-model="typeForm.name" />
         </BaseFormItem>
-        <BaseFormItem label="备注">
+        <BaseFormItem label="备注" class="sm:col-span-2">
           <BaseTextarea v-model="typeForm.remark" :rows="2" />
         </BaseFormItem>
         <BaseFormItem label="状态">
@@ -67,8 +91,8 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="dataDlg" :title="dataEditId ? '编辑数据' : '新增数据'" max-width="min(480px, 96vw)">
-      <div class="space-y-4">
+    <BaseDialog v-model="dataDlg" :title="dataEditId ? '编辑数据' : '新增数据'" max-width="min(620px, 96vw)">
+      <div class="dict-form-grid">
         <BaseFormItem label="标签" required>
           <BaseInput v-model="dataForm.label" />
         </BaseFormItem>
@@ -78,10 +102,10 @@
         <BaseFormItem label="排序">
           <BaseNumberInput v-model="dataForm.sort" />
         </BaseFormItem>
-        <BaseFormItem label="list_class">
-          <BaseSelect v-model="dataForm.list_class" :options="listClassOptions" placeholder="success / info / …" />
+        <BaseFormItem label="样式">
+          <BaseSelect v-model="dataForm.list_class" :options="listClassOptions" placeholder="success / info / ..." />
         </BaseFormItem>
-        <BaseFormItem label="备注">
+        <BaseFormItem label="备注" class="sm:col-span-2">
           <BaseTextarea v-model="dataForm.remark" :rows="2" />
         </BaseFormItem>
         <BaseFormItem label="状态">
@@ -101,7 +125,6 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   BaseButton,
-  BaseCard,
   BaseDialog,
   BaseFormItem,
   BaseInput,
@@ -130,17 +153,12 @@ import { confirmDialog } from '@/feedback/confirm'
 
 const qc = useQueryClient()
 
-const typeColumns: BaseTableColumn[] = [
-  { key: 'code', label: '编码', prop: 'code', minWidth: '120px', ellipsis: true },
-  { key: 'name', label: '名称', prop: 'name', minWidth: '120px', ellipsis: true },
-  { key: 'status', label: '状态', width: '72px' },
-  { key: 'actions', label: '操作', width: '140px', align: 'right' },
-]
-
 const dataColumns: BaseTableColumn[] = [
-  { key: 'label', label: '标签', prop: 'label', width: '100px', ellipsis: true },
-  { key: 'value', label: '值', prop: 'value', width: '96px', ellipsis: true },
+  { key: 'label', label: '标签', prop: 'label', minWidth: '140px', ellipsis: true },
+  { key: 'value', label: '值', prop: 'value', minWidth: '120px', ellipsis: true },
   { key: 'style', label: '样式', width: '100px' },
+  { key: 'sort', label: '排序', prop: 'sort', width: '80px' },
+  { key: 'status', label: '状态', width: '80px' },
   { key: 'actions', label: '操作', width: '140px', align: 'right' },
 ]
 
@@ -158,6 +176,12 @@ const { data: typesData, isLoading: typesLoading } = useQuery({
 })
 
 const types = computed(() => typesData.value ?? [])
+const typeKeyword = ref('')
+const filteredTypes = computed(() => {
+  const kw = typeKeyword.value.trim().toLowerCase()
+  if (!kw) return types.value
+  return types.value.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(kw))
+})
 
 const currentType = ref<DictType | null>(null)
 const dataList = ref<DictData[]>([])
@@ -186,8 +210,22 @@ watch(
   { immediate: true },
 )
 
-function onPickTypeRow(row: Record<string, unknown>): void {
-  currentType.value = (row as unknown as DictType) ?? null
+watch(
+  types,
+  (list) => {
+    if (!list.length) {
+      currentType.value = null
+      return
+    }
+    if (!currentType.value || !list.some((item) => item.id === currentType.value?.id)) {
+      currentType.value = list[0]
+    }
+  },
+  { immediate: true },
+)
+
+function pickType(row: DictType): void {
+  currentType.value = row
 }
 
 const typeDlg = ref(false)
@@ -310,17 +348,187 @@ async function delData(row: DictData): Promise<void> {
   }
 }
 
-function dictTypeRowActions(row: DictType): TableRowAction[] {
-  return [
-    { label: '编辑', permission: 'system:dict:type:edit', onClick: () => openType(row) },
-    { label: '删除', permission: 'system:dict:type:delete', danger: true, onClick: () => void delType(row) },
-  ]
-}
-
 function dictDataRowActions(row: DictData): TableRowAction[] {
   return [
     { label: '编辑', permission: 'system:dict:data:edit', onClick: () => openData(row) },
     { label: '删除', permission: 'system:dict:data:delete', danger: true, onClick: () => void delData(row) },
   ]
 }
+
+function statusText(status: number): string {
+  return status === 1 ? '启用' : '停用'
+}
 </script>
+
+<style scoped>
+.dict-page {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 16px;
+  height: calc(100vh - 150px);
+  min-height: 520px;
+  overflow: hidden;
+}
+
+.dict-type-panel,
+.dict-data-panel {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--border-radius-large);
+  background: var(--color-bg-2);
+}
+
+.dict-type-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.dict-data-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.dict-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.dict-panel-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 22px;
+}
+
+.dict-panel-sub {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dict-type-list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.dict-type-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.dict-type-item:hover {
+  background: #f8fafc;
+}
+
+.dict-type-item.is-active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.dict-type-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dict-type-code {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dict-type-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.dict-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.dict-status.is-on {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.dict-status.is-off {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.dict-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.dict-empty-large {
+  flex: 1;
+  min-height: 320px;
+  border: 1px dashed var(--color-border-2);
+  border-radius: var(--border-radius-large);
+}
+
+.dict-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .dict-page {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .dict-type-panel {
+    max-height: min(520px, 70vh);
+  }
+
+  .dict-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 	"gorm.io/gorm"
 )
 
@@ -112,7 +113,7 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 	}
 
 	// 今日销售额
-	today := time.Now().Format("2006-01-02")
+	today := businessdate.DateString(time.Now())
 	fmt.Printf("🔍 [Statistics] 今日日期: %s, storeID: %d\n", today, storeID)
 	todayQuery := m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND DATE(account_date) = ?", today)
 	if storeID > 0 {
@@ -122,7 +123,8 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 	fmt.Printf("🔍 [Statistics] 今日销售额: %.2f\n", stats.TodayAmount)
 
 	// 本月销售额
-	monthStart := time.Now().Format("2006-01") + "-01"
+	businessToday := businessdate.Date(time.Now())
+	monthStart := time.Date(businessToday.Year(), businessToday.Month(), 1, 0, 0, 0, 0, businessToday.Location()).Format("2006-01-02")
 	fmt.Printf("🔍 [Statistics] 本月开始: %s\n", monthStart)
 	monthQuery := m.db.Model(&model.StoreAccount{}).
 		Where("deleted_at IS NULL AND DATE(account_date) >= ?", monthStart)
@@ -300,18 +302,86 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	if err := salesQuery.Count(&stats.SalesOrderCount).Error; err != nil {
 		return nil, err
 	}
-	if err := salesQuery.Select("COALESCE(SUM(total_amount), 0), COALESCE(SUM(other_expense_amount), 0)").
-		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount); err != nil {
+	if err := salesQuery.Select("COALESCE(SUM(total_amount), 0), COALESCE(SUM(other_expense_amount), 0), COALESCE(SUM(errand_fee), 0)").
+		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount, &stats.ErrandFeeAmount); err != nil {
 		return nil, err
 	}
-	var consumableAmount float64
 	consumableQuery := m.db.Table("store_account_consumables AS sac").
 		Joins("JOIN store_accounts AS sa ON sa.id = sac.account_id AND sa.deleted_at IS NULL").
 		Where("sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
 	if storeID > 0 {
 		consumableQuery = consumableQuery.Where("sa.store_id = ?", storeID)
 	}
-	if err := consumableQuery.Select("COALESCE(SUM(sac.amount), 0)").Scan(&consumableAmount).Error; err != nil {
+	if err := consumableQuery.Select("COALESCE(SUM(sac.amount), 0)").Scan(&stats.ConsumableAmount).Error; err != nil {
+		return nil, err
+	}
+
+	b2bQuery := m.db.Model(&model.B2BSupplyOrder{}).
+		Where("deleted_at IS NULL AND delivery_status <> ? AND order_date >= ? AND order_date <= ?", model.B2BDeliveryCancel, startDate, endDate)
+	if storeID > 0 {
+		b2bQuery = b2bQuery.Where("store_id = ?", storeID)
+	}
+	if err := b2bQuery.Count(&stats.B2BSupplyOrderCount).Error; err != nil {
+		return nil, err
+	}
+	if err := b2bQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.B2BSupplyAmount).Error; err != nil {
+		return nil, err
+	}
+
+	returnQuery := m.db.Model(&model.StoreReturn{}).
+		Where("deleted_at IS NULL AND return_date >= ? AND return_date <= ?", startDate, endDate)
+	if storeID > 0 {
+		returnQuery = returnQuery.Where("store_id = ?", storeID)
+	}
+	if err := returnQuery.Select("COALESCE(SUM(total_deposit), 0), COALESCE(SUM(logistics_fee), 0)").
+		Row().Scan(&stats.ReturnDepositAmount, &stats.ReturnLogisticsFee); err != nil {
+		return nil, err
+	}
+
+	lossBaseQuery := m.db.Model(&model.InventoryLossOrder{}).
+		Where("deleted_at IS NULL AND is_canceled = 0 AND created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY)", startDate, endDate)
+	if storeID > 0 {
+		lossBaseQuery = lossBaseQuery.Where("store_id = ?", storeID)
+	}
+	if err := lossBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeLoss).Count(&stats.InventoryLossCount).Error; err != nil {
+		return nil, err
+	}
+	if err := lossBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeLoss).
+		Select("COALESCE(SUM(total_cost), 0)").Scan(&stats.InventoryLossAmount).Error; err != nil {
+		return nil, err
+	}
+
+	selfUseBaseQuery := m.db.Model(&model.InventoryLossOrder{}).
+		Where("deleted_at IS NULL AND is_canceled = 0 AND created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY)", startDate, endDate)
+	if storeID > 0 {
+		selfUseBaseQuery = selfUseBaseQuery.Where("store_id = ?", storeID)
+	}
+	if err := selfUseBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeSelfUse).Count(&stats.InventorySelfUseCount).Error; err != nil {
+		return nil, err
+	}
+	if err := selfUseBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeSelfUse).
+		Select("COALESCE(SUM(total_cost), 0)").Scan(&stats.InventorySelfUseAmount).Error; err != nil {
+		return nil, err
+	}
+
+	memberRankQuery := m.db.Table("store_accounts AS sa").
+		Select(`
+			COALESCE(tm.id, 0) AS member_id,
+			COALESCE(NULLIF(tm.name, ''), '未知会员') AS member_name,
+			COALESCE(tm.phone, '') AS member_phone,
+			COALESCE(SUM(sa.total_amount), 0) AS amount,
+			COUNT(sa.id) AS orders
+		`).
+		Joins("LEFT JOIN t_member AS tm ON tm.id = sa.member_id").
+		Where("sa.deleted_at IS NULL AND sa.member_id IS NOT NULL AND sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
+	if storeID > 0 {
+		memberRankQuery = memberRankQuery.Where("sa.store_id = ?", storeID)
+	}
+	if err := memberRankQuery.
+		Group("tm.id, tm.name, tm.phone").
+		Order("amount DESC").
+		Limit(10).
+		Scan(&stats.MemberConsumptionRank).Error; err != nil {
 		return nil, err
 	}
 
@@ -340,7 +410,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	}
 
 	stats.GrossProfitAmount = stats.SalesAmount - itemCostAmount
-	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - consumableAmount - itemCostAmount
+	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - stats.ErrandFeeAmount - stats.ConsumableAmount - itemCostAmount
 
 	return stats, nil
 }

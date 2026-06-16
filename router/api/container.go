@@ -29,6 +29,7 @@ type Controllers struct {
 	File              *controller.FileController
 	Gallery           *controller.GalleryController
 	StoreAccount      *controller.StoreAccountController
+	StoreReturn       *controller.StoreReturnController
 	MeituanAI         *controller.MeituanAIController
 	Statistics        *controller.StatisticsController
 	MessageTemplate   *controller.MessageTemplateController
@@ -38,6 +39,7 @@ type Controllers struct {
 	B2B               *controller.B2BController
 	ThirdPartyAccount *controller.ThirdPartyAccountController
 	ThirdPartyRoute   *controller.ThirdPartyRouteController
+	AuditLog          *controller.AuditLogController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 	PrinterService    *service.PrinterService
 }
@@ -63,6 +65,7 @@ func BuildControllers() *Controllers {
 	inventoryLossModule := userModulePkg.NewInventoryLossModule(database.DB)
 	galleryModule := userModulePkg.NewGalleryModule(database.DB)
 	storeAccountModule := userModulePkg.NewStoreAccountModule(database.DB)
+	storeReturnModule := userModulePkg.NewStoreReturnModule(database.DB)
 	meituanAIModule := userModulePkg.NewMeituanAIModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
@@ -72,6 +75,7 @@ func BuildControllers() *Controllers {
 	thirdPartyAccountModule := userModulePkg.NewThirdPartyAccountModule(database.DB)
 	thirdPartyOrderModule := userModulePkg.NewThirdPartyOrderModule(database.DB)
 	thirdPartyRouteModule := userModulePkg.NewThirdPartyRouteModule(database.DB)
+	auditLogModule := userModulePkg.NewAuditLogModule(database.DB)
 
 	userModulePkg.SetDB(database.DB)
 
@@ -120,6 +124,7 @@ func BuildControllers() *Controllers {
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
+	storeReturnService := service.NewStoreReturnService(storeReturnModule, userModule)
 	meituanAIService := service.NewMeituanAIService(meituanAIModule)
 	statisticsService := service.NewStatisticsService(statisticsModule)
 	memberService := service.NewMemberService(memberModule)
@@ -128,6 +133,7 @@ func BuildControllers() *Controllers {
 	b2bService := service.NewB2BService(b2bModule, storeModule, supplierProductModule, productUnitSpecModule, userModule)
 	thirdPartyAccountService := service.NewThirdPartyAccountService(thirdPartyAccountModule, thirdPartyOrderModule)
 	thirdPartyRouteService := service.NewThirdPartyRouteService(thirdPartyRouteModule, storeModule, thirdPartyOrderModule)
+	auditLogService := service.NewAuditLogService(auditLogModule)
 
 	// 初始化打印机模块
 	printerModule := userModulePkg.NewPrinterModule(database.DB)
@@ -177,6 +183,7 @@ func BuildControllers() *Controllers {
 		File:              fileController,
 		Gallery:           galleryController,
 		StoreAccount:      controller.NewStoreAccountController(storeAccountService),
+		StoreReturn:       controller.NewStoreReturnController(storeReturnService),
 		MeituanAI:         controller.NewMeituanAIController(meituanAIService),
 		Statistics:        controller.NewStatisticsController(statisticsService),
 		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
@@ -186,6 +193,7 @@ func BuildControllers() *Controllers {
 		B2B:               controller.NewB2BController(b2bService),
 		ThirdPartyAccount: controller.NewThirdPartyAccountController(thirdPartyAccountService),
 		ThirdPartyRoute:   controller.NewThirdPartyRouteController(thirdPartyRouteService),
+		AuditLog:          controller.NewAuditLogController(auditLogService),
 		DingTalkBotModule: dingTalkBotModule,
 		PrinterService:    printerService,
 	}

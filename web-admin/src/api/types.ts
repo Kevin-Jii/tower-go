@@ -116,6 +116,45 @@ export interface DictData {
   status: number
 }
 
+export interface AuditLog {
+  id: number
+  trace_id?: string
+  user_id?: number
+  username?: string
+  nickname?: string
+  phone?: string
+  role_name?: string
+  role_code?: string
+  store_id?: number
+  store_name?: string
+  module: string
+  module_name: string
+  action: string
+  action_name: string
+  resource_type?: string
+  resource_id?: string
+  resource_no?: string
+  resource_name?: string
+  method?: string
+  path?: string
+  query?: string
+  request_body?: string
+  before_data?: string
+  after_data?: string
+  diff_data?: string
+  status: 'success' | 'fail' | string
+  status_code?: number
+  error_message?: string
+  latency_ms?: number
+  client_ip?: string
+  client_source?: string
+  device_type?: string
+  os?: string
+  browser?: string
+  user_agent?: string
+  created_at?: string
+}
+
 export interface Gallery {
   id: number
   name: string
@@ -589,6 +628,17 @@ export interface StoreAccountConsumable {
   remark?: string
 }
 
+export interface StoreAccountConsumableProduct {
+  id: number
+  store_id: number
+  name: string
+  cost_price: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
+  store?: Store
+}
+
 export interface StoreAccount {
   id: number
   account_no: string
@@ -604,6 +654,8 @@ export interface StoreAccount {
   order_no?: string
   total_amount: number
   other_expense_amount?: number
+  is_errand_order?: number
+  errand_fee?: number
   net_income_amount?: number
   item_count?: number
   tag_code?: string
@@ -637,6 +689,7 @@ export interface MemberConsumptionRecord {
   order_no?: string
   total_amount: number
   other_expense_amount: number
+  errand_fee?: number
   consumable_amount: number
   net_income_amount: number
   created_at?: string
@@ -646,6 +699,7 @@ export interface MemberConsumptionSummary {
   count: number
   total_amount: number
   other_expense_amount: number
+  errand_fee?: number
   consumable_amount: number
   net_income_amount: number
 }
@@ -687,6 +741,54 @@ export interface StoreAccountStats {
   count?: number
 }
 
+export interface StoreReturnItem {
+  id: number
+  return_id?: number
+  product_id?: number
+  product_name: string
+  quantity: number
+  deposit: number
+  remark?: string
+  created_at?: string
+}
+
+export interface StoreReturn {
+  id: number
+  return_no: string
+  client_request_id?: string
+  store_id: number
+  store?: Store
+  return_date: string
+  logistics_fee: number
+  total_deposit: number
+  item_count: number
+  remark?: string
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
+  updated_at?: string
+  items?: StoreReturnItem[]
+}
+
+export interface StoreReturnStats {
+  total_deposit: number
+  logistics_fee: number
+  return_count: number
+  item_count: number
+}
+
+export interface StoreReturnProduct {
+  id: number
+  store_id: number
+  store?: Store
+  product_name: string
+  deposit: number
+  remark?: string
+  status: number
+  created_at?: string
+  updated_at?: string
+}
+
 export interface CategoryAmountItem {
   category_id: number
   category_name: string
@@ -695,13 +797,32 @@ export interface CategoryAmountItem {
   net_amount: number
 }
 
+export interface MemberConsumptionRankItem {
+  member_id: number
+  member_name: string
+  member_phone: string
+  amount: number
+  orders: number
+}
+
 export interface BusinessOverviewStats {
   start_date?: string
   end_date?: string
   store_id?: number
   inbound_amount?: number
   outbound_amount?: number
+  all_category_amount?: number
   sales_amount?: number
+  consumable_amount?: number
+  b2b_supply_amount?: number
+  b2b_supply_order_count?: number
+  return_deposit_amount?: number
+  return_logistics_fee?: number
+  errand_fee_amount?: number
+  inventory_loss_amount?: number
+  inventory_loss_count?: number
+  inventory_self_use_amount?: number
+  inventory_self_use_count?: number
   other_expense_amount?: number
   gross_profit_amount?: number
   net_profit_amount?: number
@@ -709,6 +830,7 @@ export interface BusinessOverviewStats {
   inventory_in_count?: number
   inventory_out_count?: number
   categories?: CategoryAmountItem[]
+  member_consumption_rank?: MemberConsumptionRankItem[]
 }
 
 export interface SalesTrendItem {

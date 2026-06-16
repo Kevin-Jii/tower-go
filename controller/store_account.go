@@ -114,7 +114,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新记账
-// @Description 更新记账信息，仅允许当天修改；若23:00后创建可延长至次日03:00
+// @Description 更新记账信息，仅允许录入当天修改
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -198,6 +198,70 @@ func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeAccountService.BindConsumables(uint(id), &req); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+func (c *StoreAccountController) CreateConsumableProduct(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+
+	var req model.UpsertStoreAccountConsumableProductReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	product, err := c.storeAccountService.CreateConsumableProduct(storeID, &req, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, product)
+}
+
+func (c *StoreAccountController) ListConsumableProducts(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+
+	var req model.ListStoreAccountConsumableProductReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	if !middleware.HQUnboundAdmin(ctx) {
+		req.StoreID = storeID
+	}
+	list, total, err := c.storeAccountService.ListConsumableProducts(ctx.Request.Context(), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+func (c *StoreAccountController) UpdateConsumableProduct(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+
+	var req model.UpsertStoreAccountConsumableProductReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	product, err := c.storeAccountService.UpdateConsumableProduct(id, middleware.GetStoreID(ctx), &req, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, product)
+}
+
+func (c *StoreAccountController) DeleteConsumableProduct(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	if err := c.storeAccountService.DeleteConsumableProduct(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}

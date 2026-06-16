@@ -238,6 +238,32 @@ func (m *B2BModule) GetSupplyOrder(id uint) (*model.B2BSupplyOrder, error) {
 	return &order, nil
 }
 
+func (m *B2BModule) UpdateSupplyOrderDelivery(id uint, deliveryStatus int) error {
+	return m.db.Model(&model.B2BSupplyOrder{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"delivery_status": deliveryStatus,
+	}).Error
+}
+
+func (m *B2BModule) UpdateSupplyOrderPayment(id, customerID uint, paymentStatus int, paidAmount, unpaidAmount, receivableDelta float64) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.B2BSupplyOrder{}).Where("id = ?", id).Updates(map[string]interface{}{
+			"payment_status": paymentStatus,
+			"paid_amount":    paidAmount,
+			"unpaid_amount":  unpaidAmount,
+		}).Error; err != nil {
+			return err
+		}
+		if receivableDelta != 0 {
+			if err := tx.Model(&model.B2BCustomer{}).
+				Where("id = ?", customerID).
+				Update("receivable", gorm.Expr("receivable + ?", receivableDelta)).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (m *B2BModule) GenerateSupplyOrderNo() string {
 	today := time.Now().Format("20060102")
 	pattern := "B2B" + today + "%"

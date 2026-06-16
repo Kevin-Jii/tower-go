@@ -150,3 +150,37 @@ func (c *B2BController) GetSupplyOrder(ctx *gin.Context) {
 	}
 	http.Success(ctx, order)
 }
+
+func (c *B2BController) UpdateSupplyOrderDelivery(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req model.UpdateB2BSupplyOrderDeliveryReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	order, err := c.service.UpdateSupplyOrderDelivery(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, order)
+}
+
+func (c *B2BController) UpdateSupplyOrderPayment(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req model.UpdateB2BSupplyOrderPaymentReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	order, err := c.service.UpdateSupplyOrderPayment(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, order)
+}

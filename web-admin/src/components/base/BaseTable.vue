@@ -1,6 +1,7 @@
 <template>
   <!-- 有 minWidth 时由 Arco scroll.x 在表体内部横向滚动，便于 fixed 列；无 minWidth 时外层 overflow-x-auto 兜底 -->
   <div
+    ref="tableRoot"
     class="base-table-outer relative w-full min-w-0 max-w-full rounded-[var(--border-radius-large)] border border-[var(--color-border-2)] bg-[var(--color-bg-2)]"
     :class="[minWidth ? 'overflow-x-hidden' : 'overflow-x-auto', height ? 'h-full min-h-0' : '']"
   >
@@ -32,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, useSlots } from 'vue'
 import type { TableColumnData, TableData } from '@arco-design/web-vue/es/table/interface'
 import { MathCurveLoader } from '@/components/loading'
 import type { BaseTableColumn } from './types'
@@ -64,6 +65,9 @@ const emit = defineEmits<{
   'row-dblclick': [Record<string, unknown>]
 }>()
 const slots = useSlots()
+const tableRoot = ref<HTMLElement | null>(null)
+const actionColumnWidth = ref(0)
+let measureRaf = 0
 
 const expandAll = computed(() => !!(props.treeChildrenKey && props.treeDefaultExpandAll))
 
@@ -131,13 +135,13 @@ const arcoColumns = computed<TableColumnData[]>(() =>
   props.columns.map((col) => {
     const w = parseSize(col.width)
     const mw = parseSize(col.minWidth)
-    /** 操作列：略给最小宽度；具体按钮由 BaseTableRowActions 收敛为「更多」 */
-    const minW =
-      col.key === 'actions' ? Math.max(mw ?? 0, w ?? 0, 108) : mw !== undefined ? mw : undefined
+    const autoActionWidth = actionColumnWidth.value || undefined
+    const actionWidth = col.key === 'actions' ? Math.max(mw ?? 0, w ?? 0, autoActionWidth ?? 0, 108) : undefined
+    const minW = col.key === 'actions' ? actionWidth : mw !== undefined ? mw : undefined
     return {
     title: col.label,
     dataIndex: col.prop || col.key,
-    width: w,
+    width: col.key === 'actions' ? actionWidth : w,
     minWidth: minW,
     fixed: col.fixed,
     align: col.align,
@@ -148,13 +152,69 @@ const arcoColumns = computed<TableColumnData[]>(() =>
       const row = record as Record<string, unknown>
       const val = cellValue(row, col)
       const slot = slots[`cell-${col.key}`]
-      if (slot) return slot({ row, value: val }) as unknown as string
+      if (slot) {
+        const content = slot({ row, value: val })
+        if (col.key === 'actions') {
+          return h('div', { class: 'base-table-actions-content' }, content)
+        }
+        return content as unknown as string
+      }
       return formatCell(val)
     },
     }
   }
   )
 )
+
+function measureActionRowWidth(row: HTMLElement): number {
+  const children = Array.from(row.children).filter((el) => {
+    const node = el as HTMLElement
+    return node.offsetParent !== null && window.getComputedStyle(node).display !== 'none'
+  }) as HTMLElement[]
+  if (!children.length) return 0
+
+  const style = window.getComputedStyle(row)
+  const gap = Number.parseFloat(style.columnGap || style.gap || '0') || 0
+  const contentWidth = children.reduce((sum, child) => sum + Math.ceil(child.getBoundingClientRect().width), 0)
+  return contentWidth + gap * Math.max(children.length - 1, 0)
+}
+
+function measureActionColumnWidth(): void {
+  measureRaf = 0
+  const root = tableRoot.value
+  if (!root || typeof window === 'undefined') return
+
+  const rows = Array.from(root.querySelectorAll<HTMLElement>('.table-row-actions'))
+  const customContents = Array.from(root.querySelectorAll<HTMLElement>('.base-table-actions-content'))
+  if (!rows.length && !customContents.length) {
+    if (actionColumnWidth.value !== 0) actionColumnWidth.value = 0
+    return
+  }
+
+  const maxRowWidth = rows.length ? Math.max(...rows.map(measureActionRowWidth)) : 0
+  const maxCustomWidth = customContents.length
+    ? Math.max(...customContents.map((content) => Math.ceil(content.scrollWidth)))
+    : 0
+  const maxContentWidth = Math.max(maxRowWidth, maxCustomWidth)
+  const nextWidth = Math.ceil(maxContentWidth + 36)
+  if (Number.isFinite(nextWidth) && Math.abs(nextWidth - actionColumnWidth.value) > 1) {
+    actionColumnWidth.value = nextWidth
+  }
+}
+
+function scheduleActionColumnMeasure(): void {
+  void nextTick(() => {
+    if (typeof window === 'undefined') return
+    if (measureRaf) window.cancelAnimationFrame(measureRaf)
+    measureRaf = window.requestAnimationFrame(measureActionColumnWidth)
+  })
+}
+
+onMounted(scheduleActionColumnMeasure)
+onUpdated(scheduleActionColumnMeasure)
+onBeforeUnmount(() => {
+  if (measureRaf && typeof window !== 'undefined') window.cancelAnimationFrame(measureRaf)
+})
 
 function rowClassFn(record: TableData): string | string[] {
   const row = record as Record<string, unknown>
@@ -184,31 +244,37 @@ function onRowDblclick(record: TableData): void {
   cursor: pointer;
 }
 
-/* 统一兜底：操作列按钮过多时允许自动换行，避免被固定列宽挤压遮挡 */
+/* 操作列由内容测量自动撑宽，按钮保持单行，避免固定右列压住前面的单元格 */
 :deep(td.base-table-actions-cell) {
-  white-space: normal !important;
+  white-space: nowrap !important;
 }
 :deep(td.base-table-actions-cell > .arco-table-cell) {
-  overflow: hidden;
-}
-:deep(td.base-table-actions-cell > .arco-table-cell > *) {
-  max-width: 100%;
+  overflow: visible;
 }
 :deep(td.base-table-actions-cell > .arco-table-cell > div) {
   width: 100%;
   display: flex;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
   justify-content: flex-end;
-  gap: 4px 8px;
+  gap: 8px;
+}
+:deep(.base-table-actions-content) {
+  display: inline-flex;
+  width: max-content;
+  min-width: max-content;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
 }
 :deep(td.base-table-actions-cell .flex-nowrap) {
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
 }
 :deep(td.base-table-actions-cell .whitespace-nowrap) {
-  white-space: normal !important;
+  white-space: nowrap !important;
 }
 :deep(td.base-table-actions-cell .shrink-0) {
-  flex-shrink: 1 !important;
+  flex-shrink: 0 !important;
 }
 :deep(td.base-table-actions-cell .arco-select),
 :deep(td.base-table-actions-cell .arco-input-wrapper) {

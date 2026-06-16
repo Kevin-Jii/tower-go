@@ -384,6 +384,11 @@ func (c *UserController) Login(ctx *gin.Context) {
 		return
 	}
 	_, _ = service.BuildUserPermissionCache(user.ID, tokenStoreID, roleID, roleCode)
+	ctx.Set("userID", user.ID)
+	ctx.Set("username", user.Username)
+	ctx.Set("storeID", tokenStoreID)
+	ctx.Set("roleCode", roleCode)
+	ctx.Set("roleID", roleID)
 
 	// 如果会话管理器策略为 single，则登录时踢出旧会话（可选增强）
 	strategy := ""

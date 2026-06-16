@@ -1,5 +1,5 @@
 <template>
-  <div class="table-row-actions flex min-w-0 items-center justify-end gap-1" @click.stop>
+  <div class="table-row-actions inline-flex min-w-max items-center justify-end gap-2 whitespace-nowrap" @click.stop>
     <BaseButton
       v-for="(a, i) in inlineActions"
       :key="'i-' + i"

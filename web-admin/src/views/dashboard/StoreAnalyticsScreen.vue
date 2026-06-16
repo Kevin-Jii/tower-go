@@ -23,8 +23,7 @@
         </div>
       </div>
 
-      <p v-if="dashPending" class="m-0 text-sm text-cyan-100/90">正在加载周期概览…</p>
-      <p v-else-if="dashError" class="m-0 text-sm text-rose-300">{{ dashError }} · 可点「刷新周期」重试</p>
+      <p v-if="dashError" class="m-0 text-sm text-rose-300">{{ dashError }} · 可点「刷新周期」重试</p>
 
       <div class="dash-chart-grid min-h-0 min-w-0">
         <div class="dash-panel dash-panel--overview min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
@@ -46,7 +45,6 @@
               </div>
             </div>
           </div>
-          <p v-if="homeLoading" class="m-0 text-base text-cyan-100">加载图表数据…</p>
         </div>
 
         <div class="dash-panel dash-panel--pie min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-2">
@@ -56,6 +54,13 @@
         <div class="dash-panel dash-panel--radar min-w-0 rounded-xl border border-violet-500/20 bg-slate-950/50 p-3">
           <div class="dash-radar-layout">
             <div ref="radarRef" class="dash-chart dash-radar-chart w-full min-w-0" />
+          </div>
+        </div>
+
+        <div class="dash-panel dash-panel--member min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
+          <div class="dash-member-layout">
+            <div class="dash-section-title">会员消费排行</div>
+            <div ref="memberRankRef" class="dash-chart dash-member-chart w-full min-w-0" />
           </div>
         </div>
 
@@ -84,12 +89,22 @@
         </div>
       </div>
     </div>
+
+    <div v-show="screenLoading" class="dash-loading-overlay" aria-live="polite" aria-busy="true">
+      <div class="dash-loading-core">
+        <span class="dash-loading-orbit" />
+        <span class="dash-loading-orbit dash-loading-orbit--second" />
+        <span class="dash-loading-dot" />
+        <strong>数据同步中</strong>
+        <small>正在刷新经营大屏</small>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
 import * as echarts from 'echarts'
 import { useRouter } from 'vue-router'
 import { BaseButton } from '@/components/base'
@@ -99,14 +114,13 @@ import type { HomeChartsStats } from '@/api/types'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
-const qc = useQueryClient()
 const router = useRouter()
 
 defineProps<{
   fullscreen?: boolean
 }>()
 
-const period = ref('month')
+const period = ref('week')
 const periodOptions = [
   { label: '今日', value: 'today' },
   { label: '本周', value: 'week' },
@@ -128,6 +142,7 @@ const {
   isPending: dashPending,
   isError: dashIsError,
   error: dashQueryError,
+  isFetching: dashFetching,
   refetch: refetchDash,
 } = useQuery({
   queryKey: dashKey,
@@ -140,10 +155,8 @@ const dashError = computed(() => {
   return e instanceof Error ? e.message : '周期概览加载失败'
 })
 
-function refreshDash(): void {
-  void refetchDash()
-  void qc.invalidateQueries({ queryKey: ['statistics', 'dashboard'] })
-  void loadHomeCharts()
+async function refreshDash(): Promise<void> {
+  await Promise.all([refetchDash(), loadHomeCharts()])
 }
 
 function goAdmin(): void {
@@ -151,7 +164,6 @@ function goAdmin(): void {
 }
 
 watch(period, () => {
-  void qc.invalidateQueries({ queryKey: ['statistics', 'dashboard'] })
   void loadHomeCharts()
 })
 
@@ -192,27 +204,31 @@ const activeRange = computed(() => periodRange(period.value))
 const homeCharts = ref<HomeChartsStats | null>(null)
 const homeLoading = ref(false)
 const overview = computed(() => homeCharts.value?.overview ?? null)
+const screenLoading = computed(() => dashPending.value || dashFetching.value || homeLoading.value)
 const overviewCards = computed(() => {
   const o = overview.value
   const d = dash.value
   return [
     { label: '销售收入', value: Number(o?.sales_amount ?? d?.sales.total_amount ?? 0), decimals: 2, tone: '' },
     { label: '毛利', value: Number(o?.gross_profit_amount ?? 0), decimals: 2, tone: '' },
+    { label: '消耗品金额', value: Number(o?.consumable_amount ?? 0), decimals: 2, tone: '' },
+    { label: 'B2B供货收入', value: Number(o?.b2b_supply_amount ?? 0), decimals: 2, tone: '' },
+    { label: 'B2B订单数', value: Number(o?.b2b_supply_order_count ?? 0), decimals: 0, tone: '' },
+    { label: '返罐押金', value: Number(o?.return_deposit_amount ?? 0), decimals: 2, tone: '' },
+    { label: '物流费用', value: Number(o?.return_logistics_fee ?? 0), decimals: 2, tone: '' },
+    { label: '跑腿费用', value: Number(o?.errand_fee_amount ?? 0), decimals: 2, tone: '' },
+    { label: '报损金额', value: Number(o?.inventory_loss_amount ?? 0), decimals: 2, tone: '' },
+    { label: '自用金额', value: Number(o?.inventory_self_use_amount ?? 0), decimals: 2, tone: '' },
     { label: '销售单数', value: Number(o?.sales_order_count ?? d?.sales.total_orders ?? 0), decimals: 0, tone: '' },
-    { label: '库存 SKU', value: Number(d?.inventory.total_products ?? 0), decimals: 0, tone: '' },
     { label: '库存数量', value: Number(d?.inventory.total_quantity ?? 0), decimals: 0, tone: '' },
     { label: '今日销售', value: Number(d?.sales.today_amount ?? 0), decimals: 2, tone: '' },
     { label: '今日入库', value: Number(d?.inventory.today_in ?? 0), decimals: 0, tone: '' },
-    { label: '今日出库', value: Number(d?.inventory.today_out ?? 0), decimals: 0, tone: '' },
     { label: '毛利率', value: grossMargin.value, decimals: 1, suffix: '%', tone: grossMargin.value >= 0 ? 'tone-good' : 'tone-bad' },
     { label: '客单价', value: avgOrderAmount.value, decimals: 2, tone: '' },
-    { label: '库存记录', value: Number(d?.inventory.total_records ?? 0), decimals: 0, tone: '' },
     { label: '入库单数', value: Number(o?.inventory_in_count ?? 0), decimals: 0, tone: '' },
     { label: '出库单数', value: Number(o?.inventory_out_count ?? 0), decimals: 0, tone: '' },
-    { label: '入库金额', value: Number(o?.inbound_amount ?? 0), decimals: 2, tone: '' },
     { label: '出库金额', value: Number(o?.outbound_amount ?? 0), decimals: 2, tone: '' },
     { label: '其他支出', value: Number(o?.other_expense_amount ?? 0), decimals: 2, tone: '' },
-    { label: '品类数', value: Number(o?.categories?.length ?? 0), decimals: 0, tone: '' },
   ]
 })
 const grossMargin = computed(() => {
@@ -236,13 +252,21 @@ const topCategories = computed(() => {
   const max = Math.max(...list.map((x) => x.amount), 1)
   return list.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.amount / max) * 100)) }))
 })
+function formatAmount(value: number): string {
+  return Number(value || 0).toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
 
 const lineRef = ref<HTMLElement | null>(null)
 const pieRef = ref<HTMLElement | null>(null)
 const radarRef = ref<HTMLElement | null>(null)
+const memberRankRef = ref<HTMLElement | null>(null)
 let lineChart: echarts.ECharts | null = null
 let pieChart: echarts.ECharts | null = null
 let radarChart: echarts.ECharts | null = null
+let memberRankChart: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 
 const axisText = '#e2e8f0'
@@ -253,19 +277,21 @@ function disposeCharts(): void {
   lineChart?.dispose()
   pieChart?.dispose()
   radarChart?.dispose()
-  lineChart = pieChart = radarChart = null
+  memberRankChart?.dispose()
+  lineChart = pieChart = radarChart = memberRankChart = null
 }
 
 function ensureCharts(): void {
-  if (!lineRef.value || !pieRef.value || !radarRef.value) return
+  if (!lineRef.value || !pieRef.value || !radarRef.value || !memberRankRef.value) return
   if (!lineChart) lineChart = echarts.init(lineRef.value)
   if (!pieChart) pieChart = echarts.init(pieRef.value)
   if (!radarChart) radarChart = echarts.init(radarRef.value)
+  if (!memberRankChart) memberRankChart = echarts.init(memberRankRef.value)
 }
 
 function applyChartOptions(hc: HomeChartsStats): void {
   ensureCharts()
-  if (!lineChart || !pieChart || !radarChart) return
+  if (!lineChart || !pieChart || !radarChart || !memberRankChart) return
 
   const line = hc.line ?? []
   lineChart.setOption({
@@ -360,6 +386,71 @@ function applyChartOptions(hc: HomeChartsStats): void {
       },
     ],
   })
+
+  const rank = hc.overview?.member_consumption_rank ?? []
+  const rankLabels = rank.map((x) => x.member_name || x.member_phone || '未知会员')
+  memberRankChart.setOption({
+    backgroundColor: 'transparent',
+    animationDuration: 900,
+    animationEasing: 'cubicOut',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      borderColor: '#22d3ee',
+      textStyle: { color: '#e2e8f0' },
+      valueFormatter: (value: unknown) => `¥${formatAmount(Number(value))}`,
+    },
+    grid: { left: 92, right: 74, top: 18, bottom: 16 },
+    xAxis: {
+      type: 'value',
+      show: false,
+      max: (value: { max: number }) => Math.max(value.max * 1.18, 1),
+    },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: rankLabels.length ? rankLabels : ['暂无'],
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: axisText,
+        fontSize: 13,
+        fontWeight: 800,
+        overflow: 'truncate',
+        width: 82,
+      },
+    },
+    series: [
+      {
+        name: '消费金额',
+        type: 'bar',
+        barWidth: 12,
+        barGap: '45%',
+        data: rank.length ? rank.map((x) => Number(x.amount || 0)) : [0],
+        backgroundStyle: {
+          color: 'rgba(15, 23, 42, 0.82)',
+          borderRadius: 999,
+        },
+        showBackground: true,
+        label: {
+          show: true,
+          position: 'right',
+          color: '#a7f3d0',
+          fontSize: 12,
+          fontWeight: 900,
+          formatter: ({ value }: { value: number | string }) => `¥${formatAmount(Number(value))}`,
+        },
+        itemStyle: {
+          borderRadius: 999,
+          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: '#22d3ee' },
+            { offset: 1, color: '#34d399' },
+          ]),
+        },
+      },
+    ],
+  })
 }
 
 async function loadHomeCharts(): Promise<void> {
@@ -385,12 +476,13 @@ async function loadHomeCharts(): Promise<void> {
 async function paintChartsWhenReady(hc: HomeChartsStats): Promise<void> {
   for (let i = 0; i < 12; i++) {
     await nextTick()
-    if (lineRef.value && pieRef.value && radarRef.value) {
+    if (lineRef.value && pieRef.value && radarRef.value && memberRankRef.value) {
       applyChartOptions(hc)
       requestAnimationFrame(() => {
         lineChart?.resize()
         pieChart?.resize()
         radarChart?.resize()
+        memberRankChart?.resize()
       })
       return
     }
@@ -404,6 +496,7 @@ function onWinResize(): void {
     lineChart?.resize()
     pieChart?.resize()
     radarChart?.resize()
+    memberRankChart?.resize()
   })
 }
 
@@ -457,6 +550,88 @@ onBeforeUnmount(() => {
   height: 100vh;
   border-radius: 0;
   border: 0;
+}
+
+.dash-loading-overlay {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(180deg, rgba(7, 11, 20, 0.72), rgba(7, 11, 20, 0.88)),
+    radial-gradient(circle at 50% 42%, rgba(34, 211, 238, 0.14), transparent 34%);
+  backdrop-filter: blur(6px);
+}
+
+.dash-loading-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(180px, 18vw, 260px);
+  aspect-ratio: 1;
+  color: #ecfeff;
+}
+
+.dash-loading-core::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(34, 211, 238, 0.26);
+  box-shadow:
+    inset 0 0 28px rgba(34, 211, 238, 0.08),
+    0 0 38px rgba(34, 211, 238, 0.14);
+}
+
+.dash-loading-core strong,
+.dash-loading-core small {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.dash-loading-core strong {
+  margin-top: 18px;
+  font-size: clamp(18px, 1.45vw, 26px);
+  font-weight: 900;
+}
+
+.dash-loading-core small {
+  margin-top: 48px;
+  color: rgba(207, 250, 254, 0.68);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dash-loading-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-top-color: rgba(34, 211, 238, 0.95);
+  border-right-color: rgba(167, 139, 250, 0.78);
+  animation: dash-loading-spin 1.35s linear infinite;
+}
+
+.dash-loading-orbit--second {
+  inset: 14%;
+  animation-duration: 1.9s;
+  animation-direction: reverse;
+  border-top-color: rgba(52, 211, 153, 0.9);
+  border-right-color: rgba(34, 211, 238, 0.46);
+}
+
+.dash-loading-dot {
+  position: absolute;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #22d3ee;
+  box-shadow: 0 0 16px #22d3ee;
+  animation: dash-loading-pulse 1s ease-in-out infinite alternate;
 }
 
 .dash-screen__content {
@@ -537,7 +712,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1fr) minmax(0, 0.88fr);
+  grid-template-rows: minmax(0, 0.95fr) minmax(0, 0.82fr) minmax(0, 0.82fr);
   gap: clamp(10px, 1vw, 16px);
 }
 
@@ -560,8 +735,8 @@ onBeforeUnmount(() => {
 }
 
 .dash-panel--line {
-  grid-column: 9 / 13;
-  grid-row: 2;
+  grid-column: 6 / 13;
+  grid-row: 3;
 }
 
 .dash-panel--pie {
@@ -576,12 +751,18 @@ onBeforeUnmount(() => {
 
 .dash-panel--overview {
   grid-column: 1 / 6;
-  grid-row: 1 / 3;
+  grid-row: 1 / 4;
+  overflow: hidden;
+}
+
+.dash-panel--member {
+  grid-column: 6 / 10;
+  grid-row: 2;
   overflow: hidden;
 }
 
 .dash-panel--flow {
-  grid-column: 6 / 9;
+  grid-column: 10 / 13;
   grid-row: 2;
   overflow: hidden;
 }
@@ -828,6 +1009,20 @@ onBeforeUnmount(() => {
   display: block;
 }
 
+.dash-member-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.dash-member-chart {
+  min-height: 0;
+}
+
 .dash-native-control {
   height: 36px;
   box-sizing: border-box;
@@ -900,7 +1095,7 @@ onBeforeUnmount(() => {
 @media (max-width: 1180px) {
   .dash-chart-grid {
     grid-template-columns: repeat(8, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr) minmax(0, 0.75fr) minmax(0, 0.78fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.75fr) minmax(0, 0.78fr) minmax(0, 0.78fr);
   }
 
   .dash-panel--overview {
@@ -919,13 +1114,18 @@ onBeforeUnmount(() => {
   }
 
   .dash-panel--flow {
-    grid-column: 1 / 4;
+    grid-column: 5 / 9;
+    grid-row: 3;
+  }
+
+  .dash-panel--member {
+    grid-column: 1 / 5;
     grid-row: 3;
   }
 
   .dash-panel--line {
-    grid-column: 4 / 9;
-    grid-row: 3;
+    grid-column: 1 / 9;
+    grid-row: 4;
   }
 
   .dash-overview-focus {
@@ -950,7 +1150,7 @@ onBeforeUnmount(() => {
 
   .dash-chart-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+    grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
   }
 
   .dash-overview-focus {
@@ -969,6 +1169,7 @@ onBeforeUnmount(() => {
   .dash-panel--overview,
   .dash-panel--pie,
   .dash-panel--radar,
+  .dash-panel--member,
   .dash-panel--flow,
   .dash-panel--line {
     grid-column: 1;
@@ -982,8 +1183,12 @@ onBeforeUnmount(() => {
     grid-row: 2;
   }
 
-  .dash-panel--line {
+  .dash-panel--member {
     grid-row: 3;
+  }
+
+  .dash-panel--line {
+    grid-row: 4;
   }
 
   .dash-panel--radar,
@@ -1072,6 +1277,24 @@ onBeforeUnmount(() => {
 @keyframes dash-bar-grow {
   from {
     width: 0;
+  }
+}
+
+@keyframes dash-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash-loading-pulse {
+  from {
+    opacity: 0.48;
+    transform: scale(0.72);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.08);
   }
 }
 </style>

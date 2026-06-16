@@ -42,6 +42,10 @@ var autoMigrateModels = []interface{}{
 	&model.StoreAccount{},
 	&model.StoreAccountItem{},
 	&model.StoreAccountConsumable{},
+	&model.StoreAccountConsumableProduct{},
+	&model.StoreReturn{},
+	&model.StoreReturnItem{},
+	&model.StoreReturnProduct{},
 	&model.MeituanAIOperatorAccount{},
 	&model.MeituanAIOrder{},
 	&model.MeituanAIReview{},
@@ -60,6 +64,7 @@ var autoMigrateModels = []interface{}{
 	&model.ThirdPartyRoute{},
 	&model.ThirdPartyRouteStore{},
 	&model.ThirdPartyLogisticsSheet{},
+	&model.AuditLog{},
 }
 
 func AutoMigrateAndSeeds() {
@@ -116,7 +121,9 @@ func shouldSkipMigration() bool {
 	// 记账表新增字段后，若线上库未加列则仍需迁移（避免 .migration_version 导致永远不 AutoMigrate）
 	if migrator.HasTable(&model.StoreAccount{}) {
 		if !migrator.HasColumn(&model.StoreAccount{}, "other_expense_amount") ||
-			!migrator.HasColumn(&model.StoreAccount{}, "net_income_amount") {
+			!migrator.HasColumn(&model.StoreAccount{}, "net_income_amount") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "is_errand_order") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "errand_fee") {
 			return false
 		}
 	}

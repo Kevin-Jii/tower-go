@@ -95,7 +95,7 @@
         <template #cell-payment_status="{ row }">{{ paymentStatusLabel((row as B2BSupplyOrder).payment_status) }}</template>
         <template #cell-delivery_status="{ row }">{{ deliveryStatusLabel((row as B2BSupplyOrder).delivery_status) }}</template>
         <template #cell-actions="{ row }">
-          <BaseButton variant="link" size="sm" @click="openOrderDetail(row as B2BSupplyOrder)">详情</BaseButton>
+          <BaseTableRowActions :actions="orderActions(row as B2BSupplyOrder)" :max-inline="3" />
         </template>
       </BaseTable>
       <div class="flex justify-end">
@@ -197,15 +197,45 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="detailDlg" title="供货单详情" max-width="min(760px, 96vw)">
-      <pre class="m-0 max-h-[60vh] overflow-auto rounded bg-slate-50 p-3 text-xs">{{ detailJson }}</pre>
+    <BaseDialog v-model="detailDlg" title="供货单详情" max-width="min(860px, 96vw)" @open="drawSupplyReceipt">
+      <div class="max-h-[72vh] overflow-auto rounded bg-slate-100 p-3">
+        <canvas ref="receiptCanvas" class="supply-receipt-canvas" />
+      </div>
       <template #footer><BaseButton variant="ghost" @click="detailDlg = false">关闭</BaseButton></template>
+    </BaseDialog>
+
+    <BaseDialog v-model="deliveryDlg" title="修改配送状态" max-width="min(420px, 96vw)">
+      <BaseFormItem label="配送状态">
+        <BaseSelect v-model="deliveryForm.delivery_status" :options="deliveryStatusOptions" />
+      </BaseFormItem>
+      <template #footer>
+        <BaseButton variant="ghost" @click="deliveryDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="savingStatus" @click="submitDeliveryStatus">保存</BaseButton>
+      </template>
+    </BaseDialog>
+
+    <BaseDialog v-model="paymentDlg" title="修改收款状态" max-width="min(460px, 96vw)">
+      <div class="space-y-4">
+        <BaseFormItem label="收款状态">
+          <BaseSelect v-model="paymentForm.payment_status" :options="paymentEditOptions" />
+        </BaseFormItem>
+        <BaseFormItem v-if="Number(paymentForm.payment_status) === 2" label="已收金额">
+          <BaseNumberInput v-model="paymentForm.paid_amount" :min="0" :step="0.01" />
+        </BaseFormItem>
+        <div v-if="currentOrderForStatus" class="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          订单金额 {{ money(currentOrderForStatus.total_amount) }}，当前已收 {{ money(currentOrderForStatus.paid_amount) }}
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="paymentDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="savingStatus" @click="submitPaymentStatus">保存</BaseButton>
+      </template>
     </BaseDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   BaseButton,
@@ -230,6 +260,8 @@ import {
   listB2BPrices,
   listB2BSupplyOrders,
   updateB2BCustomer,
+  updateB2BSupplyOrderDeliveryStatus,
+  updateB2BSupplyOrderPaymentStatus,
   upsertB2BPrice,
 } from '@/api/b2b'
 import { listPurchasableProducts } from '@/api/storeSupplier'
@@ -259,6 +291,16 @@ const paymentStatusOptions: BaseSelectOption[] = [
   { label: '未收', value: 1 },
   { label: '部分', value: 2 },
   { label: '已收', value: 3 },
+]
+const paymentEditOptions: BaseSelectOption[] = [
+  { label: '未收', value: 1 },
+  { label: '部分收款', value: 2 },
+  { label: '已收', value: 3 },
+]
+const deliveryStatusOptions: BaseSelectOption[] = [
+  { label: '待配送', value: 1 },
+  { label: '已配送', value: 2 },
+  { label: '已取消', value: 3 },
 ]
 
 const customerKeyword = ref('')
@@ -568,7 +610,7 @@ const orderColumns: BaseTableColumn[] = [
   { key: 'profit_amount', label: '毛利', width: '100px' },
   { key: 'payment_status', label: '收款', width: '90px' },
   { key: 'delivery_status', label: '配送', width: '90px' },
-  { key: 'actions', label: '操作', width: '90px', align: 'right' },
+  { key: 'actions', label: '操作', width: '160px', align: 'right' },
 ]
 
 const orderSummary = computed(() => [
@@ -764,11 +806,181 @@ async function submitOrder(): Promise<void> {
 }
 
 const detailDlg = ref(false)
-const detailJson = ref('')
+const detailOrder = ref<B2BSupplyOrder | null>(null)
+const receiptCanvas = ref<HTMLCanvasElement | null>(null)
 async function openOrderDetail(row: B2BSupplyOrder): Promise<void> {
-  const data = await getB2BSupplyOrder(row.id)
-  detailJson.value = JSON.stringify(data, null, 2)
+  detailOrder.value = await getB2BSupplyOrder(row.id)
   detailDlg.value = true
+  await nextTick()
+  drawSupplyReceipt()
+}
+
+function orderActions(row: B2BSupplyOrder): TableRowAction[] {
+  const actions: TableRowAction[] = [
+    { label: '详情', permission: 'b2b:order:list', onClick: () => void openOrderDetail(row) },
+  ]
+  if (Number(row.delivery_status) !== 2) {
+    actions.push({ label: '配送', permission: 'b2b:order:edit', onClick: () => openDeliveryStatus(row) })
+  }
+  if (Number(row.payment_status) !== 3) {
+    actions.push({ label: '收款', permission: 'b2b:order:edit', onClick: () => openPaymentStatus(row) })
+  }
+  return actions
+}
+
+const deliveryDlg = ref(false)
+const paymentDlg = ref(false)
+const savingStatus = ref(false)
+const currentOrderForStatus = ref<B2BSupplyOrder | null>(null)
+const deliveryForm = reactive({ delivery_status: 1 as number | string })
+const paymentForm = reactive({ payment_status: 1 as number | string, paid_amount: 0 })
+
+function openDeliveryStatus(row: B2BSupplyOrder): void {
+  currentOrderForStatus.value = row
+  deliveryForm.delivery_status = row.delivery_status || 1
+  deliveryDlg.value = true
+}
+
+function openPaymentStatus(row: B2BSupplyOrder): void {
+  currentOrderForStatus.value = row
+  paymentForm.payment_status = row.payment_status || 1
+  paymentForm.paid_amount = Number(row.paid_amount || 0)
+  paymentDlg.value = true
+}
+
+async function submitDeliveryStatus(): Promise<void> {
+  if (!currentOrderForStatus.value || savingStatus.value) return
+  savingStatus.value = true
+  try {
+    await updateB2BSupplyOrderDeliveryStatus(currentOrderForStatus.value.id, {
+      delivery_status: Number(deliveryForm.delivery_status),
+    })
+    toast.success('配送状态已更新')
+    deliveryDlg.value = false
+    reloadOrders()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '更新失败')
+  } finally {
+    savingStatus.value = false
+  }
+}
+
+async function submitPaymentStatus(): Promise<void> {
+  if (!currentOrderForStatus.value || savingStatus.value) return
+  savingStatus.value = true
+  try {
+    await updateB2BSupplyOrderPaymentStatus(currentOrderForStatus.value.id, {
+      payment_status: Number(paymentForm.payment_status),
+      paid_amount: Number(paymentForm.paid_amount || 0),
+    })
+    toast.success('收款状态已更新')
+    paymentDlg.value = false
+    reloadOrders()
+    reloadCustomers()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '更新失败')
+  } finally {
+    savingStatus.value = false
+  }
+}
+
+function drawSupplyReceipt(): void {
+  const order = detailOrder.value
+  const canvas = receiptCanvas.value
+  if (!order || !canvas) return
+  const items = order.items ?? []
+  const dpr = window.devicePixelRatio || 1
+  const width = 760
+  const rowH = 34
+  const height = Math.max(620, 360 + items.length * rowH)
+  canvas.width = width * dpr
+  canvas.height = height * dpr
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, width, height)
+  ctx.fillStyle = '#fffdf7'
+  ctx.fillRect(0, 0, width, height)
+  ctx.strokeStyle = '#d8c7a3'
+  ctx.lineWidth = 1
+  ctx.strokeRect(18, 18, width - 36, height - 36)
+
+  ctx.fillStyle = '#1f2937'
+  ctx.textAlign = 'center'
+  ctx.font = '700 28px serif'
+  ctx.fillText('B2B 供货单', width / 2, 62)
+  ctx.font = '13px sans-serif'
+  ctx.fillStyle = '#64748b'
+  ctx.fillText('SUPPLY ORDER', width / 2, 84)
+
+  ctx.textAlign = 'left'
+  ctx.font = '14px sans-serif'
+  ctx.fillStyle = '#334155'
+  const leftX = 46
+  const rightX = 430
+  const topY = 120
+  drawText(ctx, `单号：${order.order_no}`, leftX, topY)
+  drawText(ctx, `供货日期：${formatDate(order.order_date)}`, rightX, topY)
+  drawText(ctx, `客户：${order.customer_name || order.customer?.name || '-'}`, leftX, topY + 28)
+  drawText(ctx, `结算：${settlementLabel(order.customer?.settlement)}`, rightX, topY + 28)
+  drawText(ctx, `联系人：${order.customer?.contact_person || '-'}`, leftX, topY + 56)
+  drawText(ctx, `电话：${order.customer?.phone || '-'}`, rightX, topY + 56)
+  drawText(ctx, `地址：${order.customer?.address || '-'}`, leftX, topY + 84)
+
+  const tableX = 46
+  const tableY = 238
+  const cols = [0, 250, 345, 435, 535, 668]
+  ctx.fillStyle = '#f8fafc'
+  ctx.fillRect(tableX, tableY, 668, 36)
+  ctx.strokeStyle = '#cbd5e1'
+  ctx.strokeRect(tableX, tableY, 668, 36 + items.length * rowH)
+  ctx.font = '600 13px sans-serif'
+  ctx.fillStyle = '#334155'
+  ;['商品', '规格', '数量', '单价', '金额'].forEach((title, i) => {
+    drawText(ctx, title, tableX + cols[i] + 10, tableY + 23)
+  })
+  ctx.font = '13px sans-serif'
+  items.forEach((item, idx) => {
+    const y = tableY + 36 + idx * rowH
+    ctx.strokeStyle = '#e2e8f0'
+    ctx.beginPath()
+    ctx.moveTo(tableX, y)
+    ctx.lineTo(tableX + 668, y)
+    ctx.stroke()
+    ctx.fillStyle = '#1f2937'
+    drawText(ctx, item.product_name || '-', tableX + 10, y + 22, 230)
+    drawText(ctx, item.unit_name || '-', tableX + cols[1] + 10, y + 22, 82)
+    drawText(ctx, `${item.quantity}`, tableX + cols[2] + 10, y + 22)
+    drawText(ctx, money(item.supply_price), tableX + cols[3] + 10, y + 22)
+    drawText(ctx, money(item.amount), tableX + cols[4] + 10, y + 22)
+  })
+  for (const x of cols.slice(1, -1)) {
+    ctx.beginPath()
+    ctx.moveTo(tableX + x, tableY)
+    ctx.lineTo(tableX + x, tableY + 36 + items.length * rowH)
+    ctx.stroke()
+  }
+
+  const sumY = tableY + 56 + items.length * rowH
+  ctx.textAlign = 'right'
+  ctx.font = '600 15px sans-serif'
+  ctx.fillStyle = '#0f172a'
+  drawText(ctx, `订单金额：${money(order.total_amount)}`, tableX + 668, sumY)
+  drawText(ctx, `已收金额：${money(order.paid_amount)}    未收金额：${money(order.unpaid_amount)}`, tableX + 668, sumY + 30)
+  drawText(ctx, `收款状态：${paymentStatusLabel(order.payment_status)}    配送状态：${deliveryStatusLabel(order.delivery_status)}`, tableX + 668, sumY + 60)
+
+  ctx.textAlign = 'left'
+  ctx.font = '13px sans-serif'
+  ctx.fillStyle = '#475569'
+  drawText(ctx, `备注：${order.remark || '-'}`, leftX, sumY + 102, 640)
+  drawText(ctx, `制单人：${order.operator_name || '-'}      制单时间：${formatDateTime(order.created_at)}`, leftX, height - 58)
+}
+
+function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number): void {
+  if (maxWidth) ctx.fillText(text, x, y, maxWidth)
+  else ctx.fillText(text, x, y)
 }
 
 function priceOwner(row: B2BCustomerProductPrice): string {
@@ -779,6 +991,16 @@ function priceOwner(row: B2BCustomerProductPrice): string {
 
 function money(v: number | string | undefined): string {
   return `￥${Number(v || 0).toFixed(2)}`
+}
+
+function formatDate(value?: string): string {
+  if (!value) return '-'
+  return value.slice(0, 10)
+}
+
+function formatDateTime(value?: string): string {
+  if (!value) return '-'
+  return value.replace('T', ' ').slice(0, 19)
 }
 
 function settlementLabel(v?: string): string {
@@ -836,5 +1058,14 @@ watch(tab, () => {
 
 .price-spec-grid > :nth-last-child(-n + 5) {
   border-bottom: 0;
+}
+
+.supply-receipt-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  background: #fffdf7;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 14%);
 }
 </style>

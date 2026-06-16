@@ -40,6 +40,7 @@ func Run() {
 
 	r := gin.Default()
 	r.Use(middleware.RequestLoggerMiddleware(4096))
+	r.Use(middleware.AuditLogMiddleware(4096))
 
 	fmt.Println("🔧 正在初始化控制器...")
 	controllers := BuildControllers()

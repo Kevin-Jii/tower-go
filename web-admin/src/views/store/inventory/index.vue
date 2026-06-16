@@ -2,28 +2,19 @@
   <div class="inventory-page-root flex min-h-0 min-w-0 flex-1 flex-col gap-4">
     <a-card
       class="inventory-fill-card inventory-page-card flex min-h-0 min-w-0 flex-1 flex-col !bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/60"
-      :bordered="true"
-      :body-style="inventoryCardBodyStyle"
-    >
+      :bordered="true" :body-style="inventoryCardBodyStyle">
       <template #title>
         <span class="text-base font-semibold text-slate-900">库存管理</span>
       </template>
       <template #extra>
-        <div class="inline-flex rounded-lg border border-[var(--color-border-2)] bg-[var(--color-bg-2)] p-0.5 shadow-sm">
-          <BaseButton
-            size="sm"
-            :variant="tab === 'stock' ? 'primary' : 'ghost'"
-            class="!min-w-[7rem]"
-            @click="tab = 'stock'"
-          >
+        <div
+          class="inline-flex rounded-lg border border-[var(--color-border-2)] bg-[var(--color-bg-2)] p-0.5 shadow-sm">
+          <BaseButton size="sm" :variant="tab === 'stock' ? 'primary' : 'ghost'" class="!min-w-[7rem]"
+            @click="tab = 'stock'">
             库存快照
           </BaseButton>
-          <BaseButton
-            size="sm"
-            :variant="tab === 'orders' ? 'primary' : 'ghost'"
-            class="!min-w-[7rem]"
-            @click="tab = 'orders'"
-          >
+          <BaseButton size="sm" :variant="tab === 'orders' ? 'primary' : 'ghost'" class="!min-w-[7rem]"
+            @click="tab = 'orders'">
             出入库单
           </BaseButton>
         </div>
@@ -31,69 +22,48 @@
 
       <div v-if="tab === 'stock'" class="flex min-h-0 flex-1 flex-col">
         <div
-          class="mb-4 shrink-0 rounded-xl border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
-        >
+          class="mb-4 shrink-0 rounded-xl border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <BaseInput v-model="stockKeyword" class="w-full sm:w-56" placeholder="分类 / 商品名称" clearable @enter="reloadStock" />
+              <BaseInput v-model="stockKeyword" class="w-full sm:w-56" placeholder="分类 / 商品名称" clearable
+                @enter="reloadStock" />
               <BaseButton variant="primary" @click="reloadStock">查询</BaseButton>
             </div>
             <div class="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
               <BaseButton v-permission="'inventory:in'" variant="secondary" @click="openOrderDlg(1)">入库登记</BaseButton>
               <BaseButton v-permission="'inventory:out'" variant="secondary" @click="openOrderDlg(2)">出库登记</BaseButton>
-              <BaseButton variant="secondary" @click="goLossOrders">报损/自用/赠送</BaseButton>
             </div>
           </div>
-          <div
-            v-if="!stockLoading && !productLoading && categoryTabs.length > 0"
-            class="mt-3 rounded-lg border border-[var(--color-border-2)] bg-[var(--color-fill-2)] px-3 py-2.5"
-          >
+          <div v-if="!stockLoading && !productLoading && categoryTabs.length > 0"
+            class="mt-3 rounded-lg border border-[var(--color-border-2)] bg-[var(--color-fill-2)] px-3 py-2.5">
             <div class="flex flex-wrap items-center gap-2">
               <span class="mr-1 text-xs font-medium text-slate-600">分类</span>
-              <BaseButton
-                size="sm"
-                :variant="activeCategory === '' ? 'primary' : 'ghost'"
-                @click="activeCategory = ''"
-              >
+              <BaseButton size="sm" :variant="activeCategory === '' ? 'primary' : 'ghost'" @click="activeCategory = ''">
                 全部分类
               </BaseButton>
-              <BaseButton
-                v-for="c in categoryTabs"
-                :key="c"
-                size="sm"
-                :variant="activeCategory === c ? 'primary' : 'ghost'"
-                @click="activeCategory = c"
-              >
+              <BaseButton v-for="c in categoryTabs" :key="c" size="sm"
+                :variant="activeCategory === c ? 'primary' : 'ghost'" @click="activeCategory = c">
                 {{ c }}
               </BaseButton>
             </div>
           </div>
         </div>
 
-        <div
-          v-if="stockLoading || productLoading"
-          class="flex flex-1 items-center justify-center rounded-xl border border-[var(--color-border-2)] bg-white p-8 shadow-sm"
-        >
+        <div v-if="stockLoading || productLoading"
+          class="flex flex-1 items-center justify-center rounded-xl border border-[var(--color-border-2)] bg-white p-8 shadow-sm">
           <MathCurveLoader size="md" text="库存数据加载中…" />
         </div>
-        <div
-          v-else-if="groupedStockCards.length === 0"
-          class="flex flex-1 items-center justify-center rounded-xl border border-dashed border-[var(--color-border-2)] bg-white p-8 text-center text-slate-400"
-        >
+        <div v-else-if="groupedStockCards.length === 0"
+          class="flex flex-1 items-center justify-center rounded-xl border border-dashed border-[var(--color-border-2)] bg-white p-8 text-center text-slate-400">
           暂无库存商品
         </div>
         <div v-else class="flex min-h-0 flex-1 flex-col">
           <div class="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/70 bg-white p-4 shadow-sm">
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              <div
-                v-for="item in displayStockCards"
-                :key="item.product_id"
-                :class="[
-                  'rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-md transition-all duration-200 cursor-pointer select-none hover:shadow-lg',
-                  item.low ? 'inventory-stock-card--low' : 'ring-1 ring-slate-200/40 hover:border-slate-300/80 hover:ring-slate-300/50',
-                ]"
-                @dblclick="openQtyFromCard(item)"
-              >
+              <div v-for="item in displayStockCards" :key="item.product_id" :class="[
+                'rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-md transition-all duration-200 cursor-pointer select-none hover:shadow-lg',
+                item.low ? 'inventory-stock-card--low' : 'ring-1 ring-slate-200/40 hover:border-slate-300/80 hover:ring-slate-300/50',
+              ]" @dblclick="openQtyFromCard(item)">
                 <div class="flex items-center justify-between gap-2">
                   <p class="m-0 text-sm font-semibold text-slate-800 truncate">{{ item.product_name }}</p>
                   <span class="text-xs text-slate-500">{{ item.category }}</span>
@@ -122,25 +92,21 @@
 
       <div v-else class="flex min-h-0 flex-1 flex-col gap-3">
         <div
-          class="shrink-0 rounded-xl border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
-        >
+          class="shrink-0 rounded-xl border border-[var(--color-border-2)] bg-[var(--color-fill-1)] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
           <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <BaseInput v-model="orderNo" class="w-full sm:w-44" placeholder="单号" clearable @enter="reloadOrders" />
             <BaseInput v-model="orderDate" class="w-full sm:w-40" type="date" />
-            <BaseSelect
-              v-model="orderType"
-              class="w-full sm:w-32"
-              :options="[
-                { label: '全部类型', value: '' },
-                { label: '入库', value: 1 },
-                { label: '出库', value: 2 },
-              ]"
-            />
+            <BaseSelect v-model="orderType" class="w-full sm:w-32" :options="[
+              { label: '全部类型', value: '' },
+              { label: '入库', value: 1 },
+              { label: '出库', value: 2 },
+            ]" />
             <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
           </div>
         </div>
         <div class="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
-          <BaseTable :columns="orderCols" :data="(orderList as unknown) as Record<string, unknown>[]" :loading="orderLoading" min-width="920px">
+          <BaseTable :columns="orderCols" :data="(orderList as unknown) as Record<string, unknown>[]"
+            :loading="orderLoading" min-width="920px">
             <template #cell-type="{ row }">
               {{ (row as InventoryOrder).type === 1 ? '入库' : '出库' }}
             </template>
@@ -152,20 +118,16 @@
           </BaseTable>
         </div>
         <div class="flex shrink-0 justify-end">
-          <BasePagination
-            :page="orderPage"
-            :page-size="orderPageSize"
-            :total="orderTotal"
-            @update:page="(p) => (orderPage = p)"
-            @update:page-size="(s) => (orderPageSize = s)"
-          />
+          <BasePagination :page="orderPage" :page-size="orderPageSize" :total="orderTotal"
+            @update:page="(p) => (orderPage = p)" @update:page-size="(s) => (orderPageSize = s)" />
         </div>
       </div>
     </a-card>
 
     <BaseDialog v-model="qtyDlg" title="调整库存数量" max-width="min(400px, 96vw)">
       <div class="space-y-4">
-        <p class="m-0 text-sm text-slate-600">{{ qtyRow?.product_name }}（当前 {{ qtyRow?.quantity }} {{ qtyRow?.unit }}）</p>
+        <p class="m-0 text-sm text-slate-600">{{ qtyRow?.product_name }}（当前 {{ qtyRow?.quantity }} {{ qtyRow?.unit }}）
+        </p>
         <BaseFormItem label="新数量" required>
           <BaseNumberInput v-model="qtyForm.quantity" :min="0" :step="0.01" />
         </BaseFormItem>
@@ -191,32 +153,18 @@
           <span class="text-sm font-medium text-slate-700">商品明细</span>
           <BaseButton variant="secondary" size="sm" @click="addOrderLine">加一行</BaseButton>
         </div>
-        <div
-          v-for="(line, idx) in orderLines"
-          :key="idx"
-          class="rounded border border-[var(--color-border-2)] p-3 flex flex-wrap items-end gap-2"
-        >
+        <div v-for="(line, idx) in orderLines" :key="idx"
+          class="rounded border border-[var(--color-border-2)] p-3 flex flex-wrap items-end gap-2">
           <BaseFormItem label="商品" required class="min-w-[220px] flex-1">
-            <a-cascader
-              v-model="line.product_path"
-              :options="productCascaderOptions"
-              placeholder="先选分类，再选商品"
-              allow-clear
-              :path-mode="true"
-              :check-strictly="false"
-              @change="onOrderLineProductChange(idx)"
-            />
+            <a-cascader v-model="line.product_path" :options="productCascaderOptions" placeholder="先选分类，再选商品"
+              allow-clear :path-mode="true" :check-strictly="false" @change="onOrderLineProductChange(idx)" />
           </BaseFormItem>
           <BaseFormItem label="数量" required class="w-28">
             <BaseNumberInput v-model="line.quantity" :min="0.01" :step="0.01" />
           </BaseFormItem>
           <BaseFormItem label="单位" class="w-28">
-            <BaseSelect
-              v-model="line.unit"
-              :options="lineUnitOptions(line)"
-              :disabled="lineUnitDisabled(line)"
-              placeholder="单位"
-            />
+            <BaseSelect v-model="line.unit" :options="lineUnitOptions(line)" :disabled="lineUnitDisabled(line)"
+              placeholder="单位" />
           </BaseFormItem>
           <BaseButton variant="ghost" size="sm" @click="removeOrderLine(idx)">移除</BaseButton>
         </div>
@@ -228,7 +176,8 @@
     </BaseDialog>
 
     <BaseDialog v-model="detailDlg" title="出入库单详情" max-width="min(560px, 96vw)">
-      <pre v-if="orderDetailJson" class="text-xs overflow-auto max-h-[60vh] m-0 p-3 rounded bg-[var(--color-fill-2)]">{{ orderDetailJson }}</pre>
+      <pre v-if="orderDetailJson" class="text-xs overflow-auto max-h-[60vh] m-0 p-3 rounded bg-[var(--color-fill-2)]">{{
+        orderDetailJson }}</pre>
       <template #footer>
         <BaseButton variant="ghost" @click="detailDlg = false">关闭</BaseButton>
       </template>
@@ -238,7 +187,6 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   BaseButton,
@@ -260,7 +208,6 @@ import { MathCurveLoader } from '@/components/loading'
 import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
-const router = useRouter()
 
 /** 让卡片主体纵向撑满，子区域可用 flex-1 + overflow 分配高度 */
 const inventoryCardBodyStyle = {
@@ -274,10 +221,6 @@ const inventoryCardBodyStyle = {
 const tab = ref<'stock' | 'orders'>('stock')
 const userStore = useUserStore()
 const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
-
-function goLossOrders(): void {
-  void router.push('/store/inventory-loss')
-}
 
 const stockKeyword = ref('')
 const LOW_STOCK_THRESHOLD = 5

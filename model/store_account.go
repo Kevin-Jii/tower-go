@@ -25,6 +25,8 @@ type StoreAccount struct {
 	OrderNo            string                   `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
 	TotalAmount        float64                  `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
 	OtherExpenseAmount float64                  `json:"other_expense_amount" gorm:"type:decimal(10,2);default:0;comment:其他支出金额"`
+	IsErrandOrder      int                      `json:"is_errand_order" gorm:"not null;default:0;index;comment:是否跑腿订单 1=是 0=否"`
+	ErrandFee          float64                  `json:"errand_fee" gorm:"type:decimal(10,2);not null;default:0;comment:跑腿费用"`
 	NetIncomeAmount    float64                  `json:"net_income_amount" gorm:"type:decimal(10,2);default:0;comment:净收入金额"`
 	ItemCount          int                      `json:"item_count" gorm:"comment:商品数量"`
 	TagCode            string                   `json:"tag_code" gorm:"type:varchar(50);index;comment:标签编码"`
@@ -79,18 +81,22 @@ type CreateStoreAccountReq struct {
 	TagName            string                            `json:"tag_name" binding:"max=100"`
 	Remark             string                            `json:"remark" binding:"max=500"`
 	OtherExpenseAmount float64                           `json:"other_expense_amount" binding:"gte=0"`
+	IsErrandOrder      int                               `json:"is_errand_order" binding:"omitempty,oneof=0 1"`
+	ErrandFee          float64                           `json:"errand_fee" binding:"gte=0"`
 	Items              []CreateStoreAccountItemReq       `json:"items" binding:"required,min=1,dive"`
 	Consumables        []CreateStoreAccountConsumableReq `json:"consumables"`
 	NotifyImage        string                            `json:"notify_image"` // 通知图片URL（前端生成）
 }
 
 type CreateStoreAccountConsumableReq struct {
-	ProductID uint    `json:"product_id" binding:"required"`
-	Quantity  float64 `json:"quantity" binding:"required,gt=0"`
-	Unit      string  `json:"unit" binding:"max=20"`
-	Price     float64 `json:"price" binding:"gte=0"`
-	Amount    float64 `json:"amount" binding:"gte=0"`
-	Remark    string  `json:"remark" binding:"max=500"`
+	ProductID           uint    `json:"product_id"`
+	ConsumableProductID uint    `json:"consumable_product_id"`
+	ProductName         string  `json:"product_name" binding:"max=200"`
+	Quantity            float64 `json:"quantity" binding:"required,gt=0"`
+	Unit                string  `json:"unit" binding:"max=20"`
+	Price               float64 `json:"price" binding:"gte=0"`
+	Amount              float64 `json:"amount" binding:"gte=0"`
+	Remark              string  `json:"remark" binding:"max=500"`
 }
 
 // CreateStoreAccountItemReq 创建记账明细请求
@@ -118,6 +124,8 @@ type UpdateStoreAccountReq struct {
 	Remark             string   `json:"remark" binding:"max=500"`
 	AccountDate        string   `json:"account_date"`
 	OtherExpenseAmount *float64 `json:"other_expense_amount" binding:"omitempty,gte=0"`
+	IsErrandOrder      *int     `json:"is_errand_order" binding:"omitempty,oneof=0 1"`
+	ErrandFee          *float64 `json:"errand_fee" binding:"omitempty,gte=0"`
 }
 
 type BindStoreAccountConsumablesReq struct {
@@ -158,4 +166,35 @@ type StoreAccountConsumable struct {
 
 func (StoreAccountConsumable) TableName() string {
 	return "store_account_consumables"
+}
+
+// StoreAccountConsumableProduct 门店记账消耗品档案
+type StoreAccountConsumableProduct struct {
+	ID        uint           `json:"id" gorm:"primaryKey;autoIncrement"`
+	StoreID   uint           `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	Name      string         `json:"name" gorm:"type:varchar(200);not null;comment:消耗品名称"`
+	CostPrice float64        `json:"cost_price" gorm:"type:decimal(10,2);not null;default:0;comment:成本价"`
+	Remark    string         `json:"remark" gorm:"type:varchar(500);comment:备注说明"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	Store     *Store         `json:"store,omitempty" gorm:"foreignKey:StoreID"`
+}
+
+func (StoreAccountConsumableProduct) TableName() string {
+	return "store_account_consumable_products"
+}
+
+type UpsertStoreAccountConsumableProductReq struct {
+	StoreID   uint    `json:"store_id"`
+	Name      string  `json:"name" binding:"required,max=200"`
+	CostPrice float64 `json:"cost_price" binding:"gte=0"`
+	Remark    string  `json:"remark" binding:"max=500"`
+}
+
+type ListStoreAccountConsumableProductReq struct {
+	StoreID  uint   `form:"store_id"`
+	Keyword  string `form:"keyword"`
+	Page     int    `form:"page,default=1" binding:"min=1"`
+	PageSize int    `form:"page_size,default=20" binding:"min=1,max=500"`
 }

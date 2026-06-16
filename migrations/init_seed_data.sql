@@ -139,6 +139,16 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @msg_tpl_id, 'message-template-delete', '删除模板', '', '', '', 3, 3, 'message:template:delete', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@msg_tpl_id AND name='message-template-delete' AND type=3);
 
+-- 操作日志（系统管理下）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @system_id, 'audit-log', '操作日志', 'history', '/system/audit-log', 'system/audit-log/index', 2, 7, 'system:audit-log:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@system_id AND name='audit-log' AND type=2);
+SET @audit_log_id = (SELECT id FROM menus WHERE parent_id=@system_id AND name='audit-log' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @audit_log_id, 'audit-log-detail', '查看日志详情', '', '', '', 3, 1, 'system:audit-log:detail', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@audit_log_id AND name='audit-log-detail' AND type=3);
+
 -- 门店管理（目录）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT 0, 'store', '门店管理', 'shop', '', '', 1, 2, '', 1, 1, NOW(), NOW()
@@ -228,6 +238,25 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @account_id, 'store-account-delete', '删除记账', '', '', '', 3, 3, 'store:account:delete', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@account_id AND name='store-account-delete' AND type=3);
 
+-- 门店返厂管理
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'store-return', '门店返厂管理', 'Van', '/store/return', 'store/return/index', 2, 7, 'store:return:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='store-return' AND type=2);
+SET @store_return_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='store-return' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-add', '新增返厂', '', '', '', 3, 1, 'store:return:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-edit', '编辑返厂', '', '', '', 3, 2, 'store:return:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-delete', '删除返厂', '', '', '', 3, 3, 'store:return:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-delete' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_return_id, 'store-return-product', '维护返厂商品', '', '', '', 3, 4, 'store:return:product', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-product' AND type=3);
+
 -- 会员管理
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @store_id, 'store-member', '会员管理', 'User', '/store/member', 'store/member/index', 2, 7, 'store:member:list', 1, 1, NOW(), NOW()
@@ -277,6 +306,9 @@ WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-pric
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @b2b_id, 'b2b-order-add', '新增供货单', '', '', '', 3, 7, 'b2b:order:add', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @b2b_id, 'b2b-order-edit', '修改供货单状态', '', '', '', 3, 8, 'b2b:order:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-edit' AND type=3);
 
 -- 打印机管理（目录）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)

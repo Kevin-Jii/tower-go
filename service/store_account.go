@@ -9,6 +9,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
@@ -212,8 +213,8 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		orderNo = fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
 	}
 
-	// 记账日期由后端默认当前时间
-	accountDate := time.Now()
+	// 记账日期按营业日归属：16:00 到次日 05:00 为同一个营业日。
+	accountDate := businessdate.Date(time.Now())
 
 	// 构建明细
 	var items []model.StoreAccountItem
@@ -320,7 +321,36 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		}
 	}
 
+	consumableProductIDs := make([]uint, 0, len(req.Consumables))
 	for _, item := range req.Consumables {
+		if item.ConsumableProductID > 0 {
+			consumableProductIDs = append(consumableProductIDs, item.ConsumableProductID)
+		}
+	}
+	consumableProductMap, err := s.storeAccountModule.GetConsumableProductMap(consumableProductIDs, storeID, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range req.Consumables {
+		if item.ConsumableProductID > 0 {
+			product := consumableProductMap[item.ConsumableProductID]
+			if product == nil {
+				return nil, fmt.Errorf("消耗品档案不存在或不属于当前门店")
+			}
+			quantity := item.Quantity
+			amount := product.CostPrice * quantity
+			consumables = append(consumables, model.StoreAccountConsumable{
+				ProductID:   product.ID,
+				ProductName: product.Name,
+				Quantity:    quantity,
+				Unit:        strings.TrimSpace(item.Unit),
+				Price:       product.CostPrice,
+				Amount:      amount,
+				Remark:      strings.TrimSpace(item.Remark),
+			})
+			consumableAmount += amount
+			continue
+		}
 		productName := ""
 		unit := item.Unit
 		price := item.Price
@@ -375,6 +405,13 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		}
 		totalAmount = *req.IncomeAmount
 	}
+	errandFee := req.ErrandFee
+	if req.IsErrandOrder != 1 {
+		errandFee = 0
+	}
+	if req.IsErrandOrder == 1 && errandFee <= 0 {
+		return nil, fmt.Errorf("跑腿订单请填写跑腿费用")
+	}
 
 	account := &model.StoreAccount{
 		AccountNo:          accountNo,
@@ -385,7 +422,9 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		OrderNo:            orderNo,
 		TotalAmount:        totalAmount,
 		OtherExpenseAmount: req.OtherExpenseAmount,
-		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount - consumableAmount - itemCostAmount,
+		IsErrandOrder:      req.IsErrandOrder,
+		ErrandFee:          errandFee,
+		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount - errandFee - consumableAmount - itemCostAmount,
 		ItemCount:          len(items),
 		TagCode:            req.TagCode,
 		TagName:            req.TagName,
@@ -867,13 +906,15 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 		return err
 	}
 	if !s.IsAccountEditable(account) {
-		return errors.New("记账已超过可编辑时间，仅支持当天编辑（23:00后创建可延长至次日03:00）")
+		return errors.New("记账已超过可编辑时间，仅支持当天编辑")
 	}
 
 	updates := make(map[string]interface{})
 	nextChannel := account.Channel
 	nextTotalAmount := account.TotalAmount
 	nextOtherExpenseAmount := account.OtherExpenseAmount
+	nextIsErrandOrder := account.IsErrandOrder
+	nextErrandFee := account.ErrandFee
 	shouldRecalculateNetIncome := false
 
 	if req.Channel != "" {
@@ -917,6 +958,27 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 		nextOtherExpenseAmount = *req.OtherExpenseAmount
 		shouldRecalculateNetIncome = true
 	}
+	if req.IsErrandOrder != nil {
+		nextIsErrandOrder = *req.IsErrandOrder
+		if nextIsErrandOrder != 1 {
+			nextIsErrandOrder = 0
+			nextErrandFee = 0
+			updates["errand_fee"] = 0
+		}
+		updates["is_errand_order"] = nextIsErrandOrder
+		shouldRecalculateNetIncome = true
+	}
+	if req.ErrandFee != nil {
+		nextErrandFee = *req.ErrandFee
+		updates["errand_fee"] = nextErrandFee
+		shouldRecalculateNetIncome = true
+	}
+	if nextIsErrandOrder != 1 {
+		nextErrandFee = 0
+	}
+	if nextIsErrandOrder == 1 && nextErrandFee <= 0 {
+		return fmt.Errorf("跑腿订单请填写跑腿费用")
+	}
 	if req.IncomeAmount != nil {
 		if !s.isTakeoutChannel(nextChannel) {
 			return fmt.Errorf("仅外卖平台渠道支持自定义收入金额")
@@ -931,7 +993,7 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 			consumableTotal += c.Amount
 		}
 		itemCostTotal := s.calculateAccountItemCost(account.Items)
-		updates["net_income_amount"] = nextTotalAmount - nextOtherExpenseAmount - consumableTotal - itemCostTotal
+		updates["net_income_amount"] = nextTotalAmount - nextOtherExpenseAmount - nextErrandFee - consumableTotal - itemCostTotal
 	}
 
 	if len(updates) == 0 {
@@ -969,7 +1031,7 @@ func (s *StoreAccountService) calculateAccountNetIncome(account *model.StoreAcco
 		consumableTotal += c.Amount
 	}
 	itemCostTotal := s.calculateAccountItemCost(account.Items)
-	return account.TotalAmount - account.OtherExpenseAmount - consumableTotal - itemCostTotal
+	return account.TotalAmount - account.OtherExpenseAmount - account.ErrandFee - consumableTotal - itemCostTotal
 }
 
 func (s *StoreAccountService) calculateAccountItemCost(items []model.StoreAccountItem) float64 {
@@ -1009,10 +1071,63 @@ func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindSto
 		return err
 	}
 	if !s.IsAccountEditable(account) {
-		return errors.New("记账已超过可编辑时间，仅支持当天编辑（23:00后创建可延长至次日03:00）")
+		return errors.New("记账已超过可编辑时间，仅支持当天编辑")
 	}
 	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
+	consumableProductIDs := make([]uint, 0, len(req.Consumables))
 	for _, item := range req.Consumables {
+		if item.ConsumableProductID > 0 {
+			consumableProductIDs = append(consumableProductIDs, item.ConsumableProductID)
+		}
+	}
+	consumableProductMap, err := s.storeAccountModule.GetConsumableProductMap(consumableProductIDs, account.StoreID, false)
+	if err != nil {
+		return err
+	}
+	for _, item := range req.Consumables {
+		if item.ConsumableProductID > 0 {
+			product := consumableProductMap[item.ConsumableProductID]
+			if product == nil {
+				return fmt.Errorf("消耗品档案不存在或不属于当前门店")
+			}
+			quantity := item.Quantity
+			amount := product.CostPrice * quantity
+			consumables = append(consumables, model.StoreAccountConsumable{
+				AccountID:   accountID,
+				ProductID:   product.ID,
+				ProductName: product.Name,
+				Quantity:    quantity,
+				Unit:        strings.TrimSpace(item.Unit),
+				Price:       product.CostPrice,
+				Amount:      amount,
+				Remark:      strings.TrimSpace(item.Remark),
+			})
+			continue
+		}
+		if item.ProductID == 0 {
+			name := strings.TrimSpace(item.ProductName)
+			if name == "" {
+				return fmt.Errorf("自定义消耗品名称不能为空")
+			}
+			if item.Amount <= 0 {
+				return fmt.Errorf("自定义消耗品【%s】金额必须大于0", name)
+			}
+			quantity := item.Quantity
+			if quantity <= 0 {
+				quantity = 1
+			}
+			consumables = append(consumables, model.StoreAccountConsumable{
+				AccountID:   accountID,
+				ProductID:   0,
+				ProductName: name,
+				Quantity:    quantity,
+				Unit:        strings.TrimSpace(item.Unit),
+				Price:       item.Amount / quantity,
+				Amount:      item.Amount,
+				Remark:      strings.TrimSpace(item.Remark),
+			})
+			continue
+		}
 		productName := ""
 		unit := item.Unit
 		price := item.Price
@@ -1063,9 +1178,66 @@ func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindSto
 	return s.storeAccountModule.ReplaceConsumables(accountID, consumables)
 }
 
-// IsAccountEditable 判断记账记录是否允许编辑：
-// 1. 默认仅允许在记账创建当日（自然日）编辑
-// 2. 若创建时间在当日23点（含）后，延长至次日03:00
+func (s *StoreAccountService) CreateConsumableProduct(storeID uint, req *model.UpsertStoreAccountConsumableProductReq, hqUnbound bool) (*model.StoreAccountConsumableProduct, error) {
+	product, err := s.buildConsumableProduct(storeID, hqUnbound, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.storeAccountModule.CreateConsumableProduct(product); err != nil {
+		return nil, err
+	}
+	return product, nil
+}
+
+func (s *StoreAccountService) UpdateConsumableProduct(id, storeID uint, req *model.UpsertStoreAccountConsumableProductReq, hqUnbound bool) (*model.StoreAccountConsumableProduct, error) {
+	existing, err := s.storeAccountModule.GetConsumableProductByIDScoped(id, storeID, hqUnbound)
+	if err != nil {
+		return nil, err
+	}
+	product, err := s.buildConsumableProduct(storeID, hqUnbound, req)
+	if err != nil {
+		return nil, err
+	}
+	product.ID = existing.ID
+	if err := s.storeAccountModule.UpdateConsumableProduct(product); err != nil {
+		return nil, err
+	}
+	return s.storeAccountModule.GetConsumableProductByIDScoped(product.ID, product.StoreID, true)
+}
+
+func (s *StoreAccountService) ListConsumableProducts(ctx context.Context, req *model.ListStoreAccountConsumableProductReq) ([]*model.StoreAccountConsumableProduct, int64, error) {
+	_ = ctx
+	return s.storeAccountModule.ListConsumableProducts(req)
+}
+
+func (s *StoreAccountService) DeleteConsumableProduct(id, storeID uint, hqUnbound bool) error {
+	if !hqUnbound && storeID == 0 {
+		return fmt.Errorf("current user has no store")
+	}
+	return s.storeAccountModule.DeleteConsumableProduct(id, storeID, hqUnbound)
+}
+
+func (s *StoreAccountService) buildConsumableProduct(storeID uint, hqUnbound bool, req *model.UpsertStoreAccountConsumableProductReq) (*model.StoreAccountConsumableProduct, error) {
+	realStoreID := storeID
+	if hqUnbound && req.StoreID > 0 {
+		realStoreID = req.StoreID
+	}
+	if realStoreID == 0 {
+		return nil, fmt.Errorf("请选择门店")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, fmt.Errorf("消耗品名称不能为空")
+	}
+	return &model.StoreAccountConsumableProduct{
+		StoreID:   realStoreID,
+		Name:      name,
+		CostPrice: req.CostPrice,
+		Remark:    strings.TrimSpace(req.Remark),
+	}, nil
+}
+
+// IsAccountEditable 判断记账记录是否允许编辑：仅允许在创建自然日内编辑。
 func (s *StoreAccountService) IsAccountEditable(account *model.StoreAccount) bool {
 	if account == nil {
 		return false
@@ -1077,11 +1249,5 @@ func (s *StoreAccountService) IsAccountEditable(account *model.StoreAccount) boo
 		created = created.In(loc)
 	}
 
-	dayStart := time.Date(created.Year(), created.Month(), created.Day(), 0, 0, 0, 0, loc)
-	nextDayStart := dayStart.Add(24 * time.Hour)
-	cutoff := nextDayStart
-	if created.Hour() >= 23 {
-		cutoff = dayStart.Add(27 * time.Hour) // 次日03:00
-	}
-	return now.Before(cutoff)
+	return now.Year() == created.Year() && now.YearDay() == created.YearDay()
 }

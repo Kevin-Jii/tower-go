@@ -1,60 +1,85 @@
 <template>
-  <div class="supplier-split-layout grid min-h-0 h-[calc(100vh-100px)] gap-4">
-    <BaseCard flush-body class="flex min-h-0 h-full min-w-0 flex-col">
-      <template #header>
-        <div class="flex items-center justify-between gap-2 flex-wrap w-full">
-          <div class="flex flex-wrap items-center gap-2">
-            <BaseInput v-model="keyword" class="w-44" placeholder="供应商名称" clearable @enter="reload" />
-            <BaseButton variant="primary" size="sm" @click="reload">查询</BaseButton>
-            <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openCreate">新增</BaseButton>
+  <div class="supplier-workspace">
+    <aside class="supplier-panel">
+      <div class="supplier-panel__head">
+        <div>
+          <h2 class="supplier-title">供应商</h2>
+          <p class="supplier-subtitle">{{ list.length }} / {{ total }}</p>
+        </div>
+        <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openCreate">新增</BaseButton>
+      </div>
+
+      <div class="supplier-search">
+        <BaseInput v-model="keyword" placeholder="搜索供应商名称" clearable @enter="reload" />
+        <BaseButton variant="primary" size="sm" @click="reload">查询</BaseButton>
+      </div>
+
+      <div class="supplier-list">
+        <button
+          v-for="item in list"
+          :key="item.id"
+          type="button"
+          class="supplier-item"
+          :class="{ 'is-active': activeSupplierId === item.id }"
+          @click="pickSupplier(item)"
+          @dblclick="openSupplierProfile(item)"
+        >
+          <div class="supplier-item__body">
+            <div class="supplier-item__top">
+              <span class="supplier-item__name">{{ item.supplier_name }}</span>
+              <span class="supplier-status" :class="item.status === 1 ? 'is-on' : 'is-off'">{{ supplierStatusLabel(item.status) }}</span>
+            </div>
+            <div class="supplier-item__meta">
+              {{ item.contact_person || '未填联系人' }}<span v-if="item.contact_phone"> · {{ item.contact_phone }}</span>
+            </div>
           </div>
+          <div class="supplier-item__actions" @click.stop>
+            <BaseButton v-permission="'supplier:edit'" variant="link" size="sm" @click="openEdit(item)">编辑</BaseButton>
+            <BaseButton v-permission="'supplier:delete'" variant="link" size="sm" class="!text-rose-600" @click="onDelete(item)">删除</BaseButton>
+          </div>
+        </button>
+
+        <div v-if="!loading && list.length === 0" class="supplier-empty">暂无供应商</div>
+      </div>
+
+      <div class="supplier-pagination">
+        <BasePagination
+          :page="page"
+          :page-size="pageSize"
+          :total="total"
+          @update:page="(p) => (page = p)"
+          @update:page-size="(s) => (pageSize = s)"
+        />
+      </div>
+    </aside>
+
+    <section class="product-panel">
+      <div class="product-panel__head">
+        <div class="min-w-0">
+          <h2 class="supplier-title truncate">{{ currentSupplierName || '商品管理' }}</h2>
+          <p class="supplier-subtitle">
+            <template v-if="activeSupplierId !== ''">{{ categoryRows.length }} 个分类 · {{ productRowsRaw.length }} 个商品</template>
+            <template v-else>请选择左侧供应商</template>
+          </p>
         </div>
-      </template>
-      <div class="flex min-h-0 flex-1 flex-col">
-        <div ref="supplierTableHost" class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto overflow-y-hidden">
-          <BaseTable :columns="supplierColumns" :data="(list as unknown) as Record<string, unknown>[]"
-            :loading="loading" :height="supplierTableScrollY" min-width="420px" row-key="id"
-            :highlight-row-key="highlightSupplierId" row-clickable class="min-h-0 flex-1" @row-click="onPickSupplierRow"
-            @row-dblclick="onSupplierRowDblclick">
-            <template #cell-actions="{ row }">
-              <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
-                <BaseButton v-permission="'supplier:edit'" variant="link" size="sm" @click="openEdit(row as Supplier)">
-                  编辑
-                </BaseButton>
-                <BaseButton v-permission="'supplier:delete'" variant="link" size="sm"
-                  @click="onDelete(row as Supplier)">删除
-                </BaseButton>
-              </div>
-            </template>
-          </BaseTable>
-        </div>
-        <div class="mt-3 flex shrink-0 justify-end">
-          <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
-            @update:page-size="(s) => (pageSize = s)" />
+        <div class="product-actions">
+          <BaseButton v-permission="'supplier:add'" variant="secondary" size="sm" :disabled="activeSupplierId === ''" @click="openCategoryCreate">新增分类</BaseButton>
+          <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" :disabled="activeSupplierId === ''" @click="openProductCreate()">新增商品</BaseButton>
         </div>
       </div>
-    </BaseCard>
 
-    <BaseCard flush-body class="flex min-h-0 h-full min-w-0 flex-col">
-      <template #header>
-        <div class="flex flex-col gap-2 w-full">
-          <div class="flex gap-2 items-center">
-            <BaseInput v-model="productKeywordInput" class="w-56" placeholder="商品名称" clearable
-              @enter="applyProductKeyword" />
-            <BaseButton variant="primary" size="sm" @click="applyProductKeyword">查询</BaseButton>
-            <BaseButton v-permission="'supplier:add'" variant="primary" size="sm" @click="openCategoryCreate">新增供应商分类
-            </BaseButton>
-            <BaseButton variant="secondary" size="sm" @click="reloadProducts">刷新</BaseButton>
-          </div>
-        </div>
-      </template>
-      <div ref="productTableHost" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div class="product-toolbar">
+        <BaseInput v-model="productKeywordInput" class="product-search" placeholder="搜索商品名称" clearable @enter="applyProductKeyword" />
+        <BaseButton variant="primary" size="sm" :disabled="activeSupplierId === ''" @click="applyProductKeyword">查询</BaseButton>
+        <BaseButton variant="secondary" size="sm" :disabled="activeSupplierId === ''" @click="reloadProducts">刷新</BaseButton>
+      </div>
+
+      <div v-if="activeSupplierId !== ''" class="product-table-wrap">
         <BaseTable :columns="productTreeColumns" :data="(productTreeRows as unknown) as Record<string, unknown>[]"
-          :loading="productsLoading || categoriesLoading" :height="productTableScrollY" row-key="id"
+          :loading="productsLoading || categoriesLoading" height="calc(100vh - 285px)" row-key="id"
           tree-children-key="children" :tree-default-expand-all="true" class="min-h-0 flex-1">
           <template #cell-name="{ row }">
-            <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name
-            }}</span>
+            <span v-if="(row as TreeRow).isCategory" class="font-semibold text-slate-800">{{ (row as TreeRow).name }}</span>
             <span v-else>{{ (row as TreeRow).name }}</span>
           </template>
           <template #cell-sale_price="{ row }">
@@ -68,8 +93,7 @@
                   @click="openProductCreate((row as TreeRow).categoryId)">新增商品</BaseButton>
               </template>
               <template v-else>
-                <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看
-                </BaseButton>
+                <BaseButton variant="link" size="sm" @click="openProductDrawer((row as TreeRow).productId!)">查看</BaseButton>
                 <BaseButton v-permission="'supplier:delete'" variant="link" size="sm"
                   @click="onDeleteProduct((row as TreeRow).raw!)">删除</BaseButton>
               </template>
@@ -77,7 +101,8 @@
           </template>
         </BaseTable>
       </div>
-    </BaseCard>
+      <div v-else class="supplier-empty product-empty">请选择供应商后维护商品</div>
+    </section>
 
     <BaseDialog v-model="dlg" :title="isEdit ? '编辑供应商' : '新增供应商'" max-width="min(520px, 96vw)">
       <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
@@ -236,12 +261,10 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useElementSize } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   BaseButton,
-  BaseCard,
   BaseDialog,
   BaseFormItem,
   BaseInput,
@@ -283,18 +306,6 @@ interface TreeRow {
 const qc = useQueryClient()
 const router = useRouter()
 
-/** 表格区域撑满卡片剩余高度，用 Arco scroll.y 占满可视区 */
-const supplierTableHost = ref<HTMLElement | null>(null)
-const productTableHost = ref<HTMLElement | null>(null)
-const { height: supplierHostH } = useElementSize(supplierTableHost)
-const { height: productHostH } = useElementSize(productTableHost)
-const TABLE_HEAD_RESERVE = 48
-function scrollYpx(h: number): string {
-  const y = Math.floor(h - TABLE_HEAD_RESERVE)
-  return `${Math.max(120, y)}px`
-}
-const supplierTableScrollY = computed(() => scrollYpx(supplierHostH.value))
-const productTableScrollY = computed(() => scrollYpx(productHostH.value))
 const keyword = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -325,25 +336,20 @@ watch([page, pageSize], () => {
   void qc.invalidateQueries({ queryKey: ['suppliers'] })
 })
 
-const supplierColumns: BaseTableColumn[] = [
-  { key: 'supplier_name', label: '供应商名称', prop: 'supplier_name', },
-  { key: 'actions', label: '操作', width: '148px', align: 'right' },
-]
-
 const activeSupplierId = ref<number | ''>('')
-const highlightSupplierId = computed(() => (activeSupplierId.value === '' ? null : (activeSupplierId.value as number)))
 const productKeywordInput = ref('')
 const productKeyword = ref('')
 
-function onPickSupplierRow(row: Record<string, unknown>): void {
-  const s = row as unknown as Supplier
-  if (s?.id != null) activeSupplierId.value = s.id
+function pickSupplier(row: Supplier): void {
+  activeSupplierId.value = row.id
 }
 
-/** 双击行打开供应商档案（原「查看」入口） */
-function onSupplierRowDblclick(row: Record<string, unknown>): void {
-  const s = row as unknown as Supplier
-  if (s?.id != null) void router.push(`/public/supplier/${s.id}`)
+function openSupplierProfile(row: Supplier): void {
+  void router.push(`/public/supplier/${row.id}`)
+}
+
+function supplierStatusLabel(status?: number): string {
+  return Number(status) === 0 ? '禁用' : '启用'
 }
 
 function applyProductKeyword(): void {
@@ -823,18 +829,201 @@ async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
 </script>
 
 <style scoped>
-/**
- * 不要用 Uno 的 grid-cols-1：它会一直写 grid-template-columns，覆盖掉这里的宽屏两列。
- * 默认单列；≥768px 左右分栏（与常用 md 断点一致）。
- */
-.supplier-split-layout {
-  grid-template-columns: minmax(0, 1fr);
+.supplier-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 16px;
+  height: calc(100vh - 100px);
+  min-height: 560px;
+  overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .supplier-split-layout {
-    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
-  }
+.supplier-panel,
+.product-panel {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--border-radius-large);
+  background: var(--color-bg-2);
+}
+
+.supplier-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.product-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.supplier-panel__head,
+.product-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.supplier-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 24px;
+}
+
+.supplier-subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.supplier-search,
+.product-toolbar,
+.product-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.supplier-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.product-toolbar {
+  flex-wrap: wrap;
+}
+
+.product-search {
+  width: min(280px, 100%);
+}
+
+.supplier-list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.supplier-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.supplier-item:hover {
+  background: #f8fafc;
+}
+
+.supplier-item.is-active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.supplier-item__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.supplier-item__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.supplier-item__name {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-item__meta {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-item__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.supplier-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.supplier-status.is-on {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.supplier-status.is-off {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.supplier-pagination {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.product-table-wrap {
+  min-height: 0;
+  flex: 1;
+}
+
+.supplier-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.product-empty {
+  flex: 1;
+  border: 1px dashed var(--color-border-2);
+  border-radius: var(--border-radius-large);
 }
 
 .unit-spec-editor {
@@ -865,5 +1054,23 @@ async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
 .unit-spec-editor__control {
   width: 100%;
   min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .supplier-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .supplier-panel {
+    max-height: min(520px, 70vh);
+  }
+
+  .product-panel__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>

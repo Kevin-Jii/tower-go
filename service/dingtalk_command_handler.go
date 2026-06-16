@@ -8,6 +8,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 )
 
@@ -148,7 +149,7 @@ func (h *DingTalkCommandHandler) handleTodayAccount(storeID uint) (string, strin
 		return "记账查询", "记账模块未初始化"
 	}
 
-	today := time.Now().Format("2006-01-02")
+	today := businessdate.DateString(time.Now())
 	totalAmount, netIncomeAmount, count, err := h.storeAccountModule.GetStatsByDateRange(storeID, today, today)
 	if err != nil {
 		return "记账查询", fmt.Sprintf("查询失败: %v", err)

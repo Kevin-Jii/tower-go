@@ -145,9 +145,9 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 		return nil, err
 	}
 
-	// 门店自定义菜单若只勾了模块页未勾按钮行，JOIN 结果缺子菜单，GetUserPermissions 会少 store:xxx:add 等码导致接口 403。
+	// 门店自定义菜单只自动补齐祖先目录，用于侧边栏成树；未勾选的兄弟菜单和子菜单不能被自动带出。
 	if len(menus) > 0 {
-		menus, err = m.expandStoreCustomMenuClosure(menus)
+		menus, err = m.expandStoreCustomMenuAncestors(menus)
 		if err != nil {
 			return nil, err
 		}
@@ -158,8 +158,8 @@ func (m *MenuModule) GetMenusByStoreAndRole(storeID uint, roleID uint) ([]*model
 	return menus, err
 }
 
-// expandStoreCustomMenuClosure 补齐祖先链与整棵后代子树，与「勾选整页即含其下按钮」的默认角色菜单语义对齐。
-func (m *MenuModule) expandStoreCustomMenuClosure(menus []*model.Menu) ([]*model.Menu, error) {
+// expandStoreCustomMenuAncestors 补齐祖先链，避免只勾子菜单时侧边栏无法挂载到父级目录。
+func (m *MenuModule) expandStoreCustomMenuAncestors(menus []*model.Menu) ([]*model.Menu, error) {
 	byID := make(map[uint]*model.Menu, len(menus))
 	for _, mu := range menus {
 		if mu == nil {
@@ -206,27 +206,6 @@ func (m *MenuModule) expandStoreCustomMenuClosure(menus []*model.Menu) ([]*model
 		}
 		if !added {
 			break
-		}
-	}
-
-	frontier := make([]uint, 0, len(byID))
-	for id := range byID {
-		frontier = append(frontier, id)
-	}
-	for i := 0; i < len(frontier); i++ {
-		pid := frontier[i]
-		var children []*model.Menu
-		if err := m.db.Where("parent_id = ? AND status = ?", pid, 1).
-			Order("sort ASC, id ASC").
-			Find(&children).Error; err != nil {
-			return nil, err
-		}
-		for _, ch := range children {
-			if _, ok := byID[ch.ID]; !ok {
-				ch.Permissions = defaultPermBits
-				byID[ch.ID] = ch
-				frontier = append(frontier, ch.ID)
-			}
 		}
 	}
 

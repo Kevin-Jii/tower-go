@@ -194,6 +194,15 @@ type CreateB2BSupplyOrderItem struct {
 	Remark      string  `json:"remark" binding:"max=500"`
 }
 
+type UpdateB2BSupplyOrderDeliveryReq struct {
+	DeliveryStatus int `json:"delivery_status" binding:"required,oneof=1 2 3"`
+}
+
+type UpdateB2BSupplyOrderPaymentReq struct {
+	PaymentStatus int     `json:"payment_status" binding:"required,oneof=1 2 3"`
+	PaidAmount    float64 `json:"paid_amount" binding:"gte=0"`
+}
+
 type ListB2BSupplyOrderReq struct {
 	StoreID        uint   `form:"store_id"`
 	CustomerID     uint   `form:"customer_id"`

@@ -43,3 +43,19 @@ export async function getB2BSupplyOrder(id: number): Promise<B2BSupplyOrder> {
   const res = await http.get<ApiEnvelope<B2BSupplyOrder>>(`/b2b/supply-orders/${id}`)
   return unwrap(res)
 }
+
+export async function updateB2BSupplyOrderDeliveryStatus(
+  id: number,
+  body: { delivery_status: number },
+): Promise<B2BSupplyOrder> {
+  const res = await http.put<ApiEnvelope<B2BSupplyOrder>>(`/b2b/supply-orders/${id}/delivery-status`, body)
+  return unwrap(res)
+}
+
+export async function updateB2BSupplyOrderPaymentStatus(
+  id: number,
+  body: { payment_status: number; paid_amount?: number },
+): Promise<B2BSupplyOrder> {
+  const res = await http.put<ApiEnvelope<B2BSupplyOrder>>(`/b2b/supply-orders/${id}/payment-status`, body)
+  return unwrap(res)
+}

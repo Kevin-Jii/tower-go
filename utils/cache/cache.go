@@ -145,7 +145,7 @@ var (
 	CacheKeyDishCategoriesWithDishes = fmt.Sprintf("%sdish:categories:with:dishes:store", CachePrefix)
 	CacheKeyMenuTree                 = fmt.Sprintf("%smenu:tree:role", CachePrefix)
 	CacheKeyRoleMenus                = fmt.Sprintf("%srole:menus:role", CachePrefix)
-	CacheKeyStoreRoleMenus           = fmt.Sprintf("%sstore:role:menus:store", CachePrefix)
+	CacheKeyStoreRoleMenus           = fmt.Sprintf("%sstore:role:menus:v2:store", CachePrefix)
 	MenuTreeTTL                      = 30 * time.Minute
 	RoleMenusTTL                     = 30 * time.Minute
 	PermissionsTTL                   = 30 * time.Minute

@@ -35,13 +35,36 @@
           <BaseInput v-model="form.title" />
         </BaseFormItem>
         <BaseFormItem label="图标">
-          <BaseInput v-model="form.icon" placeholder="如 setting / user" />
+          <a-select
+            v-model="form.icon"
+            placeholder="请选择图标"
+            allow-clear
+            allow-search
+            :filter-option="filterIconOption"
+            class="w-full"
+          >
+            <a-option v-for="item in iconOptions" :key="item.value" :value="item.value" :label="item.label">
+              <span class="inline-flex items-center gap-2">
+                <component :is="item.component" class="text-[16px] text-slate-500" />
+                <span>{{ item.label }}</span>
+              </span>
+            </a-option>
+          </a-select>
         </BaseFormItem>
         <BaseFormItem label="路由 path">
           <BaseInput v-model="form.path" placeholder="/system/user" />
         </BaseFormItem>
         <BaseFormItem label="组件">
-          <BaseInput v-model="form.component" placeholder="system/user/index" />
+          <a-cascader
+            v-model="componentPath"
+            :options="viewPathOptions"
+            placeholder="请选择 src/views 下的文件"
+            allow-clear
+            allow-search
+            :path-mode="true"
+            class="w-full"
+            @change="onComponentPathChange"
+          />
         </BaseFormItem>
         <BaseFormItem label="权限码">
           <BaseInput v-model="form.permission" />
@@ -75,8 +98,10 @@
 </template>
 
 <script setup lang="ts">
+import type { Component } from 'vue'
 import { computed, reactive, ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import * as ArcoIcons from '@arco-design/web-vue/es/icon'
 import {
   BaseButton,
   BaseDialog,
@@ -101,6 +126,19 @@ const { data: treeData, isLoading: loading } = useQuery({
   queryFn: fetchMenuTree,
 })
 const tree = computed(() => treeData.value ?? [])
+const viewModules = import.meta.glob('../../**/*.vue')
+
+interface CascaderOption {
+  label: string
+  value: string
+  children?: CascaderOption[]
+}
+
+interface IconOption {
+  label: string
+  value: string
+  component: Component
+}
 
 const columns: BaseTableColumn[] = [
   { key: 'title', label: '名称', prop: 'title', minWidth: '160px' },
@@ -116,6 +154,7 @@ const visible = ref(false)
 const saving = ref(false)
 const isEdit = ref(false)
 const editId = ref(0)
+const componentPath = ref<string[]>([])
 const form = reactive({
   parent_id: 0 as number | undefined,
   name: '',
@@ -130,6 +169,27 @@ const form = reactive({
   status: 1,
   remark: '',
 })
+
+const viewPathOptions = computed<CascaderOption[]>(() => {
+  const root: CascaderOption[] = []
+  for (const rawKey of Object.keys(viewModules).sort()) {
+    const path = rawKey.replace(/^\.\.\/\.\.\//, '').replace(/\.vue$/, '')
+    insertPath(root, path.split('/'))
+  }
+  return root
+})
+
+const iconComponents = ArcoIcons as Record<string, Component>
+const iconOptions = computed<IconOption[]>(() =>
+  Object.entries(iconComponents)
+    .filter(([name, cmp]) => name.startsWith('Icon') && Boolean(cmp))
+    .map(([name, component]) => ({
+      label: iconExportToValue(name),
+      value: iconExportToValue(name),
+      component,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
+)
 
 interface ParentTreeOption {
   id: number
@@ -179,6 +239,7 @@ function resetForm(): void {
   form.icon = ''
   form.path = ''
   form.component = ''
+  componentPath.value = []
   form.permission = ''
   form.type = 2
   form.sort = 0
@@ -206,6 +267,7 @@ function openEdit(row: Menu): void {
   form.icon = row.icon ?? ''
   form.path = row.path ?? ''
   form.component = row.component ?? ''
+  componentPath.value = form.component ? form.component.split('/') : []
   form.permission = row.permission ?? ''
   form.type = row.type
   form.sort = row.sort ?? 0
@@ -213,6 +275,41 @@ function openEdit(row: Menu): void {
   form.status = row.status ?? 1
   form.remark = row.remark ?? ''
   visible.value = true
+}
+
+function insertPath(options: CascaderOption[], segments: string[]): void {
+  if (!segments.length) return
+  const [head, ...tail] = segments
+  let node = options.find((x) => x.value === head)
+  if (!node) {
+    node = { label: head, value: head }
+    options.push(node)
+  }
+  if (tail.length) {
+    node.children = node.children ?? []
+    insertPath(node.children, tail)
+  }
+}
+
+function onComponentPathChange(value: unknown): void {
+  if (Array.isArray(value)) {
+    form.component = value.map(String).join('/')
+    return
+  }
+  form.component = value ? String(value) : ''
+}
+
+function iconExportToValue(exportName: string): string {
+  const raw = exportName.replace(/^Icon/, '')
+  return raw
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+}
+
+function filterIconOption(input: string, option: unknown): boolean {
+  const label = String((option as { label?: string })?.label ?? '')
+  return label.toLowerCase().includes(input.toLowerCase())
 }
 
 async function save(): Promise<void> {

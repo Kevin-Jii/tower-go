@@ -190,7 +190,7 @@ func (s *MenuService) AssignMenusToStoreRole(req *model.AssignStoreMenusReq) err
 	if err := s.storeRoleMenuModule.AssignMenusToStoreRole(req.StoreID, req.RoleID, req.MenuIDs, req.Perms); err != nil {
 		return err
 	}
-	InvalidateRolePermissionCache(req.RoleID)
+	InvalidateStoreRolePermissionCache(req.StoreID, req.RoleID)
 	return nil
 }
 
@@ -220,7 +220,7 @@ func (s *MenuService) CopyStoreMenus(req *model.CopyStoreMenusReq) error {
 	if err := s.storeRoleMenuModule.CopyStoreMenus(req.FromStoreID, req.ToStoreID, req.RoleID); err != nil {
 		return err
 	}
-	InvalidateRolePermissionCache(req.RoleID)
+	InvalidateStoreRolePermissionCache(req.ToStoreID, req.RoleID)
 	return nil
 }
 

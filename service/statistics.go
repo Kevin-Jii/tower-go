@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 )
 
 type StatisticsService struct {
@@ -127,7 +128,7 @@ func (s *StatisticsService) GetHomeChartsStats(storeID uint, startDate, endDate,
 
 // getPeriodRange 获取周期的日期范围
 func (s *StatisticsService) getPeriodRange(period string) (string, string) {
-	now := time.Now()
+	now := businessdate.Date(time.Now())
 	var startDate, endDate time.Time
 
 	switch period {

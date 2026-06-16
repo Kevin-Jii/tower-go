@@ -362,7 +362,7 @@ func (r *Request) formatValidationError(errs validator.ValidationErrors) error {
 		}
 		messages = append(messages, message)
 	}
-	return fmt.Errorf(strings.Join(messages, "; "))
+	return fmt.Errorf("%s", strings.Join(messages, "; "))
 }
 
 // StructToMap 将结构体转换为map

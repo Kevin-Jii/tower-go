@@ -1,431 +1,423 @@
 # Tower-Go 多门店供应链管理系统
 
-[![Go Version](https://img.shields.io/badge/Go-%E2%89%A51.20-blue)](https://golang.org/)
-[![Gin](https://img.shields.io/badge/Framework-Gin-brightgreen)](https://github.com/gin-gonic/gin)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+Tower-Go 是一个面向连锁门店经营的供应链与门店运营管理系统，后端使用 Go + Gin + GORM，前端管理端使用 Vue 3 + Vite + Arco Design。项目覆盖门店、供应商、采购、库存、记账、退货、会员、B2B 供货、第三方订单、钉钉通知、云打印、图库文件等业务。
 
-基于 Go 语言开发的企业级多门店供应链管理系统，支持供应商管理、采购订单、门店管理和完整的 RBAC 权限控制。
+## 项目概览
 
-## 🏗️ 系统架构
+- 后端 API：`cmd/main.go` 启动，默认端口 `10024`
+- 管理端：`web-admin`，默认 Vite 端口 `5173`
+- 数据库：MySQL，启动时可执行 AutoMigrate、种子数据和默认字典初始化
+- 缓存：Redis，可通过环境变量开关
+- 文件服务：RustFS/MinIO S3 兼容对象存储
+- API 文档：Swagger + Scalar
+- 权限模型：JWT + RBAC + 门店业务隔离
 
-![系统架构图](docs/architecture_diagram.png)
+## 核心功能
 
-系统采用分层架构设计，从上到下分为：
-- **桌面客户端层**：Flutter + Fluent UI 实现的跨平台桌面应用
-- **后端服务层**：Go + Gin 实现的RESTful API服务，包含性能优化层
-- **基础设施层**：MySQL、Redis、MinIO/RustFS 提供数据存储和缓存服务
+### 门店与权限
 
-## 
+- 门店资料、门店编码、门店关联第三方账号
+- 用户、角色、菜单、角色菜单权限
+- 门店级业务权限与数据隔离
+- 动态菜单、动态前端路由
 
-### ⚡ 性能优化
-- **查询优化器** - 自动分析SQL查询，检测性能问题并提供优化建议
-- **索引分析** - 智能识别缺失索引，提供索引策略建议
-- **JOIN去重** - 自动检测和防止重复JOIN操作
-- **热路径优化** - 类型断言、并发map等高频操作优化
-- **缓存策略** - 多级缓存、分布式锁、延迟双删等缓存优化
+### 供应链
 
-### 📦 供应链管理
-- **多门店管理** - 支持多门店独立管理和数据隔离
-- **供应商管理** - 供应商信息、商品分类、商品管理
-- **采购管理** - 采购订单创建、审核、跟踪
-- **库存管理** - 实时库存监控、库存调整、库存流水记录
+- 供应商、供应商分类、供应商商品
+- 商品规格单位、门店供应商商品关联
+- 采购订单、采购明细、采购流程
+- 价格清单、门店价格管理
 
-### 💰 门店记账
-- **电子记账** - 支持一单多商品，灵活的明细管理
-- **图片通知** - 自动生成美观的记账通知图片（电子回单风格）
-- **渠道管理** - 支持多种销售渠道（微信、堂食、外卖等）
-- **标签系统** - 自定义标签分类管理
+### 库存与门店业务
 
-### 📊 统计分析
-- **数据仪表板** - 实时查看库存和销售数据（当日/本周/当月/当季/当年）
-- **门店统计** - 多维度门店数据分析
-- **趋势分析** - 销售趋势和库存变化追踪
+- 库存台账、库存订单、库存流水
+- 报损、自用、赠送等库存损耗单
+- 门店记账、记账明细、通知图片生成
+- 门店退货单
+- 经营统计与仪表盘
 
-### 🔐 权限与安全
-- **RBAC 权限** - 基于角色的访问控制（超级管理员/总部管理员/门店管理员/普通员工）
-- **门店级权限** - 支持门店级别的菜单权限定制
-- **JWT 认证** - 安全的 Token 认证机制
-- **密码加密** - bcrypt 密码加密存储
+### 会员与 B2B
 
-### 📢 消息通知
-- **钉钉集成** - 机器人消息推送、Stream API 实时通信
-- **消息模板** - 可配置的钉钉消息模板系统
-- **自动通知** - 记账、库存预警等自动消息推送
-- **图片消息** - 支持发送图文混合的通知消息
+- 会员资料、钱包流水、充值订单
+- B2B 客户、客户价格、供货订单
+- 适用于门店对客户供货、批发或企业客户管理
 
-### 📁 文件服务
-- **对象存储** - 集成 RustFS/MinIO 对象存储服务
-- **图库管理** - 图片上传、分类、管理
-- **文件管理** - 支持多种文件类型的存储和管理
+### 外部集成
 
-### 🛠️ 系统管理
-- **字典管理** - 通用的数据字典管理系统
-- **用户管理** - 完整的用户生命周期管理
-- **角色管理** - 角色创建、权限分配
-- **菜单管理** - 动态菜单配置
+- 钉钉机器人、钉钉 Stream 客户端、消息模板
+- 美团 AI 建议能力
+- 第三方账号池、第三方订单、物流路线导入与历史查询
+- 芯烨云打印机、打印机状态同步定时任务
+- RustFS/MinIO 文件上传、图库管理、通知图片存储
 
-## 📁 项目结构
+### 工程能力
 
-```
+- Swagger 自动生成
+- 健康检查：`/health`、`/ready`、`/live`
+- WebSocket：`/ws`
+- 慢查询、缓存、本地热路径等性能配置
+- 数据权限策略、租户/门店上下文、请求日志、恢复中间件
+
+## 技术栈
+
+| 层级      | 技术                                           |
+| --------- | ---------------------------------------------- |
+| 后端语言  | Go `1.25.3`                                    |
+| Web 框架  | Gin `v1.11.0`                                  |
+| ORM       | GORM `v1.31.0`                                 |
+| 数据库    | MySQL                                          |
+| 缓存      | Redis                                          |
+| 认证      | JWT                                            |
+| 日志      | Zap + Lumberjack                               |
+| API 文档  | swaggo/gin-swagger + Scalar                    |
+| 对象存储  | MinIO SDK / RustFS                             |
+| 实时通信  | gorilla/websocket、DingTalk Stream SDK         |
+| 前端      | Vue 3、Vite、TypeScript、Pinia、Vue Router     |
+| UI 与图表 | Arco Design Vue、UnoCSS、ECharts、Handsontable |
+
+## 目录结构
+
+```text
 tower-go/
-├── cmd/main.go                 # 程序入口
-├── bootstrap/                  # 应用初始化
-├── config/                     # 配置管理
-├── controller/                 # 控制器层
-│   ├── user.go                # 用户管理
-│   ├── store.go               # 门店管理
-│   ├── supplier.go            # 供应商管理
-│   ├── supplier_product.go    # 供应商商品
-│   ├── store_supplier.go      # 门店供应商关联
-│   ├── purchase_order.go      # 采购订单
-│   ├── menu.go                # 菜单权限
-│   ├── role.go                # 角色管理
-│   ├── dingtalk_bot.go        # 钉钉机器人
-│   ├── inventory.go           # 库存管理
-│   ├── statistics.go          # 统计分析
-│   ├── store_account.go       # 门店记账
-│   ├── message_template.go    # 消息模板
-│   ├── file.go                # 文件管理
-│   └── gallery.go             # 图库管理
-├── service/                    # 服务层（业务逻辑）
-│   ├── rustfs.go              # RustFS/MinIO 文件服务
-│   ├── image_generator.go     # 图片自动生成
-│   └── dingtalk.go            # 钉钉集成服务
-├── module/                     # 数据访问层（DAO）
-├── model/                      # 数据模型
-├── middleware/                 # 中间件
-│   ├── auth.go                # 认证中间件
-│   ├── rbac.go                # 权限中间件
-│   └── logger.go              # 日志中间件
-├── router/                     # 路由配置
-│   ├── api/                   # API 路由模块
-│   └── router.go              # 路由注册
-├── utils/                      # 工具函数
-├── pkg/                        # 性能优化包
-│   └── performance/           # 性能优化组件
-│       ├── query_optimizer.go # 查询优化器
-│       ├── hotpath.go         # 热路径优化
-│       └── README.md          # 性能优化文档
-├── migrations/                 # 数据库迁移脚本
-└── docs/                       # Swagger 文档
-    ├── docs.go
-    ├── swagger.json
-    └── swagger.yaml
+├── cmd/                         # 命令入口
+│   ├── main.go                  # API 服务入口
+│   ├── apply_indexes/           # 应用索引工具
+│   ├── verify_indexes/          # 索引校验工具
+│   └── init_dingtalk_menu/      # 钉钉菜单初始化工具
+├── bootstrap/                   # 应用启动、配置、数据库、迁移、路由装配
+├── config/                      # 环境变量配置与性能配置
+├── controller/                  # HTTP 控制器
+├── service/                     # 业务服务层
+├── module/                      # 数据访问与仓储封装
+├── model/                       # GORM 模型
+├── router/                      # 路由注册
+│   └── api/                     # 各业务模块 API 路由
+├── middleware/                  # 认证、权限、门店业务守卫、日志、恢复
+├── internal/                    # 内部领域能力，如数据权限上下文
+├── pkg/                         # 可复用基础包
+│   ├── auth/                    # JWT、密码工具
+│   ├── performance/             # 性能优化组件与说明
+│   ├── tenant/                  # 租户/门店作用域
+│   ├── search/                  # 查询构建与优化
+│   └── xpyun/                   # 芯烨云打印 SDK 封装
+├── utils/                       # 数据库、缓存、日志、通用工具
+├── migrations/                  # 初始化 SQL 与种子数据
+├── docs/                        # Swagger 文档与架构资料
+├── cron/                        # 定时任务
+└── web-admin/                   # Vue 3 管理端
 ```
 
-## 🛠️ 技术栈
+## 快速开始
 
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Go | 1.20+ | 编程语言 |
-| Gin | v1.11.0 | Web 框架 |
-| GORM | v1.31.0 | ORM 框架 |
-| MySQL | 8.0+ | 数据库 |
-| Redis | - | 缓存 |
-| JWT | golang-jwt/jwt/v5 | 认证 |
-| Zap | - | 日志库 |
-| Swagger | swaggo | API 文档 |
-| gg | fogleman/gg | 图片生成库 |
-| MinIO/RustFS | - | 对象存储服务 |
-| WebSocket | gorilla/websocket | 实时通信 |
-| gopter | leanovate/gopter | 属性测试库 |
+### 1. 准备环境
 
-## 🎯 快速开始
+- Go `1.25.3` 或与 `go.mod` 兼容的版本
+- Node.js `20+`，npm
+- MySQL `8.0+`
+- Redis，可选但默认开启
+- RustFS/MinIO，可选，启用文件/图库/通知图片时需要
+- `swag`，用于生成 Swagger 文档
 
-### 前置条件
-
-- Go 1.20+
-- MySQL 8.0+
-- Redis
-
-### 安装步骤
-
-1. **克隆项目**
-```bash
-git clone https://github.com/Kevin-Jii/tower-go.git
-cd tower-go
-```
-
-2. **安装依赖**
-```bash
-go mod tidy
-```
-
-3. **配置环境变量**
-```bash
-copy .env.example .env
-# 编辑 .env 文件，填写数据库和 Redis 配置
-```
-
-4. **创建数据库**
-```sql
-CREATE DATABASE tower CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-5. **初始化表结构与种子数据**（先结构、后数据）
-```bash
-mysql -u用户名 -p密码 数据库名 < migrations/init.sql
-mysql -u用户名 -p密码 数据库名 < migrations/init_seed_data.sql
-```
-
-6. **启动应用**
-```bash
-go run cmd/main.go
-```
-
-7. **访问应用**
-- API 地址: `http://localhost:10024`
-- Swagger 文档: `http://localhost:10024/api/v1/swagger/index.html`
-
-## 🔐 认证与权限
-
-### JWT Token 认证
+安装 `swag`：
 
 ```bash
-# 登录获取 Token
-curl -X POST http://localhost:10024/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "130xxxxxxxx", "password": "Admin@123456"}'
-
-# 使用 Token 访问接口
-curl -X GET http://localhost:10024/api/v1/users/profile \
-  -H "Authorization: Bearer <token>"
+go install github.com/swaggo/swag/cmd/swag@latest
 ```
 
-### 角色权限
+### 2. 配置后端
 
-| 角色代码 | 角色名称 | 权限说明 |
-|----------|----------|----------|
-| `super_admin` | 超级管理员 | 系统最高权限，管理所有门店 |
-| `admin` | 总部管理员 | 管理所有门店、查看汇总数据 |
-| `store_admin` | 门店管理员 | 管理本门店数据 |
-| `staff` | 普通员工 | 查看和操作本门店数据 |
-
-### 权限位说明
-```
-1  = 0001 = 仅删除
-2  = 0010 = 仅修改
-4  = 0100 = 仅新增
-8  = 1000 = 仅查看
-15 = 1111 = 全部权限
+```bash
+cp .env.example .env
 ```
 
-## 📊 数据模型
-
-### 核心数据表
-
-#### 用户权限
-- **users** - 用户表（6位工号自动生成）
-- **roles** - 角色表（超级管理员/总部管理员/门店管理员/普通员工）
-- **menus** - 菜单表
-- **role_menus** - 角色菜单关联（权限控制）
-- **store_role_menus** - 门店角色菜单（门店级权限定制）
-
-#### 供应链与门店
-- **stores** - 门店表（JW+4位编码）
-- **suppliers** - 供应商表
-- **supplier_categories** - 供应商商品分类
-- **supplier_products** - 供应商商品
-- **store_supplier_products** - 门店供应商商品关联
-- **purchase_orders** - 采购订单
-- **purchase_order_items** - 采购订单明细
-
-#### 记账与库存
-- **store_accounts** - 门店记账主表（支持一单多商品）
-- **store_account_items** - 记账明细表
-- **inventories** - 库存表
-- **inventory_transactions** - 库存流水记录
-
-#### 字典与配置
-- **dict_types** - 字典类型表
-- **dict_datas** - 字典数据表
-- **message_templates** - 消息模板表
-- **dingtalk_bots** - 钉钉机器人配置
-
-#### 文件管理
-- **galleries** - 图库管理表
-- **files** - 文件管理表
-
-## ⚙️ 配置说明
-
-### 环境变量 (.env)
+编辑 `.env`，至少确认这些配置：
 
 ```env
-# 应用配置
-APP_NAME=tower-go
 APP_PORT=10024
 
-# 数据库配置
-DB_HOST=localhost
+DB_DRIVER=mysql
+DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USERNAME=root
 DB_PASSWORD=your_password
 DB_NAME=tower
 
-# Redis配置
-REDIS_HOST=localhost
+REDIS_ENABLED=true
+REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_PASSWORD=
-REDIS_ENABLED=true
+REDIS_DB=0
 
-# JWT配置
-JWT_SECRET=your_jwt_secret_at_least_32_characters
-
-# 钉钉配置
-DINGTALK_CLIENT_ID=your_client_id
-DINGTALK_CLIENT_SECRET=your_client_secret
-DINGTALK_ROBOT_CODE=your_robot_code
-DINGTALK_ROBOT_WEBHOOK=https://oapi.dingtalk.com/robot/send
-
-# RustFS/MinIO 配置（可选）
-RUSTFS_ENABLED=true
-RUSTFS_ENDPOINT=your.rustfs.server:9000
-RUSTFS_PUBLIC_BASE_URL=https://tower.usove.online
-RUSTFS_ACCESS_KEY=your_access_key
-RUSTFS_SECRET_KEY=your_secret_key
-RUSTFS_BUCKET=tower
-RUSTFS_NOTIFY_BUCKET=tower-notify
-RUSTFS_USE_SSL=false
+JWT_SECRET=replace_with_a_long_random_secret
 ```
 
-## 🐳 Docker 部署
+创建数据库：
+
+```sql
+CREATE DATABASE tower CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+导入初始化 SQL：
 
 ```bash
-# 构建镜像
-docker build -t tower-go:latest .
-
-# 启动服务
-docker-compose up -d
+mysql -u root -p tower < migrations/init.sql
+mysql -u root -p tower < migrations/init_seed_data.sql
 ```
 
-## 📝 默认账号
-
-系统初始化后的默认账号：
-
-| 账号 | 密码 | 角色 |
-|------|------|------|
-| 138 xxxx xxxx | Admin@123456 | 超级管理员 |
-
-> ⚠️ 请在首次登录后立即修改默认密码！
-
-## 🤝 贡献指南
-
-提交规范：
-- `fix:` Bug 修复
-- `feat:` 新功能
-- `docs:` 文档更新
-- `refactor:` 代码重构
-
-## 📝 许可证
-
-[MIT License](LICENSE)
-
----
-
-## ⚡ 性能优化
-
-系统集成了全面的性能优化组件，从数据库查询到内存管理，提供企业级的性能保障。
-
-### 查询优化器
-
-自动分析SQL查询，检测性能问题并提供优化建议：
-
-```go
-import "github.com/Kevin-Jii/tower-go/pkg/performance"
-
-optimizer := performance.NewQueryOptimizer(db)
-result, _ := optimizer.Analyze("SELECT * FROM store_accounts WHERE store_id = ?")
-
-// 检查性能问题
-for _, issue := range result.Issues {
-    fmt.Printf("[%s] %s\n", issue.Severity, issue.Message)
-}
-
-// 获取优化建议
-for _, rec := range result.Recommendations {
-    fmt.Println("建议:", rec)
-}
-```
-
-**检测的问题类型**：
-- 缺失索引
-- OFFSET分页性能问题
-- 全表扫描
-- LIKE前缀优化
-- 重复JOIN
-- SELECT * 使用
-
-### 索引分析
-
-智能分析表的索引使用情况：
-
-```go
-analyzer := performance.NewIndexAnalyzer(db)
-usage := analyzer.AnalyzeIndexUsage("store_accounts", []string{"store_id", "account_date"})
-
-fmt.Printf("潜在索引: %v\n", usage.PotentialIndexes)
-fmt.Printf("全表扫描: %v\n", usage.TableScan)
-```
-
-### 热路径优化
-
-针对高频操作的性能优化：
-
-```go
-// 类型转换优化（使用类型开关替代反射）
-converter := performance.GetTypeConverter()
-val, _ := converter.ToUint(someInterface)
-
-// 并发缓存优化（使用sync.Map）
-cache := performance.NewConcurrentCache()
-cache.Set("key", value)
-val, _ := cache.Get("key")
-
-// 正则表达式缓存
-regexCache := performance.GetRegexCache()
-regex, _ := regexCache.Get(`^\d{3}-\d{4}$`)
-```
-
-### 性能测试
-
-系统使用属性测试（Property-Based Testing）验证性能优化的正确性：
+启动后端：
 
 ```bash
-# 运行性能测试
-go test -v ./pkg/performance/... -run TestProperty
-
-# 运行基准测试
-go test -bench=. -benchmem ./pkg/performance/...
+go mod tidy
+go run cmd/main.go
 ```
 
-详细文档请参考：[pkg/performance/README.md](pkg/performance/README.md)
+也可以使用 Makefile：
 
----
+```bash
+make run
+```
 
-## 🎨 记账通知图片功能
+### 3. 配置前端
 
-系统支持自动生成美观的记账通知图片，以电子回单的形式发送给门店管理人员。
+```bash
+cd web-admin
+npm install
+npm run dev
+```
 
-### 功能特点
+默认访问：
 
-- **自动生成** - 记账完成后自动生成图片，无需人工干预
-- **现代设计** - 采用电子回单风格设计，包含：
-  - 门店信息和记账编号
-  - 商品明细列表（支持多商品）
-  - 合计金额和笔数统计
-  - 渠道、操作人和日期信息
-  - "已入账"电子印章
-  - 生成时间戳
-- **对象存储** - 生成的图片自动上传到 RustFS/MinIO
-- **钉钉推送** - 优先发送图片+文字的通知消息
+- 管理端：`http://localhost:5173`
+- 后端 API：`http://localhost:10024`
+- Swagger：`http://localhost:10024/swagger/index.html`
+- Scalar 文档：`http://localhost:10024/docs`
 
-### 技术实现
+`web-admin/vite.config.ts` 默认把 `/api` 代理到线上地址。需要本地联调时，将代理目标改为：
 
-- 使用 [gg](https://github.com/fogleman/gg) 图形库进行图片绘制
-- 支持中文字体渲染（Windows/Unix 系统自动适配）
-- 高质量 PNG 输出（2倍分辨率）
-- 自动适配商品数量，动态计算图片高度
+```ts
+target: "http://localhost:10024";
+```
 
----
+## 常用命令
 
-**最后更新**: 2025-12-12
+```bash
+# 后端开发启动，先生成 Swagger
+make run
+
+# 只生成 Swagger
+make docs
+
+# 构建后端二进制
+make build
+
+# 直接启动后端
+go run cmd/main.go
+
+# 后端测试
+go test ./...
+
+# 前端开发
+cd web-admin && npm run dev
+
+# 前端构建
+cd web-admin && npm run build
+```
+
+## 环境变量说明
+
+| 变量                               | 说明                                 | 默认/示例                |
+| ---------------------------------- | ------------------------------------ | ------------------------ |
+| `APP_NAME`                         | 应用名称                             | `tower-go`               |
+| `APP_PORT`                         | API 端口                             | `10024`                  |
+| `DB_DRIVER`                        | 数据库驱动                           | `mysql`                  |
+| `DB_HOST`                          | 数据库地址                           | `127.0.0.1`              |
+| `DB_PORT`                          | 数据库端口                           | `3306`                   |
+| `DB_USERNAME`                      | 数据库用户                           | `root`                   |
+| `DB_PASSWORD`                      | 数据库密码                           | 自行配置                 |
+| `DB_NAME`                          | 数据库名                             | `tower`                  |
+| `REDIS_ENABLED`                    | 是否启用 Redis                       | `true`                   |
+| `REDIS_HOST`                       | Redis 地址                           | `127.0.0.1`              |
+| `REDIS_PORT`                       | Redis 端口                           | `6379`                   |
+| `REDIS_DB`                         | Redis DB 编号                        | `0`                      |
+| `JWT_SECRET`                       | JWT 签名密钥                         | 建议 32 位以上随机字符串 |
+| `SKIP_AUTO_MIGRATE`                | 跳过启动 AutoMigrate                 | `1` 表示跳过             |
+| `SKIP_SEED_DATA`                   | 跳过启动种子数据、默认字典、默认模板 | `1` 表示跳过             |
+| `SWAG_AUTO`                        | 控制启动时自动生成 Swagger           | `0` 表示禁用             |
+| `RUSTFS_ENABLED`                   | 是否启用 RustFS/MinIO                | `true`/`false`           |
+| `RUSTFS_ENDPOINT`                  | S3 兼容服务地址                      | `127.0.0.1:9000`         |
+| `RUSTFS_PUBLIC_BASE_URL`           | 对外访问根地址                       | `https://example.com`    |
+| `RUSTFS_BUCKET`                    | 默认文件 bucket                      | `images`                 |
+| `RUSTFS_NOTIFY_BUCKET`             | 通知图片 bucket                      | `notify`                 |
+| `DINGTALK_CLIENT_ID`               | 钉钉 Stream Client ID                | 可选                     |
+| `DINGTALK_CLIENT_SECRET`           | 钉钉 Stream Client Secret            | 可选                     |
+| `DINGTALK_MENU_REPORT_WEBHOOK_URL` | 钉钉报菜通知 Webhook                 | 可选                     |
+| `XPYUN_USER`                       | 芯烨云账号                           | 可选                     |
+| `XPYUN_USER_KEY`                   | 芯烨云 UserKey                       | 可选                     |
+| `DEEPSEEK_API_KEY`                 | 美团 AI 建议使用的模型密钥           | 可选                     |
+
+更多性能相关变量见 `.env.example` 和 `config/performance.go`。
+
+## API 模块
+
+后端统一前缀为 `/api/v1`，主要模块如下：
+
+| 模块                 | 路由前缀                                                            |
+| -------------------- | ------------------------------------------------------------------- |
+| 认证                 | `/auth`                                                             |
+| 用户                 | `/users`                                                            |
+| 角色                 | `/roles`                                                            |
+| 权限                 | `/permission`                                                       |
+| 门店                 | `/stores`                                                           |
+| 菜单                 | `/menus`                                                            |
+| 字典类型/字典数据    | `/dict-types`、`/dict-data`                                         |
+| 供应商               | `/suppliers`                                                        |
+| 供应商商品/分类/规格 | `/supplier-products`、`/supplier-categories`、`/product-unit-specs` |
+| 门店供应商           | `/store-suppliers`                                                  |
+| 采购订单             | `/purchase-orders`                                                  |
+| 库存                 | `/inventories`、`/inventory-orders`                                 |
+| 库存损耗             | `/inventory-loss-orders`                                            |
+| 门店记账             | `/store-accounts`                                                   |
+| 门店退货             | `/store-returns`                                                    |
+| 会员                 | `/members`、`/wallet-logs`、`/recharge-orders`                      |
+| B2B                  | `/b2b`                                                              |
+| 价格清单             | `/price-lists`                                                      |
+| 统计                 | `/statistics`                                                       |
+| 美团 AI              | `/meituan-ai`                                                       |
+| 钉钉                 | `/dingtalk`                                                         |
+| 消息模板             | `/message-templates`                                                |
+| 打印机               | `/printers`                                                         |
+| 第三方账号/路线      | `/third-party-accounts`、`/third-party-routes`                      |
+| 文件/图库            | `/files`、`/galleries`                                              |
+| 公开供应商档案       | `/public/suppliers`                                                 |
+
+## 前端模块
+
+`web-admin/src/views` 当前包含：
+
+- 登录、个人资料、经营数据大屏
+- 门店列表、供应商、采购、库存、报损、自用、赠送
+- 门店记账、门店退货、会员、B2B、美团 AI
+- 系统用户、角色、菜单、字典、图库、消息模板
+- 钉钉机器人、打印机
+- 第三方账号池、物流路线、导入订单、历史物流单
+- 公开供应商档案页
+
+## 认证与权限
+
+登录接口：
+
+```bash
+curl -X POST http://localhost:10024/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"13000000000","password":"your_password"}'
+```
+
+携带 Token：
+
+```bash
+curl http://localhost:10024/api/v1/users/profile \
+  -H "Authorization: Bearer <token>"
+```
+
+权限由 `middleware.AuthMiddleware()`、`middleware.Permission()` 和 `middleware.StoreBusinessGuard()` 共同控制：
+
+- `AuthMiddleware` 校验 JWT 并写入用户上下文
+- `Permission` 校验菜单/按钮权限编码
+- `StoreBusinessGuard` 保护门店业务数据边界
+
+权限位：
+
+```text
+1  = 删除
+2  = 修改
+4  = 新增
+8  = 查看
+15 = 全部权限
+```
+
+## 数据初始化与迁移
+
+项目启动时会执行以下初始化逻辑：
+
+- 加载 `.env`
+- 初始化数据库连接
+- 初始化 Redis 缓存
+- 根据环境变量决定是否执行 AutoMigrate
+- 执行 SQL 种子、默认字典、默认消息模板
+- 修正超级管理员 `store_id=0` 相关历史数据
+- 初始化事件订阅、会话管理、定时任务、钉钉 Stream 客户端
+
+生产环境建议：
+
+- 使用正式迁移流程管理表结构
+- 设置 `SKIP_AUTO_MIGRATE=1`
+- 设置 `SKIP_SEED_DATA=1`
+- 避免每次启动重复执行初始化数据
+
+## 文件与图片服务
+
+文件服务依赖 RustFS/MinIO。启用后可使用：
+
+- 文件上传：`/api/v1/files`
+- 图库管理：`/api/v1/galleries`
+- 记账通知图片生成与上传
+- 通知图片独立 bucket
+
+未启用 `RUSTFS_ENABLED` 时，相关控制器可能不会被初始化，文件/图库接口不可用。
+
+## 性能配置
+
+性能相关能力集中在：
+
+- `config/performance.go`
+- `pkg/performance/`
+- `pkg/search/`
+- `utils/cache/`
+
+支持的方向包括：
+
+- 数据库连接池参数
+- 慢查询阈值与查询日志
+- 本地缓存、Redis 缓存、缓存锁
+- worker pool 与并发限制
+- 性能指标采集
+- pprof 开关
+
+详细说明可参考：
+
+- `pkg/performance/README.md`
+- `pkg/performance/CACHE_MANAGER_README.md`
+- `pkg/performance/PERFORMANCE_REPORT.md`
+
+## 开发约定
+
+- 新业务接口建议按 `model -> module -> service -> controller -> router/api` 的层次补齐
+- 需要权限控制的接口在路由层显式挂 `middleware.Permission("xxx")`
+- 门店业务接口优先加 `middleware.StoreBusinessGuard()`
+- 公共能力放入 `pkg/`，应用内通用工具放入 `utils/`
+- 新增前端页面时同步菜单、权限编码和动态路由配置
+- 修改 API 后运行 `make docs` 更新 Swagger
+- 涉及表结构时同步维护 `migrations/init.sql` 与必要种子数据
+
+## 部署提示
+
+后端构建：
+
+```bash
+make build
+```
+
+前端构建：
+
+```bash
+cd web-admin
+npm run build
+```
+
+部署时需要确认：
+
+- `.env` 使用生产配置，不提交到版本控制
+- MySQL、Redis、RustFS/MinIO 网络可达
+- `JWT_SECRET`、数据库密码、对象存储密钥、钉钉密钥已替换
+- 前端代理或 Nginx 反向代理正确指向后端 `/api`
+- 生产环境关闭不必要的调试、自动迁移和重复种子写入

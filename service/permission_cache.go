@@ -97,12 +97,34 @@ func InvalidateRolePermissionCache(roleID uint) {
 	}
 
 	_ = cache.CacheDelete(fmt.Sprintf(roleMenuCacheKeyFormat, roleID))
+	_ = cache.CacheDeleteByPattern(fmt.Sprintf("tower:store:role:menus:*:%d", roleID))
 
 	var users []permissionBuildUser
 	if err := database.DB.Table("users").
 		Select("users.id, users.store_id, users.role_id, roles.code as role_code").
 		Joins("left join roles on roles.id = users.role_id").
 		Where("users.role_id = ?", roleID).
+		Find(&users).Error; err != nil {
+		return
+	}
+
+	for _, user := range users {
+		InvalidateUserPermissionCache(user.ID)
+	}
+}
+
+func InvalidateStoreRolePermissionCache(storeID uint, roleID uint) {
+	if storeID == 0 || roleID == 0 || database.DB == nil {
+		return
+	}
+
+	_ = cache.CacheDelete(fmt.Sprintf("%s:%d:%d", cache.CacheKeyStoreRoleMenus, storeID, roleID))
+
+	var users []permissionBuildUser
+	if err := database.DB.Table("users").
+		Select("users.id, users.store_id, users.role_id, roles.code as role_code").
+		Joins("left join roles on roles.id = users.role_id").
+		Where("users.store_id = ? AND users.role_id = ?", storeID, roleID).
 		Find(&users).Error; err != nil {
 		return
 	}

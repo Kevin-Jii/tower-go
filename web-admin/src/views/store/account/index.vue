@@ -720,16 +720,14 @@ function paymentStatusLabel(v: number | undefined): string {
 }
 
 function canEditAccount(row: StoreAccount): boolean {
+  if (Number(row.payment_status || 1) === 1) return false
   const s = String(row.created_at || '').trim()
   if (!s) return false
   const created = new Date(s)
   if (Number.isNaN(created.getTime())) return false
   const now = new Date()
-  return (
-    now.getFullYear() === created.getFullYear() &&
-    now.getMonth() === created.getMonth() &&
-    now.getDate() === created.getDate()
-  )
+  const diff = now.getTime() - created.getTime()
+  return diff >= 0 && diff <= 5 * 24 * 60 * 60 * 1000
 }
 
 function accountRowActions(row: StoreAccount): TableRowAction[] {
@@ -742,7 +740,12 @@ function accountRowActions(row: StoreAccount): TableRowAction[] {
       disabled: !editable,
       onClick: () => openConsumableDlg(row),
     },
-    { label: '编辑', permission: 'store:account:edit', disabled: !editable, onClick: () => openEdit(row) },
+    {
+      label: '编辑',
+      permission: 'store:account:edit',
+      disabled: !editable,
+      onClick: () => openEdit(row),
+    },
   ]
 }
 
@@ -1088,7 +1091,7 @@ const eForm = reactive({
 
 function openEdit(row: StoreAccount): void {
   if (!canEditAccount(row)) {
-    toast.warning('该记录已超过可编辑时间')
+    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单不允许编辑' : '该记录已超过可编辑时间')
     return
   }
   editId.value = row.id
@@ -1252,7 +1255,7 @@ const consumableBindTotal = computed(() =>
 
 async function openConsumableDlg(row: StoreAccount): Promise<void> {
   if (!canEditAccount(row)) {
-    toast.warning('该记录已超过可编辑时间')
+    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单不允许绑定消耗品' : '该记录已超过可编辑时间')
     return
   }
   consumableTarget.value = row

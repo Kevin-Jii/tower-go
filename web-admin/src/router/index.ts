@@ -71,6 +71,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/views/profile/index.vue"),
         meta: { title: "个人资料" },
       },
+      {
+        path: "store/return/form",
+        name: "StoreReturnForm",
+        component: () => import("@/views/store/return/form.vue"),
+        meta: { title: "返厂记录表单", permission: "store:return:add" },
+      },
       // {
       //   path: "store/inventory-loss",
       //   name: "InventoryLossOrders",

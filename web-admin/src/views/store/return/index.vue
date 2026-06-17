@@ -92,52 +92,6 @@
       </div>
     </BaseCard>
 
-    <BaseDialog v-model="formDlg" :title="editingId ? '编辑返厂记录' : '新增返厂记录'" max-width="min(760px, 96vw)">
-      <div class="space-y-3">
-        <BaseFormItem label="返厂日期" required>
-          <a-date-picker v-model="form.return_date" value-format="YYYY-MM-DD" class="w-full" />
-        </BaseFormItem>
-
-        <div class="rounded border border-[var(--color-border-2)] p-3">
-          <div class="mb-3 flex items-center justify-between">
-            <h3 class="m-0 text-sm font-semibold text-slate-900">返厂商品</h3>
-            <BaseButton variant="secondary" size="sm" @click="addLine">添加商品</BaseButton>
-          </div>
-          <div class="return-line-editor">
-            <div class="return-line-editor__head">
-              <span>商品名称</span>
-              <span>数量</span>
-              <span>押金小计</span>
-              <span>操作</span>
-            </div>
-            <div v-for="(line, idx) in form.items" :key="idx" class="return-line-editor__row">
-              <BaseSelect v-model="line.product_id" class="return-line-editor__control" :options="returnProductOptions"
-                placeholder="选择返厂商品" @update:model-value="onLineProductChange(idx)" />
-              <BaseNumberInput v-model="line.quantity" class="return-line-editor__control" :min="0.01" :step="1" />
-              <div class="return-line-editor__subtotal">{{ formatMoney(line.deposit * line.quantity) }}</div>
-              <BaseButton variant="ghost" size="sm" :disabled="form.items.length <= 1" @click="removeLine(idx)">移除
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-
-        <BaseFormItem label="货拉拉费用">
-          <BaseNumberInput v-model="form.logistics_fee" :min="0" :step="0.01" />
-        </BaseFormItem>
-        <div class="return-total-row">
-          <span>押金合计</span>
-          <strong>{{ formatMoney(formTotalDeposit) }}</strong>
-        </div>
-        <BaseFormItem label="整单备注">
-          <BaseTextarea v-model="form.remark" :rows="2" />
-        </BaseFormItem>
-      </div>
-      <template #footer>
-        <BaseButton variant="ghost" @click="formDlg = false">取消</BaseButton>
-        <BaseButton variant="primary" :loading="saving" @click="submitForm">保存</BaseButton>
-      </template>
-    </BaseDialog>
-
     <BaseDialog v-model="productDlg" :title="editingProductId ? '编辑返厂商品' : '新增返厂商品'" max-width="min(520px, 96vw)">
       <div class="space-y-4">
         <BaseFormItem label="商品名称" required>
@@ -186,6 +140,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useRouter } from 'vue-router'
 import {
   BaseButton,
   BaseCard,
@@ -201,7 +156,6 @@ import {
 import type { BaseSelectOption, BaseTableColumn } from '@/components/base/types'
 import {
   createStoreReturnProduct,
-  createStoreReturn,
   deleteStoreReturnProduct,
   deleteStoreReturn,
   getStoreReturn,
@@ -209,22 +163,14 @@ import {
   listStoreReturnProducts,
   listStoreReturns,
   updateStoreReturnProduct,
-  updateStoreReturn,
 } from '@/api/storeReturn'
 import type { StoreReturn, StoreReturnItem, StoreReturnProduct } from '@/api/types'
 import { confirmDialog } from '@/feedback/confirm'
 import { toast } from '@/feedback/toast'
 import { useUserStore } from '@/store/user'
 
-type ReturnLine = {
-  product_id: number | ''
-  product_name?: string
-  quantity: number
-  deposit: number
-  remark: string
-}
-
 const qc = useQueryClient()
+const router = useRouter()
 const userStore = useUserStore()
 const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
 const activeTab = ref<'records' | 'products'>('records')
@@ -271,24 +217,10 @@ const { data: productsPageData, isLoading: productsLoading } = useQuery({
   queryKey: computed(() => ['store-return-products', productQueryParams.value] as const),
   queryFn: () => listStoreReturnProducts(productQueryParams.value),
 })
-const { data: enabledProductsPage } = useQuery({
-  queryKey: computed(() => ['store-return-products-enabled', tenantStoreId.value] as const),
-  queryFn: () => listStoreReturnProducts({ page: 1, page_size: 500, store_id: tenantStoreId.value, status: 1 }),
-})
-
 const rows = computed(() => pageData.value?.list ?? [])
 const total = computed(() => pageData.value?.total ?? 0)
 const productRows = computed(() => productsPageData.value?.list ?? [])
 const productTotal = computed(() => productsPageData.value?.total ?? 0)
-const returnProducts = computed(() => enabledProductsPage.value?.list ?? [])
-const returnProductOptions = computed<BaseSelectOption[]>(() =>
-  returnProducts.value.map((p) => ({ label: `${p.product_name}（${formatMoney(p.deposit)}）`, value: p.id })),
-)
-const returnProductMap = computed(() => {
-  const map = new Map<number, StoreReturnProduct>()
-  for (const product of returnProducts.value) map.set(product.id, product)
-  return map
-})
 const summaryCards = computed(() => {
   const stats = statsData.value
   return [
@@ -330,30 +262,17 @@ const statusOptions: BaseSelectOption[] = [
   { label: '停用', value: 0 },
 ]
 
-const formDlg = ref(false)
 const productDlg = ref(false)
 const detailDlg = ref(false)
-const saving = ref(false)
 const savingProduct = ref(false)
-const editingId = ref<number | null>(null)
 const editingProductId = ref<number | null>(null)
 const detail = ref<StoreReturn | null>(null)
-const form = reactive({
-  client_request_id: '',
-  return_date: today(),
-  logistics_fee: 0,
-  remark: '',
-  items: [] as ReturnLine[],
-})
 const productForm = reactive({
   product_name: '',
   deposit: 0,
   remark: '',
   status: 1,
 })
-const formTotalDeposit = computed(() =>
-  form.items.reduce((sum, x) => sum + Number(x.deposit || 0) * Number(x.quantity || 0), 0),
-)
 
 watch([page, pageSize], () => {
   void qc.invalidateQueries({ queryKey: ['store-returns'] })
@@ -371,105 +290,19 @@ function reloadAll(): void {
 function reloadProducts(): void {
   productPage.value = 1
   void qc.invalidateQueries({ queryKey: ['store-return-products'] })
-  void qc.invalidateQueries({ queryKey: ['store-return-products-enabled'] })
 }
 
 function openCreate(): void {
-  editingId.value = null
-  resetForm()
-  form.client_request_id = createClientRequestId()
-  formDlg.value = true
+  void router.push('/store/return/form')
 }
 
 function openEdit(row: StoreReturn): void {
-  editingId.value = row.id
-  form.client_request_id = row.client_request_id || ''
-  form.return_date = normalizeDate(row.return_date)
-  form.logistics_fee = Number(row.logistics_fee || 0)
-  form.remark = row.remark || ''
-  form.items = (row.items?.length ? row.items : [{ product_id: 0, product_name: '', quantity: 1, deposit: 0, remark: '' }]).map((x) => ({
-    product_id: x.product_id || '',
-    product_name: x.product_name || '',
-    quantity: Number(x.quantity || 1),
-    deposit: Number(x.deposit || 0),
-    remark: x.remark || '',
-  }))
-  formDlg.value = true
+  void router.push({ path: '/store/return/form', query: { id: row.id } })
 }
 
 async function openDetail(row: StoreReturn): Promise<void> {
   detail.value = await getStoreReturn(row.id)
   detailDlg.value = true
-}
-
-function addLine(): void {
-  form.items.push({ product_id: '', product_name: '', quantity: 1, deposit: 0, remark: '' })
-}
-
-function removeLine(idx: number): void {
-  if (form.items.length <= 1) return
-  form.items.splice(idx, 1)
-}
-
-async function submitForm(): Promise<void> {
-  if (saving.value) return
-  const items = form.items
-    .map((x) => ({
-      product_id: Number(x.product_id || 0),
-      product_name: x.product_name?.trim() || '',
-      quantity: Number(x.quantity || 0),
-      deposit: Number(x.deposit || 0),
-      remark: x.remark.trim(),
-    }))
-    .filter((x) => x.product_id > 0)
-  if (!form.return_date) {
-    toast.error('请选择返厂日期')
-    return
-  }
-  if (!items.length) {
-    toast.error('请至少选择一个返厂商品')
-    return
-  }
-  if (items.some((x) => x.quantity <= 0)) {
-    toast.error('返厂商品数量必须大于0')
-    return
-  }
-
-  saving.value = true
-  try {
-    const body = {
-      store_id: tenantStoreId.value,
-      client_request_id: form.client_request_id || undefined,
-      return_date: form.return_date,
-      logistics_fee: Number(form.logistics_fee || 0),
-      remark: form.remark.trim(),
-      items,
-    }
-    if (editingId.value) {
-      await updateStoreReturn(editingId.value, body)
-      toast.success('返厂记录已更新')
-    } else {
-      await createStoreReturn(body)
-      toast.success('返厂记录已创建')
-    }
-    formDlg.value = false
-    reloadAll()
-  } finally {
-    saving.value = false
-  }
-}
-
-function onLineProductChange(idx: number): void {
-  const line = form.items[idx]
-  const productID = Number(line.product_id || 0)
-  const product = returnProductMap.value.get(productID)
-  if (!product) {
-    line.product_name = ''
-    line.deposit = 0
-    return
-  }
-  line.product_name = product.product_name
-  line.deposit = Number(product.deposit || 0)
 }
 
 function openProductCreate(): void {
@@ -538,38 +371,12 @@ async function onDelete(row: StoreReturn): Promise<void> {
   reloadAll()
 }
 
-function resetForm(): void {
-  form.client_request_id = ''
-  form.return_date = today()
-  form.logistics_fee = 0
-  form.remark = ''
-  form.items = [{ product_id: '', product_name: '', quantity: 1, deposit: 0, remark: '' }]
-}
-
 function tabClass(tab: 'records' | 'products'): string {
   const active = activeTab.value === tab
   return [
     'border-b-2 px-3 py-2 text-sm font-medium transition',
     active ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800',
   ].join(' ')
-}
-
-function today(): string {
-  const d = new Date()
-  const m = `${d.getMonth() + 1}`.padStart(2, '0')
-  const day = `${d.getDate()}`.padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
-}
-
-function createClientRequestId(): string {
-  const cryptoObj = globalThis.crypto
-  if (cryptoObj?.randomUUID) return cryptoObj.randomUUID()
-  return `sr_${Date.now()}_${Math.random().toString(16).slice(2)}`
-}
-
-function normalizeDate(value?: string): string {
-  if (!value) return today()
-  return value.slice(0, 10)
 }
 
 function formatDate(value?: string): string {
@@ -598,62 +405,3 @@ function formatMoney(value?: number): string {
   return `¥${Number(value || 0).toFixed(2)}`
 }
 </script>
-
-<style scoped>
-.return-line-editor {
-  display: grid;
-  gap: 8px;
-  overflow-x: auto;
-}
-
-.return-line-editor__head,
-.return-line-editor__row {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(90px, 0.35fr) minmax(120px, 0.45fr) 72px;
-  gap: 8px;
-  align-items: center;
-  min-width: 560px;
-}
-
-.return-line-editor__head {
-  color: var(--color-text-3);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.return-line-editor__control {
-  min-width: 0;
-}
-
-.return-line-editor__subtotal {
-  min-height: 32px;
-  border-radius: 4px;
-  background: #f8fafc;
-  padding: 6px 10px;
-  text-align: right;
-  font-weight: 600;
-  color: #334155;
-}
-
-.return-total-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 6px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  padding: 10px 12px;
-}
-
-.return-total-row span {
-  font-size: 14px;
-  font-weight: 600;
-  color: #991b1b;
-}
-
-.return-total-row strong {
-  font-size: 22px;
-  line-height: 1;
-  color: #dc2626;
-}
-</style>

@@ -114,7 +114,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新记账
-// @Description 更新记账信息，仅允许录入当天修改
+// @Description 更新记账信息，允许订单创建后5天内修改
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -130,6 +130,11 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 		return
 	}
 
+	var req model.UpdateStoreAccountReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+
 	// 获取记账记录
 	account, err := c.storeAccountService.Get(uint(id))
 	if err != nil {
@@ -137,13 +142,8 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 		return
 	}
 
-	if !c.storeAccountService.IsAccountEditable(account) {
+	if !c.storeAccountService.CanUpdateAccount(account, &req) {
 		http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
-		return
-	}
-
-	var req model.UpdateStoreAccountReq
-	if !http.BindJSON(ctx, &req) {
 		return
 	}
 
@@ -188,7 +188,7 @@ func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
 		http.ErrorApp(ctx, apicode.StoreAccountGone)
 		return
 	}
-	if !c.storeAccountService.IsAccountEditable(account) {
+	if !c.storeAccountService.IsAccountWithinFiveDays(account) {
 		http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
 		return
 	}

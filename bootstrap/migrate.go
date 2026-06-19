@@ -55,6 +55,8 @@ var autoMigrateModels = []interface{}{
 	&model.Member{},
 	&model.WalletLog{},
 	&model.RechargeOrder{},
+	&model.MemberWineStorage{},
+	&model.MemberWineTransaction{},
 	&model.B2BCustomer{},
 	&model.B2BCustomerProductPrice{},
 	&model.B2BSupplyOrder{},

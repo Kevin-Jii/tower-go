@@ -186,3 +186,77 @@ type MemberConsumptionSummary struct {
 	ConsumableAmount   float64 `json:"consumable_amount"`
 	NetIncomeAmount    float64 `json:"net_income_amount"`
 }
+
+const (
+	MemberWineTxnDeposit  = 1 // 存入
+	MemberWineTxnWithdraw = 2 // 取出
+)
+
+// MemberWineStorage 会员存酒当前存量
+type MemberWineStorage struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	StoreID   uint      `json:"store_id" gorm:"not null;index;uniqueIndex:idx_member_wine_storage_unique,priority:1;comment:门店ID"`
+	MemberID  uint      `json:"member_id" gorm:"not null;index;uniqueIndex:idx_member_wine_storage_unique,priority:2;comment:会员ID"`
+	Member    *Member   `json:"member,omitempty" gorm:"foreignKey:MemberID"`
+	WineName  string    `json:"wine_name" gorm:"type:varchar(120);not null;uniqueIndex:idx_member_wine_storage_unique,priority:3;comment:酒品名称"`
+	Unit      string    `json:"unit" gorm:"type:varchar(20);not null;default:'瓶';uniqueIndex:idx_member_wine_storage_unique,priority:4;comment:单位"`
+	Quantity  float64   `json:"quantity" gorm:"type:decimal(12,2);not null;default:0;comment:当前数量"`
+	Remark    string    `json:"remark" gorm:"type:varchar(500);comment:备注"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (MemberWineStorage) TableName() string {
+	return "member_wine_storages"
+}
+
+// MemberWineTransaction 会员存取酒流水
+type MemberWineTransaction struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	StoreID      uint      `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	StorageID    uint      `json:"storage_id" gorm:"not null;index;comment:存酒记录ID"`
+	MemberID     uint      `json:"member_id" gorm:"not null;index;comment:会员ID"`
+	Member       *Member   `json:"member,omitempty" gorm:"foreignKey:MemberID"`
+	Type         int       `json:"type" gorm:"not null;index;comment:类型 1=存入 2=取出"`
+	WineName     string    `json:"wine_name" gorm:"type:varchar(120);not null;comment:酒品名称"`
+	Unit         string    `json:"unit" gorm:"type:varchar(20);not null;default:'瓶';comment:单位"`
+	Quantity     float64   `json:"quantity" gorm:"type:decimal(12,2);not null;comment:本次数量"`
+	BalanceAfter float64   `json:"balance_after" gorm:"type:decimal(12,2);not null;default:0;comment:操作后数量"`
+	Remark       string    `json:"remark" gorm:"type:varchar(500);comment:备注"`
+	OperatorID   uint      `json:"operator_id" gorm:"index;comment:操作人ID"`
+	OperatorName string    `json:"operator_name" gorm:"type:varchar(100);comment:操作人"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+func (MemberWineTransaction) TableName() string {
+	return "member_wine_transactions"
+}
+
+type ListMemberWineStorageReq struct {
+	StoreID   uint   `form:"store_id"`
+	MemberID  uint   `form:"member_id"`
+	Keyword   string `form:"keyword"`
+	Page      int    `form:"page"`
+	PageSize  int    `form:"page_size"`
+	OnlyStock int    `form:"only_stock"`
+}
+
+type MemberWineAdjustReq struct {
+	MemberID uint    `json:"member_id" binding:"required"`
+	WineName string  `json:"wine_name" binding:"required,max=120"`
+	Unit     string  `json:"unit" binding:"max=20"`
+	Quantity float64 `json:"quantity" binding:"required,gt=0"`
+	Remark   string  `json:"remark" binding:"max=500"`
+}
+
+type ListMemberWineTransactionReq struct {
+	StoreID   uint   `form:"store_id"`
+	StorageID uint   `form:"storage_id"`
+	MemberID  uint   `form:"member_id"`
+	Type      int    `form:"type"`
+	Keyword   string `form:"keyword"`
+	StartDate string `form:"start_date"`
+	EndDate   string `form:"end_date"`
+	Page      int    `form:"page"`
+	PageSize  int    `form:"page_size"`
+}

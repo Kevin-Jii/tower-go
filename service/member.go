@@ -77,6 +77,39 @@ func (s *MemberService) ListMembers(keyword string, page, pageSize int, storeID 
 	return s.module.ListMembers(keyword, page, pageSize, storeID, isAdmin)
 }
 
+func (s *MemberService) ListWineStorages(req *model.ListMemberWineStorageReq, storeID uint, isAdmin bool) ([]model.MemberWineStorage, int64, error) {
+	return s.module.ListWineStorages(req, storeID, isAdmin)
+}
+
+func (s *MemberService) DepositWine(storeID, userID uint, isAdmin bool, req *model.MemberWineAdjustReq) (*model.MemberWineStorage, error) {
+	return s.module.AdjustWineStorage(storeID, userID, s.operatorName(userID), isAdmin, model.MemberWineTxnDeposit, req)
+}
+
+func (s *MemberService) WithdrawWine(storeID, userID uint, isAdmin bool, req *model.MemberWineAdjustReq) (*model.MemberWineStorage, error) {
+	return s.module.AdjustWineStorage(storeID, userID, s.operatorName(userID), isAdmin, model.MemberWineTxnWithdraw, req)
+}
+
+func (s *MemberService) ListWineTransactions(req *model.ListMemberWineTransactionReq, storeID uint, isAdmin bool) ([]model.MemberWineTransaction, int64, error) {
+	return s.module.ListWineTransactions(req, storeID, isAdmin)
+}
+
+func (s *MemberService) operatorName(userID uint) string {
+	if s.userModule != nil && userID > 0 {
+		if user, err := s.userModule.GetByID(userID); err == nil && user != nil {
+			if user.Nickname != "" {
+				return user.Nickname
+			}
+			if user.Username != "" {
+				return user.Username
+			}
+			if user.Phone != "" {
+				return user.Phone
+			}
+		}
+	}
+	return "未知"
+}
+
 // AdjustBalance 调整余额
 func (s *MemberService) AdjustBalance(id uint, amount model.DecimalType, changeType model.ChangeTypeEnum, remark string, version int, storeID, userID uint, isAdmin bool) (*model.Member, error) {
 	member, err := s.module.AdjustBalanceWithLock(id, amount, changeType, remark, version, storeID, isAdmin)

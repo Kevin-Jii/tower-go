@@ -276,6 +276,22 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @store_member_id, 'store-member-balance', '调整余额', '', '', '', 3, 4, 'store:member:balance', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_member_id AND name='store-member-balance' AND type=3);
 
+-- 会员存酒
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'store-member-wine', '会员存酒', 'UserGroup', '/store/member-wine', 'store/member-wine/index', 2, 8, 'store:member:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='store-member-wine' AND type=2);
+SET @store_member_wine_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='store-member-wine' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_member_wine_id, 'store-member-wine-deposit', '会员存酒', '', '', '', 3, 1, 'store:member:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_member_wine_id AND name='store-member-wine-deposit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_member_wine_id, 'store-member-wine-withdraw', '会员取酒', '', '', '', 3, 2, 'store:member:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_member_wine_id AND name='store-member-wine-withdraw' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_member_wine_id, 'store-member-wine-transactions', '存取流水', '', '', '', 3, 3, 'store:member:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_member_wine_id AND name='store-member-wine-transactions' AND type=3);
+
 -- B2B 供货业务
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @store_id, 'b2b-supply', 'B2B供货', 'apps', '', '', 1, 8, '', 1, 1, NOW(), NOW()
@@ -572,7 +588,11 @@ ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员赋予会员管理权限
 INSERT INTO role_menus (role_id, menu_id, permissions)
-SELECT 2, id, 15 FROM menus WHERE name IN ('store-member', 'store-member-add', 'store-member-edit', 'store-member-delete', 'store-member-balance')
+SELECT 2, id, 15 FROM menus
+WHERE name IN (
+  'store-member', 'store-member-add', 'store-member-edit', 'store-member-delete', 'store-member-balance',
+  'store-member-wine', 'store-member-wine-deposit', 'store-member-wine-withdraw', 'store-member-wine-transactions'
+)
 ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员：数据统计、价目单

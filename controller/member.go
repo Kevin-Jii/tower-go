@@ -160,6 +160,76 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 	http.SuccessWithPagination(ctx, members, total, page, pageSize)
 }
 
+// ListWineStorages 查询会员存酒
+func (c *MemberController) ListWineStorages(ctx *gin.Context) {
+	var req model.ListMemberWineStorageReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	req.Page = http.GetPage(ctx)
+	req.PageSize = http.GetPageSize(ctx)
+
+	storeID := middleware.GetStoreID(ctx)
+	list, total, err := c.service.ListWineStorages(&req, storeID, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+// DepositWine 会员存酒
+func (c *MemberController) DepositWine(ctx *gin.Context) {
+	var req model.MemberWineAdjustReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	storeID := middleware.GetStoreID(ctx)
+	row, err := c.service.DepositWine(storeID, middleware.GetUserID(ctx), middleware.HQUnboundAdmin(ctx), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, row)
+}
+
+// WithdrawWine 会员取酒
+func (c *MemberController) WithdrawWine(ctx *gin.Context) {
+	var req model.MemberWineAdjustReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	storeID := middleware.GetStoreID(ctx)
+	row, err := c.service.WithdrawWine(storeID, middleware.GetUserID(ctx), middleware.HQUnboundAdmin(ctx), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, row)
+}
+
+// ListWineTransactions 查询会员存取酒流水
+func (c *MemberController) ListWineTransactions(ctx *gin.Context) {
+	var req model.ListMemberWineTransactionReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	req.Page = http.GetPage(ctx)
+	req.PageSize = http.GetPageSize(ctx)
+
+	storeID := middleware.GetStoreID(ctx)
+	list, total, err := c.service.ListWineTransactions(&req, storeID, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
 // AdjustBalance 调整余额
 // @Summary 调整会员余额
 // @Description 使用乐观锁调整会员余额（仅管理员可操作）

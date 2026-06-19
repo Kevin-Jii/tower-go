@@ -802,6 +802,47 @@ CREATE TABLE IF NOT EXISTS `t_recharge_order` (
   KEY `idx_member_id` (`member_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='充值单表';
 
+-- 会员存酒当前存量
+CREATE TABLE IF NOT EXISTS `member_wine_storages` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+  `member_id` BIGINT UNSIGNED NOT NULL COMMENT '会员ID',
+  `wine_name` VARCHAR(120) NOT NULL COMMENT '酒品名称',
+  `unit` VARCHAR(20) NOT NULL DEFAULT '瓶' COMMENT '单位',
+  `quantity` DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '当前数量',
+  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_member_wine_storage_unique` (`store_id`, `member_id`, `wine_name`, `unit`),
+  KEY `idx_member_wine_storages_store_id` (`store_id`),
+  KEY `idx_member_wine_storages_member_id` (`member_id`),
+  KEY `idx_member_wine_storages_updated_at` (`updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员存酒当前存量';
+
+-- 会员存取酒流水
+CREATE TABLE IF NOT EXISTS `member_wine_transactions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `store_id` BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+  `storage_id` BIGINT UNSIGNED NOT NULL COMMENT '存酒记录ID',
+  `member_id` BIGINT UNSIGNED NOT NULL COMMENT '会员ID',
+  `type` INT NOT NULL COMMENT '类型 1=存入 2=取出',
+  `wine_name` VARCHAR(120) NOT NULL COMMENT '酒品名称',
+  `unit` VARCHAR(20) NOT NULL DEFAULT '瓶' COMMENT '单位',
+  `quantity` DECIMAL(12,2) NOT NULL COMMENT '本次数量',
+  `balance_after` DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '操作后数量',
+  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
+  `operator_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '操作人ID',
+  `operator_name` VARCHAR(100) DEFAULT NULL COMMENT '操作人',
+  `created_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_member_wine_transactions_store_id` (`store_id`),
+  KEY `idx_member_wine_transactions_storage_id` (`storage_id`),
+  KEY `idx_member_wine_transactions_member_id` (`member_id`),
+  KEY `idx_member_wine_transactions_type` (`type`),
+  KEY `idx_member_wine_transactions_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员存取酒流水';
+
 -- ============================================
 -- 2b. 列补丁与补充表（幂等，兼容历史库升级）
 -- ============================================

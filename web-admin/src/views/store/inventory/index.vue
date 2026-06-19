@@ -110,6 +110,9 @@
             <template #cell-type="{ row }">
               {{ (row as InventoryOrder).type === 1 ? '入库' : '出库' }}
             </template>
+            <template #cell-created_at="{ row }">
+              {{ formatDateTime((row as InventoryOrder).created_at) }}
+            </template>
             <template #cell-actions="{ row }">
               <div class="flex flex-nowrap items-center justify-end gap-3 whitespace-nowrap shrink-0" @click.stop>
                 <BaseButton variant="link" size="sm" @click="openOrderDetail(row as InventoryOrder)">详情</BaseButton>
@@ -175,9 +178,68 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="detailDlg" title="出入库单详情" max-width="min(560px, 96vw)">
-      <pre v-if="orderDetailJson" class="text-xs overflow-auto max-h-[60vh] m-0 p-3 rounded bg-[var(--color-fill-2)]">{{
-        orderDetailJson }}</pre>
+    <BaseDialog v-model="detailDlg" title="出入库单详情" max-width="min(760px, 96vw)">
+      <div v-if="orderDetail" class="inventory-order-sheet">
+        <div class="sheet-head">
+          <div>
+            <p class="sheet-kicker">{{ orderDetail.type === 1 ? '入库单' : '出库单' }}</p>
+            <h3>{{ orderDetail.order_no }}</h3>
+          </div>
+          <span :class="['sheet-type', orderDetail.type === 1 ? 'sheet-type-in' : 'sheet-type-out']">
+            {{ orderDetail.type === 1 ? '入库' : '出库' }}
+          </span>
+        </div>
+
+        <div class="sheet-meta">
+          <div>
+            <span>门店</span>
+            <strong>{{ orderDetail.store_name || '-' }}</strong>
+          </div>
+          <div>
+            <span>原因</span>
+            <strong>{{ orderDetail.reason || '-' }}</strong>
+          </div>
+          <div>
+            <span>操作人</span>
+            <strong>{{ orderDetail.operator_name || '-' }}</strong>
+          </div>
+          <div>
+            <span>时间</span>
+            <strong>{{ formatDateTime(orderDetail.created_at) }}</strong>
+          </div>
+          <div>
+            <span>总数量</span>
+            <strong>{{ formatQty(Number(orderDetail.total_quantity || 0)) }}</strong>
+          </div>
+          <div>
+            <span>明细数</span>
+            <strong>{{ orderDetail.item_count || orderDetail.items?.length || 0 }}</strong>
+          </div>
+        </div>
+
+        <div class="sheet-items">
+          <div class="sheet-row sheet-row-head">
+            <span>商品</span>
+            <span>数量</span>
+            <span>生产日期</span>
+            <span>到期日期</span>
+            <span>备注</span>
+          </div>
+          <div v-for="item in orderDetail.items || []" :key="item.id" class="sheet-row">
+            <span class="font-medium text-slate-800">{{ item.product_name || `商品#${item.product_id}` }}</span>
+            <span>{{ formatQty(Number(item.quantity || 0)) }} {{ item.unit }}</span>
+            <span>{{ formatDate(item.production_date) }}</span>
+            <span>{{ formatDate(item.expiry_date) }}</span>
+            <span>{{ item.remark || '-' }}</span>
+          </div>
+          <div v-if="!orderDetail.items?.length" class="sheet-empty">暂无商品明细</div>
+        </div>
+
+        <div class="sheet-remark">
+          <span>备注</span>
+          <p>{{ orderDetail.remark || '无' }}</p>
+        </div>
+      </div>
       <template #footer>
         <BaseButton variant="ghost" @click="detailDlg = false">关闭</BaseButton>
       </template>
@@ -331,6 +393,16 @@ interface StockCardItem {
 function formatQty(v: number): string {
   if (Number.isInteger(v)) return String(v)
   return String(Number(v.toFixed(2)))
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return '-'
+  return value.replace('T', ' ').replace(/\.\d+.*$/, '').replace(/\+\d{2}:\d{2}$/, '')
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return '-'
+  return value.slice(0, 10)
 }
 
 function unitLabelByCode(code: string | undefined): string {
@@ -661,12 +733,12 @@ async function submitOrder(): Promise<void> {
 }
 
 const detailDlg = ref(false)
-const orderDetailJson = ref('')
+const orderDetail = ref<InventoryOrder | null>(null)
 
 async function openOrderDetail(row: InventoryOrder): Promise<void> {
   try {
     const full = await getInventoryOrder(row.id)
-    orderDetailJson.value = JSON.stringify(full, null, 2)
+    orderDetail.value = full
     detailDlg.value = true
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '加载失败')
@@ -687,5 +759,138 @@ async function openOrderDetail(row: InventoryOrder): Promise<void> {
   border-left-width: 4px;
   border-left-style: solid;
   border-left-color: #ef4444;
+}
+
+.inventory-order-sheet {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 18px;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 14px;
+}
+
+.sheet-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.sheet-head h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sheet-type {
+  display: inline-flex;
+  min-width: 56px;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sheet-type-in {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.sheet-type-out {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.sheet-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.sheet-meta div {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.sheet-meta span,
+.sheet-remark span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.sheet-meta strong {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.sheet-items {
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.sheet-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) 100px 120px 120px minmax(120px, 1fr);
+  min-width: 680px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sheet-row:first-child {
+  border-top: 0;
+}
+
+.sheet-row span {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.sheet-row-head {
+  background: #f8fafc;
+}
+
+.sheet-row-head span {
+  font-weight: 600;
+  color: #334155;
+}
+
+.sheet-empty {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.sheet-remark {
+  margin-top: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.sheet-remark p {
+  margin: 0;
+  color: #334155;
+}
+
+@media (max-width: 640px) {
+  .sheet-meta {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -4,6 +4,7 @@
     :options="arcoOptions"
     :placeholder="placeholder"
     :disabled="disabled"
+    :allow-search="searchable"
     allow-clear
     @update:model-value="emit('update:modelValue', $event as string | number | undefined)"
   />
@@ -19,8 +20,9 @@ const props = withDefaults(
     options: BaseSelectOption[]
     placeholder?: string
     disabled?: boolean
+    searchable?: boolean
   }>(),
-  { disabled: false },
+  { disabled: false, searchable: false },
 )
 
 const emit = defineEmits<{ 'update:modelValue': [string | number | undefined] }>()

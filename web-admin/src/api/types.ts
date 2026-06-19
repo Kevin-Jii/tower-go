@@ -545,6 +545,21 @@ export interface InventoryOrder {
   item_count?: number
   operator_name?: string
   created_at?: string
+  updated_at?: string
+  items?: InventoryOrderItem[]
+}
+
+export interface InventoryOrderItem {
+  id: number
+  order_id?: number
+  product_id: number
+  product_name?: string
+  quantity: number
+  unit: string
+  production_date?: string | null
+  expiry_date?: string | null
+  remark?: string
+  created_at?: string
 }
 
 export type InventoryLossType = 'loss' | 'self_use' | 'gift'
@@ -678,6 +693,36 @@ export interface MemberRow {
   level: number
   version: number
   createTime?: string
+}
+
+export interface MemberWineStorage {
+  id: number
+  store_id: number
+  member_id: number
+  member?: MemberRow
+  wine_name: string
+  unit: string
+  quantity: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface MemberWineTransaction {
+  id: number
+  store_id: number
+  storage_id: number
+  member_id: number
+  member?: MemberRow
+  type: 1 | 2 | number
+  wine_name: string
+  unit: string
+  quantity: number
+  balance_after: number
+  remark?: string
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
 }
 
 export interface MemberConsumptionRecord {

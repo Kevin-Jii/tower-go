@@ -36,4 +36,13 @@ func RegisterMemberRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		rechargeOrders.POST("/pay", middleware.Permission("store:member:balance"), c.Member.PayRechargeOrder)
 		rechargeOrders.POST("/:orderNo/cancel", middleware.Permission("store:member:edit"), c.Member.CancelRechargeOrder)
 	}
+
+	memberWines := v1.Group("/member-wines")
+	memberWines.Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
+	{
+		memberWines.GET("", middleware.Permission("store:member:list"), c.Member.ListWineStorages)
+		memberWines.POST("/deposit", middleware.Permission("store:member:edit"), c.Member.DepositWine)
+		memberWines.POST("/withdraw", middleware.Permission("store:member:edit"), c.Member.WithdrawWine)
+		memberWines.GET("/transactions", middleware.Permission("store:member:list"), c.Member.ListWineTransactions)
+	}
 }

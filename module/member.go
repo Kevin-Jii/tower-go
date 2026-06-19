@@ -2,6 +2,8 @@ package module
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -47,6 +49,22 @@ func (m *MemberModule) scopedRechargeOrderQuery(storeID uint, isAdmin bool) *gor
 	q := m.db.Model(&model.RechargeOrder{}).Joins("JOIN t_member ON t_member.id = t_recharge_order.member_id")
 	if !isAdmin {
 		q = q.Where("t_member.store_id = ?", storeID)
+	}
+	return q
+}
+
+func (m *MemberModule) scopedWineStorageQuery(storeID uint, isAdmin bool) *gorm.DB {
+	q := m.db.Model(&model.MemberWineStorage{}).Preload("Member")
+	if !isAdmin {
+		q = q.Where("member_wine_storages.store_id = ?", storeID)
+	}
+	return q
+}
+
+func (m *MemberModule) scopedWineTransactionQuery(storeID uint, isAdmin bool) *gorm.DB {
+	q := m.db.Model(&model.MemberWineTransaction{}).Preload("Member")
+	if !isAdmin {
+		q = q.Where("member_wine_transactions.store_id = ?", storeID)
 	}
 	return q
 }
@@ -172,6 +190,193 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID u
 		return nil, 0, err
 	}
 	return members, total, nil
+}
+
+// ListWineStorages 查询会员存酒当前存量
+func (m *MemberModule) ListWineStorages(req *model.ListMemberWineStorageReq, storeID uint, isAdmin bool) ([]model.MemberWineStorage, int64, error) {
+	rows := make([]model.MemberWineStorage, 0)
+	var total int64
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	query := m.scopedWineStorageQuery(storeID, isAdmin)
+	if req.StoreID > 0 && isAdmin {
+		query = query.Where("member_wine_storages.store_id = ?", req.StoreID)
+	}
+	if req.MemberID > 0 {
+		query = query.Where("member_wine_storages.member_id = ?", req.MemberID)
+	}
+	if req.OnlyStock == 1 {
+		query = query.Where("member_wine_storages.quantity > 0")
+	}
+	if kw := strings.TrimSpace(req.Keyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Joins("LEFT JOIN t_member AS member_search ON member_search.id = member_wine_storages.member_id").
+			Where("member_wine_storages.wine_name LIKE ? OR member_search.phone LIKE ? OR member_search.name LIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("member_wine_storages.updated_at DESC, member_wine_storages.id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+	return rows, total, nil
+}
+
+// AdjustWineStorage 存入或取出会员存酒
+func (m *MemberModule) AdjustWineStorage(storeID, operatorID uint, operatorName string, isAdmin bool, txnType int, req *model.MemberWineAdjustReq) (*model.MemberWineStorage, error) {
+	if req == nil {
+		return nil, errors.New("请求不能为空")
+	}
+	wineName := strings.TrimSpace(req.WineName)
+	if wineName == "" {
+		return nil, errors.New("请填写酒品名称")
+	}
+	unit := strings.TrimSpace(req.Unit)
+	if unit == "" {
+		unit = "瓶"
+	}
+	if req.Quantity <= 0 {
+		return nil, errors.New("数量必须大于0")
+	}
+	member, err := m.GetMember(req.MemberID, storeID, isAdmin)
+	if err != nil {
+		return nil, errors.New("会员不存在")
+	}
+	if !isAdmin && member.StoreID != storeID {
+		return nil, errors.New("会员不属于当前门店")
+	}
+	realStoreID := member.StoreID
+	if realStoreID == 0 {
+		realStoreID = storeID
+	}
+
+	var storage model.MemberWineStorage
+	if err := m.db.Transaction(func(tx *gorm.DB) error {
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("store_id = ? AND member_id = ? AND wine_name = ? AND unit = ?", realStoreID, req.MemberID, wineName, unit).
+			First(&storage).Error
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			if txnType == model.MemberWineTxnWithdraw {
+				return errors.New("该会员暂无此酒品存量")
+			}
+			storage = model.MemberWineStorage{
+				StoreID:  realStoreID,
+				MemberID: req.MemberID,
+				WineName: wineName,
+				Unit:     unit,
+				Quantity: 0,
+				Remark:   strings.TrimSpace(req.Remark),
+			}
+			if err := tx.Create(&storage).Error; err != nil {
+				return err
+			}
+		}
+
+		nextQty := storage.Quantity
+		switch txnType {
+		case model.MemberWineTxnDeposit:
+			nextQty += req.Quantity
+		case model.MemberWineTxnWithdraw:
+			if storage.Quantity < req.Quantity {
+				return fmt.Errorf("存酒数量不足，当前剩余 %.2f%s", storage.Quantity, storage.Unit)
+			}
+			nextQty -= req.Quantity
+		default:
+			return errors.New("不支持的存酒操作类型")
+		}
+
+		if err := tx.Model(&storage).Updates(map[string]interface{}{
+			"quantity": nextQty,
+			"remark":   strings.TrimSpace(req.Remark),
+		}).Error; err != nil {
+			return err
+		}
+		storage.Quantity = nextQty
+		storage.Remark = strings.TrimSpace(req.Remark)
+		txn := &model.MemberWineTransaction{
+			StoreID:      realStoreID,
+			StorageID:    storage.ID,
+			MemberID:     req.MemberID,
+			Type:         txnType,
+			WineName:     wineName,
+			Unit:         unit,
+			Quantity:     req.Quantity,
+			BalanceAfter: nextQty,
+			Remark:       strings.TrimSpace(req.Remark),
+			OperatorID:   operatorID,
+			OperatorName: operatorName,
+		}
+		return tx.Create(txn).Error
+	}); err != nil {
+		return nil, err
+	}
+
+	return m.GetWineStorage(storage.ID, storeID, isAdmin)
+}
+
+func (m *MemberModule) GetWineStorage(id uint, storeID uint, isAdmin bool) (*model.MemberWineStorage, error) {
+	var row model.MemberWineStorage
+	query := m.scopedWineStorageQuery(storeID, isAdmin)
+	if err := query.Where("member_wine_storages.id = ?", id).First(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+// ListWineTransactions 查询存取酒流水
+func (m *MemberModule) ListWineTransactions(req *model.ListMemberWineTransactionReq, storeID uint, isAdmin bool) ([]model.MemberWineTransaction, int64, error) {
+	rows := make([]model.MemberWineTransaction, 0)
+	var total int64
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	query := m.scopedWineTransactionQuery(storeID, isAdmin)
+	if req.StoreID > 0 && isAdmin {
+		query = query.Where("member_wine_transactions.store_id = ?", req.StoreID)
+	}
+	if req.StorageID > 0 {
+		query = query.Where("member_wine_transactions.storage_id = ?", req.StorageID)
+	}
+	if req.MemberID > 0 {
+		query = query.Where("member_wine_transactions.member_id = ?", req.MemberID)
+	}
+	if req.Type > 0 {
+		query = query.Where("member_wine_transactions.type = ?", req.Type)
+	}
+	if req.StartDate != "" {
+		query = query.Where("DATE(member_wine_transactions.created_at) >= ?", req.StartDate)
+	}
+	if req.EndDate != "" {
+		query = query.Where("DATE(member_wine_transactions.created_at) <= ?", req.EndDate)
+	}
+	if kw := strings.TrimSpace(req.Keyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Joins("LEFT JOIN t_member AS member_search ON member_search.id = member_wine_transactions.member_id").
+			Where("member_wine_transactions.wine_name LIKE ? OR member_search.phone LIKE ? OR member_search.name LIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("member_wine_transactions.created_at DESC, member_wine_transactions.id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+	return rows, total, nil
 }
 
 // AdjustBalanceWithLock 乐观锁调整余额

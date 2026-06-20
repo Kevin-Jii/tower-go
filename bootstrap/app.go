@@ -39,6 +39,7 @@ func Run() {
 	logging.LogInfo("会话管理初始化完成")
 
 	r := gin.Default()
+	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RequestLoggerMiddleware(4096))
 	r.Use(middleware.AuditLogMiddleware(4096))
 

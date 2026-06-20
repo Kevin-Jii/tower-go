@@ -44,6 +44,10 @@ func AuditLogMiddleware(maxBody int) gin.HandlerFunc {
 }
 
 func shouldAuditRequest(c *gin.Context) bool {
+	if c.Request.Method == http.MethodOptions {
+		return false
+	}
+
 	path := c.Request.URL.Path
 	if strings.HasPrefix(path, "/api/v1/audit-logs") {
 		return false

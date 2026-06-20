@@ -3,13 +3,8 @@
     <div class="flex flex-col md:flex-row md:items-end gap-3 justify-between">
       <h2 class="page-title">门店记账</h2>
       <div class="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
-        <a-date-picker
-          v-model="accountDate"
-          value-format="YYYY-MM-DD"
-          class="w-full sm:w-40"
-          :allow-clear="false"
-          :disabled-date="disabledFutureDate"
-        />
+        <a-date-picker v-model="accountDate" value-format="YYYY-MM-DD" class="w-full sm:w-40" :allow-clear="false"
+          :disabled-date="disabledFutureDate" />
         <BaseSelect v-model="paymentStatusFilter" class="w-full sm:w-32" :options="paymentStatusFilterOptions" />
         <BaseButton variant="primary" @click="reloadAll">查询</BaseButton>
         <BaseButton v-permission="'store:account:add'" variant="primary" @click="openCreate">快速记账</BaseButton>
@@ -20,15 +15,26 @@
     </div>
 
     <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
-      min-width="960px" class="min-h-0 flex-1">
+      min-width="1080px" class="min-h-0 flex-1">
       <template #cell-channel="{ row }">
-        {{ channelLabel((row as StoreAccount).channel) }}
+        <span class="store-account-channel">
+          <span class="store-account-channel__icon" :class="channelIconClass((row as StoreAccount).channel)">
+            {{ channelIconText((row as StoreAccount).channel) }}
+          </span>
+          <span class="store-account-channel__label">{{ channelLabel((row as StoreAccount).channel) }}</span>
+        </span>
       </template>
       <template #cell-member="{ row }">
         {{ memberLabel(row as StoreAccount) }}
       </template>
       <template #cell-payment_status="{ row }">
-        {{ paymentStatusLabel((row as StoreAccount).payment_status) }}
+        <span class="store-account-pay-status">
+          <span class="store-account-pay-status__dot" :class="paymentStatusDotClass((row as StoreAccount).payment_status)" />
+          <span>{{ paymentStatusLabel((row as StoreAccount).payment_status) }}</span>
+        </span>
+      </template>
+      <template #cell-operator="{ row }">
+        {{ operatorLabel(row as StoreAccount) }}
       </template>
       <template #cell-net_income_amount="{ row }">
         {{ formatMoney((row as StoreAccount).net_income_amount) }}
@@ -316,7 +322,7 @@
           </div>
           <div><span class="text-[var(--color-text-3)]">明细条数</span>：{{ viewAccount.item_count ??
             (viewAccount.items?.length
-            ?? 0) }}</div>
+              ?? 0) }}</div>
           <div class="sm:col-span-2">
             <span class="text-[var(--color-text-3)]">标签</span>：{{ viewAccount.tag_name || viewAccount.tag_code || '-' }}
           </div>
@@ -750,7 +756,8 @@ const columns: BaseTableColumn[] = [
   { key: 'member', label: '会员', width: '150px', ellipsis: true },
   { key: 'payment_status', label: '支付状态', width: '96px' },
   { key: 'total_amount', label: '销售额', prop: 'total_amount', width: '96px' },
-  { key: 'actions', label: '操作', width: '190px', minWidth: '190px', align: 'right', fixed: 'right' },
+  { key: 'operator', label: '操作人', width: '80px', ellipsis: true },
+  { key: 'actions', label: '操作', width: '190px', minWidth: '140px', align: 'right', fixed: 'right' },
 ]
 
 const consumableProductColumns: BaseTableColumn[] = [
@@ -772,6 +779,28 @@ function channelLabel(v: string | undefined): string {
   return channelDictMap.value.get(key) || key
 }
 
+function channelMeta(v: string | undefined): { text: string; tone: string } {
+  const key = String(v || '').trim().toLowerCase()
+  const label = channelLabel(v).toLowerCase()
+  const text = `${key} ${label}`
+  if (text.includes('wechat') || text.includes('微信')) return { text: '微', tone: 'wechat' }
+  if (text.includes('meituan') || text.includes('美团')) return { text: '美', tone: 'meituan' }
+  if (text.includes('eleme') || text.includes('饿了么') || text.includes('elm')) return { text: '饿', tone: 'eleme' }
+  if (text.includes('douyin') || text.includes('抖音')) return { text: '抖', tone: 'douyin' }
+  if (text.includes('taobao') || text.includes('淘宝') || text.includes('shangou') || text.includes('闪购')) return { text: '淘', tone: 'taobao' }
+  if (text.includes('xiaohongshu') || text.includes('小红书')) return { text: '红', tone: 'redbook' }
+  if (text.includes('offline') || text.includes('线下') || text.includes('门店')) return { text: '店', tone: 'offline' }
+  return { text: '其', tone: 'other' }
+}
+
+function channelIconText(v: string | undefined): string {
+  return channelMeta(v).text
+}
+
+function channelIconClass(v: string | undefined): string {
+  return `store-account-channel__icon--${channelMeta(v).tone}`
+}
+
 function memberLabel(row: StoreAccount): string {
   if (row.member) {
     const phone = String(row.member.phone || '').trim()
@@ -790,6 +819,17 @@ function memberLabel(row: StoreAccount): string {
   return '-'
 }
 
+function operatorLabel(row: StoreAccount): string {
+  const operator = row.operator
+  if (operator) {
+    const nickname = String(operator.nickname || '').trim()
+    const username = String(operator.username || '').trim()
+    const phone = String(operator.phone || '').trim()
+    return nickname || username || phone || `用户#${operator.id}`
+  }
+  return row.operator_id ? `用户#${row.operator_id}` : '-'
+}
+
 const paymentStatusOptions = [
   { label: '已支付', value: 1 },
   { label: '未支付', value: 2 },
@@ -800,25 +840,52 @@ function paymentStatusLabel(v: number | undefined): string {
   return Number(v) === 2 ? '未支付' : '已支付'
 }
 
+function paymentStatusDotClass(v: number | undefined): string {
+  return Number(v) === 2 ? 'store-account-pay-status__dot--unpaid' : 'store-account-pay-status__dot--paid'
+}
+
 function canEditAccount(row: StoreAccount): boolean {
   if (Number(row.payment_status || 1) === 1) return false
-  const s = String(row.created_at || '').trim()
+  return isWithinBusinessDays(row.created_at, 2)
+}
+
+function canBindConsumables(row: StoreAccount): boolean {
+  const paymentStatus = Number(row.payment_status || 1)
+  return isWithinBusinessDays(row.created_at, paymentStatus === 1 ? 1 : 2)
+}
+
+function businessDateKey(date: Date): string {
+  const d = new Date(date)
+  if (d.getHours() < 5) d.setDate(d.getDate() - 1)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function isWithinBusinessDays(value: string | undefined, days: number): boolean {
+  const s = String(value || '').trim()
   if (!s) return false
   const created = new Date(s)
   if (Number.isNaN(created.getTime())) return false
-  const now = new Date()
-  const diff = now.getTime() - created.getTime()
-  return diff >= 0 && diff <= 5 * 24 * 60 * 60 * 1000
+  const current = new Date()
+  const createdKey = businessDateKey(created)
+  const currentKey = businessDateKey(current)
+  if (currentKey < createdKey) return false
+  const last = new Date(`${createdKey}T00:00:00`)
+  last.setDate(last.getDate() + Math.max(1, days) - 1)
+  return currentKey <= businessDateKey(last)
 }
 
 function accountRowActions(row: StoreAccount): TableRowAction[] {
   const editable = canEditAccount(row)
+  const consumableEditable = canBindConsumables(row)
   return [
     { label: '详情', permission: 'store:account:list', onClick: () => openView(row) },
     {
       label: '绑定消耗品',
       permission: 'store:account:edit',
-      disabled: !editable,
+      disabled: !consumableEditable,
       onClick: () => openConsumableDlg(row),
     },
     {
@@ -1296,7 +1363,7 @@ const eForm = reactive({
 
 function openEdit(row: StoreAccount): void {
   if (!canEditAccount(row)) {
-    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单不允许编辑' : '该记录已超过可编辑时间')
+    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单不允许编辑' : '账单仅支持2个营业日内修改')
     return
   }
   editId.value = row.id
@@ -1478,8 +1545,8 @@ const consumableBindTotal = computed(() =>
 )
 
 async function openConsumableDlg(row: StoreAccount): Promise<void> {
-  if (!canEditAccount(row)) {
-    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单不允许绑定消耗品' : '该记录已超过可编辑时间')
+  if (!canBindConsumables(row)) {
+    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单过了营业日不能绑定消耗品' : '消耗品仅支持2个营业日内绑定')
     return
   }
   consumableTarget.value = row
@@ -1627,3 +1694,92 @@ function consumableProductActions(row: StoreAccountConsumableProduct): TableRowA
   ]
 }
 </script>
+
+<style scoped>
+.store-account-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.store-account-channel__icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.store-account-channel__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-account-channel__icon--wechat {
+  background: linear-gradient(135deg, #19c37d, #10a966);
+}
+
+.store-account-channel__icon--meituan {
+  background: linear-gradient(135deg, #ffd43b, #f59f00);
+  color: #533300;
+}
+
+.store-account-channel__icon--eleme {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+}
+
+.store-account-channel__icon--douyin {
+  background: linear-gradient(135deg, #111827, #ef476f);
+}
+
+.store-account-channel__icon--taobao {
+  background: linear-gradient(135deg, #ff7a1a, #f97316);
+}
+
+.store-account-channel__icon--redbook {
+  background: linear-gradient(135deg, #ff4d6d, #dc2626);
+}
+
+.store-account-channel__icon--offline {
+  background: linear-gradient(135deg, #64748b, #334155);
+}
+
+.store-account-channel__icon--other {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+.store-account-pay-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.store-account-pay-status__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.14);
+}
+
+.store-account-pay-status__dot--paid {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.14);
+}
+
+.store-account-pay-status__dot--unpaid {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+</style>

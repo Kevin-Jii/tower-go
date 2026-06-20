@@ -926,7 +926,7 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 		return errors.New("已支付订单不允许修改")
 	}
 	if !s.CanUpdateAccount(account, req) {
-		return errors.New("记账已超过可编辑时间，仅支持创建后5天内修改")
+		return errors.New("记账已超过可编辑时间，仅支持创建后2个营业日内修改")
 	}
 
 	updates := make(map[string]interface{})
@@ -1137,11 +1137,11 @@ func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindSto
 	if err != nil {
 		return err
 	}
-	if account.PaymentStatus == model.StoreAccountPaymentPaid {
-		return errors.New("已支付订单不允许绑定消耗品")
-	}
-	if !s.IsAccountWithinFiveDays(account) {
-		return errors.New("记账已超过可编辑时间，仅支持创建后5天内修改")
+	if !s.CanBindConsumables(account) {
+		if account.PaymentStatus == model.StoreAccountPaymentPaid {
+			return errors.New("已支付订单仅允许在当前营业日内绑定消耗品")
+		}
+		return errors.New("记账已超过可编辑时间，仅支持创建后2个营业日内绑定消耗品")
 	}
 	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
 	consumableProductIDs := make([]uint, 0, len(req.Consumables))
@@ -1322,17 +1322,37 @@ func (s *StoreAccountService) IsAccountEditable(account *model.StoreAccount) boo
 	return now.Year() == created.Year() && now.YearDay() == created.YearDay()
 }
 
-// IsAccountWithinFiveDays 判断记账记录是否处于创建后5天内。
-func (s *StoreAccountService) IsAccountWithinFiveDays(account *model.StoreAccount) bool {
+// IsAccountWithinBusinessDays 判断记账记录是否处于创建后 N 个营业日内。
+func (s *StoreAccountService) IsAccountWithinBusinessDays(account *model.StoreAccount, days int) bool {
 	if account == nil || account.CreatedAt.IsZero() {
 		return false
 	}
+	if days <= 0 {
+		return false
+	}
 	now := time.Now()
-	created := account.CreatedAt.In(now.Location())
-	return !now.Before(created) && now.Sub(created) <= 5*24*time.Hour
+	loc := now.Location()
+	createdBusinessDate := businessdate.Date(account.CreatedAt.In(loc))
+	currentBusinessDate := businessdate.Date(now)
+	if currentBusinessDate.Before(createdBusinessDate) {
+		return false
+	}
+	lastAllowedDate := createdBusinessDate.AddDate(0, 0, days-1)
+	return !currentBusinessDate.After(lastAllowedDate)
 }
 
-// CanUpdateAccount 判断本次记账更新是否允许：创建后5天内允许修改。
+// CanUpdateAccount 判断本次记账更新是否允许：创建后2个营业日内允许修改。
 func (s *StoreAccountService) CanUpdateAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) bool {
-	return s.IsAccountWithinFiveDays(account)
+	return s.IsAccountWithinBusinessDays(account, 2)
+}
+
+// CanBindConsumables 判断记账单是否允许绑定消耗品。
+func (s *StoreAccountService) CanBindConsumables(account *model.StoreAccount) bool {
+	if account == nil {
+		return false
+	}
+	if account.PaymentStatus == model.StoreAccountPaymentPaid {
+		return s.IsAccountWithinBusinessDays(account, 1)
+	}
+	return s.IsAccountWithinBusinessDays(account, 2)
 }

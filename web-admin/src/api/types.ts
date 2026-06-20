@@ -666,6 +666,13 @@ export interface StoreAccount {
     name?: string
     phone?: string
   }
+  operator_id?: number
+  operator?: {
+    id: number
+    username?: string
+    nickname?: string
+    phone?: string
+  }
   channel: string
   order_no?: string
   total_amount: number

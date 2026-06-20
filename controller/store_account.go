@@ -114,7 +114,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 // Update godoc
 // @Summary 更新记账
-// @Description 更新记账信息，允许订单创建后5天内修改
+// @Description 更新记账信息，允许订单创建后2个营业日内修改
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -188,7 +188,7 @@ func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
 		http.ErrorApp(ctx, apicode.StoreAccountGone)
 		return
 	}
-	if !c.storeAccountService.IsAccountWithinFiveDays(account) {
+	if !c.storeAccountService.CanBindConsumables(account) {
 		http.ErrorApp(ctx, apicode.StoreAccountEditTimeout)
 		return
 	}

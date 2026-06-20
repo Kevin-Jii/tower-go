@@ -50,6 +50,7 @@
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-3" @click.stop>
               <BaseButton variant="link" size="sm" @click="openDetail(row as InventoryLossOrder)">详情</BaseButton>
+              <BaseButton v-if="!(row as InventoryLossOrder).is_canceled" variant="link" size="sm" @click="openEdit(row as InventoryLossOrder)">编辑</BaseButton>
               <BaseButton variant="link" size="sm" @click="onCancel(row as InventoryLossOrder)">撤销</BaseButton>
             </div>
           </template>
@@ -77,7 +78,7 @@
             <BaseSelect v-model="form.member_id" :options="memberOptions" placeholder="请选择会员" />
           </BaseFormItem>
           <BaseFormItem label="原因说明" :class="form.type === 'gift' ? '' : 'md:col-span-2'" required>
-            <BaseInput v-model="form.reason" :placeholder="reasonPlaceholder" />
+            <BaseSelect v-model="form.reason" :options="reasonOptions" placeholder="请选择原因说明" searchable />
           </BaseFormItem>
         </div>
 
@@ -118,6 +119,18 @@
       <template #footer>
         <BaseButton variant="ghost" @click="createDlg = false">取消</BaseButton>
         <BaseButton variant="primary" :loading="saving" @click="submitCreate">提交</BaseButton>
+      </template>
+    </BaseDialog>
+
+    <BaseDialog v-model="editDlg" title="编辑原因说明" max-width="min(460px, 96vw)">
+      <div class="space-y-4">
+        <BaseFormItem label="原因说明" required>
+          <BaseSelect v-model="editForm.reason" :options="reasonOptions" placeholder="请选择原因说明" searchable />
+        </BaseFormItem>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="editDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="savingEdit" @click="submitEdit">保存</BaseButton>
       </template>
     </BaseDialog>
 
@@ -164,7 +177,9 @@ import {
   createInventoryLossOrder,
   getInventoryLossOrder,
   listInventoryLossOrders,
+  updateInventoryLossOrder,
 } from '@/api/inventoryLoss'
+import { listDictDataByTypeCode } from '@/api/dict'
 import { listMembers } from '@/api/member'
 import { listPurchasableProducts } from '@/api/storeSupplier'
 import { batchListProductUnitSpecs } from '@/api/supplierProduct'
@@ -197,6 +212,19 @@ const typeOptions: Array<BaseSelectOption & { value: InventoryLossType }> = [
   { label: '赠送', value: 'gift' },
 ]
 const typeFilterOptions: BaseSelectOption[] = [{ label: '全部类型', value: '' }, ...typeOptions]
+
+const { data: reasonDict } = useQuery({
+  queryKey: ['dict-data', 'EXPENDITURECLASS'] as const,
+  queryFn: () => listDictDataByTypeCode('EXPENDITURECLASS'),
+})
+const reasonOptions = computed<BaseSelectOption[]>(() =>
+  (reasonDict.value ?? []).filter((item) => item.status === 1).map((item) => ({ label: item.label, value: item.value })),
+)
+const reasonValueByLabel = computed(() => {
+  const map = new Map<string, string>()
+  for (const item of reasonDict.value ?? []) map.set(item.label, item.value)
+  return map
+})
 
 const filters = reactive({
   keyword: '',
@@ -331,12 +359,6 @@ const form = reactive({
   lines: [] as LossLine[],
 })
 
-const reasonPlaceholder = computed(() => {
-  if (form.type === 'loss') return '如 摔碎一瓶 / 过期 / 破损'
-  if (form.type === 'self_use') return '如 老板自饮 / 内部招待'
-  return '如 中秋客户维护 / 节日送礼'
-})
-
 function makeLine(): LossLine {
   return { product_id: '', unit: '', quantity: 1, remark: '' }
 }
@@ -429,6 +451,47 @@ async function submitCreate(): Promise<void> {
     toast.error(e instanceof Error ? e.message : '提交失败')
   } finally {
     saving.value = false
+  }
+}
+
+const editDlg = ref(false)
+const savingEdit = ref(false)
+const editingId = ref<number | null>(null)
+const editForm = reactive({
+  reason: '',
+})
+
+function normalizeReasonValue(reason?: string): string {
+  const value = String(reason || '').trim()
+  return reasonValueByLabel.value.get(value) || value
+}
+
+function openEdit(row: InventoryLossOrder): void {
+  editingId.value = row.id
+  editForm.reason = normalizeReasonValue(row.reason)
+  editDlg.value = true
+}
+
+async function submitEdit(): Promise<void> {
+  const reason = editForm.reason.trim()
+  if (!editingId.value) return
+  if (!reason) {
+    toast.warning('请选择原因说明')
+    return
+  }
+  savingEdit.value = true
+  try {
+    await updateInventoryLossOrder(editingId.value, { reason })
+    toast.success('原因说明已更新')
+    editDlg.value = false
+    await qc.invalidateQueries({ queryKey: ['inventory-loss-orders'] })
+    if (detail.value?.id === editingId.value) {
+      detail.value = await getInventoryLossOrder(editingId.value)
+    }
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '保存失败')
+  } finally {
+    savingEdit.value = false
   }
 }
 

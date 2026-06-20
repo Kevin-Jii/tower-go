@@ -595,6 +595,7 @@ export interface InventoryLossOrder {
   item_count: number
   operator_id?: number
   operator_name?: string
+  is_canceled?: boolean
   created_at?: string
   updated_at?: string
   items?: InventoryLossOrderItem[]
@@ -669,6 +670,13 @@ export interface StoreAccount {
   order_no?: string
   total_amount: number
   other_expense_amount?: number
+  round_amount?: number
+  is_gift_wine?: number
+  gift_wine_product_id?: number
+  gift_wine_product_name?: string
+  gift_wine_unit?: string
+  gift_wine_quantity?: number
+  gift_wine_cost_amount?: number
   is_errand_order?: number
   errand_fee?: number
   net_income_amount?: number
@@ -782,8 +790,30 @@ export interface DashboardStats {
 
 export interface StoreAccountStats {
   total_amount?: number
+  gross_total_amount?: number
   net_income_amount?: number
   count?: number
+}
+
+export interface StoreExpense {
+  id: number
+  expense_no: string
+  store_id: number
+  expense_date: string
+  category_code: string
+  category_name: string
+  amount: number
+  remark?: string
+  operator_id?: number
+  operator_name?: string
+  created_at?: string
+  updated_at?: string
+  store?: Store
+}
+
+export interface StoreExpenseStats {
+  total_amount: number
+  count: number
 }
 
 export interface StoreReturnItem {
@@ -864,6 +894,12 @@ export interface BusinessOverviewStats {
   return_deposit_amount?: number
   return_logistics_fee?: number
   errand_fee_amount?: number
+  round_amount?: number
+  gift_wine_cost_amount?: number
+  store_expense_amount?: number
+  takeout_promotion_amount?: number
+  takeout_sales_amount?: number
+  takeout_promotion_roi?: number
   inventory_loss_amount?: number
   inventory_loss_count?: number
   inventory_self_use_amount?: number

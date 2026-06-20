@@ -75,6 +75,21 @@ func (m *InventoryLossModule) GetByIDScoped(id, storeID uint, hqUnbound bool) (*
 	return &order, nil
 }
 
+func (m *InventoryLossModule) UpdateReason(id, storeID uint, hqUnbound bool, reason string) error {
+	query := m.db.Model(&model.InventoryLossOrder{}).Where("id = ? AND is_canceled = 0", id)
+	if !hqUnbound {
+		query = query.Where("store_id = ?", storeID)
+	}
+	res := query.Update("reason", reason)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (m *InventoryLossModule) CancelWithStockRestore(id, storeID uint, hqUnbound bool) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		var order model.InventoryLossOrder

@@ -90,6 +90,12 @@ type BusinessOverviewStats struct {
 	ReturnDepositAmount    float64                     `json:"return_deposit_amount"`
 	ReturnLogisticsFee     float64                     `json:"return_logistics_fee"`
 	ErrandFeeAmount        float64                     `json:"errand_fee_amount"`
+	RoundAmount            float64                     `json:"round_amount"`
+	GiftWineCostAmount     float64                     `json:"gift_wine_cost_amount"`
+	StoreExpenseAmount     float64                     `json:"store_expense_amount"`
+	TakeoutPromotionAmount float64                     `json:"takeout_promotion_amount"`
+	TakeoutSalesAmount     float64                     `json:"takeout_sales_amount"`
+	TakeoutPromotionROI    float64                     `json:"takeout_promotion_roi"`
 	InventoryLossAmount    float64                     `json:"inventory_loss_amount"`
 	InventoryLossCount     int64                       `json:"inventory_loss_count"`
 	InventorySelfUseAmount float64                     `json:"inventory_self_use_amount"`

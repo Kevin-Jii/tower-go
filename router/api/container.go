@@ -29,6 +29,7 @@ type Controllers struct {
 	File              *controller.FileController
 	Gallery           *controller.GalleryController
 	StoreAccount      *controller.StoreAccountController
+	StoreExpense      *controller.StoreExpenseController
 	StoreReturn       *controller.StoreReturnController
 	MeituanAI         *controller.MeituanAIController
 	Statistics        *controller.StatisticsController
@@ -65,6 +66,7 @@ func BuildControllers() *Controllers {
 	inventoryLossModule := userModulePkg.NewInventoryLossModule(database.DB)
 	galleryModule := userModulePkg.NewGalleryModule(database.DB)
 	storeAccountModule := userModulePkg.NewStoreAccountModule(database.DB)
+	storeExpenseModule := userModulePkg.NewStoreExpenseModule(database.DB)
 	storeReturnModule := userModulePkg.NewStoreReturnModule(database.DB)
 	meituanAIModule := userModulePkg.NewMeituanAIModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
@@ -122,8 +124,9 @@ func BuildControllers() *Controllers {
 	dictService := service.NewDictService(dictModule)
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
-	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule)
+	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule, dictModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
+	storeExpenseService := service.NewStoreExpenseService(storeExpenseModule, dictModule, userModule)
 	storeReturnService := service.NewStoreReturnService(storeReturnModule, userModule)
 	meituanAIService := service.NewMeituanAIService(meituanAIModule)
 	statisticsService := service.NewStatisticsService(statisticsModule)
@@ -183,6 +186,7 @@ func BuildControllers() *Controllers {
 		File:              fileController,
 		Gallery:           galleryController,
 		StoreAccount:      controller.NewStoreAccountController(storeAccountService),
+		StoreExpense:      controller.NewStoreExpenseController(storeExpenseService),
 		StoreReturn:       controller.NewStoreReturnController(storeReturnService),
 		MeituanAI:         controller.NewMeituanAIController(meituanAIService),
 		Statistics:        controller.NewStatisticsController(statisticsService),

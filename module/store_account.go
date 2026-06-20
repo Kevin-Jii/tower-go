@@ -207,13 +207,13 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		return 0, 0, 0, err
 	}
 
-	// 实时净利润：销售额 - 其他支出 - 跑腿费 - 消耗品金额 - 商品成本（不依赖历史 net_income_amount 存量值）
+	// 实时净利润：销售额 - 其他支出 - 跑腿费 - 消耗品金额 - 商品成本 - 赠酒成本 - 抹零金额（不依赖历史 net_income_amount 存量值）
 	costSub := m.db.Table("store_account_items AS sai").
 		Select("sai.account_id, COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price,0)),0) AS cost_amount").
 		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
 		Group("sai.account_id")
 	netQuery := m.db.Model(&model.StoreAccount{}).
-		Select("COALESCE(SUM(store_accounts.total_amount - store_accounts.other_expense_amount - store_accounts.errand_fee - COALESCE(cons.sum_amount, 0) - COALESCE(costs.cost_amount,0)), 0)").
+		Select("COALESCE(SUM(store_accounts.total_amount - store_accounts.other_expense_amount - store_accounts.errand_fee - COALESCE(cons.sum_amount, 0) - COALESCE(costs.cost_amount,0) - store_accounts.gift_wine_cost_amount - store_accounts.round_amount), 0)").
 		Joins("LEFT JOIN (SELECT account_id, COALESCE(SUM(amount),0) AS sum_amount FROM store_account_consumables GROUP BY account_id) AS cons ON cons.account_id = store_accounts.id").
 		Joins("LEFT JOIN (?) AS costs ON costs.account_id = store_accounts.id", costSub)
 	if storeID > 0 {
@@ -265,7 +265,7 @@ func (m *StoreAccountModule) ReplaceConsumables(accountID uint, consumables []mo
 			return err
 		}
 
-		netIncome := account.TotalAmount - account.OtherExpenseAmount - consumableTotal - itemCostTotal
+		netIncome := account.TotalAmount - account.OtherExpenseAmount - account.ErrandFee - consumableTotal - itemCostTotal - account.GiftWineCostAmount - account.RoundAmount
 		return tx.Model(&model.StoreAccount{}).Where("id = ?", accountID).Update("net_income_amount", netIncome).Error
 	})
 }

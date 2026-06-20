@@ -15,6 +15,7 @@ type InventoryLossService struct {
 	unitSpecModule *module.ProductUnitSpecModule
 	memberModule   *module.MemberModule
 	userModule     *module.UserModule
+	dictModule     *module.DictModule
 }
 
 func NewInventoryLossService(
@@ -23,6 +24,7 @@ func NewInventoryLossService(
 	unitSpecModule *module.ProductUnitSpecModule,
 	memberModule *module.MemberModule,
 	userModule *module.UserModule,
+	dictModule *module.DictModule,
 ) *InventoryLossService {
 	return &InventoryLossService{
 		lossModule:     lossModule,
@@ -30,6 +32,7 @@ func NewInventoryLossService(
 		unitSpecModule: unitSpecModule,
 		memberModule:   memberModule,
 		userModule:     userModule,
+		dictModule:     dictModule,
 	}
 }
 
@@ -40,6 +43,10 @@ func (s *InventoryLossService) CreateOrder(storeID, operatorID uint, req *model.
 	}
 	if realStoreID == 0 {
 		return nil, fmt.Errorf("请选择门店")
+	}
+	reason, err := s.resolveReason(req.Reason)
+	if err != nil {
+		return nil, err
 	}
 
 	var memberID *uint
@@ -102,7 +109,7 @@ func (s *InventoryLossService) CreateOrder(storeID, operatorID uint, req *model.
 		StoreID:      realStoreID,
 		Type:         req.Type,
 		MemberID:     memberID,
-		Reason:       strings.TrimSpace(req.Reason),
+		Reason:       reason,
 		TotalCost:    totalCost,
 		ItemCount:    len(items),
 		OperatorID:   operatorID,
@@ -114,6 +121,35 @@ func (s *InventoryLossService) CreateOrder(storeID, operatorID uint, req *model.
 		return nil, err
 	}
 	return s.lossModule.GetByIDScoped(order.ID, realStoreID, hqUnbound)
+}
+
+func (s *InventoryLossService) UpdateOrder(id, storeID uint, req *model.UpdateInventoryLossOrderReq, hqUnbound bool) (*model.InventoryLossOrder, error) {
+	if !hqUnbound && storeID == 0 {
+		return nil, fmt.Errorf("current user has no store")
+	}
+	reason, err := s.resolveReason(req.Reason)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.lossModule.UpdateReason(id, storeID, hqUnbound, reason); err != nil {
+		return nil, err
+	}
+	return s.lossModule.GetByIDScoped(id, storeID, hqUnbound)
+}
+
+func (s *InventoryLossService) resolveReason(reason string) (string, error) {
+	code := strings.TrimSpace(reason)
+	if code == "" {
+		return "", fmt.Errorf("请选择原因说明")
+	}
+	if s.dictModule == nil {
+		return code, nil
+	}
+	data, err := s.dictModule.GetDataByTypeAndValue(model.StoreExpenseCategoryDictCode, code)
+	if err != nil || data == nil || data.Status != 1 {
+		return "", fmt.Errorf("原因说明不存在或已停用")
+	}
+	return data.Label, nil
 }
 
 func resolveFallbackCostPrice(unit string, product *model.SupplierProduct) float64 {

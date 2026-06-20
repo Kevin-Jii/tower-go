@@ -2,11 +2,15 @@ import type { Router } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { menusToRoutes } from './transformRoutes'
 import { registerDynamicRoutes, registerNotFoundCatchAll } from '@/router'
+import { useLoadingStore } from '@/store/loading'
 
 const WHITE = new Set(['/login', '/404'])
 
 export function setupRouterGuard(router: Router): void {
+  let routeLoadingActive = false
+
   router.beforeEach(async (to, _from, next) => {
+    const loadingStore = useLoadingStore()
     if (WHITE.has(to.path) || to.meta?.public) {
       next()
       return
@@ -26,6 +30,8 @@ export function setupRouterGuard(router: Router): void {
     }
 
     if (!userStore.dynamicRoutesReady) {
+      loadingStore.show('数据加载中...')
+      routeLoadingActive = true
       try {
         await userStore.loadMenusAndPermissions()
         registerDynamicRoutes(router, menusToRoutes(userStore.menus))
@@ -41,5 +47,19 @@ export function setupRouterGuard(router: Router): void {
     }
 
     next()
+  })
+
+  router.afterEach(() => {
+    if (!routeLoadingActive) return
+    const loadingStore = useLoadingStore()
+    loadingStore.hide()
+    routeLoadingActive = false
+  })
+
+  router.onError(() => {
+    if (!routeLoadingActive) return
+    const loadingStore = useLoadingStore()
+    loadingStore.hide()
+    routeLoadingActive = false
   })
 }

@@ -1,4 +1,5 @@
 export { default as MathCurveLoader } from './MathCurveLoader.vue'
 export { default as GlobalLoadingOverlay } from './GlobalLoadingOverlay.vue'
+export { default as DashboardLoadingOverlay } from './DashboardLoadingOverlay.vue'
 export { useLoadingStore } from '@/store/loading'
 export { useGlobalLoading } from '@/composables/useGlobalLoading'

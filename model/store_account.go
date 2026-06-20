@@ -16,29 +16,36 @@ const StoreAccountItemCustomProductID uint = 0
 
 // StoreAccount 门店记账（主表）
 type StoreAccount struct {
-	ID                 uint                     `json:"id" gorm:"primaryKey;autoIncrement"`
-	AccountNo          string                   `json:"account_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:记账编号"`
-	StoreID            uint                     `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	MemberID           *uint                    `json:"member_id,omitempty" gorm:"index;comment:关联会员ID"`
-	PaymentStatus      int                      `json:"payment_status" gorm:"not null;default:1;index;comment:支付状态 1=已支付 2=未支付"`
-	Channel            string                   `json:"channel" gorm:"type:varchar(50);index;comment:渠道来源(字典:sales_channel)"`
-	OrderNo            string                   `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
-	TotalAmount        float64                  `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
-	OtherExpenseAmount float64                  `json:"other_expense_amount" gorm:"type:decimal(10,2);default:0;comment:其他支出金额"`
-	IsErrandOrder      int                      `json:"is_errand_order" gorm:"not null;default:0;index;comment:是否跑腿订单 1=是 0=否"`
-	ErrandFee          float64                  `json:"errand_fee" gorm:"type:decimal(10,2);not null;default:0;comment:跑腿费用"`
-	NetIncomeAmount    float64                  `json:"net_income_amount" gorm:"type:decimal(10,2);default:0;comment:净收入金额"`
-	ItemCount          int                      `json:"item_count" gorm:"comment:商品数量"`
-	TagCode            string                   `json:"tag_code" gorm:"type:varchar(50);index;comment:标签编码"`
-	TagName            string                   `json:"tag_name" gorm:"type:varchar(100);comment:标签名称"`
-	Remark             string                   `json:"remark" gorm:"type:text;comment:备注"`
-	OperatorID         uint                     `json:"operator_id" gorm:"not null;comment:操作人ID"`
-	AccountDate        time.Time                `json:"account_date" gorm:"type:date;index;comment:记账日期"`
-	CreatedAt          time.Time                `json:"created_at"`
-	UpdatedAt          time.Time                `json:"updated_at"`
-	DeletedAt          gorm.DeletedAt           `json:"-" gorm:"index"`
-	Items              []StoreAccountItem       `json:"items,omitempty" gorm:"foreignKey:AccountID"`
-	Consumables        []StoreAccountConsumable `json:"consumables,omitempty" gorm:"foreignKey:AccountID"`
+	ID                  uint                     `json:"id" gorm:"primaryKey;autoIncrement"`
+	AccountNo           string                   `json:"account_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:记账编号"`
+	StoreID             uint                     `json:"store_id" gorm:"not null;index;comment:门店ID"`
+	MemberID            *uint                    `json:"member_id,omitempty" gorm:"index;comment:关联会员ID"`
+	PaymentStatus       int                      `json:"payment_status" gorm:"not null;default:1;index;comment:支付状态 1=已支付 2=未支付"`
+	Channel             string                   `json:"channel" gorm:"type:varchar(50);index;comment:渠道来源(字典:sales_channel)"`
+	OrderNo             string                   `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
+	TotalAmount         float64                  `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
+	OtherExpenseAmount  float64                  `json:"other_expense_amount" gorm:"type:decimal(10,2);default:0;comment:其他支出金额"`
+	RoundAmount         float64                  `json:"round_amount" gorm:"type:decimal(10,2);not null;default:0;comment:抹零金额"`
+	IsGiftWine          int                      `json:"is_gift_wine" gorm:"not null;default:0;index;comment:是否赠酒 1=是 0=否"`
+	GiftWineProductID   uint                     `json:"gift_wine_product_id" gorm:"not null;default:0;index;comment:赠酒商品ID"`
+	GiftWineProductName string                   `json:"gift_wine_product_name" gorm:"type:varchar(200);comment:赠酒商品名称"`
+	GiftWineUnit        string                   `json:"gift_wine_unit" gorm:"type:varchar(50);comment:赠酒规格/单位"`
+	GiftWineQuantity    float64                  `json:"gift_wine_quantity" gorm:"type:decimal(10,2);not null;default:0;comment:赠酒数量"`
+	GiftWineCostAmount  float64                  `json:"gift_wine_cost_amount" gorm:"type:decimal(10,2);not null;default:0;comment:赠酒成本金额"`
+	IsErrandOrder       int                      `json:"is_errand_order" gorm:"not null;default:0;index;comment:是否跑腿订单 1=是 0=否"`
+	ErrandFee           float64                  `json:"errand_fee" gorm:"type:decimal(10,2);not null;default:0;comment:跑腿费用"`
+	NetIncomeAmount     float64                  `json:"net_income_amount" gorm:"type:decimal(10,2);default:0;comment:净收入金额"`
+	ItemCount           int                      `json:"item_count" gorm:"comment:商品数量"`
+	TagCode             string                   `json:"tag_code" gorm:"type:varchar(50);index;comment:标签编码"`
+	TagName             string                   `json:"tag_name" gorm:"type:varchar(100);comment:标签名称"`
+	Remark              string                   `json:"remark" gorm:"type:text;comment:备注"`
+	OperatorID          uint                     `json:"operator_id" gorm:"not null;comment:操作人ID"`
+	AccountDate         time.Time                `json:"account_date" gorm:"type:date;index;comment:记账日期"`
+	CreatedAt           time.Time                `json:"created_at"`
+	UpdatedAt           time.Time                `json:"updated_at"`
+	DeletedAt           gorm.DeletedAt           `json:"-" gorm:"index"`
+	Items               []StoreAccountItem       `json:"items,omitempty" gorm:"foreignKey:AccountID"`
+	Consumables         []StoreAccountConsumable `json:"consumables,omitempty" gorm:"foreignKey:AccountID"`
 
 	// 关联
 	Store    *Store  `json:"store,omitempty" gorm:"foreignKey:StoreID"`
@@ -81,6 +88,12 @@ type CreateStoreAccountReq struct {
 	TagName            string                            `json:"tag_name" binding:"max=100"`
 	Remark             string                            `json:"remark" binding:"max=500"`
 	OtherExpenseAmount float64                           `json:"other_expense_amount" binding:"gte=0"`
+	RoundAmount        float64                           `json:"round_amount" binding:"gte=0"`
+	IsGiftWine         int                               `json:"is_gift_wine" binding:"omitempty,oneof=0 1"`
+	GiftWineProductID  uint                              `json:"gift_wine_product_id"`
+	GiftWineUnit       string                            `json:"gift_wine_unit" binding:"max=50"`
+	GiftWineQuantity   float64                           `json:"gift_wine_quantity" binding:"gte=0"`
+	GiftWineCostAmount float64                           `json:"gift_wine_cost_amount" binding:"gte=0"`
 	IsErrandOrder      int                               `json:"is_errand_order" binding:"omitempty,oneof=0 1"`
 	ErrandFee          float64                           `json:"errand_fee" binding:"gte=0"`
 	Items              []CreateStoreAccountItemReq       `json:"items" binding:"required,min=1,dive"`
@@ -124,6 +137,12 @@ type UpdateStoreAccountReq struct {
 	Remark             string   `json:"remark" binding:"max=500"`
 	AccountDate        string   `json:"account_date"`
 	OtherExpenseAmount *float64 `json:"other_expense_amount" binding:"omitempty,gte=0"`
+	RoundAmount        *float64 `json:"round_amount" binding:"omitempty,gte=0"`
+	IsGiftWine         *int     `json:"is_gift_wine" binding:"omitempty,oneof=0 1"`
+	GiftWineProductID  *uint    `json:"gift_wine_product_id"`
+	GiftWineUnit       string   `json:"gift_wine_unit" binding:"max=50"`
+	GiftWineQuantity   *float64 `json:"gift_wine_quantity" binding:"omitempty,gte=0"`
+	GiftWineCostAmount *float64 `json:"gift_wine_cost_amount" binding:"omitempty,gte=0"`
 	IsErrandOrder      *int     `json:"is_errand_order" binding:"omitempty,oneof=0 1"`
 	ErrandFee          *float64 `json:"errand_fee" binding:"omitempty,gte=0"`
 }

@@ -412,6 +412,12 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	if req.IsErrandOrder == 1 && errandFee <= 0 {
 		return nil, fmt.Errorf("跑腿订单请填写跑腿费用")
 	}
+	isGiftWine := req.IsGiftWine
+	giftWineCostAmount := req.GiftWineCostAmount
+	if isGiftWine != 1 {
+		isGiftWine = 0
+		giftWineCostAmount = 0
+	}
 
 	account := &model.StoreAccount{
 		AccountNo:          accountNo,
@@ -422,17 +428,28 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		OrderNo:            orderNo,
 		TotalAmount:        totalAmount,
 		OtherExpenseAmount: req.OtherExpenseAmount,
+		RoundAmount:        req.RoundAmount,
+		IsGiftWine:         isGiftWine,
+		GiftWineCostAmount: giftWineCostAmount,
 		IsErrandOrder:      req.IsErrandOrder,
 		ErrandFee:          errandFee,
-		NetIncomeAmount:    totalAmount - req.OtherExpenseAmount - errandFee - consumableAmount - itemCostAmount,
-		ItemCount:          len(items),
-		TagCode:            req.TagCode,
-		TagName:            req.TagName,
-		Remark:             req.Remark,
-		OperatorID:         operatorID,
-		AccountDate:        accountDate,
-		Items:              items,
-		Consumables:        consumables,
+		NetIncomeAmount: calculateStoreAccountNetIncome(
+			totalAmount,
+			req.OtherExpenseAmount,
+			errandFee,
+			consumableAmount,
+			itemCostAmount,
+			giftWineCostAmount,
+			req.RoundAmount,
+		),
+		ItemCount:   len(items),
+		TagCode:     req.TagCode,
+		TagName:     req.TagName,
+		Remark:      req.Remark,
+		OperatorID:  operatorID,
+		AccountDate: accountDate,
+		Items:       items,
+		Consumables: consumables,
 	}
 
 	inventoryOutOrder := &model.InventoryOrder{
@@ -916,6 +933,9 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	nextChannel := account.Channel
 	nextTotalAmount := account.TotalAmount
 	nextOtherExpenseAmount := account.OtherExpenseAmount
+	nextRoundAmount := account.RoundAmount
+	nextIsGiftWine := account.IsGiftWine
+	nextGiftWineCostAmount := account.GiftWineCostAmount
 	nextIsErrandOrder := account.IsErrandOrder
 	nextErrandFee := account.ErrandFee
 	shouldRecalculateNetIncome := false
@@ -961,6 +981,29 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 		nextOtherExpenseAmount = *req.OtherExpenseAmount
 		shouldRecalculateNetIncome = true
 	}
+	if req.RoundAmount != nil {
+		updates["round_amount"] = *req.RoundAmount
+		nextRoundAmount = *req.RoundAmount
+		shouldRecalculateNetIncome = true
+	}
+	if req.IsGiftWine != nil {
+		nextIsGiftWine = *req.IsGiftWine
+		if nextIsGiftWine != 1 {
+			nextIsGiftWine = 0
+			nextGiftWineCostAmount = 0
+			updates["gift_wine_cost_amount"] = 0
+		}
+		updates["is_gift_wine"] = nextIsGiftWine
+		shouldRecalculateNetIncome = true
+	}
+	if req.GiftWineCostAmount != nil {
+		nextGiftWineCostAmount = *req.GiftWineCostAmount
+		updates["gift_wine_cost_amount"] = nextGiftWineCostAmount
+		shouldRecalculateNetIncome = true
+	}
+	if nextIsGiftWine != 1 {
+		nextGiftWineCostAmount = 0
+	}
 	if req.IsErrandOrder != nil {
 		nextIsErrandOrder = *req.IsErrandOrder
 		if nextIsErrandOrder != 1 {
@@ -996,7 +1039,15 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 			consumableTotal += c.Amount
 		}
 		itemCostTotal := s.calculateAccountItemCost(account.Items)
-		updates["net_income_amount"] = nextTotalAmount - nextOtherExpenseAmount - nextErrandFee - consumableTotal - itemCostTotal
+		updates["net_income_amount"] = calculateStoreAccountNetIncome(
+			nextTotalAmount,
+			nextOtherExpenseAmount,
+			nextErrandFee,
+			consumableTotal,
+			itemCostTotal,
+			nextGiftWineCostAmount,
+			nextRoundAmount,
+		)
 	}
 
 	if len(updates) == 0 {
@@ -1019,9 +1070,10 @@ func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string) 
 	}
 
 	return map[string]interface{}{
-		"total_amount":      totalAmount,
-		"net_income_amount": netIncomeAmount,
-		"count":             count,
+		"total_amount":       netIncomeAmount,
+		"gross_total_amount": totalAmount,
+		"net_income_amount":  netIncomeAmount,
+		"count":              count,
 	}, nil
 }
 
@@ -1034,7 +1086,19 @@ func (s *StoreAccountService) calculateAccountNetIncome(account *model.StoreAcco
 		consumableTotal += c.Amount
 	}
 	itemCostTotal := s.calculateAccountItemCost(account.Items)
-	return account.TotalAmount - account.OtherExpenseAmount - account.ErrandFee - consumableTotal - itemCostTotal
+	return calculateStoreAccountNetIncome(
+		account.TotalAmount,
+		account.OtherExpenseAmount,
+		account.ErrandFee,
+		consumableTotal,
+		itemCostTotal,
+		account.GiftWineCostAmount,
+		account.RoundAmount,
+	)
+}
+
+func calculateStoreAccountNetIncome(totalAmount, otherExpenseAmount, errandFee, consumableAmount, itemCostAmount, giftWineCostAmount, roundAmount float64) float64 {
+	return totalAmount - otherExpenseAmount - errandFee - consumableAmount - itemCostAmount - giftWineCostAmount - roundAmount
 }
 
 func (s *StoreAccountService) calculateAccountItemCost(items []model.StoreAccountItem) float64 {

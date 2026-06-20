@@ -66,6 +66,10 @@ type CreateInventoryLossOrderReq struct {
 	Items    []CreateInventoryLossOrderItemReq `json:"items" binding:"required,min=1,dive"`
 }
 
+type UpdateInventoryLossOrderReq struct {
+	Reason string `json:"reason" binding:"required,max=200"`
+}
+
 type CreateInventoryLossOrderItemReq struct {
 	ProductID uint    `json:"product_id" binding:"required"`
 	Unit      string  `json:"unit" binding:"required,max=50"`

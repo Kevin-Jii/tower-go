@@ -260,6 +260,9 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   `order_no` VARCHAR(100) DEFAULT NULL,
   `total_amount` DECIMAL(10,2) DEFAULT NULL,
   `other_expense_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '其他支出金额',
+  `round_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '抹零金额',
+  `is_gift_wine` TINYINT NOT NULL DEFAULT 0 COMMENT '是否赠酒 1=是 0=否',
+  `gift_wine_cost_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '赠酒成本金额',
   `is_errand_order` TINYINT NOT NULL DEFAULT 0 COMMENT '是否跑腿订单 1=是 0=否',
   `errand_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '跑腿费用',
   `net_income_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '净收入金额',
@@ -277,6 +280,7 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   KEY `idx_store_accounts_store_id` (`store_id`),
   KEY `idx_store_accounts_member_id` (`member_id`),
   KEY `idx_store_accounts_payment_status` (`payment_status`),
+  KEY `idx_store_accounts_is_gift_wine` (`is_gift_wine`),
   KEY `idx_store_accounts_is_errand_order` (`is_errand_order`),
   KEY `idx_store_accounts_channel` (`channel`),
   KEY `idx_store_accounts_order_no` (`order_no`),
@@ -358,6 +362,28 @@ CREATE TABLE IF NOT EXISTS `store_returns` (
   KEY `idx_store_returns_return_date` (`return_date`),
   KEY `idx_store_returns_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店返厂单';
+
+CREATE TABLE IF NOT EXISTS `store_expenses` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `expense_no` VARCHAR(50) NOT NULL COMMENT '支出单号',
+  `store_id` BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+  `expense_date` DATE DEFAULT NULL COMMENT '支出日期',
+  `category_code` VARCHAR(100) NOT NULL COMMENT '支出分类编码(字典:EXPENDITURECLASS)',
+  `category_name` VARCHAR(100) NOT NULL COMMENT '支出分类名称',
+  `amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '支出金额',
+  `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注说明',
+  `operator_id` BIGINT UNSIGNED NOT NULL COMMENT '操作人ID',
+  `operator_name` VARCHAR(100) DEFAULT NULL COMMENT '操作人名称',
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted_at` DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_store_expenses_expense_no` (`expense_no`),
+  KEY `idx_store_expenses_store_id` (`store_id`),
+  KEY `idx_store_expenses_expense_date` (`expense_date`),
+  KEY `idx_store_expenses_category_code` (`category_code`),
+  KEY `idx_store_expenses_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店支出记录';
 
 CREATE TABLE IF NOT EXISTS `store_return_items` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -866,6 +892,57 @@ PREPARE stmt_add_other_expense_amount FROM @sql_add_other_expense_amount;
 EXECUTE stmt_add_other_expense_amount;
 DEALLOCATE PREPARE stmt_add_other_expense_amount;
 
+SET @sql_add_round_amount = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'round_amount'
+    ),
+    'SELECT ''skip add round_amount''',
+    'ALTER TABLE store_accounts ADD COLUMN round_amount DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''抹零金额'' AFTER other_expense_amount'
+  )
+);
+PREPARE stmt_add_round_amount FROM @sql_add_round_amount;
+EXECUTE stmt_add_round_amount;
+DEALLOCATE PREPARE stmt_add_round_amount;
+
+SET @sql_add_is_gift_wine = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'is_gift_wine'
+    ),
+    'SELECT ''skip add is_gift_wine''',
+    'ALTER TABLE store_accounts ADD COLUMN is_gift_wine TINYINT NOT NULL DEFAULT 0 COMMENT ''是否赠酒 1=是 0=否'' AFTER round_amount'
+  )
+);
+PREPARE stmt_add_is_gift_wine FROM @sql_add_is_gift_wine;
+EXECUTE stmt_add_is_gift_wine;
+DEALLOCATE PREPARE stmt_add_is_gift_wine;
+
+SET @sql_add_gift_wine_cost_amount = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'gift_wine_cost_amount'
+    ),
+    'SELECT ''skip add gift_wine_cost_amount''',
+    'ALTER TABLE store_accounts ADD COLUMN gift_wine_cost_amount DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT ''赠酒成本金额'' AFTER is_gift_wine'
+  )
+);
+PREPARE stmt_add_gift_wine_cost_amount FROM @sql_add_gift_wine_cost_amount;
+EXECUTE stmt_add_gift_wine_cost_amount;
+DEALLOCATE PREPARE stmt_add_gift_wine_cost_amount;
+
 SET @sql_add_net_income_amount = (
   SELECT IF(
     EXISTS(
@@ -916,6 +993,23 @@ SET @sql_add_errand_fee = (
 PREPARE stmt_add_errand_fee FROM @sql_add_errand_fee;
 EXECUTE stmt_add_errand_fee;
 DEALLOCATE PREPARE stmt_add_errand_fee;
+
+SET @sql_add_idx_store_accounts_is_gift_wine = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND INDEX_NAME = 'idx_store_accounts_is_gift_wine'
+    ),
+    'SELECT ''skip add idx_store_accounts_is_gift_wine''',
+    'CREATE INDEX idx_store_accounts_is_gift_wine ON store_accounts(is_gift_wine)'
+  )
+);
+PREPARE stmt_add_idx_store_accounts_is_gift_wine FROM @sql_add_idx_store_accounts_is_gift_wine;
+EXECUTE stmt_add_idx_store_accounts_is_gift_wine;
+DEALLOCATE PREPARE stmt_add_idx_store_accounts_is_gift_wine;
 
 SET @sql_add_idx_store_accounts_is_errand_order = (
   SELECT IF(
@@ -1274,6 +1368,21 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @store_return_id, 'store-return-product', '维护返厂商品', '', '', '', 3, 4, 'store:return:product', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_return_id AND name='store-return-product' AND type=3);
 
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'store-expenses', '门店支出', 'WalletCards', '/store/expenses', 'store/expenses/index', 2, 9, 'store:expenses:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='store-expenses' AND type=2);
+SET @store_expenses_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='store-expenses' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_expenses_id, 'store-expenses-add', '新增支出', '', '', '', 3, 1, 'store:expenses:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_expenses_id AND name='store-expenses-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_expenses_id, 'store-expenses-edit', '编辑支出', '', '', '', 3, 2, 'store:expenses:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_expenses_id AND name='store-expenses-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_expenses_id, 'store-expenses-delete', '删除支出', '', '', '', 3, 3, 'store:expenses:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_expenses_id AND name='store-expenses-delete' AND type=3);
+
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 1, id, 15 FROM menus WHERE name LIKE 'b2b-%'
 ON DUPLICATE KEY UPDATE permissions=15;
@@ -1298,6 +1407,19 @@ SELECT 2, id, 15 FROM menus WHERE name LIKE 'store-return%'
 ON DUPLICATE KEY UPDATE permissions=15;
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 3, id, 15 FROM menus WHERE name LIKE 'store-return%'
+ON DUPLICATE KEY UPDATE permissions=15;
+
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 1, id, 15 FROM menus WHERE name LIKE 'store-expenses%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 999, id, 15 FROM menus WHERE name LIKE 'store-expenses%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE name LIKE 'store-expenses%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 3, id, 15 FROM menus WHERE name LIKE 'store-expenses%'
 ON DUPLICATE KEY UPDATE permissions=15;
 
 INSERT INTO role_menus (role_id, menu_id, permissions)
@@ -1367,3 +1489,28 @@ SELECT 'ADMINISTRATIVEUNIT', '归属区', '门店归属区字典', 1, NOW(3), NO
 WHERE NOT EXISTS (
   SELECT 1 FROM `dict_types` WHERE `code` = 'ADMINISTRATIVEUNIT'
 );
+
+INSERT INTO `dict_types` (`code`, `name`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT 'STOREEXPENSES', '门店支出', '门店支出模块字典', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM `dict_types` WHERE `code` = 'STOREEXPENSES');
+
+INSERT INTO `dict_types` (`code`, `name`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT 'EXPENDITURECLASS', '门店支出分类', '门店支出分类字典', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM `dict_types` WHERE `code` = 'EXPENDITURECLASS');
+
+SET @expense_type_id = (SELECT id FROM dict_types WHERE code='EXPENDITURECLASS' LIMIT 1);
+INSERT INTO dict_data (`type_id`, `type_code`, `label`, `value`, `sort`, `css_class`, `list_class`, `is_default`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT @expense_type_id, 'EXPENDITURECLASS', '外卖平台推广充值', 'takeout_promotion', 1, '', 'warning', true, '用于外卖推广费用和 ROI 统计', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='EXPENDITURECLASS' AND value='takeout_promotion');
+INSERT INTO dict_data (`type_id`, `type_code`, `label`, `value`, `sort`, `css_class`, `list_class`, `is_default`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT @expense_type_id, 'EXPENDITURECLASS', '平台服务费', 'platform_service_fee', 2, '', 'info', false, '', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='EXPENDITURECLASS' AND value='platform_service_fee');
+INSERT INTO dict_data (`type_id`, `type_code`, `label`, `value`, `sort`, `css_class`, `list_class`, `is_default`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT @expense_type_id, 'EXPENDITURECLASS', '物料采购', 'materials', 3, '', 'success', false, '', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='EXPENDITURECLASS' AND value='materials');
+INSERT INTO dict_data (`type_id`, `type_code`, `label`, `value`, `sort`, `css_class`, `list_class`, `is_default`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT @expense_type_id, 'EXPENDITURECLASS', '维修维护', 'maintenance', 4, '', 'warning', false, '', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='EXPENDITURECLASS' AND value='maintenance');
+INSERT INTO dict_data (`type_id`, `type_code`, `label`, `value`, `sort`, `css_class`, `list_class`, `is_default`, `remark`, `status`, `created_at`, `updated_at`)
+SELECT @expense_type_id, 'EXPENDITURECLASS', '其他', 'other', 99, '', 'info', false, '', 1, NOW(3), NOW(3)
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='EXPENDITURECLASS' AND value='other');

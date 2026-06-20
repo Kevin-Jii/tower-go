@@ -67,6 +67,23 @@ func (c *InventoryLossController) GetOrderByID(ctx *gin.Context) {
 	http.Success(ctx, order)
 }
 
+func (c *InventoryLossController) UpdateOrder(ctx *gin.Context) {
+	id, ok := http.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	var req model.UpdateInventoryLossOrderReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	order, err := c.inventoryLossService.UpdateOrder(id, middleware.GetStoreID(ctx), &req, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, order)
+}
+
 func (c *InventoryLossController) CancelOrder(ctx *gin.Context) {
 	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {

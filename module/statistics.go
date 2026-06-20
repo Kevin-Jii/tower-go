@@ -302,8 +302,8 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	if err := salesQuery.Count(&stats.SalesOrderCount).Error; err != nil {
 		return nil, err
 	}
-	if err := salesQuery.Select("COALESCE(SUM(total_amount), 0), COALESCE(SUM(other_expense_amount), 0), COALESCE(SUM(errand_fee), 0)").
-		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount, &stats.ErrandFeeAmount); err != nil {
+	if err := salesQuery.Select("COALESCE(SUM(total_amount), 0), COALESCE(SUM(other_expense_amount), 0), COALESCE(SUM(errand_fee), 0), COALESCE(SUM(round_amount), 0), COALESCE(SUM(gift_wine_cost_amount), 0)").
+		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount, &stats.ErrandFeeAmount, &stats.RoundAmount, &stats.GiftWineCostAmount); err != nil {
 		return nil, err
 	}
 	consumableQuery := m.db.Table("store_account_consumables AS sac").
@@ -314,6 +314,36 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	}
 	if err := consumableQuery.Select("COALESCE(SUM(sac.amount), 0)").Scan(&stats.ConsumableAmount).Error; err != nil {
 		return nil, err
+	}
+
+	expenseQuery := m.db.Model(&model.StoreExpense{}).
+		Where("deleted_at IS NULL AND expense_date >= ? AND expense_date <= ?", startDate, endDate)
+	if storeID > 0 {
+		expenseQuery = expenseQuery.Where("store_id = ?", storeID)
+	}
+	if err := expenseQuery.Select("COALESCE(SUM(amount), 0)").Scan(&stats.StoreExpenseAmount).Error; err != nil {
+		return nil, err
+	}
+	if err := expenseQuery.Session(&gorm.Session{}).
+		Where("category_code = ?", "takeout_promotion").
+		Select("COALESCE(SUM(amount), 0)").
+		Scan(&stats.TakeoutPromotionAmount).Error; err != nil {
+		return nil, err
+	}
+
+	takeoutSalesQuery := m.db.Model(&model.StoreAccount{}).
+		Where(`deleted_at IS NULL AND account_date >= ? AND account_date <= ? AND (
+			LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR
+			channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ?
+		)`, startDate, endDate, "%takeout%", "%waimai%", "%meituan%", "%eleme%", "%elm%", "%shangou%", "%外卖%", "%美团%", "%饿了么%", "%闪购%", "%淘宝%")
+	if storeID > 0 {
+		takeoutSalesQuery = takeoutSalesQuery.Where("store_id = ?", storeID)
+	}
+	if err := takeoutSalesQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TakeoutSalesAmount).Error; err != nil {
+		return nil, err
+	}
+	if stats.TakeoutPromotionAmount > 0 {
+		stats.TakeoutPromotionROI = stats.TakeoutSalesAmount / stats.TakeoutPromotionAmount
 	}
 
 	b2bQuery := m.db.Model(&model.B2BSupplyOrder{}).
@@ -410,7 +440,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	}
 
 	stats.GrossProfitAmount = stats.SalesAmount - itemCostAmount
-	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - stats.ErrandFeeAmount - stats.ConsumableAmount - itemCostAmount
+	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - stats.ErrandFeeAmount - stats.ConsumableAmount - itemCostAmount - stats.GiftWineCostAmount - stats.RoundAmount - stats.StoreExpenseAmount
 
 	return stats, nil
 }

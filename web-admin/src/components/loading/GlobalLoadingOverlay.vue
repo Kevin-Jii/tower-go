@@ -1,16 +1,16 @@
 <template>
   <Teleport to="body">
-    <MathCurveLoader
+    <DashboardLoadingOverlay
       v-if="loadingStore.visible"
-      overlay
-      size="lg"
-      :text="loadingStore.message"
+      fixed
+      :title="loadingStore.message"
+      subtitle="正在准备页面数据"
     />
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import MathCurveLoader from './MathCurveLoader.vue'
+import DashboardLoadingOverlay from './DashboardLoadingOverlay.vue'
 import { useLoadingStore } from '@/store/loading'
 
 const loadingStore = useLoadingStore()

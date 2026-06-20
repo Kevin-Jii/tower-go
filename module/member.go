@@ -688,9 +688,9 @@ func (m *MemberModule) ListMemberConsumptions(memberID uint, startDate, endDate 
 	offset := (page - 1) * pageSize
 	listQuery := m.db.Table("store_accounts AS sa").
 		Select(`sa.id AS account_id, sa.account_no, sa.account_date, sa.channel, sa.order_no,
-			sa.total_amount, sa.other_expense_amount,
+			sa.total_amount, sa.other_expense_amount, sa.round_amount, sa.gift_wine_cost_amount,
 			COALESCE(cons.consumable_amount,0) AS consumable_amount,
-			(sa.total_amount - sa.other_expense_amount - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0)) AS net_income_amount,
+			(sa.total_amount - sa.other_expense_amount - sa.errand_fee - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0) - sa.gift_wine_cost_amount - sa.round_amount) AS net_income_amount,
 			sa.created_at`).
 		Joins("LEFT JOIN (?) AS cons ON cons.account_id = sa.id", consSub).
 		Joins("LEFT JOIN (?) AS costs ON costs.account_id = sa.id", costSub).
@@ -709,8 +709,10 @@ func (m *MemberModule) ListMemberConsumptions(memberID uint, startDate, endDate 
 		Select(`COUNT(1) AS count,
 			COALESCE(SUM(sa.total_amount),0) AS total_amount,
 			COALESCE(SUM(sa.other_expense_amount),0) AS other_expense_amount,
+			COALESCE(SUM(sa.round_amount),0) AS round_amount,
+			COALESCE(SUM(sa.gift_wine_cost_amount),0) AS gift_wine_cost_amount,
 			COALESCE(SUM(COALESCE(cons.consumable_amount,0)),0) AS consumable_amount,
-			COALESCE(SUM(sa.total_amount - sa.other_expense_amount - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0)),0) AS net_income_amount`).
+			COALESCE(SUM(sa.total_amount - sa.other_expense_amount - sa.errand_fee - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0) - sa.gift_wine_cost_amount - sa.round_amount),0) AS net_income_amount`).
 		Joins("LEFT JOIN (?) AS cons ON cons.account_id = sa.id", consSub).
 		Joins("LEFT JOIN (?) AS costs ON costs.account_id = sa.id", costSub).
 		Where("sa.member_id = ?", memberID)

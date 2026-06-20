@@ -27,6 +27,14 @@ export async function getInventoryLossOrder(id: number): Promise<InventoryLossOr
   return unwrap(res)
 }
 
+export async function updateInventoryLossOrder(id: number, body: { reason: string }): Promise<InventoryLossOrderDetail> {
+  const res = await http.put<import('./types').ApiEnvelope<InventoryLossOrderDetail>>(
+    `/inventory-loss-orders/${id}`,
+    body,
+  )
+  return unwrap(res)
+}
+
 export async function cancelInventoryLossOrder(id: number): Promise<void> {
   await http.delete<import('./types').ApiEnvelope<unknown>>(`/inventory-loss-orders/${id}`)
 }

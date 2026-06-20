@@ -76,6 +76,29 @@
           <BaseFormItem v-if="customForm.is_errand_order === 1" label="跑腿费用" required>
             <BaseNumberInput v-model="customForm.errand_fee" :min="0" :step="0.01" />
           </BaseFormItem>
+          <BaseFormItem label="抹零金额">
+            <BaseNumberInput v-model="customForm.round_amount" :min="0" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="赠酒">
+            <BaseSwitch v-model="customForm.is_gift_wine" :active-value="1" :inactive-value="0" />
+          </BaseFormItem>
+          <template v-if="customForm.is_gift_wine === 1">
+            <BaseFormItem label="赠酒商品" required>
+              <a-cascader v-model="customForm.gift_wine_product_path" :options="productCascaderOptions"
+                placeholder="先选分类，再选商品" allow-clear :path-mode="true" :check-strictly="false"
+                @change="onCustomGiftWineProductChange" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒规格" required>
+              <BaseSelect v-model="customForm.gift_wine_unit" :options="giftWineUnitOptions(customForm)"
+                :disabled="giftWineUnitOptions(customForm).length <= 1" placeholder="规格" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒数量" required>
+              <BaseNumberInput v-model="customForm.gift_wine_quantity" :min="0.01" :step="1" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒成本">
+              <BaseInput :model-value="formatMoney(giftWineCostAmount(customForm))" disabled />
+            </BaseFormItem>
+          </template>
         </div>
         <div class="flex items-center justify-between gap-2">
           <span class="text-sm font-medium text-slate-700">商品明细（任意描述）</span>
@@ -139,6 +162,29 @@
           <BaseFormItem v-if="cForm.is_errand_order === 1" label="跑腿费用" required>
             <BaseNumberInput v-model="cForm.errand_fee" :min="0" :step="0.01" />
           </BaseFormItem>
+          <BaseFormItem label="抹零金额">
+            <BaseNumberInput v-model="cForm.round_amount" :min="0" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="赠酒">
+            <BaseSwitch v-model="cForm.is_gift_wine" :active-value="1" :inactive-value="0" />
+          </BaseFormItem>
+          <template v-if="cForm.is_gift_wine === 1">
+            <BaseFormItem label="赠酒商品" required>
+              <a-cascader v-model="cForm.gift_wine_product_path" :options="productCascaderOptions"
+                placeholder="先选分类，再选商品" allow-clear :path-mode="true" :check-strictly="false"
+                @change="onCreateGiftWineProductChange" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒规格" required>
+              <BaseSelect v-model="cForm.gift_wine_unit" :options="giftWineUnitOptions(cForm)"
+                :disabled="giftWineUnitOptions(cForm).length <= 1" placeholder="规格" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒数量" required>
+              <BaseNumberInput v-model="cForm.gift_wine_quantity" :min="0.01" :step="1" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒成本">
+              <BaseInput :model-value="formatMoney(giftWineCostAmount(cForm))" disabled />
+            </BaseFormItem>
+          </template>
         </div>
         <div class="flex items-center justify-between gap-2">
           <span class="text-sm font-medium text-slate-700">商品明细</span>
@@ -193,6 +239,29 @@
           <BaseFormItem v-if="eForm.is_errand_order === 1" label="跑腿费用" required>
             <BaseNumberInput v-model="eForm.errand_fee" :min="0" :step="0.01" />
           </BaseFormItem>
+          <BaseFormItem label="抹零金额">
+            <BaseNumberInput v-model="eForm.round_amount" :min="0" :step="0.01" />
+          </BaseFormItem>
+          <BaseFormItem label="赠酒">
+            <BaseSwitch v-model="eForm.is_gift_wine" :active-value="1" :inactive-value="0" />
+          </BaseFormItem>
+          <template v-if="eForm.is_gift_wine === 1">
+            <BaseFormItem label="赠酒商品" required>
+              <a-cascader v-model="eForm.gift_wine_product_path" :options="productCascaderOptions"
+                placeholder="先选分类，再选商品" allow-clear :path-mode="true" :check-strictly="false"
+                @change="onEditGiftWineProductChange" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒规格" required>
+              <BaseSelect v-model="eForm.gift_wine_unit" :options="giftWineUnitOptions(eForm)"
+                :disabled="giftWineUnitOptions(eForm).length <= 1" placeholder="规格" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒数量" required>
+              <BaseNumberInput v-model="eForm.gift_wine_quantity" :min="0.01" :step="1" />
+            </BaseFormItem>
+            <BaseFormItem label="赠酒成本">
+              <BaseInput :model-value="formatMoney(giftWineCostAmount(eForm))" disabled />
+            </BaseFormItem>
+          </template>
         </div>
         <BaseFormItem label="标签编码">
           <BaseInput v-model="eForm.tag_code" />
@@ -222,6 +291,17 @@
           <div><span class="text-[var(--color-text-3)]">订单号</span>：{{ viewAccount.order_no || '-' }}</div>
           <div><span class="text-[var(--color-text-3)]">总金额</span>：{{ formatMoney(viewAccount.total_amount) }}</div>
           <div><span class="text-[var(--color-text-3)]">其他支出</span>：{{ formatMoney(viewAccount.other_expense_amount) }}
+          </div>
+          <div><span class="text-[var(--color-text-3)]">抹零金额</span>：{{ formatMoney(viewAccount.round_amount) }}</div>
+          <div><span class="text-[var(--color-text-3)]">赠酒</span>：{{ Number(viewAccount.is_gift_wine || 0) === 1 ?
+            '是'
+            : '否' }}</div>
+          <div v-if="Number(viewAccount.is_gift_wine || 0) === 1" class="sm:col-span-2">
+            <span class="text-[var(--color-text-3)]">赠酒商品</span>：{{ viewAccount.gift_wine_product_name ||
+              (viewAccount.gift_wine_product_id ? `商品#${viewAccount.gift_wine_product_id}` : '-') }} /
+            {{ viewAccount.gift_wine_unit || '-' }} × {{ viewAccount.gift_wine_quantity || 0 }}
+          </div>
+          <div><span class="text-[var(--color-text-3)]">赠酒成本</span>：{{ formatMoney(viewAccount.gift_wine_cost_amount) }}
           </div>
           <div><span class="text-[var(--color-text-3)]">跑腿订单</span>：{{ Number(viewAccount.is_errand_order || 0) === 1 ?
             '是'
@@ -318,7 +398,8 @@
           销售额 {{ formatMoney(viewAccount.total_amount) }} - 其他支出 {{ formatMoney(viewAccount.other_expense_amount) }} -
           跑腿费用
           {{ formatMoney(viewAccount.errand_fee) }} - 商品成本 {{ formatMoney(accountItemCost(viewAccount)) }} - 耗材金额
-          {{ formatMoney(accountConsumableAmount(viewAccount)) }} =
+          {{ formatMoney(accountConsumableAmount(viewAccount)) }} - 赠酒成本
+          {{ formatMoney(viewAccount.gift_wine_cost_amount) }} - 抹零金额 {{ formatMoney(viewAccount.round_amount) }} =
           <span class="font-semibold text-emerald-700">{{ formatMoney(accountNetProfitBreakdown(viewAccount)) }}</span>
         </div>
       </div>
@@ -757,6 +838,11 @@ interface AccountLine {
   quantity: number
   unit: string
 }
+interface GiftWineFormState {
+  gift_wine_product_path: Array<string | number> | string | number | undefined
+  gift_wine_unit: string
+  gift_wine_quantity: number
+}
 interface ConsumableLine {
   kind: 'product' | 'custom'
   consumable_product_id: number | ''
@@ -772,6 +858,11 @@ const cForm = reactive({
   payment_status: 1,
   is_errand_order: 0,
   errand_fee: 0,
+  round_amount: 0,
+  is_gift_wine: 0,
+  gift_wine_product_path: [] as Array<string | number>,
+  gift_wine_unit: '',
+  gift_wine_quantity: 1,
   lines: [] as AccountLine[],
   remark: '',
 })
@@ -801,6 +892,11 @@ const customForm = reactive({
   payment_status: 1,
   is_errand_order: 0,
   errand_fee: 0,
+  round_amount: 0,
+  is_gift_wine: 0,
+  gift_wine_product_path: [] as Array<string | number>,
+  gift_wine_unit: '',
+  gift_wine_quantity: 1,
   lines: [] as CustomAccountLine[],
   remark: '',
 })
@@ -813,6 +909,11 @@ function resetCreateForm(channel: string): void {
   cForm.payment_status = 1
   cForm.is_errand_order = 0
   cForm.errand_fee = 0
+  cForm.round_amount = 0
+  cForm.is_gift_wine = 0
+  cForm.gift_wine_product_path = []
+  cForm.gift_wine_unit = ''
+  cForm.gift_wine_quantity = 1
   cForm.lines = [makeAccountLine()]
   cForm.remark = ''
 }
@@ -835,6 +936,11 @@ function resetCustomForm(channel: string): void {
   customForm.payment_status = 1
   customForm.is_errand_order = 0
   customForm.errand_fee = 0
+  customForm.round_amount = 0
+  customForm.is_gift_wine = 0
+  customForm.gift_wine_product_path = []
+  customForm.gift_wine_unit = ''
+  customForm.gift_wine_quantity = 1
   customForm.lines = [makeCustomLine()]
   customForm.remark = ''
 }
@@ -887,6 +993,16 @@ function getProductId(path: Array<string | number> | string | number | undefined
   return null
 }
 
+function productPathById(productId: number | undefined): Array<string | number> {
+  const id = Number(productId || 0)
+  if (!id) return []
+  for (const group of productCascaderOptions.value) {
+    const child = group.children?.find((item) => Number(item.value) === id)
+    if (child) return [group.value, child.value]
+  }
+  return [id]
+}
+
 function specOptionLabel(s: ProductUnitSpec): string {
   const name = s.unit_name || s.unit_code
   const factor = Number(s.factor_to_base || 0)
@@ -911,6 +1027,66 @@ function lineUnitOptions(line: AccountLine): Array<{ label: string; value: strin
   const product = productById.value.get(pid)
   const defaultUnit = product?.unit || unitDict.value[0]?.value || '件'
   return [{ label: defaultUnit, value: defaultUnit }]
+}
+
+function giftWineUnitOptions(form: GiftWineFormState): Array<{ label: string; value: string | number }> {
+  const pid = getProductId(form.gift_wine_product_path)
+  if (!pid) return []
+  const specs = specsByProduct.value.get(pid) ?? []
+  if (specs.length > 0) {
+    return specs.map((s) => {
+      const label = `${specOptionLabel(s)} / 成本${formatMoney(s.cost_price)}`
+      return { label, value: specOptionValue(s) }
+    })
+  }
+  const product = productById.value.get(pid)
+  const defaultUnit = product?.unit || unitDict.value[0]?.value || '件'
+  return [{ label: defaultUnit, value: defaultUnit }]
+}
+
+function onGiftWineProductChange(form: GiftWineFormState): void {
+  const options = giftWineUnitOptions(form)
+  form.gift_wine_unit = String(options[0]?.value || '')
+}
+
+function onCreateGiftWineProductChange(): void {
+  onGiftWineProductChange(cForm)
+}
+
+function onCustomGiftWineProductChange(): void {
+  onGiftWineProductChange(customForm)
+}
+
+function onEditGiftWineProductChange(): void {
+  onGiftWineProductChange(eForm)
+}
+
+function giftWineCostAmount(form: GiftWineFormState): number {
+  const productId = getProductId(form.gift_wine_product_path)
+  if (!productId) return 0
+  const qty = Number(form.gift_wine_quantity || 0)
+  if (qty <= 0) return 0
+  return Number((qty * itemCostPrice(productId, form.gift_wine_unit)).toFixed(2))
+}
+
+function validateGiftWine(form: GiftWineFormState): boolean {
+  if (!getProductId(form.gift_wine_product_path)) {
+    toast.warning('请选择赠酒商品')
+    return false
+  }
+  if (!String(form.gift_wine_unit || '').trim()) {
+    toast.warning('请选择赠酒规格')
+    return false
+  }
+  if (Number(form.gift_wine_quantity || 0) <= 0) {
+    toast.warning('请填写赠酒数量')
+    return false
+  }
+  if (giftWineCostAmount(form) < 0) {
+    toast.warning('赠酒成本不能小于0')
+    return false
+  }
+  return true
 }
 
 function onCreateProductChange(idx: number): void {
@@ -990,6 +1166,12 @@ async function submitCustomCreate(): Promise<void> {
     toast.warning('跑腿订单请填写跑腿费用')
     return
   }
+  if (Number(customForm.round_amount || 0) < 0) {
+    toast.warning('抹零金额不能小于0')
+    return
+  }
+  if (customForm.is_gift_wine === 1 && !validateGiftWine(customForm)) return
+  const customGiftWineCostAmount = customForm.is_gift_wine === 1 ? giftWineCostAmount(customForm) : 0
   saving.value = true
   try {
     await createStoreAccount({
@@ -1001,6 +1183,12 @@ async function submitCustomCreate(): Promise<void> {
       income_amount: incomeAmount,
       is_errand_order: customForm.is_errand_order,
       errand_fee: customForm.is_errand_order === 1 ? Number(customForm.errand_fee || 0) : 0,
+      round_amount: Number(customForm.round_amount || 0),
+      is_gift_wine: customForm.is_gift_wine,
+      gift_wine_product_id: customForm.is_gift_wine === 1 ? getProductId(customForm.gift_wine_product_path) : 0,
+      gift_wine_unit: customForm.is_gift_wine === 1 ? customForm.gift_wine_unit : '',
+      gift_wine_quantity: customForm.is_gift_wine === 1 ? Number(customForm.gift_wine_quantity || 0) : 0,
+      gift_wine_cost_amount: customGiftWineCostAmount,
       remark: customForm.remark.trim(),
       other_expense_amount: 0,
       items,
@@ -1049,6 +1237,12 @@ async function submitCreate(): Promise<void> {
     toast.warning('跑腿订单请填写跑腿费用')
     return
   }
+  if (Number(cForm.round_amount || 0) < 0) {
+    toast.warning('抹零金额不能小于0')
+    return
+  }
+  if (cForm.is_gift_wine === 1 && !validateGiftWine(cForm)) return
+  const createGiftWineCostAmount = cForm.is_gift_wine === 1 ? giftWineCostAmount(cForm) : 0
   saving.value = true
   try {
     await createStoreAccount({
@@ -1060,6 +1254,12 @@ async function submitCreate(): Promise<void> {
       income_amount: incomeAmount,
       is_errand_order: cForm.is_errand_order,
       errand_fee: cForm.is_errand_order === 1 ? Number(cForm.errand_fee || 0) : 0,
+      round_amount: Number(cForm.round_amount || 0),
+      is_gift_wine: cForm.is_gift_wine,
+      gift_wine_product_id: cForm.is_gift_wine === 1 ? getProductId(cForm.gift_wine_product_path) : 0,
+      gift_wine_unit: cForm.is_gift_wine === 1 ? cForm.gift_wine_unit : '',
+      gift_wine_quantity: cForm.is_gift_wine === 1 ? Number(cForm.gift_wine_quantity || 0) : 0,
+      gift_wine_cost_amount: createGiftWineCostAmount,
       remark: cForm.remark.trim(),
       other_expense_amount: 0,
       items,
@@ -1084,6 +1284,11 @@ const eForm = reactive({
   income_amount: undefined as number | undefined,
   is_errand_order: 0,
   errand_fee: 0,
+  round_amount: 0,
+  is_gift_wine: 0,
+  gift_wine_product_path: [] as Array<string | number>,
+  gift_wine_unit: '',
+  gift_wine_quantity: 1,
   tag_code: '',
   tag_name: '',
   remark: '',
@@ -1102,6 +1307,11 @@ function openEdit(row: StoreAccount): void {
   eForm.income_amount = isTakeoutChannel(eForm.channel) ? Number(row.total_amount || 0) : undefined
   eForm.is_errand_order = Number(row.is_errand_order || 0) === 1 ? 1 : 0
   eForm.errand_fee = Number(row.errand_fee || 0)
+  eForm.round_amount = Number(row.round_amount || 0)
+  eForm.is_gift_wine = Number(row.is_gift_wine || 0) === 1 ? 1 : 0
+  eForm.gift_wine_product_path = productPathById(row.gift_wine_product_id)
+  eForm.gift_wine_unit = row.gift_wine_unit ?? ''
+  eForm.gift_wine_quantity = Number(row.gift_wine_quantity || 1)
   eForm.tag_code = row.tag_code ?? ''
   eForm.tag_name = row.tag_name ?? ''
   eForm.remark = row.remark ?? ''
@@ -1118,6 +1328,12 @@ async function submitEdit(): Promise<void> {
     toast.warning('跑腿订单请填写跑腿费用')
     return
   }
+  if (Number(eForm.round_amount || 0) < 0) {
+    toast.warning('抹零金额不能小于0')
+    return
+  }
+  if (eForm.is_gift_wine === 1 && !validateGiftWine(eForm)) return
+  const editGiftWineCostAmount = eForm.is_gift_wine === 1 ? giftWineCostAmount(eForm) : 0
   saving.value = true
   try {
     await updateStoreAccount(editId.value, {
@@ -1128,6 +1344,12 @@ async function submitEdit(): Promise<void> {
       income_amount: incomeAmount,
       is_errand_order: eForm.is_errand_order,
       errand_fee: eForm.is_errand_order === 1 ? Number(eForm.errand_fee || 0) : 0,
+      round_amount: Number(eForm.round_amount || 0),
+      is_gift_wine: eForm.is_gift_wine,
+      gift_wine_product_id: eForm.is_gift_wine === 1 ? getProductId(eForm.gift_wine_product_path) : 0,
+      gift_wine_unit: eForm.is_gift_wine === 1 ? eForm.gift_wine_unit : '',
+      gift_wine_quantity: eForm.is_gift_wine === 1 ? Number(eForm.gift_wine_quantity || 0) : 0,
+      gift_wine_cost_amount: editGiftWineCostAmount,
       tag_code: eForm.tag_code.trim(),
       tag_name: eForm.tag_name.trim(),
       remark: eForm.remark.trim(),
@@ -1201,7 +1423,9 @@ function accountNetProfitBreakdown(account: StoreAccount): number {
     Number(account.other_expense_amount || 0) -
     Number(account.errand_fee || 0) -
     accountItemCost(account) -
-    accountConsumableAmount(account)
+    accountConsumableAmount(account) -
+    Number(account.gift_wine_cost_amount || 0) -
+    Number(account.round_amount || 0)
   )
 }
 

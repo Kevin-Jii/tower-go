@@ -2,9 +2,8 @@ import ArcoVue from '@arco-design/web-vue'
 import '@arco-design/web-vue/dist/arco.css'
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
-import { createApp, nextTick, h } from 'vue'
+import { createApp, nextTick } from 'vue'
 import App from './App.vue'
-import { MathCurveLoader } from './components/loading'
 import { permissionDirective } from './permission/directive'
 import router from './router'
 import { setupRouterGuard } from './permission'
@@ -32,16 +31,6 @@ app.use(VueQueryPlugin, { queryClient })
 app.directive('permission', permissionDirective)
 
 setupRouterGuard(router)
-
-function mountBootCurveLoader(): void {
-  const holder = document.getElementById('app-boot-splash-loader')
-  if (!holder) return
-  createApp({
-    render: () => h(MathCurveLoader, { size: 'lg', inline: true }),
-  }).mount(holder)
-}
-
-mountBootCurveLoader()
 
 app.mount('#app')
 

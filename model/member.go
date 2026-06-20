@@ -173,6 +173,8 @@ type MemberConsumptionRecord struct {
 	OrderNo            string    `json:"order_no"`
 	TotalAmount        float64   `json:"total_amount"`
 	OtherExpenseAmount float64   `json:"other_expense_amount"`
+	RoundAmount        float64   `json:"round_amount"`
+	GiftWineCostAmount float64   `json:"gift_wine_cost_amount"`
 	ConsumableAmount   float64   `json:"consumable_amount"`
 	NetIncomeAmount    float64   `json:"net_income_amount"`
 	CreatedAt          time.Time `json:"created_at"`
@@ -183,6 +185,8 @@ type MemberConsumptionSummary struct {
 	Count              int64   `json:"count"`
 	TotalAmount        float64 `json:"total_amount"`
 	OtherExpenseAmount float64 `json:"other_expense_amount"`
+	RoundAmount        float64 `json:"round_amount"`
+	GiftWineCostAmount float64 `json:"gift_wine_cost_amount"`
 	ConsumableAmount   float64 `json:"consumable_amount"`
 	NetIncomeAmount    float64 `json:"net_income_amount"`
 }

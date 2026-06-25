@@ -8,6 +8,7 @@ import {
   setStoredTenantId,
   setToken,
 } from "@/utils/storage";
+import { isTenantSwitchableUser, resolveCurrentStoreId } from "@/utils/currentStore";
 
 export const useUserStore = defineStore("user", () => {
   function hasInventoryLossMenu(list: Menu[] | undefined): boolean {
@@ -46,6 +47,7 @@ export const useUserStore = defineStore("user", () => {
   const dynamicRoutesReady = ref(false);
 
   const isLoggedIn = computed(() => !!token.value);
+  const currentStoreId = computed(() => resolveCurrentStoreId(userInfo.value, tenantId.value));
 
   function hydrateFromStorage(): void {
     const t = localStorage.getItem("tower_token") ?? "";
@@ -59,11 +61,8 @@ export const useUserStore = defineStore("user", () => {
       }
     }
     const tid = getStoredTenantId();
-    if (tid != null && tid > 0) tenantId.value = tid;
-    else if (userInfo.value?.store_id) {
-      tenantId.value = Number(userInfo.value.store_id);
-      setStoredTenantId(tenantId.value);
-    }
+    tenantId.value = resolveCurrentStoreId(userInfo.value, tid);
+    if (tenantId.value > 0 && !isTenantSwitchableUser(userInfo.value)) setStoredTenantId(tenantId.value);
   }
 
   function setLogin(payload: { token: string; user: User }): void {
@@ -71,15 +70,9 @@ export const useUserStore = defineStore("user", () => {
     userInfo.value = payload.user;
     setToken(payload.token);
     localStorage.setItem("tower_user", JSON.stringify(payload.user));
-    const sid = Number(payload.user.store_id ?? 0);
-    if (getStoredTenantId() == null && sid > 0) {
-      tenantId.value = sid;
-      setStoredTenantId(sid);
-    } else if (getStoredTenantId() != null) {
-      tenantId.value = getStoredTenantId()!;
-    } else {
-      tenantId.value = sid;
-    }
+    const storedTenantId = getStoredTenantId();
+    tenantId.value = resolveCurrentStoreId(payload.user, storedTenantId);
+    if (tenantId.value > 0 && !isTenantSwitchableUser(payload.user)) setStoredTenantId(tenantId.value);
   }
 
   function setPermissions(list: string[]): void {
@@ -137,6 +130,7 @@ export const useUserStore = defineStore("user", () => {
     permissions,
     menus,
     tenantId,
+    currentStoreId,
     dynamicRoutesReady,
     isLoggedIn,
     hydrateFromStorage,

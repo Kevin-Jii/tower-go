@@ -20,14 +20,12 @@ func (StoreSupplier) TableName() string {
 
 // BindStoreSuppliersReq 门店绑定供应商请求
 type BindStoreSuppliersReq struct {
-	StoreID     uint   `json:"store_id" binding:"required"`           // 门店ID
+	StoreID     uint   `json:"store_id"`                              // 门店ID（仅 HQUnboundAdmin 可传）
 	SupplierIDs []uint `json:"supplier_ids" binding:"required,min=1"` // 供应商ID列表
 }
 
 // UnbindStoreSuppliersReq 门店解绑供应商请求
 type UnbindStoreSuppliersReq struct {
-	StoreID     uint   `json:"store_id" binding:"required"`           // 门店ID
+	StoreID     uint   `json:"store_id"`                              // 门店ID（仅 HQUnboundAdmin 可传）
 	SupplierIDs []uint `json:"supplier_ids" binding:"required,min=1"` // 供应商ID列表
 }
-
-

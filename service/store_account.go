@@ -903,6 +903,18 @@ func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
 	return account, nil
 }
 
+func (s *StoreAccountService) GetScoped(id, storeID uint, hqUnbound bool) (*model.StoreAccount, error) {
+	if !hqUnbound && storeID == 0 {
+		return nil, errors.New("当前账号未绑定门店")
+	}
+	account, err := s.storeAccountModule.GetByIDScoped(id, storeID, hqUnbound)
+	if err != nil {
+		return nil, err
+	}
+	account.NetIncomeAmount = s.calculateAccountNetIncome(account)
+	return account, nil
+}
+
 // List 记账列表（ctx 须含 AuthContext）
 func (s *StoreAccountService) List(ctx context.Context, req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
 	applyListRBACFromContextToStoreAccount(ctx, req)
@@ -922,11 +934,12 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	if err != nil {
 		return err
 	}
-	if account.PaymentStatus == model.StoreAccountPaymentPaid {
-		return errors.New("已支付订单不允许修改")
-	}
+	return s.updateLoadedAccount(account, req)
+}
+
+func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) error {
 	if !s.CanUpdateAccount(account, req) {
-		return errors.New("记账已超过可编辑时间，仅支持创建后2个营业日内修改")
+		return errors.New("记账已超过可编辑时间，仅支持当前营业日内修改")
 	}
 
 	updates := make(map[string]interface{})
@@ -1054,7 +1067,18 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 		return nil
 	}
 
-	return s.storeAccountModule.Update(id, updates)
+	return s.storeAccountModule.Update(account.ID, updates)
+}
+
+func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
+	if !hqUnbound && storeID == 0 {
+		return errors.New("当前账号未绑定门店")
+	}
+	account, err := s.storeAccountModule.GetByIDScoped(id, storeID, hqUnbound)
+	if err != nil {
+		return err
+	}
+	return s.updateLoadedAccount(account, req)
 }
 
 // Delete 删除记账
@@ -1137,12 +1161,25 @@ func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindSto
 	if err != nil {
 		return err
 	}
-	if !s.CanBindConsumables(account) {
-		if account.PaymentStatus == model.StoreAccountPaymentPaid {
-			return errors.New("已支付订单仅允许在当前营业日内绑定消耗品")
-		}
-		return errors.New("记账已超过可编辑时间，仅支持创建后2个营业日内绑定消耗品")
+	return s.bindConsumablesToLoadedAccount(account, req)
+}
+
+func (s *StoreAccountService) BindConsumablesScoped(accountID, storeID uint, hqUnbound bool, req *model.BindStoreAccountConsumablesReq) error {
+	if !hqUnbound && storeID == 0 {
+		return errors.New("当前账号未绑定门店")
 	}
+	account, err := s.storeAccountModule.GetByIDScoped(accountID, storeID, hqUnbound)
+	if err != nil {
+		return err
+	}
+	return s.bindConsumablesToLoadedAccount(account, req)
+}
+
+func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.StoreAccount, req *model.BindStoreAccountConsumablesReq) error {
+	if !s.CanBindConsumables(account) {
+		return errors.New("记账已超过可编辑时间，仅支持当前营业日内绑定消耗品")
+	}
+	accountID := account.ID
 	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
 	consumableProductIDs := make([]uint, 0, len(req.Consumables))
 	for _, item := range req.Consumables {
@@ -1341,18 +1378,14 @@ func (s *StoreAccountService) IsAccountWithinBusinessDays(account *model.StoreAc
 	return !currentBusinessDate.After(lastAllowedDate)
 }
 
-// CanUpdateAccount 判断本次记账更新是否允许：创建后2个营业日内允许修改。
+// TODO: 后续可扩展为 2 个营业日内管理员可改、并叠加审计记录。
+// CanUpdateAccount 判断本次记账更新是否允许：仅当前营业日内允许修改。
 func (s *StoreAccountService) CanUpdateAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) bool {
-	return s.IsAccountWithinBusinessDays(account, 2)
+	return s.IsAccountWithinBusinessDays(account, 1)
 }
 
-// CanBindConsumables 判断记账单是否允许绑定消耗品。
+// TODO: 后续可扩展为 2 个营业日内管理员可绑定，并叠加审计记录。
+// CanBindConsumables 判断记账单是否允许绑定消耗品：仅当前营业日内允许。
 func (s *StoreAccountService) CanBindConsumables(account *model.StoreAccount) bool {
-	if account == nil {
-		return false
-	}
-	if account.PaymentStatus == model.StoreAccountPaymentPaid {
-		return s.IsAccountWithinBusinessDays(account, 1)
-	}
-	return s.IsAccountWithinBusinessDays(account, 2)
+	return s.IsAccountWithinBusinessDays(account, 1)
 }

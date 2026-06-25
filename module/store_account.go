@@ -110,6 +110,18 @@ func (m *StoreAccountModule) GetByID(id uint) (*model.StoreAccount, error) {
 	return &account, nil
 }
 
+func (m *StoreAccountModule) GetByIDScoped(id, storeID uint, hqUnbound bool) (*model.StoreAccount, error) {
+	var account model.StoreAccount
+	query := m.db.Preload("Items").Preload("Consumables").Preload("Store").Preload("Operator").Preload("Member").Where("id = ?", id)
+	if !hqUnbound {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if err := query.First(&account).Error; err != nil {
+		return nil, err
+	}
+	return &account, nil
+}
+
 // List 记账列表
 func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
 	accounts := make([]*model.StoreAccount, 0) // 初始化为空数组，避免返回null

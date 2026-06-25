@@ -542,10 +542,11 @@ import type { DictData, MemberRow, ProductUnitSpec, StoreAccount, StoreAccountCo
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 import { useUserStore } from '@/store/user'
+import { currentStoreIdOrUndefined } from '@/utils/currentStore'
 
 const qc = useQueryClient()
 const userStore = useUserStore()
-const tenantStoreId = computed(() => Number(userStore.tenantId || userStore.userInfo?.store_id || 0) || undefined)
+const tenantStoreId = computed(() => currentStoreIdOrUndefined(userStore.userInfo, userStore.tenantId))
 
 function dateText(t: Date): string {
   const y = t.getFullYear()
@@ -845,13 +846,11 @@ function paymentStatusDotClass(v: number | undefined): string {
 }
 
 function canEditAccount(row: StoreAccount): boolean {
-  if (Number(row.payment_status || 1) === 1) return false
-  return isWithinBusinessDays(row.created_at, 2)
+  return isWithinBusinessDays(row.created_at, 1)
 }
 
 function canBindConsumables(row: StoreAccount): boolean {
-  const paymentStatus = Number(row.payment_status || 1)
-  return isWithinBusinessDays(row.created_at, paymentStatus === 1 ? 1 : 2)
+  return isWithinBusinessDays(row.created_at, 1)
 }
 
 function businessDateKey(date: Date): string {
@@ -1363,7 +1362,7 @@ const eForm = reactive({
 
 function openEdit(row: StoreAccount): void {
   if (!canEditAccount(row)) {
-    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单不允许编辑' : '账单仅支持2个营业日内修改')
+    toast.warning('账单仅支持当前营业日内修改')
     return
   }
   editId.value = row.id
@@ -1546,7 +1545,7 @@ const consumableBindTotal = computed(() =>
 
 async function openConsumableDlg(row: StoreAccount): Promise<void> {
   if (!canBindConsumables(row)) {
-    toast.warning(Number(row.payment_status || 1) === 1 ? '已支付订单过了营业日不能绑定消耗品' : '消耗品仅支持2个营业日内绑定')
+    toast.warning('消耗品仅支持当前营业日内绑定')
     return
   }
   consumableTarget.value = row

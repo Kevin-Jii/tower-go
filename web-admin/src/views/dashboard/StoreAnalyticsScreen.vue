@@ -130,13 +130,13 @@ const periodOptions = [
 ]
 
 const screenRoot = ref<HTMLElement | null>(null)
+const currentStoreId = computed(() => userStore.currentStoreId || 0)
 
 const storeParam = computed(() => {
-  const tid = Number(userStore.tenantId ?? 0)
-  return tid > 0 ? { store_id: tid } : {}
+  return currentStoreId.value > 0 ? { store_id: currentStoreId.value } : {}
 })
 
-const dashKey = computed(() => ['statistics', 'dashboard', period.value, userStore.tenantId] as const)
+const dashKey = computed(() => ['statistics', 'dashboard', period.value, currentStoreId.value] as const)
 const {
   data: dash,
   isPending: dashPending,
@@ -164,6 +164,10 @@ function goAdmin(): void {
 }
 
 watch(period, () => {
+  void loadHomeCharts()
+})
+
+watch(currentStoreId, () => {
   void loadHomeCharts()
 })
 
@@ -278,6 +282,10 @@ const axisText = '#e2e8f0'
 const splitLine = 'rgba(148, 163, 184, 0.22)'
 const axisFont = 13
 
+function isCompactScreen(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+}
+
 function disposeCharts(): void {
   lineChart?.dispose()
   pieChart?.dispose()
@@ -298,23 +306,24 @@ function applyChartOptions(hc: HomeChartsStats): void {
   ensureCharts()
   if (!lineChart || !pieChart || !radarChart || !memberRankChart) return
 
+  const compact = isCompactScreen()
   const line = hc.line ?? []
   lineChart.setOption({
     backgroundColor: 'transparent',
     animationDuration: 900,
     animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: '#22d3ee', textStyle: { color: '#e2e8f0' } },
-    grid: { left: 56, right: 20, top: 36, bottom: line.length > 10 ? 52 : 44 },
+    grid: { left: compact ? 42 : 56, right: compact ? 10 : 20, top: compact ? 24 : 36, bottom: compact ? 36 : line.length > 10 ? 52 : 44 },
     xAxis: {
       type: 'category',
       data: line.map((x) => x.date),
       axisLine: { lineStyle: { color: 'rgba(226,232,240,0.5)' } },
-      axisLabel: { color: axisText, fontSize: axisFont, fontWeight: 500, rotate: line.length > 10 ? 28 : 0 },
+      axisLabel: { color: axisText, fontSize: compact ? 10 : axisFont, fontWeight: 500, rotate: compact || line.length > 10 ? 28 : 0 },
     },
     yAxis: {
       type: 'value',
       splitLine: { lineStyle: { color: splitLine } },
-      axisLabel: { color: axisText, fontSize: axisFont, fontWeight: 500 },
+      axisLabel: { color: axisText, fontSize: compact ? 10 : axisFont, fontWeight: 500 },
     },
     series: [
       {
@@ -341,19 +350,24 @@ function applyChartOptions(hc: HomeChartsStats): void {
     animationDuration: 900,
     animationEasing: 'quarticOut',
     tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: '#a78bfa', textStyle: { color: '#e2e8f0' } },
-    legend: { bottom: 4, textStyle: { color: axisText, fontSize: 13, fontWeight: 600 } },
+    legend: { type: compact ? 'scroll' : 'plain', bottom: 2, textStyle: { color: axisText, fontSize: compact ? 10 : 13, fontWeight: 600 } },
     series: [
       {
         name: '渠道',
         type: 'pie',
-        radius: ['42%', '68%'],
-        center: ['50%', '46%'],
+        radius: compact ? ['38%', '62%'] : ['42%', '68%'],
+        center: compact ? ['50%', '43%'] : ['50%', '46%'],
         itemStyle: {
           borderRadius: 6,
           borderColor: '#0f172a',
           borderWidth: 2,
         },
-        label: { color: '#f8fafc', fontSize: 13, fontWeight: 600 },
+        label: {
+          color: '#f8fafc',
+          fontSize: compact ? 10 : 13,
+          fontWeight: 600,
+          formatter: compact ? '{b}' : undefined,
+        },
         data: pie.map((p, i) => ({
           name: p.channel_name || p.channel || `渠道${i}`,
           value: p.amount,
@@ -374,7 +388,7 @@ function applyChartOptions(hc: HomeChartsStats): void {
       indicator: indicators.length ? indicators : [{ name: '暂无', max: 1 }],
       splitLine: { lineStyle: { color: splitLine } },
       splitArea: { show: true, areaStyle: { color: ['rgba(34,211,238,0.05)', 'rgba(167,139,250,0.06)'] } },
-      axisName: { color: '#e2e8f0', fontSize: 13, fontWeight: 600, padding: [2, 4] },
+      axisName: { color: '#e2e8f0', fontSize: compact ? 10 : 13, fontWeight: 600, padding: [2, 4] },
     },
     series: [
       {
@@ -406,7 +420,7 @@ function applyChartOptions(hc: HomeChartsStats): void {
       textStyle: { color: '#e2e8f0' },
       valueFormatter: (value: unknown) => `¥${formatAmount(Number(value))}`,
     },
-    grid: { left: 92, right: 74, top: 18, bottom: 16 },
+    grid: { left: compact ? 68 : 92, right: compact ? 52 : 74, top: compact ? 10 : 18, bottom: compact ? 8 : 16 },
     xAxis: {
       type: 'value',
       show: false,
@@ -420,17 +434,17 @@ function applyChartOptions(hc: HomeChartsStats): void {
       axisTick: { show: false },
       axisLabel: {
         color: axisText,
-        fontSize: 13,
+        fontSize: compact ? 10 : 13,
         fontWeight: 800,
         overflow: 'truncate',
-        width: 82,
+        width: compact ? 58 : 82,
       },
     },
     series: [
       {
         name: '消费金额',
         type: 'bar',
-        barWidth: 12,
+        barWidth: compact ? 10 : 12,
         barGap: '45%',
         data: rank.length ? rank.map((x) => Number(x.amount || 0)) : [0],
         backgroundStyle: {
@@ -442,7 +456,7 @@ function applyChartOptions(hc: HomeChartsStats): void {
           show: true,
           position: 'right',
           color: '#a7f3d0',
-          fontSize: 12,
+          fontSize: compact ? 10 : 12,
           fontWeight: 900,
           formatter: ({ value }: { value: number | string }) => `¥${formatAmount(Number(value))}`,
         },
@@ -460,14 +474,17 @@ function applyChartOptions(hc: HomeChartsStats): void {
 
 async function loadHomeCharts(): Promise<void> {
   const range = activeRange.value
+  const storeId = currentStoreId.value
+  const requestKey = `${period.value}:${storeId}:${range.start}:${range.end}`
   homeLoading.value = true
   try {
     const hc = await getHomeCharts({
       start_date: range.start,
       end_date: range.end,
       granularity: rangeGranularity(range),
-      ...storeParam.value,
+      ...(storeId > 0 ? { store_id: storeId } : {}),
     })
+    if (requestKey !== `${period.value}:${currentStoreId.value}:${activeRange.value.start}:${activeRange.value.end}`) return
     homeCharts.value = hc
     await paintChartsWhenReady(hc)
   } catch {
@@ -498,6 +515,10 @@ async function paintChartsWhenReady(hc: HomeChartsStats): Promise<void> {
 
 function onWinResize(): void {
   requestAnimationFrame(() => {
+    if (homeCharts.value) {
+      applyChartOptions(homeCharts.value)
+      return
+    }
     lineChart?.resize()
     pieChart?.resize()
     radarChart?.resize()
@@ -1140,30 +1161,49 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 820px) {
+  .dash-screen,
+  .dash-screen--fullscreen {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .dash-screen__content {
-    gap: 8px;
+    height: auto;
+    min-height: 100dvh;
+    gap: 10px;
     padding: 10px;
+    overflow: visible;
   }
 
   .dash-screen__topbar {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .dash-controls {
-    justify-content: flex-end;
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .dash-chart-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+    flex: 0 0 auto;
   }
 
   .dash-overview-focus {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    height: auto;
   }
 
   .dash-overview-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
   }
 
   .dash-radar-layout {
@@ -1178,22 +1218,28 @@ onBeforeUnmount(() => {
   .dash-panel--flow,
   .dash-panel--line {
     grid-column: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .dash-panel--overview {
     grid-row: 1;
+    padding: 12px !important;
   }
 
   .dash-panel--pie {
     grid-row: 2;
+    height: 280px;
   }
 
   .dash-panel--member {
     grid-row: 3;
+    height: 260px;
   }
 
   .dash-panel--line {
     grid-row: 4;
+    height: 260px;
   }
 
   .dash-panel--radar,
@@ -1201,8 +1247,67 @@ onBeforeUnmount(() => {
     display: none;
   }
 
+  .dash-chart {
+    height: 100%;
+  }
+
+  .dash-primary-stat {
+    min-height: 112px;
+    padding: 14px;
+  }
+
+  .dash-primary-stat strong {
+    font-size: 34px;
+    overflow-wrap: anywhere;
+  }
+
+  .dash-overview-card {
+    min-height: 58px;
+    padding: 9px;
+  }
+
+  .dash-overview-card strong {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
   .dash-native-select {
     width: 116px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-screen__title {
+    font-size: 20px;
+  }
+
+  .dash-controls {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .dash-native-control,
+  .dash-btn-period,
+  .dash-btn-admin {
+    width: 100% !important;
+  }
+
+  .dash-btn-admin {
+    grid-column: 1 / -1;
+  }
+
+  .dash-overview-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dash-panel--pie {
+    height: 250px;
+  }
+
+  .dash-panel--member,
+  .dash-panel--line {
+    height: 240px;
   }
 }
 

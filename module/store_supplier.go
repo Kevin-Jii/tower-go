@@ -16,20 +16,31 @@ func NewStoreSupplierModule(db *gorm.DB) *StoreSupplierModule {
 // BindSuppliers 门店绑定供应商
 func (m *StoreSupplierModule) BindSuppliers(storeID uint, supplierIDs []uint) error {
 	for _, supplierID := range supplierIDs {
-		// 检查是否已绑定
-		var count int64
-		m.db.Model(&model.StoreSupplier{}).Where("store_id = ? AND supplier_id = ?", storeID, supplierID).Count(&count)
-		if count > 0 {
+		var binding model.StoreSupplier
+		err := m.db.Unscoped().
+			Where("store_id = ? AND supplier_id = ?", storeID, supplierID).
+			First(&binding).Error
+		if err == nil {
+			if err := m.db.Unscoped().Model(&model.StoreSupplier{}).
+				Where("id = ?", binding.ID).
+				Updates(map[string]interface{}{
+					"status":     1,
+					"deleted_at": nil,
+				}).Error; err != nil {
+				return err
+			}
 			continue
 		}
+		if err != gorm.ErrRecordNotFound {
+			return err
+		}
 
-		// 创建绑定
-		binding := &model.StoreSupplier{
+		newBinding := &model.StoreSupplier{
 			StoreID:    storeID,
 			SupplierID: supplierID,
 			Status:     1,
 		}
-		if err := m.db.Create(binding).Error; err != nil {
+		if err := m.db.Create(newBinding).Error; err != nil {
 			return err
 		}
 	}

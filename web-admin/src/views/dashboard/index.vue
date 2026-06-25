@@ -51,4 +51,13 @@ watch(() => route.query.section, scrollToAnalytics)
   overflow: hidden;
   background: #050914;
 }
+
+@media (max-width: 820px) {
+  .dashboard-fullscreen-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
 </style>

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"strings"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
@@ -25,18 +27,44 @@ func requireStoreIDForHQStoreSupplierRead(ctx *gin.Context, storeID uint) bool {
 	return true
 }
 
+func resolveStoreSupplierWriteStoreID(ctx *gin.Context, bodyStoreID uint) (uint, bool) {
+	if !middleware.HQUnboundAdmin(ctx) {
+		storeID := middleware.GetStoreID(ctx)
+		if storeID == 0 {
+			http.Error(ctx, 400, "当前账号未绑定门店")
+			return 0, false
+		}
+		return storeID, true
+	}
+
+	if bodyStoreID > 0 {
+		return bodyStoreID, true
+	}
+	if strings.TrimSpace(ctx.Query("store_id")) != "" {
+		if storeID, ok := http.ParseUintQuery(ctx, "store_id"); ok && storeID > 0 {
+			return storeID, true
+		}
+	}
+	http.Error(ctx, 400, "总部账号绑定/解绑供应商时，请传入 store_id（门店 ID）")
+	return 0, false
+}
+
 // BindSuppliers 门店绑定供应商
 func (c *StoreSupplierController) BindSuppliers(ctx *gin.Context) {
 	var req model.BindStoreSuppliersReq
 	if !http.BindJSON(ctx, &req) {
 		return
 	}
-	if err := c.storeSupplierService.BindSuppliers(req.StoreID, req.SupplierIDs); err != nil {
+	storeID, ok := resolveStoreSupplierWriteStoreID(ctx, req.StoreID)
+	if !ok {
+		return
+	}
+	if err := c.storeSupplierService.BindSuppliers(storeID, req.SupplierIDs); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
 	// 返回已绑定列表便于前端直接刷新（POST 仍兼容 data 为空的旧客户端）
-	list, err := c.storeSupplierService.ListSuppliersByStoreID(req.StoreID)
+	list, err := c.storeSupplierService.ListSuppliersByStoreID(storeID)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
@@ -50,7 +78,11 @@ func (c *StoreSupplierController) UnbindSuppliers(ctx *gin.Context) {
 	if !http.BindJSON(ctx, &req) {
 		return
 	}
-	if err := c.storeSupplierService.UnbindSuppliers(req.StoreID, req.SupplierIDs); err != nil {
+	storeID, ok := resolveStoreSupplierWriteStoreID(ctx, req.StoreID)
+	if !ok {
+		return
+	}
+	if err := c.storeSupplierService.UnbindSuppliers(storeID, req.SupplierIDs); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}

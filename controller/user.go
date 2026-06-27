@@ -22,11 +22,17 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token     string      `json:"token"`
-	TokenType string      `json:"token_type"` // 固定 "Bearer"
-	ExpiresIn int64       `json:"expires_in"` // 过期时间（秒）
-	UserInfo  *model.User `json:"user_info"`
-	Strategy  string      `json:"strategy"` // 会话策略 single/multi
+	Token            string      `json:"token"`
+	RefreshToken     string      `json:"refresh_token,omitempty"`
+	TokenType        string      `json:"token_type"` // 固定 "Bearer"
+	ExpiresIn        int64       `json:"expires_in"` // access token 过期时间（秒）
+	RefreshExpiresIn int64       `json:"refresh_expires_in,omitempty"`
+	UserInfo         *model.User `json:"user_info"`
+	Strategy         string      `json:"strategy"` // 会话策略 single/multi
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
 // ResetPasswordRequest 重置密码请求（可后续扩展指定密码，当前固定无需 body）
@@ -383,6 +389,11 @@ func (c *UserController) Login(ctx *gin.Context) {
 		http.Error(ctx, 500, "Failed to generate token")
 		return
 	}
+	refreshToken, refreshExpiresIn, err := auth.GenerateRefreshToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
+	if err != nil {
+		http.Error(ctx, 500, "Failed to generate refresh token")
+		return
+	}
 	_, _ = service.BuildUserPermissionCache(user.ID, tokenStoreID, roleID, roleCode)
 	ctx.Set("userID", user.ID)
 	ctx.Set("username", user.Username)
@@ -401,11 +412,72 @@ func (c *UserController) Login(ctx *gin.Context) {
 	}
 
 	http.Success(ctx, LoginResponse{
-		Token:     token,
-		TokenType: "Bearer",
-		ExpiresIn: expiresIn,
-		UserInfo:  user,
-		Strategy:  strategy,
+		Token:            token,
+		RefreshToken:     refreshToken,
+		TokenType:        "Bearer",
+		ExpiresIn:        expiresIn,
+		RefreshExpiresIn: refreshExpiresIn,
+		UserInfo:         user,
+		Strategy:         strategy,
+	})
+}
+
+func (c *UserController) RefreshToken(ctx *gin.Context) {
+	var req RefreshTokenRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+
+	claims, err := auth.ParseToken(req.RefreshToken)
+	if err != nil || claims.TokenUse != "refresh" {
+		http.Error(ctx, 401, "刷新令牌无效，请重新登录")
+		return
+	}
+
+	user, err := c.userService.GetUser(claims.UserID)
+	if err != nil || user == nil || user.Status == 2 {
+		http.Error(ctx, 401, "账号状态已变更，请重新登录")
+		return
+	}
+
+	roleCode := ""
+	roleID := uint(0)
+	if user.Role != nil {
+		roleCode = user.Role.Code
+		roleID = user.RoleID
+	}
+	if !model.IsSuperAdminRole(roleCode) && user.StoreID > 0 && user.Store != nil && user.Store.Status == 2 {
+		http.Error(ctx, 401, "该门店已停业，请重新登录")
+		return
+	}
+
+	tokenStoreID := user.StoreID
+	if model.IsSuperAdminRole(roleCode) {
+		tokenStoreID = 0
+		user.StoreID = 0
+		user.Store = nil
+	}
+
+	token, expiresIn, err := auth.GenerateToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
+	if err != nil {
+		http.Error(ctx, 500, "Failed to generate token")
+		return
+	}
+	refreshToken, refreshExpiresIn, err := auth.GenerateRefreshToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
+	if err != nil {
+		http.Error(ctx, 500, "Failed to generate refresh token")
+		return
+	}
+	_, _ = service.BuildUserPermissionCache(user.ID, tokenStoreID, roleID, roleCode)
+
+	http.Success(ctx, LoginResponse{
+		Token:            token,
+		RefreshToken:     refreshToken,
+		TokenType:        "Bearer",
+		ExpiresIn:        expiresIn,
+		RefreshExpiresIn: refreshExpiresIn,
+		UserInfo:         user,
 	})
 }
 

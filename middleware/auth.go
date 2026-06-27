@@ -38,6 +38,11 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		if claims.TokenUse != "" && claims.TokenUse != "access" {
+			http.ErrorApp(c, apicode.TokenInvalid)
+			c.Abort()
+			return
+		}
 
 		// 将用户信息存储到上下文（优先使用 Token 中的值，安全可靠）
 		c.Set("userID", claims.UserID)
@@ -169,9 +174,9 @@ func GetRoleModel(c *gin.Context) *model.Role {
 // GetDataScope 返回本请求用于「行级数据范围」的 DataScope 枚举（D4：单一真源，勿在 Controller 用角色码推断全库）。
 //
 // 规则摘要：
-//  1) HQUnboundAdmin(c) 为真（super_admin 始终；admin 且 token store_id==0）→ DataScopeAll；列表可再按 query store_id 筛店。
-//  2) token 中 store_id>0 且角色在库中为「全部」→ 强制降为 DataScopeStore（admin 绑店场景）。
-//  3) 其余使用 roles.data_scope；无角色模型时默认 DataScopeStore。
+//  1. HQUnboundAdmin(c) 为真（super_admin 始终；admin 且 token store_id==0）→ DataScopeAll；列表可再按 query store_id 筛店。
+//  2. token 中 store_id>0 且角色在库中为「全部」→ 强制降为 DataScopeStore（admin 绑店场景）。
+//  3. 其余使用 roles.data_scope；无角色模型时默认 DataScopeStore。
 //
 // 同步写入 authctx.Context.EffectiveDataScope；HTTP 列表请求的 DataScope 字段由 service 从 authctx 注入（见 list_authctx.go）。
 func GetDataScope(c *gin.Context) int8 {

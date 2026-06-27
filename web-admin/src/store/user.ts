@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import type { Menu, User } from "@/api/types";
 import { fetchUserMenus, fetchUserPermissions } from "@/api/menu";
+import { toast } from "@/feedback/toast";
 import {
   clearStoredTenantId,
   getStoredTenantId,
@@ -106,7 +107,7 @@ export const useUserStore = defineStore("user", () => {
     setPermissions(p);
   }
 
-  async function logout(): Promise<void> {
+  async function logout(options?: { redirect?: string; message?: string }): Promise<void> {
     const { default: router, resetDynamicRoutes } = await import("@/router");
     resetDynamicRoutes(router);
     token.value = "";
@@ -117,7 +118,14 @@ export const useUserStore = defineStore("user", () => {
     setToken("");
     localStorage.removeItem("tower_user");
     clearStoredTenantId();
-    await router.replace({ name: "Login" });
+    if (options?.message) {
+      toast.warning(options.message);
+    }
+    const redirect = options?.redirect;
+    await router.replace({
+      name: "Login",
+      query: redirect && redirect !== "/login" ? { redirect } : undefined,
+    });
   }
 
   function markDynamicRoutes(ready: boolean): void {

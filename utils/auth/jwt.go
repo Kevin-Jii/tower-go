@@ -28,18 +28,29 @@ type Claims struct {
 	StoreID  uint   `json:"store_id"`  // 门店 ID
 	RoleCode string `json:"role_code"` // 角色代码
 	RoleID   uint   `json:"role_id"`   // 角色 ID
+	TokenUse string `json:"token_use"` // access / refresh
 	jwt.RegisteredClaims
 }
 
 // GenerateToken 生成JWT token
 func GenerateToken(userID uint, username string, storeID uint, roleCode string, roleID uint) (string, int64, error) {
-	expiration := time.Now().Add(24 * time.Hour)
+	return generateToken(userID, username, storeID, roleCode, roleID, "access", 24*time.Hour)
+}
+
+// GenerateRefreshToken 生成刷新令牌。
+func GenerateRefreshToken(userID uint, username string, storeID uint, roleCode string, roleID uint) (string, int64, error) {
+	return generateToken(userID, username, storeID, roleCode, roleID, "refresh", 30*24*time.Hour)
+}
+
+func generateToken(userID uint, username string, storeID uint, roleCode string, roleID uint, tokenUse string, ttl time.Duration) (string, int64, error) {
+	expiration := time.Now().Add(ttl)
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
 		StoreID:  storeID,
 		RoleCode: roleCode,
 		RoleID:   roleID,
+		TokenUse: tokenUse,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiration),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

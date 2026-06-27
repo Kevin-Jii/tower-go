@@ -160,6 +160,77 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 	http.SuccessWithPagination(ctx, members, total, page, pageSize)
 }
 
+// ListPointRules 查询会员积分规则
+func (c *MemberController) ListPointRules(ctx *gin.Context) {
+	var req model.ListMemberPointRuleReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	req.Page = http.GetPage(ctx)
+	req.PageSize = http.GetPageSize(ctx)
+
+	storeID := middleware.GetStoreID(ctx)
+	list, total, err := c.service.ListPointRules(&req, storeID, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+// CreatePointRule 新增会员积分规则
+func (c *MemberController) CreatePointRule(ctx *gin.Context) {
+	var req model.UpsertMemberPointRuleReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	storeID := middleware.GetStoreID(ctx)
+	row, err := c.service.CreatePointRule(&req, storeID, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, row)
+}
+
+// UpdatePointRule 更新会员积分规则
+func (c *MemberController) UpdatePointRule(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		http.Error(ctx, 400, "invalid id")
+		return
+	}
+	var req model.UpsertMemberPointRuleReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	storeID := middleware.GetStoreID(ctx)
+	row, err := c.service.UpdatePointRule(uint(id), &req, storeID, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, row)
+}
+
+// DeletePointRule 删除会员积分规则
+func (c *MemberController) DeletePointRule(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		http.Error(ctx, 400, "invalid id")
+		return
+	}
+	storeID := middleware.GetStoreID(ctx)
+	if err := c.service.DeletePointRule(uint(id), storeID, middleware.HQUnboundAdmin(ctx)); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
 // ListWineStorages 查询会员存酒
 func (c *MemberController) ListWineStorages(ctx *gin.Context) {
 	var req model.ListMemberWineStorageReq

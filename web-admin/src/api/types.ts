@@ -709,7 +709,20 @@ export interface MemberRow {
   points: number
   level: number
   version: number
+  unsettled_amount?: string | number
   createTime?: string
+}
+
+export interface MemberPointRule {
+  id: number
+  store_id?: number
+  name: string
+  spend_amount: number
+  points: number
+  status: number
+  remark?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface MemberWineStorage {

@@ -77,6 +77,22 @@ func (s *MemberService) ListMembers(keyword string, page, pageSize int, storeID 
 	return s.module.ListMembers(keyword, page, pageSize, storeID, isAdmin)
 }
 
+func (s *MemberService) ListPointRules(req *model.ListMemberPointRuleReq, storeID uint, isAdmin bool) ([]model.MemberPointRule, int64, error) {
+	return s.module.ListPointRules(req, storeID, isAdmin)
+}
+
+func (s *MemberService) CreatePointRule(req *model.UpsertMemberPointRuleReq, storeID uint, isAdmin bool) (*model.MemberPointRule, error) {
+	return s.module.CreatePointRule(req, storeID, isAdmin)
+}
+
+func (s *MemberService) UpdatePointRule(id uint, req *model.UpsertMemberPointRuleReq, storeID uint, isAdmin bool) (*model.MemberPointRule, error) {
+	return s.module.UpdatePointRule(id, req, storeID, isAdmin)
+}
+
+func (s *MemberService) DeletePointRule(id uint, storeID uint, isAdmin bool) error {
+	return s.module.DeletePointRule(id, storeID, isAdmin)
+}
+
 func (s *MemberService) ListWineStorages(req *model.ListMemberWineStorageReq, storeID uint, isAdmin bool) ([]model.MemberWineStorage, int64, error) {
 	return s.module.ListWineStorages(req, storeID, isAdmin)
 }

@@ -189,7 +189,158 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID u
 	if err := query.Find(&members).Error; err != nil {
 		return nil, 0, err
 	}
+	if err := m.fillMemberUnsettledAmounts(members, storeID, isAdmin); err != nil {
+		return nil, 0, err
+	}
 	return members, total, nil
+}
+
+func (m *MemberModule) fillMemberUnsettledAmounts(members []model.Member, storeID uint, isAdmin bool) error {
+	if len(members) == 0 {
+		return nil
+	}
+	ids := make([]uint, 0, len(members))
+	index := make(map[uint]int, len(members))
+	for i := range members {
+		ids = append(ids, members[i].ID)
+		index[members[i].ID] = i
+	}
+
+	type amountRow struct {
+		MemberID uint
+		Amount   float64
+	}
+	rows := make([]amountRow, 0)
+	q := m.db.Table("store_accounts").
+		Select("member_id, COALESCE(SUM(total_amount),0) AS amount").
+		Where("deleted_at IS NULL AND member_id IN ? AND payment_status = ?", ids, model.StoreAccountPaymentUnpaid)
+	if !isAdmin {
+		q = q.Where("store_id = ?", storeID)
+	}
+	if err := q.Group("member_id").Scan(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if i, ok := index[row.MemberID]; ok {
+			members[i].UnsettledAmount = row.Amount
+		}
+	}
+	return nil
+}
+
+// ListPointRules 查询会员积分规则
+func (m *MemberModule) ListPointRules(req *model.ListMemberPointRuleReq, storeID uint, isAdmin bool) ([]model.MemberPointRule, int64, error) {
+	rows := make([]model.MemberPointRule, 0)
+	var total int64
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	query := m.db.Model(&model.MemberPointRule{})
+	if isAdmin {
+		if req.StoreID > 0 {
+			query = query.Where("store_id = ?", req.StoreID)
+		}
+	} else {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if req.Status > 0 {
+		query = query.Where("status = ?", req.Status)
+	}
+	if kw := strings.TrimSpace(req.Keyword); kw != "" {
+		query = query.Where("name LIKE ? OR remark LIKE ?", "%"+kw+"%", "%"+kw+"%")
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+	return rows, total, nil
+}
+
+// CreatePointRule 新增会员积分规则
+func (m *MemberModule) CreatePointRule(req *model.UpsertMemberPointRuleReq, storeID uint, isAdmin bool) (*model.MemberPointRule, error) {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, errors.New("请填写规则名称")
+	}
+	realStoreID := storeID
+	if isAdmin && req.StoreID > 0 {
+		realStoreID = req.StoreID
+	}
+	status := req.Status
+	if status == 0 {
+		status = model.MemberPointRuleEnabled
+	}
+	rule := &model.MemberPointRule{
+		StoreID:     realStoreID,
+		Name:        name,
+		SpendAmount: req.SpendAmount,
+		Points:      req.Points,
+		Status:      status,
+		Remark:      strings.TrimSpace(req.Remark),
+	}
+	if err := m.db.Create(rule).Error; err != nil {
+		return nil, err
+	}
+	return rule, nil
+}
+
+// UpdatePointRule 更新会员积分规则
+func (m *MemberModule) UpdatePointRule(id uint, req *model.UpsertMemberPointRuleReq, storeID uint, isAdmin bool) (*model.MemberPointRule, error) {
+	rule, err := m.GetPointRule(id, storeID, isAdmin)
+	if err != nil {
+		return nil, err
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, errors.New("请填写规则名称")
+	}
+	status := req.Status
+	if status == 0 {
+		status = model.MemberPointRuleEnabled
+	}
+	updates := map[string]interface{}{
+		"name":         name,
+		"spend_amount": req.SpendAmount,
+		"points":       req.Points,
+		"status":       status,
+		"remark":       strings.TrimSpace(req.Remark),
+	}
+	if isAdmin && req.StoreID > 0 {
+		updates["store_id"] = req.StoreID
+	}
+	if err := m.db.Model(rule).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	return m.GetPointRule(id, storeID, isAdmin)
+}
+
+// DeletePointRule 删除会员积分规则
+func (m *MemberModule) DeletePointRule(id uint, storeID uint, isAdmin bool) error {
+	rule, err := m.GetPointRule(id, storeID, isAdmin)
+	if err != nil {
+		return err
+	}
+	return m.db.Delete(&model.MemberPointRule{}, rule.ID).Error
+}
+
+func (m *MemberModule) GetPointRule(id uint, storeID uint, isAdmin bool) (*model.MemberPointRule, error) {
+	var rule model.MemberPointRule
+	query := m.db.Model(&model.MemberPointRule{})
+	if !isAdmin {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if err := query.Where("id = ?", id).First(&rule).Error; err != nil {
+		return nil, err
+	}
+	return &rule, nil
 }
 
 // ListWineStorages 查询会员存酒当前存量

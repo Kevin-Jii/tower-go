@@ -1,5 +1,5 @@
 import { http, unwrap } from './http'
-import type { MemberConsumptionPage, MemberGiftRecord, MemberRow, MemberWineStorage, MemberWineTransaction, Paginated } from './types'
+import type { MemberConsumptionPage, MemberGiftRecord, MemberPointRule, MemberRow, MemberWineStorage, MemberWineTransaction, Paginated } from './types'
 
 export async function listMembers(params?: {
   page?: number
@@ -27,6 +27,45 @@ export async function updateMember(id: number, body: Record<string, unknown>): P
 
 export async function deleteMember(id: number): Promise<void> {
   await http.delete<import('./types').ApiEnvelope<unknown>>(`/members/${id}`)
+}
+
+export async function listMemberPointRules(params?: {
+  page?: number
+  page_size?: number
+  keyword?: string
+  status?: number
+}): Promise<Paginated<MemberPointRule>> {
+  const res = await http.get<import('./types').ApiEnvelope<Paginated<MemberPointRule>>>('/members/point-rules', { params })
+  return unwrap(res)
+}
+
+export async function createMemberPointRule(body: {
+  name: string
+  spend_amount: number
+  points: number
+  status?: number
+  remark?: string
+}): Promise<MemberPointRule> {
+  const res = await http.post<import('./types').ApiEnvelope<MemberPointRule>>('/members/point-rules', body)
+  return unwrap(res)
+}
+
+export async function updateMemberPointRule(
+  id: number,
+  body: {
+    name: string
+    spend_amount: number
+    points: number
+    status?: number
+    remark?: string
+  },
+): Promise<MemberPointRule> {
+  const res = await http.put<import('./types').ApiEnvelope<MemberPointRule>>(`/members/point-rules/${id}`, body)
+  return unwrap(res)
+}
+
+export async function deleteMemberPointRule(id: number): Promise<void> {
+  await http.delete<import('./types').ApiEnvelope<unknown>>(`/members/point-rules/${id}`)
 }
 
 export async function adjustMemberBalance(

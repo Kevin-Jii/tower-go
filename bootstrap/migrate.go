@@ -53,6 +53,7 @@ var autoMigrateModels = []interface{}{
 	&model.DingTalkUser{},
 	&model.MessageTemplate{},
 	&model.Member{},
+	&model.MemberPointRule{},
 	&model.WalletLog{},
 	&model.RechargeOrder{},
 	&model.MemberWineStorage{},

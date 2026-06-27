@@ -5,6 +5,7 @@
       <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
         <BaseInput v-model="keyword" class="w-full sm:w-48" placeholder="手机 / UID" clearable @enter="reload" />
         <BaseButton variant="primary" @click="reload">查询</BaseButton>
+        <BaseButton v-permission="'store:member:edit'" variant="secondary" @click="openRuleDialog">会员规则</BaseButton>
         <BaseButton v-permission="'store:member:add'" variant="primary" @click="openCreate">新增会员</BaseButton>
       </div>
     </div>
@@ -13,6 +14,9 @@
       min-width="1000px">
       <template #cell-balance="{ row }">
         {{ fmtMoney((row as MemberRow).balance) }}
+      </template>
+      <template #cell-unsettled_amount="{ row }">
+        <span class="font-semibold text-red-600">{{ fmtMoney((row as MemberRow).unsettled_amount ?? 0) }}</span>
       </template>
       <template #cell-actions="{ row }">
         <BaseTableRowActions :actions="memberRowActions(row as MemberRow)" />
@@ -158,6 +162,73 @@
         <BaseButton variant="ghost" @click="giftDlg = false">关闭</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="ruleDlg" title="会员规则" max-width="min(900px, 96vw)">
+      <div class="space-y-4">
+        <div class="flex flex-col lg:flex-row gap-4">
+          <div class="lg:w-72 shrink-0 rounded border border-[var(--color-border-2)] p-3">
+            <div class="mb-3 text-sm font-semibold">{{ ruleEditId ? '编辑规则' : '新增规则' }}</div>
+            <div class="space-y-3">
+              <BaseFormItem label="规则名称" required>
+                <BaseInput v-model="ruleForm.name" placeholder="如：消费积分" />
+              </BaseFormItem>
+              <BaseFormItem label="消费金额" required>
+                <BaseNumberInput v-model="ruleForm.spend_amount" :min="0.01" :step="0.01" />
+              </BaseFormItem>
+              <BaseFormItem label="获得积分" required>
+                <BaseNumberInput v-model="ruleForm.points" :min="1" :step="1" />
+              </BaseFormItem>
+              <BaseFormItem label="状态">
+                <BaseSelect v-model="ruleForm.status" :options="ruleStatusOptions" />
+              </BaseFormItem>
+              <BaseFormItem label="备注">
+                <BaseInput v-model="ruleForm.remark" />
+              </BaseFormItem>
+              <div class="flex justify-end gap-2">
+                <BaseButton variant="ghost" @click="resetRuleForm">重置</BaseButton>
+                <BaseButton variant="primary" :loading="ruleSaving" @click="saveRule">保存</BaseButton>
+              </div>
+            </div>
+          </div>
+
+          <div class="min-w-0 flex-1 space-y-3">
+            <div class="flex flex-wrap items-end gap-2">
+              <BaseInput v-model="ruleKeyword" class="w-full sm:w-48" placeholder="规则名称 / 备注" clearable @enter="reloadRules" />
+              <BaseButton variant="primary" :loading="ruleLoading" @click="reloadRules">查询</BaseButton>
+            </div>
+            <BaseTable
+              :columns="ruleColumns"
+              :data="(ruleRows as unknown) as Record<string, unknown>[]"
+              :loading="ruleLoading"
+              min-width="620px"
+            >
+              <template #cell-spend_amount="{ row }">{{ fmtMoney((row as MemberPointRule).spend_amount) }}</template>
+              <template #cell-points="{ row }">{{ (row as MemberPointRule).points }}</template>
+              <template #cell-status="{ row }">
+                <span :class="(row as MemberPointRule).status === 1 ? 'text-emerald-600' : 'text-slate-500'">
+                  {{ ruleStatusText((row as MemberPointRule).status) }}
+                </span>
+              </template>
+              <template #cell-actions="{ row }">
+                <BaseTableRowActions :actions="ruleRowActions(row as MemberPointRule)" :max-inline="2" />
+              </template>
+            </BaseTable>
+            <div class="flex justify-end">
+              <BasePagination
+                :page="rulePage"
+                :page-size="rulePageSize"
+                :total="ruleTotal"
+                @update:page="(p) => (rulePage = p)"
+                @update:page-size="(s) => (rulePageSize = s)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="ruleDlg = false">关闭</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -176,8 +247,20 @@ import {
   BaseTableRowActions,
 } from '@/components/base'
 import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
-import { adjustMemberBalance, createMember, deleteMember, listMemberConsumptions, listMemberGiftRecords, listMembers, updateMember } from '@/api/member'
-import type { MemberConsumptionRecord, MemberGiftRecord, MemberRow } from '@/api/types'
+import {
+  adjustMemberBalance,
+  createMember,
+  createMemberPointRule,
+  deleteMember,
+  deleteMemberPointRule,
+  listMemberConsumptions,
+  listMemberGiftRecords,
+  listMemberPointRules,
+  listMembers,
+  updateMember,
+  updateMemberPointRule,
+} from '@/api/member'
+import type { MemberConsumptionRecord, MemberGiftRecord, MemberPointRule, MemberRow } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
 
@@ -214,6 +297,7 @@ const columns: BaseTableColumn[] = [
   { key: 'phone', label: '手机', prop: 'phone', width: '140px' },
   { key: 'name', label: '姓名', prop: 'name', width: '100px' },
   { key: 'balance', label: '余额', width: '100px' },
+  { key: 'unsettled_amount', label: '未结算', width: '110px' },
   { key: 'points', label: '积分', prop: 'points', width: '72px' },
   { key: 'level', label: '等级', prop: 'level', width: '72px' },
   { key: 'actions', label: '操作', width: '240px', align: 'right' },
@@ -236,6 +320,18 @@ const giftColumns: BaseTableColumn[] = [
   { key: 'cost_amount', label: '成本金额', width: '110px' },
   { key: 'reason', label: '原因', prop: 'reason', minWidth: '180px', ellipsis: true },
   { key: 'operator_name', label: '操作人', prop: 'operator_name', width: '100px' },
+]
+const ruleColumns: BaseTableColumn[] = [
+  { key: 'name', label: '规则名称', prop: 'name', minWidth: '140px', ellipsis: true },
+  { key: 'spend_amount', label: '消费金额', width: '100px' },
+  { key: 'points', label: '积分', width: '80px' },
+  { key: 'status', label: '状态', width: '80px' },
+  { key: 'remark', label: '备注', prop: 'remark', minWidth: '140px', ellipsis: true },
+  { key: 'actions', label: '操作', width: '120px', align: 'right' },
+]
+const ruleStatusOptions = [
+  { label: '启用', value: 1 },
+  { label: '停用', value: 2 },
 ]
 
 function fmtMoney(v: string | number): string {
@@ -484,9 +580,8 @@ function reloadGifts(): void {
 
 function openGifts(row: MemberRow): void {
   giftMember.value = row
-  const r = currentMonthRange()
-  giftStart.value = r.start
-  giftEnd.value = r.end
+  giftStart.value = ''
+  giftEnd.value = ''
   giftPage.value = 1
   giftPageSize.value = 10
   giftTotal.value = 0
@@ -498,6 +593,139 @@ function openGifts(row: MemberRow): void {
 watch([giftPage, giftPageSize], () => {
   if (giftDlg.value) {
     void loadGifts()
+  }
+})
+
+const ruleDlg = ref(false)
+const ruleLoading = ref(false)
+const ruleSaving = ref(false)
+const ruleKeyword = ref('')
+const rulePage = ref(1)
+const rulePageSize = ref(10)
+const ruleTotal = ref(0)
+const ruleRows = ref<MemberPointRule[]>([])
+const ruleEditId = ref(0)
+const ruleForm = reactive({
+  name: '',
+  spend_amount: 1,
+  points: 1,
+  status: 1,
+  remark: '',
+})
+
+function ruleStatusText(status: number): string {
+  return status === 1 ? '启用' : '停用'
+}
+
+function resetRuleForm(): void {
+  ruleEditId.value = 0
+  ruleForm.name = ''
+  ruleForm.spend_amount = 1
+  ruleForm.points = 1
+  ruleForm.status = 1
+  ruleForm.remark = ''
+}
+
+async function loadRules(): Promise<void> {
+  ruleLoading.value = true
+  try {
+    const data = await listMemberPointRules({
+      page: rulePage.value,
+      page_size: rulePageSize.value,
+      keyword: ruleKeyword.value.trim() || undefined,
+    })
+    ruleRows.value = data.list ?? []
+    ruleTotal.value = Number(data.total ?? 0)
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '加载会员规则失败')
+  } finally {
+    ruleLoading.value = false
+  }
+}
+
+function reloadRules(): void {
+  rulePage.value = 1
+  void loadRules()
+}
+
+function openRuleDialog(): void {
+  ruleDlg.value = true
+  resetRuleForm()
+  rulePage.value = 1
+  rulePageSize.value = 10
+  ruleKeyword.value = ''
+  void loadRules()
+}
+
+function editRule(row: MemberPointRule): void {
+  ruleEditId.value = row.id
+  ruleForm.name = row.name ?? ''
+  ruleForm.spend_amount = Number(row.spend_amount ?? 1)
+  ruleForm.points = Number(row.points ?? 1)
+  ruleForm.status = row.status ?? 1
+  ruleForm.remark = row.remark ?? ''
+}
+
+async function saveRule(): Promise<void> {
+  if (!ruleForm.name.trim()) {
+    toast.warning('请填写规则名称')
+    return
+  }
+  if (!ruleForm.spend_amount || ruleForm.spend_amount <= 0) {
+    toast.warning('消费金额必须大于0')
+    return
+  }
+  if (!ruleForm.points || ruleForm.points <= 0) {
+    toast.warning('积分必须大于0')
+    return
+  }
+  ruleSaving.value = true
+  try {
+    const body = {
+      name: ruleForm.name.trim(),
+      spend_amount: Number(ruleForm.spend_amount),
+      points: Number(ruleForm.points),
+      status: Number(ruleForm.status),
+      remark: ruleForm.remark.trim() || undefined,
+    }
+    if (ruleEditId.value) {
+      await updateMemberPointRule(ruleEditId.value, body)
+    } else {
+      await createMemberPointRule(body)
+    }
+    toast.success('已保存')
+    resetRuleForm()
+    await loadRules()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '保存会员规则失败')
+  } finally {
+    ruleSaving.value = false
+  }
+}
+
+async function removeRule(row: MemberPointRule): Promise<void> {
+  const ok = await confirmDialog({ message: `删除规则「${row.name}」？` })
+  if (!ok) return
+  try {
+    await deleteMemberPointRule(row.id)
+    toast.success('已删除')
+    if (ruleEditId.value === row.id) resetRuleForm()
+    await loadRules()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '删除会员规则失败')
+  }
+}
+
+function ruleRowActions(row: MemberPointRule): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'store:member:edit', onClick: () => editRule(row) },
+    { label: '删除', permission: 'store:member:edit', danger: true, onClick: () => void removeRule(row) },
+  ]
+}
+
+watch([rulePage, rulePageSize], () => {
+  if (ruleDlg.value) {
+    void loadRules()
   }
 })
 </script>

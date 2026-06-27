@@ -214,7 +214,22 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	}
 
 	// 记账日期按营业日归属：16:00 到次日 05:00 为同一个营业日。
+	// 只有补记账允许前端传 account_date；普通记账继续由后端生成，避免移动端自行创造业务日期。
 	accountDate := businessdate.Date(time.Now())
+	if req.IsSupplement == 1 {
+		if strings.TrimSpace(req.AccountDate) == "" {
+			return nil, fmt.Errorf("补记账请选择记账日期")
+		}
+		t, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(req.AccountDate), time.Local)
+		if err != nil {
+			return nil, fmt.Errorf("补记账日期格式错误")
+		}
+		today := businessdate.Date(time.Now())
+		if t.After(today) {
+			return nil, fmt.Errorf("补记账日期不能晚于当前营业日")
+		}
+		accountDate = t
+	}
 
 	// 构建明细
 	var items []model.StoreAccountItem
@@ -433,6 +448,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		GiftWineCostAmount: giftWineCostAmount,
 		IsErrandOrder:      req.IsErrandOrder,
 		ErrandFee:          errandFee,
+		IsSupplement:       req.IsSupplement,
 		NetIncomeAmount: calculateStoreAccountNetIncome(
 			totalAmount,
 			req.OtherExpenseAmount,
@@ -900,6 +916,7 @@ func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
 		return nil, err
 	}
 	account.NetIncomeAmount = s.calculateAccountNetIncome(account)
+	s.fillAccountActionFlags(account)
 	return account, nil
 }
 
@@ -912,6 +929,7 @@ func (s *StoreAccountService) GetScoped(id, storeID uint, hqUnbound bool) (*mode
 		return nil, err
 	}
 	account.NetIncomeAmount = s.calculateAccountNetIncome(account)
+	s.fillAccountActionFlags(account)
 	return account, nil
 }
 
@@ -924,8 +942,17 @@ func (s *StoreAccountService) List(ctx context.Context, req *model.ListStoreAcco
 	}
 	for _, account := range list {
 		account.NetIncomeAmount = s.calculateAccountNetIncome(account)
+		s.fillAccountActionFlags(account)
 	}
 	return list, total, nil
+}
+
+func (s *StoreAccountService) fillAccountActionFlags(account *model.StoreAccount) {
+	if account == nil {
+		return
+	}
+	account.CanEdit = s.CanUpdateAccount(account, nil)
+	account.CanBindConsumables = s.CanBindConsumables(account)
 }
 
 // Update 更新记账
@@ -938,7 +965,7 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 }
 
 func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) error {
-	if !s.CanUpdateAccount(account, req) {
+	if !s.canApplyPaymentStatusOnlyUpdate(account, req) && !s.CanUpdateAccount(account, req) {
 		return errors.New("记账已超过可编辑时间，仅支持当前营业日内修改")
 	}
 
@@ -1070,6 +1097,35 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 	return s.storeAccountModule.Update(account.ID, updates)
 }
 
+func (s *StoreAccountService) canApplyPaymentStatusOnlyUpdate(account *model.StoreAccount, req *model.UpdateStoreAccountReq) bool {
+	if account == nil || req == nil {
+		return false
+	}
+	if account.PaymentStatus != model.StoreAccountPaymentUnpaid {
+		return false
+	}
+	if req.PaymentStatus == nil || *req.PaymentStatus != model.StoreAccountPaymentPaid {
+		return false
+	}
+	return req.MemberID == nil &&
+		req.Channel == "" &&
+		req.OrderNo == "" &&
+		req.IncomeAmount == nil &&
+		req.TagCode == "" &&
+		req.TagName == "" &&
+		req.Remark == "" &&
+		req.AccountDate == "" &&
+		req.OtherExpenseAmount == nil &&
+		req.RoundAmount == nil &&
+		req.IsGiftWine == nil &&
+		req.GiftWineProductID == nil &&
+		req.GiftWineUnit == "" &&
+		req.GiftWineQuantity == nil &&
+		req.GiftWineCostAmount == nil &&
+		req.IsErrandOrder == nil &&
+		req.ErrandFee == nil
+}
+
 func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
 	if !hqUnbound && storeID == 0 {
 		return errors.New("当前账号未绑定门店")
@@ -1177,7 +1233,7 @@ func (s *StoreAccountService) BindConsumablesScoped(accountID, storeID uint, hqU
 
 func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.StoreAccount, req *model.BindStoreAccountConsumablesReq) error {
 	if !s.CanBindConsumables(account) {
-		return errors.New("记账已超过可编辑时间，仅支持当前营业日内绑定消耗品")
+		return errors.New("该记账单已绑定消耗品，不能重复绑定")
 	}
 	accountID := account.ID
 	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
@@ -1344,48 +1400,30 @@ func (s *StoreAccountService) buildConsumableProduct(storeID uint, hqUnbound boo
 	}, nil
 }
 
-// IsAccountEditable 判断记账记录是否允许编辑：仅允许在创建自然日内编辑。
+// IsAccountEditable 判断记账记录是否允许编辑：仅允许在创建记录所属营业日内编辑。
 func (s *StoreAccountService) IsAccountEditable(account *model.StoreAccount) bool {
-	if account == nil {
-		return false
-	}
-	now := time.Now()
-	created := account.CreatedAt
-	loc := now.Location()
-	if !created.IsZero() {
-		created = created.In(loc)
-	}
-
-	return now.Year() == created.Year() && now.YearDay() == created.YearDay()
+	return s.IsAccountEditableAt(account, time.Now())
 }
 
-// IsAccountWithinBusinessDays 判断记账记录是否处于创建后 N 个营业日内。
-func (s *StoreAccountService) IsAccountWithinBusinessDays(account *model.StoreAccount, days int) bool {
+// IsAccountEditableAt 判断记账记录在指定时间点是否允许编辑。
+// 规则：创建时间与当前时间归属同一个营业日才允许编辑。
+func (s *StoreAccountService) IsAccountEditableAt(account *model.StoreAccount, now time.Time) bool {
 	if account == nil || account.CreatedAt.IsZero() {
 		return false
 	}
-	if days <= 0 {
-		return false
-	}
-	now := time.Now()
 	loc := now.Location()
 	createdBusinessDate := businessdate.Date(account.CreatedAt.In(loc))
-	currentBusinessDate := businessdate.Date(now)
-	if currentBusinessDate.Before(createdBusinessDate) {
-		return false
-	}
-	lastAllowedDate := createdBusinessDate.AddDate(0, 0, days-1)
-	return !currentBusinessDate.After(lastAllowedDate)
+	currentBusinessDate := businessdate.Date(now.In(loc))
+	return createdBusinessDate.Equal(currentBusinessDate)
 }
 
-// TODO: 后续可扩展为 2 个营业日内管理员可改、并叠加审计记录。
 // CanUpdateAccount 判断本次记账更新是否允许：仅当前营业日内允许修改。
 func (s *StoreAccountService) CanUpdateAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) bool {
-	return s.IsAccountWithinBusinessDays(account, 1)
+	_ = req
+	return s.IsAccountEditable(account)
 }
 
-// TODO: 后续可扩展为 2 个营业日内管理员可绑定，并叠加审计记录。
-// CanBindConsumables 判断记账单是否允许绑定消耗品：仅当前营业日内允许。
+// CanBindConsumables 判断记账单是否允许绑定消耗品：仅未绑定过消耗品的记账单允许绑定。
 func (s *StoreAccountService) CanBindConsumables(account *model.StoreAccount) bool {
-	return s.IsAccountWithinBusinessDays(account, 1)
+	return account != nil && len(account.Consumables) == 0
 }

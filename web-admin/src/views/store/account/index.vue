@@ -846,11 +846,13 @@ function paymentStatusDotClass(v: number | undefined): string {
 }
 
 function canEditAccount(row: StoreAccount): boolean {
+  if (typeof row.can_edit === 'boolean') return row.can_edit
   return isWithinBusinessDays(row.created_at, 1)
 }
 
 function canBindConsumables(row: StoreAccount): boolean {
-  return isWithinBusinessDays(row.created_at, 1)
+  if (typeof row.can_bind_consumables === 'boolean') return row.can_bind_consumables
+  return (row.consumables?.length ?? 0) === 0
 }
 
 function businessDateKey(date: Date): string {
@@ -879,21 +881,31 @@ function isWithinBusinessDays(value: string | undefined, days: number): boolean 
 function accountRowActions(row: StoreAccount): TableRowAction[] {
   const editable = canEditAccount(row)
   const consumableEditable = canBindConsumables(row)
-  return [
-    { label: '详情', permission: 'store:account:list', onClick: () => openView(row) },
-    {
+  const actions: TableRowAction[] = []
+  if (Number(row.payment_status || 1) === 2) {
+    actions.push({
+      label: '支付完成',
+      permission: 'store:account:edit',
+      onClick: () => void markAccountPaid(row),
+    })
+  }
+  actions.push({ label: '详情', permission: 'store:account:list', onClick: () => openView(row) })
+  if (consumableEditable) {
+    actions.push({
       label: '绑定消耗品',
       permission: 'store:account:edit',
-      disabled: !consumableEditable,
       onClick: () => openConsumableDlg(row),
-    },
+    })
+  }
+  actions.push(
     {
       label: '编辑',
       permission: 'store:account:edit',
       disabled: !editable,
       onClick: () => openEdit(row),
     },
-  ]
+  )
+  return actions
 }
 
 const createDlg = ref(false)
@@ -1430,6 +1442,21 @@ async function submitEdit(): Promise<void> {
   }
 }
 
+async function markAccountPaid(row: StoreAccount): Promise<void> {
+  const ok = await confirmDialog({ message: `确认将记账单「${row.account_no || row.id}」标记为已支付？` })
+  if (!ok) return
+  saving.value = true
+  try {
+    await updateStoreAccount(row.id, { payment_status: 1 })
+    toast.success('已标记为已支付')
+    await qc.invalidateQueries({ queryKey: ['store-accounts'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '支付状态修改失败')
+  } finally {
+    saving.value = false
+  }
+}
+
 const viewDlg = ref(false)
 const viewAccount = ref<StoreAccount | null>(null)
 const consumableDlg = ref(false)
@@ -1545,7 +1572,7 @@ const consumableBindTotal = computed(() =>
 
 async function openConsumableDlg(row: StoreAccount): Promise<void> {
   if (!canBindConsumables(row)) {
-    toast.warning('消耗品仅支持当前营业日内绑定')
+    toast.warning('该记账单已绑定消耗品，不能重复绑定')
     return
   }
   consumableTarget.value = row
@@ -1553,13 +1580,8 @@ async function openConsumableDlg(row: StoreAccount): Promise<void> {
   try {
     const full = await getStoreAccount(row.id)
     if (full.consumables?.length) {
-      consumableLines.value = full.consumables.map((c) => ({
-        kind: Number(c.product_id || 0) > 0 && consumableProductMap.value.has(Number(c.product_id)) ? 'product' : 'custom',
-        consumable_product_id: consumableProductMap.value.has(Number(c.product_id)) ? Number(c.product_id) : '',
-        quantity: Number(c.quantity || 1),
-        name: consumableProductMap.value.has(Number(c.product_id)) ? '' : c.product_name || '',
-        amount: consumableProductMap.value.has(Number(c.product_id)) ? 0 : Number(c.amount || 0),
-      }))
+      toast.warning('该记账单已绑定消耗品，不能重复绑定')
+      return
     }
     consumableDlg.value = true
   } catch (e: unknown) {

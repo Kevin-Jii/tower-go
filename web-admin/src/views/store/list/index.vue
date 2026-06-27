@@ -182,16 +182,25 @@
           当前门店：<span class="font-semibold text-slate-900">{{ permissionStore?.name || '-' }}</span>
         </div>
         <BaseFormItem label="角色">
-          <BaseSelect v-model="permissionRoleId" :options="roleOptions" @update:model-value="onPermissionRoleChange" />
+          <BaseSelect
+            v-model="permissionRoleId"
+            :options="roleOptions"
+            placeholder="请选择角色后配置菜单"
+            clearable
+            @update:model-value="onPermissionRoleChange"
+          />
         </BaseFormItem>
-        <div class="permission-tree-panel">
+        <div v-if="permissionRoleId" class="permission-tree-panel">
           <BaseTreeCheck v-model="checkedMenuIds" :nodes="menuTreeNodes" :check-strictly="false" />
+        </div>
+        <div v-else class="permission-empty-panel">
+          请先选择角色
         </div>
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">
           <BaseButton variant="ghost" @click="permissionDrawer = false">取消</BaseButton>
-          <BaseButton variant="primary" :loading="permissionSaving" @click="saveStoreRoleMenus">保存</BaseButton>
+          <BaseButton variant="primary" :loading="permissionSaving" :disabled="!permissionRoleId" @click="saveStoreRoleMenus">保存</BaseButton>
         </div>
       </template>
     </a-drawer>
@@ -548,17 +557,16 @@ function filterMenuTree(nodes: Menu[]): Menu[] {
 
 async function openPermissionDrawer(row: Store): Promise<void> {
   permissionStore.value = row
+  permissionRoleId.value = undefined
+  checkedMenuIds.value = []
+  storeRolePermSnapshot.value = {}
   permissionDrawer.value = true
-  const defaultRole = (rolesData.value ?? []).find((role) => role.code === 'store_admin') ?? (rolesData.value ?? [])[0]
-  permissionRoleId.value = defaultRole?.id
-  if (permissionRoleId.value) {
-    await loadStoreRoleMenus()
-  } else {
-    checkedMenuIds.value = []
-  }
 }
 
 function onPermissionRoleChange(): void {
+  checkedMenuIds.value = []
+  storeRolePermSnapshot.value = {}
+  if (!permissionRoleId.value) return
   void loadStoreRoleMenus()
 }
 
@@ -650,5 +658,16 @@ async function saveStoreRoleMenus(): Promise<void> {
   border: 1px solid var(--color-border-2);
   border-radius: 8px;
   background: var(--color-fill-1);
+}
+
+.permission-empty-panel {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  border: 1px dashed var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-fill-1);
+  color: var(--color-text-3);
+  font-size: 14px;
 }
 </style>

@@ -35,6 +35,7 @@ type StoreAccount struct {
 	IsErrandOrder       int                      `json:"is_errand_order" gorm:"not null;default:0;index;comment:是否跑腿订单 1=是 0=否"`
 	ErrandFee           float64                  `json:"errand_fee" gorm:"type:decimal(10,2);not null;default:0;comment:跑腿费用"`
 	NetIncomeAmount     float64                  `json:"net_income_amount" gorm:"type:decimal(10,2);default:0;comment:净收入金额"`
+	IsSupplement        int                      `json:"is_supplement" gorm:"not null;default:0;index;comment:是否补记账 1=是 0=否"`
 	ItemCount           int                      `json:"item_count" gorm:"comment:商品数量"`
 	TagCode             string                   `json:"tag_code" gorm:"type:varchar(50);index;comment:标签编码"`
 	TagName             string                   `json:"tag_name" gorm:"type:varchar(100);comment:标签名称"`
@@ -46,6 +47,8 @@ type StoreAccount struct {
 	DeletedAt           gorm.DeletedAt           `json:"-" gorm:"index"`
 	Items               []StoreAccountItem       `json:"items,omitempty" gorm:"foreignKey:AccountID"`
 	Consumables         []StoreAccountConsumable `json:"consumables,omitempty" gorm:"foreignKey:AccountID"`
+	CanEdit             bool                     `json:"can_edit" gorm:"-"`
+	CanBindConsumables  bool                     `json:"can_bind_consumables" gorm:"-"`
 
 	// 关联
 	Store    *Store  `json:"store,omitempty" gorm:"foreignKey:StoreID"`
@@ -89,6 +92,8 @@ type CreateStoreAccountReq struct {
 	Remark             string                            `json:"remark" binding:"max=500"`
 	OtherExpenseAmount float64                           `json:"other_expense_amount" binding:"gte=0"`
 	RoundAmount        float64                           `json:"round_amount" binding:"gte=0"`
+	IsSupplement       int                               `json:"is_supplement" binding:"omitempty,oneof=0 1"`
+	AccountDate        string                            `json:"account_date" binding:"omitempty"`
 	IsGiftWine         int                               `json:"is_gift_wine" binding:"omitempty,oneof=0 1"`
 	GiftWineProductID  uint                              `json:"gift_wine_product_id"`
 	GiftWineUnit       string                            `json:"gift_wine_unit" binding:"max=50"`

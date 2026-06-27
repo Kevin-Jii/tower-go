@@ -20,19 +20,15 @@
 
       <div class="flex min-h-0 flex-1 flex-col gap-3 p-4">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div v-for="item in summaryCards" :key="item.label" class="rounded border border-slate-200 bg-slate-50 px-4 py-3">
+          <div v-for="item in summaryCards" :key="item.label"
+            class="rounded border border-slate-200 bg-slate-50 px-4 py-3">
             <div class="text-xs font-medium text-slate-500">{{ item.label }}</div>
             <div class="mt-1 text-lg font-semibold text-slate-900">{{ item.value }}</div>
           </div>
         </div>
 
-        <BaseTable
-          :columns="columns"
-          :data="(rows as unknown) as Record<string, unknown>[]"
-          :loading="loading"
-          min-width="1080px"
-          class="min-h-0 flex-1"
-        >
+        <BaseTable :columns="columns" :data="(rows as unknown) as Record<string, unknown>[]" :loading="loading"
+          min-width="1080px" class="min-h-0 flex-1">
           <template #cell-type="{ row }">
             <span :class="typeClass((row as InventoryLossOrder).type)">
               {{ typeLabel((row as InventoryLossOrder).type) }}
@@ -50,20 +46,16 @@
           <template #cell-actions="{ row }">
             <div class="flex justify-end gap-3" @click.stop>
               <BaseButton variant="link" size="sm" @click="openDetail(row as InventoryLossOrder)">详情</BaseButton>
-              <BaseButton v-if="!(row as InventoryLossOrder).is_canceled" variant="link" size="sm" @click="openEdit(row as InventoryLossOrder)">编辑</BaseButton>
+              <BaseButton v-if="!(row as InventoryLossOrder).is_canceled" variant="link" size="sm"
+                @click="openEdit(row as InventoryLossOrder)">编辑</BaseButton>
               <BaseButton variant="link" size="sm" @click="onCancel(row as InventoryLossOrder)">撤销</BaseButton>
             </div>
           </template>
         </BaseTable>
 
         <div class="flex shrink-0 justify-end">
-          <BasePagination
-            :page="page"
-            :page-size="pageSize"
-            :total="total"
-            @update:page="(p) => (page = p)"
-            @update:page-size="(s) => (pageSize = s)"
-          />
+          <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+            @update:page-size="(s) => (pageSize = s)" />
         </div>
       </div>
     </BaseCard>
@@ -96,22 +88,14 @@
               <span>操作</span>
             </div>
             <div v-for="(line, idx) in form.lines" :key="idx" class="loss-line-editor__row">
-              <BaseSelect
-                v-model="line.product_id"
-                class="loss-line-editor__control"
-                :options="productOptions"
-                placeholder="选择商品"
-                @update:model-value="onLineProductChange(idx)"
-              />
-              <BaseSelect
-                v-model="line.unit"
-                class="loss-line-editor__control"
-                :options="lineUnitOptions(line)"
-                placeholder="选择规格"
-              />
+              <BaseSelect v-model="line.product_id" class="loss-line-editor__control" :options="productOptions"
+                placeholder="选择商品" @update:model-value="onLineProductChange(idx)" />
+              <BaseSelect v-model="line.unit" class="loss-line-editor__control" :options="lineUnitOptions(line)"
+                placeholder="选择规格" />
               <BaseNumberInput v-model="line.quantity" class="loss-line-editor__control" :min="0.01" :step="1" />
               <BaseInput v-model="line.remark" class="loss-line-editor__control" placeholder="可选" />
-              <BaseButton variant="ghost" size="sm" :disabled="form.lines.length <= 1" @click="removeLine(idx)">移除</BaseButton>
+              <BaseButton variant="ghost" size="sm" :disabled="form.lines.length <= 1" @click="removeLine(idx)">移除
+              </BaseButton>
             </div>
           </div>
         </div>
@@ -145,9 +129,11 @@
           <div><span class="text-slate-500">时间：</span>{{ formatDateTime(detail.created_at) }}</div>
           <div class="md:col-span-3"><span class="text-slate-500">原因：</span>{{ detail.reason || '-' }}</div>
         </div>
-        <BaseTable :columns="itemColumns" :data="(detail.items as unknown) as Record<string, unknown>[]" min-width="760px">
+        <BaseTable :columns="itemColumns" :data="(detail.items as unknown) as Record<string, unknown>[]"
+          min-width="760px">
           <template #cell-cost_price="{ row }">{{ formatMoney((row as InventoryLossOrderItem).cost_price) }}</template>
-          <template #cell-cost_amount="{ row }">{{ formatMoney((row as InventoryLossOrderItem).cost_amount) }}</template>
+          <template #cell-cost_amount="{ row }">{{ formatMoney((row as InventoryLossOrderItem).cost_amount)
+            }}</template>
         </BaseTable>
       </div>
       <template #footer>
@@ -214,8 +200,8 @@ const typeOptions: Array<BaseSelectOption & { value: InventoryLossType }> = [
 const typeFilterOptions: BaseSelectOption[] = [{ label: '全部类型', value: '' }, ...typeOptions]
 
 const { data: reasonDict } = useQuery({
-  queryKey: ['dict-data', 'EXPENDITURECLASS'] as const,
-  queryFn: () => listDictDataByTypeCode('EXPENDITURECLASS'),
+  queryKey: ['dict-data', 'PERSONALUSE'] as const,
+  queryFn: () => listDictDataByTypeCode('PERSONALUSE'),
 })
 const reasonOptions = computed<BaseSelectOption[]>(() =>
   (reasonDict.value ?? []).filter((item) => item.status === 1).map((item) => ({ label: item.label, value: item.value })),

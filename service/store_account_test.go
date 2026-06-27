@@ -45,6 +45,39 @@ func TestStoreAccountEditWindow_CurrentBusinessDayOnly(t *testing.T) {
 			if got := svc.CanUpdateAccount(tt.account, &model.UpdateStoreAccountReq{}); got != tt.want {
 				t.Fatalf("CanUpdateAccount() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestStoreAccountCanBindConsumables_UnboundOnly(t *testing.T) {
+	svc := &StoreAccountService{}
+
+	tests := []struct {
+		name    string
+		account *model.StoreAccount
+		want    bool
+	}{
+		{
+			name:    "unbound account can bind consumables",
+			account: &model.StoreAccount{},
+			want:    true,
+		},
+		{
+			name: "bound account cannot bind consumables again",
+			account: &model.StoreAccount{
+				Consumables: []model.StoreAccountConsumable{{ID: 1, AccountID: 1, ProductName: "纸杯", Quantity: 1}},
+			},
+			want: false,
+		},
+		{
+			name:    "nil account cannot bind consumables",
+			account: nil,
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			if got := svc.CanBindConsumables(tt.account); got != tt.want {
 				t.Fatalf("CanBindConsumables() = %v, want %v", got, tt.want)
 			}

@@ -266,6 +266,7 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   `is_errand_order` TINYINT NOT NULL DEFAULT 0 COMMENT '是否跑腿订单 1=是 0=否',
   `errand_fee` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '跑腿费用',
   `net_income_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '净收入金额',
+  `is_supplement` TINYINT NOT NULL DEFAULT 0 COMMENT '是否补记账 1=是 0=否',
   `item_count` INT DEFAULT NULL,
   `tag_code` VARCHAR(50) DEFAULT NULL,
   `tag_name` VARCHAR(100) DEFAULT NULL,
@@ -282,6 +283,7 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   KEY `idx_store_accounts_payment_status` (`payment_status`),
   KEY `idx_store_accounts_is_gift_wine` (`is_gift_wine`),
   KEY `idx_store_accounts_is_errand_order` (`is_errand_order`),
+  KEY `idx_store_accounts_is_supplement` (`is_supplement`),
   KEY `idx_store_accounts_channel` (`channel`),
   KEY `idx_store_accounts_order_no` (`order_no`),
   KEY `idx_store_accounts_tag_code` (`tag_code`),
@@ -994,6 +996,23 @@ PREPARE stmt_add_errand_fee FROM @sql_add_errand_fee;
 EXECUTE stmt_add_errand_fee;
 DEALLOCATE PREPARE stmt_add_errand_fee;
 
+SET @sql_add_is_supplement = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'is_supplement'
+    ),
+    'SELECT ''skip add is_supplement''',
+    'ALTER TABLE store_accounts ADD COLUMN is_supplement TINYINT NOT NULL DEFAULT 0 COMMENT ''是否补记账 1=是 0=否'' AFTER net_income_amount'
+  )
+);
+PREPARE stmt_add_is_supplement FROM @sql_add_is_supplement;
+EXECUTE stmt_add_is_supplement;
+DEALLOCATE PREPARE stmt_add_is_supplement;
+
 SET @sql_add_idx_store_accounts_is_gift_wine = (
   SELECT IF(
     EXISTS(
@@ -1027,6 +1046,23 @@ SET @sql_add_idx_store_accounts_is_errand_order = (
 PREPARE stmt_add_idx_store_accounts_is_errand_order FROM @sql_add_idx_store_accounts_is_errand_order;
 EXECUTE stmt_add_idx_store_accounts_is_errand_order;
 DEALLOCATE PREPARE stmt_add_idx_store_accounts_is_errand_order;
+
+SET @sql_add_idx_store_accounts_is_supplement = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND INDEX_NAME = 'idx_store_accounts_is_supplement'
+    ),
+    'SELECT ''skip add idx_store_accounts_is_supplement''',
+    'CREATE INDEX idx_store_accounts_is_supplement ON store_accounts(is_supplement)'
+  )
+);
+PREPARE stmt_add_idx_store_accounts_is_supplement FROM @sql_add_idx_store_accounts_is_supplement;
+EXECUTE stmt_add_idx_store_accounts_is_supplement;
+DEALLOCATE PREPARE stmt_add_idx_store_accounts_is_supplement;
 
 SET @sql_add_bottle_price = (
   SELECT IF(

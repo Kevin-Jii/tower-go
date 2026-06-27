@@ -145,7 +145,7 @@ func (s *InventoryLossService) resolveReason(reason string) (string, error) {
 	if s.dictModule == nil {
 		return code, nil
 	}
-	data, err := s.dictModule.GetDataByTypeAndValue(model.StoreExpenseCategoryDictCode, code)
+	data, err := s.dictModule.GetDataByTypeAndValue(model.InventoryLossReasonDictCode, code)
 	if err != nil || data == nil || data.Status != 1 {
 		return "", fmt.Errorf("原因说明不存在或已停用")
 	}

@@ -125,7 +125,8 @@ func shouldSkipMigration() bool {
 		if !migrator.HasColumn(&model.StoreAccount{}, "other_expense_amount") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "net_income_amount") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "is_errand_order") ||
-			!migrator.HasColumn(&model.StoreAccount{}, "errand_fee") {
+			!migrator.HasColumn(&model.StoreAccount{}, "errand_fee") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "is_supplement") {
 			return false
 		}
 	}

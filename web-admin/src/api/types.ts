@@ -693,6 +693,8 @@ export interface StoreAccount {
   remark?: string
   account_date: string
   created_at?: string
+  can_edit?: boolean
+  can_bind_consumables?: boolean
   items?: StoreAccountItem[]
   consumables?: StoreAccountConsumable[]
 }

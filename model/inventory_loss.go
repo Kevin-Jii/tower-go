@@ -10,6 +10,8 @@ const (
 	InventoryLossTypeLoss    = "loss"
 	InventoryLossTypeSelfUse = "self_use"
 	InventoryLossTypeGift    = "gift"
+
+	InventoryLossReasonDictCode = "PERSONALUSE"
 )
 
 // InventoryLossOrder 库存报损/自用/赠送单

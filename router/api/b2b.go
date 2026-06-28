@@ -19,6 +19,7 @@ func RegisterB2BRoutes(v1 *gin.RouterGroup, c *Controllers) {
 
 		b2b.POST("/supply-orders", middleware.Permission("b2b:order:add"), c.B2B.CreateSupplyOrder)
 		b2b.GET("/supply-orders", middleware.Permission("b2b:order:list"), c.B2B.ListSupplyOrders)
+		b2b.GET("/supply-orders/export", middleware.Permission("b2b:order:list"), c.B2B.ExportSupplyOrders)
 		b2b.GET("/supply-orders/:id", middleware.Permission("b2b:order:list"), c.B2B.GetSupplyOrder)
 		b2b.PUT("/supply-orders/:id/delivery-status", middleware.Permission("b2b:order:edit"), c.B2B.UpdateSupplyOrderDelivery)
 		b2b.PUT("/supply-orders/:id/payment-status", middleware.Permission("b2b:order:edit"), c.B2B.UpdateSupplyOrderPayment)

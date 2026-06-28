@@ -19,6 +19,7 @@ func RegisterInventoryRoutes(r *gin.RouterGroup, c *Controllers) {
 	{
 		orders.POST("", middleware.PermissionAny("inventory:in", "inventory:out"), c.Inventory.CreateOrder)
 		orders.GET("", middleware.Permission("inventory:record"), c.Inventory.ListOrders)
+		orders.GET("/export", middleware.Permission("inventory:record"), c.Inventory.ExportOrders)
 		orders.GET("/no/:order_no", middleware.Permission("inventory:record"), c.Inventory.GetOrderByNo)
 		orders.GET("/:id", middleware.Permission("inventory:record"), c.Inventory.GetOrderByID)
 	}
@@ -28,6 +29,7 @@ func RegisterInventoryRoutes(r *gin.RouterGroup, c *Controllers) {
 	{
 		lossOrders.POST("", middleware.PermissionAny("inventory:out", "inventory:in"), c.InventoryLoss.CreateOrder)
 		lossOrders.GET("", middleware.Permission("inventory:record"), c.InventoryLoss.ListOrders)
+		lossOrders.GET("/export", middleware.Permission("inventory:record"), c.InventoryLoss.ExportOrders)
 		lossOrders.GET("/:id", middleware.Permission("inventory:record"), c.InventoryLoss.GetOrderByID)
 		lossOrders.PUT("/:id", middleware.PermissionAny("inventory:out", "inventory:in"), c.InventoryLoss.UpdateOrder)
 		lossOrders.DELETE("/:id", middleware.PermissionAny("inventory:out", "inventory:in"), c.InventoryLoss.CancelOrder)

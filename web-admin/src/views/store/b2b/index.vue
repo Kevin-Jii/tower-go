@@ -85,6 +85,7 @@
         <BaseInput v-model="startDate" class="w-36" type="date" />
         <BaseInput v-model="endDate" class="w-36" type="date" />
         <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
+        <BaseButton variant="secondary" @click="openOrderExportDlg">导出Excel</BaseButton>
         <BaseButton variant="primary" @click="openOrderCreate">新增供货单</BaseButton>
       </div>
       <BaseTable :columns="orderColumns" :data="(orders as unknown) as Record<string, unknown>[]" :loading="orderLoading" min-width="1180px">
@@ -231,6 +232,16 @@
         <BaseButton variant="primary" :loading="savingStatus" @click="submitPaymentStatus">保存</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="orderExportDlg" title="导出B2B供货" max-width="min(420px, 96vw)">
+      <BaseFormItem label="导出日期" required>
+        <a-date-picker v-model="orderExportDate" value-format="YYYY-MM-DD" class="w-full" :allow-clear="false" />
+      </BaseFormItem>
+      <template #footer>
+        <BaseButton variant="ghost" @click="orderExportDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="orderExporting" @click="submitOrderExport">导出</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -255,6 +266,7 @@ import {
   createB2BCustomer,
   createB2BSupplyOrder,
   deleteB2BPrice,
+  exportB2BSupplyOrders,
   getB2BSupplyOrder,
   listB2BCustomers,
   listB2BPrices,
@@ -591,6 +603,9 @@ const orderKeyword = ref('')
 const paymentStatus = ref<number | ''>('')
 const startDate = ref('')
 const endDate = ref('')
+const orderExportDlg = ref(false)
+const orderExportDate = ref(new Date().toISOString().slice(0, 10))
+const orderExporting = ref(false)
 const orderPage = ref(1)
 const orderPageSize = ref(10)
 const orderQueryKey = computed(() => ['b2b-orders', orderKeyword.value, paymentStatus.value, startDate.value, endDate.value, orderPage.value, orderPageSize.value] as const)
@@ -675,6 +690,27 @@ const orderProductOptions = computed<BaseSelectOption[]>(() => {
 function reloadOrders(): void {
   orderPage.value = 1
   void qc.invalidateQueries({ queryKey: ['b2b-orders'] })
+}
+
+function openOrderExportDlg(): void {
+  orderExportDate.value = startDate.value || endDate.value || new Date().toISOString().slice(0, 10)
+  orderExportDlg.value = true
+}
+
+async function submitOrderExport(): Promise<void> {
+  if (!orderExportDate.value) {
+    toast.warning('请选择导出日期')
+    return
+  }
+  orderExporting.value = true
+  try {
+    await exportB2BSupplyOrders({ date: orderExportDate.value, store_id: storeId.value })
+    orderExportDlg.value = false
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    orderExporting.value = false
+  }
 }
 
 function openOrderCreate(): void {

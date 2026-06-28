@@ -6,6 +6,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 
 	"github.com/gin-gonic/gin"
@@ -608,4 +609,57 @@ func (c *MemberController) ListMemberConsumptions(ctx *gin.Context) {
 		"page_size": pageSize,
 		"summary":   summary,
 	})
+}
+
+func (c *MemberController) ExportMemberConsumptions(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(ctx, 400, "invalid id")
+		return
+	}
+
+	date := ctx.Query("date")
+	if date == "" {
+		date = ctx.Query("start_date")
+	}
+	if date == "" {
+		http.Error(ctx, 400, "请选择导出日期")
+		return
+	}
+
+	storeID := middleware.GetStoreID(ctx)
+	list, _, _, err := c.service.ListMemberConsumptions(uint(id), date, date, 1, exportPageSize, storeID, middleware.HQUnboundAdmin(ctx))
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	rows := make([][]interface{}, 0, len(list))
+	for _, item := range list {
+		channelName := item.ChannelName
+		if channelName == "" {
+			channelName = item.Channel
+		}
+		rows = append(rows, []interface{}{
+			item.AccountDate,
+			item.AccountNo,
+			channelName,
+			item.OrderNo,
+			formatAmount(item.TotalAmount),
+			formatAmount(item.OtherExpenseAmount),
+			formatAmount(item.ConsumableAmount),
+			formatAmount(item.GiftWineCostAmount),
+			formatAmount(item.RoundAmount),
+			formatAmount(item.NetIncomeAmount),
+			item.CreatedAt,
+		})
+	}
+
+	data := excelxml.Build([]excelxml.Sheet{{
+		Name:    "会员消费",
+		Headers: []string{"日期", "记账编号", "渠道", "订单号", "销售额", "其他支出", "消耗品金额", "赠酒成本", "抹零金额", "净收入", "创建时间"},
+		Rows:    rows,
+	}})
+	http.File(ctx, data, excelxml.Filename("member-consumptions-"+date))
 }

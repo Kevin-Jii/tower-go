@@ -1,9 +1,16 @@
 import { http, unwrap } from './http'
 import type { ApiEnvelope, Paginated, StoreExpense, StoreExpenseStats } from './types'
+import { downloadBlob, filenameFromDisposition } from '@/utils/download'
 
 export async function listStoreExpenses(params?: Record<string, unknown>): Promise<Paginated<StoreExpense>> {
   const res = await http.get<ApiEnvelope<Paginated<StoreExpense>>>('/store-expenses', { params })
   return unwrap(res)
+}
+
+export async function exportStoreExpenses(params: { date: string; store_id?: number }): Promise<void> {
+  const res = await http.get<Blob>('/store-expenses/export', { params, responseType: 'blob' })
+  const filename = filenameFromDisposition(res.headers['content-disposition'], `store-expenses-${params.date}.xls`)
+  downloadBlob(res.data, filename)
 }
 
 export async function getStoreExpense(id: number): Promise<StoreExpense> {

@@ -60,7 +60,18 @@
         <div class="dash-panel dash-panel--member min-w-0 rounded-xl border border-cyan-500/15 bg-slate-950/40 p-4">
           <div class="dash-member-layout">
             <div class="dash-section-title">会员消费排行</div>
-            <div ref="memberRankRef" class="dash-chart dash-member-chart w-full min-w-0" />
+            <div v-if="memberRankRows.length" class="dash-flow-list">
+              <div v-for="item in memberRankRows" :key="item.key" class="dash-flow-row">
+                <span class="dash-flow-name">{{ item.name }}</span>
+                <span class="dash-flow-track">
+                  <i :style="{ width: `${item.percent}%` }" />
+                </span>
+                <strong class="tabular-nums">
+                  <CountUpNumber :value="item.amount" :decimals="2" />
+                </strong>
+              </div>
+            </div>
+            <p v-else class="m-0 text-sm text-cyan-100/70">暂无会员消费数据</p>
           </div>
         </div>
 
@@ -261,21 +272,28 @@ const topCategories = computed(() => {
   const max = Math.max(...list.map((x) => x.amount), 1)
   return list.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.amount / max) * 100)) }))
 })
-function formatAmount(value: number): string {
-  return Number(value || 0).toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
+const memberRankRows = computed(() => {
+  const rows = [...(overview.value?.member_consumption_rank ?? [])]
+    .map((item, index) => {
+      const name = String(item.member_name || item.member_phone || '').trim()
+      return {
+        key: `${name}-${index}`,
+        name,
+        amount: Number(item.amount || 0),
+      }
+    })
+    .filter((item) => item.name && item.name !== '未知会员')
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 8)
+  const max = Math.max(...rows.map((x) => x.amount), 1)
+  return rows.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.amount / max) * 100)) }))
+})
 const lineRef = ref<HTMLElement | null>(null)
 const pieRef = ref<HTMLElement | null>(null)
 const radarRef = ref<HTMLElement | null>(null)
-const memberRankRef = ref<HTMLElement | null>(null)
 let lineChart: echarts.ECharts | null = null
 let pieChart: echarts.ECharts | null = null
 let radarChart: echarts.ECharts | null = null
-let memberRankChart: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 
 const axisText = '#e2e8f0'
@@ -290,21 +308,19 @@ function disposeCharts(): void {
   lineChart?.dispose()
   pieChart?.dispose()
   radarChart?.dispose()
-  memberRankChart?.dispose()
-  lineChart = pieChart = radarChart = memberRankChart = null
+  lineChart = pieChart = radarChart = null
 }
 
 function ensureCharts(): void {
-  if (!lineRef.value || !pieRef.value || !radarRef.value || !memberRankRef.value) return
+  if (!lineRef.value || !pieRef.value || !radarRef.value) return
   if (!lineChart) lineChart = echarts.init(lineRef.value)
   if (!pieChart) pieChart = echarts.init(pieRef.value)
   if (!radarChart) radarChart = echarts.init(radarRef.value)
-  if (!memberRankChart) memberRankChart = echarts.init(memberRankRef.value)
 }
 
 function applyChartOptions(hc: HomeChartsStats): void {
   ensureCharts()
-  if (!lineChart || !pieChart || !radarChart || !memberRankChart) return
+  if (!lineChart || !pieChart || !radarChart) return
 
   const compact = isCompactScreen()
   const line = hc.line ?? []
@@ -406,70 +422,6 @@ function applyChartOptions(hc: HomeChartsStats): void {
     ],
   })
 
-  const rank = hc.overview?.member_consumption_rank ?? []
-  const rankLabels = rank.map((x) => x.member_name || x.member_phone || '未知会员')
-  memberRankChart.setOption({
-    backgroundColor: 'transparent',
-    animationDuration: 900,
-    animationEasing: 'cubicOut',
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(15, 23, 42, 0.92)',
-      borderColor: '#22d3ee',
-      textStyle: { color: '#e2e8f0' },
-      valueFormatter: (value: unknown) => `¥${formatAmount(Number(value))}`,
-    },
-    grid: { left: compact ? 68 : 92, right: compact ? 52 : 74, top: compact ? 10 : 18, bottom: compact ? 8 : 16 },
-    xAxis: {
-      type: 'value',
-      show: false,
-      max: (value: { max: number }) => Math.max(value.max * 1.18, 1),
-    },
-    yAxis: {
-      type: 'category',
-      inverse: true,
-      data: rankLabels.length ? rankLabels : ['暂无'],
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: {
-        color: axisText,
-        fontSize: compact ? 10 : 13,
-        fontWeight: 800,
-        overflow: 'truncate',
-        width: compact ? 58 : 82,
-      },
-    },
-    series: [
-      {
-        name: '消费金额',
-        type: 'bar',
-        barWidth: compact ? 10 : 12,
-        barGap: '45%',
-        data: rank.length ? rank.map((x) => Number(x.amount || 0)) : [0],
-        backgroundStyle: {
-          color: 'rgba(15, 23, 42, 0.82)',
-          borderRadius: 999,
-        },
-        showBackground: true,
-        label: {
-          show: true,
-          position: 'right',
-          color: '#a7f3d0',
-          fontSize: compact ? 10 : 12,
-          fontWeight: 900,
-          formatter: ({ value }: { value: number | string }) => `¥${formatAmount(Number(value))}`,
-        },
-        itemStyle: {
-          borderRadius: 999,
-          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: '#22d3ee' },
-            { offset: 1, color: '#34d399' },
-          ]),
-        },
-      },
-    ],
-  })
 }
 
 async function loadHomeCharts(): Promise<void> {
@@ -498,13 +450,12 @@ async function loadHomeCharts(): Promise<void> {
 async function paintChartsWhenReady(hc: HomeChartsStats): Promise<void> {
   for (let i = 0; i < 12; i++) {
     await nextTick()
-    if (lineRef.value && pieRef.value && radarRef.value && memberRankRef.value) {
+    if (lineRef.value && pieRef.value && radarRef.value) {
       applyChartOptions(hc)
       requestAnimationFrame(() => {
         lineChart?.resize()
         pieChart?.resize()
         radarChart?.resize()
-        memberRankChart?.resize()
       })
       return
     }
@@ -522,7 +473,6 @@ function onWinResize(): void {
     lineChart?.resize()
     pieChart?.resize()
     radarChart?.resize()
-    memberRankChart?.resize()
   })
 }
 
@@ -1043,10 +993,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
-}
-
-.dash-member-chart {
-  min-height: 0;
 }
 
 .dash-native-control {

@@ -7,6 +7,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
@@ -110,6 +111,68 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 	}
 
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+// Export 导出单日记账 Excel。
+func (c *StoreAccountController) Export(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+
+	var req model.ListStoreAccountReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
+	if date == "" {
+		http.Error(ctx, 400, "请选择导出日期")
+		return
+	}
+	req.StartDate = startDate
+	req.EndDate = endDate
+	req.Page = 1
+	req.PageSize = exportPageSize
+
+	if !middleware.HQUnboundAdmin(ctx) {
+		req.StoreID = storeID
+	}
+	middleware.AttachAuthContextToHTTPRequest(ctx)
+
+	list, _, err := c.storeAccountService.List(ctx.Request.Context(), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	rows := make([][]interface{}, 0, len(list))
+	for _, item := range list {
+		rows = append(rows, []interface{}{
+			item.AccountDate,
+			item.AccountNo,
+			storeName(item.Store),
+			item.Channel,
+			item.OrderNo,
+			memberName(item.Member),
+			storeAccountPaymentLabel(item.PaymentStatus),
+			formatAmount(item.TotalAmount),
+			formatAmount(item.OtherExpenseAmount),
+			formatAmount(item.ErrandFee),
+			formatAmount(item.RoundAmount),
+			formatAmount(item.GiftWineCostAmount),
+			formatAmount(item.NetIncomeAmount),
+			accountItemsText(item.Items),
+			accountConsumablesText(item.Consumables),
+			userName(item.Operator, ""),
+			item.Remark,
+			item.CreatedAt,
+		})
+	}
+
+	data := excelxml.Build([]excelxml.Sheet{{
+		Name:    "记账",
+		Headers: []string{"日期", "记账编号", "门店", "渠道", "订单号", "会员", "支付状态", "销售额", "其他支出", "跑腿费", "抹零", "赠酒成本", "净收入", "商品明细", "消耗品", "操作人", "备注", "创建时间"},
+		Rows:    rows,
+	}})
+	http.File(ctx, data, excelxml.Filename("store-accounts-"+date))
 }
 
 // Update godoc

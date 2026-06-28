@@ -1,5 +1,6 @@
 import { http, unwrap } from './http'
 import type { ApiEnvelope, B2BCustomer, B2BCustomerProductPrice, B2BSupplyOrder, Paginated } from './types'
+import { downloadBlob, filenameFromDisposition } from '@/utils/download'
 
 export async function listB2BCustomers(params?: Record<string, unknown>): Promise<Paginated<B2BCustomer>> {
   const res = await http.get<ApiEnvelope<Paginated<B2BCustomer>>>('/b2b/customers', { params })
@@ -32,6 +33,12 @@ export async function deleteB2BPrice(id: number): Promise<void> {
 export async function listB2BSupplyOrders(params?: Record<string, unknown>): Promise<Paginated<B2BSupplyOrder>> {
   const res = await http.get<ApiEnvelope<Paginated<B2BSupplyOrder>>>('/b2b/supply-orders', { params })
   return unwrap(res)
+}
+
+export async function exportB2BSupplyOrders(params: { date: string; store_id?: number }): Promise<void> {
+  const res = await http.get<Blob>('/b2b/supply-orders/export', { params, responseType: 'blob' })
+  const filename = filenameFromDisposition(res.headers['content-disposition'], `b2b-supply-orders-${params.date}.xls`)
+  downloadBlob(res.data, filename)
 }
 
 export async function createB2BSupplyOrder(body: Record<string, unknown>): Promise<B2BSupplyOrder> {

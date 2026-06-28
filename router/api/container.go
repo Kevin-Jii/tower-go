@@ -125,7 +125,7 @@ func BuildControllers() *Controllers {
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule, dictModule)
-	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
+	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, b2bModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
 	storeExpenseService := service.NewStoreExpenseService(storeExpenseModule, dictModule, userModule)
 	storeReturnService := service.NewStoreReturnService(storeReturnModule, userModule)
 	meituanAIService := service.NewMeituanAIService(meituanAIModule)

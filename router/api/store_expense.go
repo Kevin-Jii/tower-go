@@ -13,6 +13,7 @@ func RegisterStoreExpenseRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		expenses.POST("", middleware.Permission("store:expenses:add"), c.StoreExpense.Create)
 		expenses.GET("", middleware.Permission("store:expenses:list"), c.StoreExpense.List)
 		expenses.GET("/stats", middleware.Permission("store:expenses:list"), c.StoreExpense.Stats)
+		expenses.GET("/export", middleware.Permission("store:expenses:list"), c.StoreExpense.Export)
 		expenses.GET("/:id", middleware.Permission("store:expenses:list"), c.StoreExpense.Get)
 		expenses.PUT("/:id", middleware.Permission("store:expenses:edit"), c.StoreExpense.Update)
 		expenses.DELETE("/:id", middleware.Permission("store:expenses:delete"), c.StoreExpense.Delete)

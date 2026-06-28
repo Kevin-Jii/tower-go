@@ -4,6 +4,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
@@ -114,6 +115,67 @@ func (c *InventoryController) ListOrders(ctx *gin.Context) {
 	}
 
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+func (c *InventoryController) ExportOrders(ctx *gin.Context) {
+	storeID := middleware.GetStoreID(ctx)
+
+	var req model.ListInventoryOrderReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	date := ctx.Query("date")
+	if date == "" {
+		date = req.Date
+	}
+	if date == "" {
+		http.Error(ctx, 400, "请选择导出日期")
+		return
+	}
+	req.Date = date
+	req.Page = 1
+	req.PageSize = exportPageSize
+	if !middleware.HQUnboundAdmin(ctx) {
+		req.StoreID = storeID
+	}
+	middleware.AttachAuthContextToHTTPRequest(ctx)
+
+	list, _, err := c.inventoryService.ListOrders(ctx.Request.Context(), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	rows := make([][]interface{}, 0)
+	for _, order := range list {
+		if len(order.Items) == 0 {
+			rows = append(rows, []interface{}{order.CreatedAt, order.OrderNo, inventoryTypeLabel(order.Type), order.StoreName, "", "", "", order.TotalQuantity, order.ItemCount, order.OperatorName, order.Reason, order.Remark})
+			continue
+		}
+		for _, item := range order.Items {
+			rows = append(rows, []interface{}{
+				order.CreatedAt,
+				order.OrderNo,
+				inventoryTypeLabel(order.Type),
+				order.StoreName,
+				item.ProductName,
+				formatAmount(item.Quantity),
+				item.Unit,
+				order.TotalQuantity,
+				order.ItemCount,
+				order.OperatorName,
+				order.Reason,
+				item.Remark,
+			})
+		}
+	}
+	data := excelxml.Build([]excelxml.Sheet{{
+		Name:    "库存流水",
+		Headers: []string{"时间", "单据编号", "类型", "门店", "商品", "明细数量", "单位", "单据总数量", "商品种类", "操作人", "原因", "备注"},
+		Rows:    rows,
+	}})
+	http.File(ctx, data, excelxml.Filename("inventory-orders-"+date))
 }
 
 // GetOrderByNo godoc

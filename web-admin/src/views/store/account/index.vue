@@ -7,6 +7,7 @@
           :disabled-date="disabledFutureDate" />
         <BaseSelect v-model="paymentStatusFilter" class="w-full sm:w-32" :options="paymentStatusFilterOptions" />
         <BaseButton variant="primary" @click="reloadAll">查询</BaseButton>
+        <BaseButton variant="secondary" @click="openExportDlg">导出Excel</BaseButton>
         <BaseButton v-permission="'store:account:add'" variant="primary" @click="openCreate">快速记账</BaseButton>
         <BaseButton v-permission="'store:account:add'" variant="secondary" @click="openCustomCreate">自定义记账</BaseButton>
         <BaseButton v-permission="'store:account:edit'" variant="secondary" @click="openConsumableProductManage">消耗品维护
@@ -503,6 +504,17 @@
         </BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="exportDlg" title="导出记账" max-width="min(420px, 96vw)">
+      <BaseFormItem label="导出日期" required>
+        <a-date-picker v-model="exportDate" value-format="YYYY-MM-DD" class="w-full" :allow-clear="false"
+          :disabled-date="disabledFutureDate" />
+      </BaseFormItem>
+      <template #footer>
+        <BaseButton variant="ghost" @click="exportDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="exporting" @click="submitExport">导出</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -528,6 +540,7 @@ import {
   createStoreAccountConsumableProduct,
   createStoreAccount,
   deleteStoreAccountConsumableProduct,
+  exportStoreAccounts,
   getStoreAccount,
   listStoreAccountConsumableProducts,
   listStoreAccounts,
@@ -566,6 +579,9 @@ function businessDate(source: Date): Date {
 
 const accountDate = ref(dateText(businessDate(new Date())))
 const paymentStatusFilter = ref(0)
+const exportDlg = ref(false)
+const exportDate = ref(accountDate.value)
+const exporting = ref(false)
 
 function disabledFutureDate(current?: Date): boolean {
   if (!current) return false
@@ -735,6 +751,30 @@ const productCascaderOptions = computed(() => {
 function reloadAll(): void {
   page.value = 1
   void qc.invalidateQueries({ queryKey: ['store-accounts'] })
+}
+
+function openExportDlg(): void {
+  exportDate.value = accountDate.value
+  exportDlg.value = true
+}
+
+async function submitExport(): Promise<void> {
+  if (!exportDate.value) {
+    toast.warning('请选择导出日期')
+    return
+  }
+  exporting.value = true
+  try {
+    await exportStoreAccounts({
+      date: exportDate.value,
+      store_id: tenantStoreId.value,
+    })
+    exportDlg.value = false
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 
 watch([accountDate, paymentStatusFilter], () => {

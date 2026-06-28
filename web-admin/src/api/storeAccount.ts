@@ -1,5 +1,6 @@
 import { http, unwrap } from './http'
 import type { Paginated, StoreAccount, StoreAccountConsumableProduct, StoreAccountStats } from './types'
+import { downloadBlob, filenameFromDisposition } from '@/utils/download'
 
 export async function listStoreAccounts(params?: {
   page?: number
@@ -15,6 +16,12 @@ export async function listStoreAccounts(params?: {
 }): Promise<Paginated<StoreAccount>> {
   const res = await http.get<import('./types').ApiEnvelope<Paginated<StoreAccount>>>('/store-accounts', { params })
   return unwrap(res)
+}
+
+export async function exportStoreAccounts(params: { date: string; store_id?: number }): Promise<void> {
+  const res = await http.get<Blob>('/store-accounts/export', { params, responseType: 'blob' })
+  const filename = filenameFromDisposition(res.headers['content-disposition'], `store-accounts-${params.date}.xls`)
+  downloadBlob(res.data, filename)
 }
 
 export async function getStoreAccount(id: number): Promise<StoreAccount> {

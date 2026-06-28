@@ -13,6 +13,7 @@
             <a-date-picker v-model="filters.start_date" value-format="YYYY-MM-DD" class="w-full sm:w-36" />
             <a-date-picker v-model="filters.end_date" value-format="YYYY-MM-DD" class="w-full sm:w-36" />
             <BaseButton variant="primary" @click="reloadAll">查询</BaseButton>
+            <BaseButton variant="secondary" @click="openExportDlg">导出Excel</BaseButton>
             <BaseButton v-permission="'store:expenses:add'" variant="primary" @click="openCreate">新增支出</BaseButton>
           </div>
         </div>
@@ -76,6 +77,16 @@
         <BaseButton variant="primary" :loading="saving" @click="submit">保存</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="exportDlg" title="导出门店支出" max-width="min(420px, 96vw)">
+      <BaseFormItem label="导出日期" required>
+        <a-date-picker v-model="exportDate" value-format="YYYY-MM-DD" class="w-full" :allow-clear="false" />
+      </BaseFormItem>
+      <template #footer>
+        <BaseButton variant="ghost" @click="exportDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="exporting" @click="submitExport">导出</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -101,6 +112,7 @@ import { listDictDataByTypeCode } from '@/api/dict'
 import {
   createStoreExpense,
   deleteStoreExpense,
+  exportStoreExpenses,
   getStoreExpenseStats,
   listStoreExpenses,
   updateStoreExpense,
@@ -124,6 +136,9 @@ const page = ref(1)
 const pageSize = ref(10)
 const dlg = ref(false)
 const saving = ref(false)
+const exportDlg = ref(false)
+const exportDate = ref(new Date().toISOString().slice(0, 10))
+const exporting = ref(false)
 const editingId = ref<number | null>(null)
 const form = reactive({
   category_code: '',
@@ -198,6 +213,27 @@ function reloadAll(): void {
   page.value = 1
   void qc.invalidateQueries({ queryKey: ['store-expenses'] })
   void qc.invalidateQueries({ queryKey: ['store-expense-stats'] })
+}
+
+function openExportDlg(): void {
+  exportDate.value = filters.start_date || filters.end_date || new Date().toISOString().slice(0, 10)
+  exportDlg.value = true
+}
+
+async function submitExport(): Promise<void> {
+  if (!exportDate.value) {
+    toast.warning('请选择导出日期')
+    return
+  }
+  exporting.value = true
+  try {
+    await exportStoreExpenses({ date: exportDate.value, store_id: tenantStoreId.value })
+    exportDlg.value = false
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 
 function resetForm(): void {

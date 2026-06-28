@@ -102,6 +102,7 @@
               { label: '出库', value: 2 },
             ]" />
             <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
+            <BaseButton variant="secondary" @click="openOrderExportDlg">导出Excel</BaseButton>
           </div>
         </div>
         <div class="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200/70 bg-white shadow-sm">
@@ -244,6 +245,16 @@
         <BaseButton variant="ghost" @click="detailDlg = false">关闭</BaseButton>
       </template>
     </BaseDialog>
+
+    <BaseDialog v-model="orderExportDlg" title="导出库存流水" max-width="min(420px, 96vw)">
+      <BaseFormItem label="导出日期" required>
+        <a-date-picker v-model="orderExportDate" value-format="YYYY-MM-DD" class="w-full" :allow-clear="false" />
+      </BaseFormItem>
+      <template #footer>
+        <BaseButton variant="ghost" @click="orderExportDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="orderExporting" @click="submitOrderExport">导出</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -260,7 +271,7 @@ import {
   BaseTable,
 } from '@/components/base'
 import type { BaseTableColumn } from '@/components/base/types'
-import { createInventoryOrder, getInventoryOrder, listInventories, listInventoryOrders, updateInventoryQuantity } from '@/api/inventory'
+import { createInventoryOrder, exportInventoryOrders, getInventoryOrder, listInventories, listInventoryOrders, updateInventoryQuantity } from '@/api/inventory'
 import { listPurchasableProducts } from '@/api/storeSupplier'
 import { listDictDataByTypeCode } from '@/api/dict'
 import { batchListProductUnitSpecs } from '@/api/supplierProduct'
@@ -498,6 +509,9 @@ const orderDate = ref('')
 const orderType = ref<number | ''>('')
 const orderPage = ref(1)
 const orderPageSize = ref(10)
+const orderExportDlg = ref(false)
+const orderExportDate = ref(new Date().toISOString().slice(0, 10))
+const orderExporting = ref(false)
 const orderKey = computed(
   () => ['inventory-orders', orderPage.value, orderPageSize.value, orderNo.value, orderDate.value, orderType.value] as const,
 )
@@ -520,6 +534,27 @@ const orderTotal = computed(() => orderData.value?.total ?? 0)
 function reloadOrders(): void {
   orderPage.value = 1
   void qc.invalidateQueries({ queryKey: ['inventory-orders'] })
+}
+
+function openOrderExportDlg(): void {
+  orderExportDate.value = orderDate.value || new Date().toISOString().slice(0, 10)
+  orderExportDlg.value = true
+}
+
+async function submitOrderExport(): Promise<void> {
+  if (!orderExportDate.value) {
+    toast.warning('请选择导出日期')
+    return
+  }
+  orderExporting.value = true
+  try {
+    await exportInventoryOrders({ date: orderExportDate.value, store_id: tenantStoreId.value })
+    orderExportDlg.value = false
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    orderExporting.value = false
+  }
 }
 
 watch([orderPage, orderPageSize], () => {

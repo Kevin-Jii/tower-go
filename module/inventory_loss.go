@@ -2,6 +2,7 @@ package module
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -141,7 +142,7 @@ func (m *InventoryLossModule) List(req *model.ListInventoryLossOrderReq) ([]*mod
 	var orders []*model.InventoryLossOrder
 	var total int64
 
-	query := m.db.Model(&model.InventoryLossOrder{}).Preload("Member")
+	query := m.db.Model(&model.InventoryLossOrder{}).Preload("Member").Preload("Items")
 	if req.StoreID > 0 {
 		query = query.Where("store_id = ?", req.StoreID)
 	}
@@ -174,28 +175,24 @@ func (m *InventoryLossModule) List(req *model.ListInventoryLossOrderReq) ([]*mod
 }
 
 func (m *InventoryLossModule) ListMemberGiftRecords(memberID uint, req *model.ListMemberGiftRecordsReq, hqUnbound bool) ([]*model.MemberGiftRecord, int64, error) {
-	var records []*model.MemberGiftRecord
-	var total int64
+	records := make([]*model.MemberGiftRecord, 0)
+	lossRecords := make([]*model.MemberGiftRecord, 0)
+	accountRecords := make([]*model.MemberGiftRecord, 0)
 
-	query := m.db.Table("inventory_loss_order_items i").
+	lossQuery := m.db.Table("inventory_loss_order_items i").
 		Joins("JOIN inventory_loss_orders o ON o.id = i.order_id AND o.deleted_at IS NULL").
 		Where("i.deleted_at IS NULL AND o.type = ? AND o.member_id = ? AND o.is_canceled = 0", model.InventoryLossTypeGift, memberID)
 	if !hqUnbound || req.StoreID > 0 {
-		query = query.Where("o.store_id = ?", req.StoreID)
+		lossQuery = lossQuery.Where("o.store_id = ?", req.StoreID)
 	}
 	if req.StartDate != "" {
-		query = query.Where("o.created_at >= ?", req.StartDate+" 00:00:00")
+		lossQuery = lossQuery.Where("o.created_at >= ?", req.StartDate+" 00:00:00")
 	}
 	if req.EndDate != "" {
-		query = query.Where("o.created_at <= ?", req.EndDate+" 23:59:59")
+		lossQuery = lossQuery.Where("o.created_at <= ?", req.EndDate+" 23:59:59")
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	offset := (req.Page - 1) * req.PageSize
-	if err := query.Select(`
+	if err := lossQuery.Select(`
 			i.id,
 			i.order_id,
 			o.order_no,
@@ -209,12 +206,68 @@ func (m *InventoryLossModule) ListMemberGiftRecords(memberID uint, req *model.Li
 			o.created_at
 		`).
 		Order("o.id DESC, i.id DESC").
-		Offset(offset).
-		Limit(req.PageSize).
-		Scan(&records).Error; err != nil {
+		Scan(&lossRecords).Error; err != nil {
 		return nil, 0, err
 	}
-	return records, total, nil
+
+	accountQuery := m.db.Table("store_accounts sa").
+		Joins("LEFT JOIN users u ON u.id = sa.operator_id").
+		Joins("LEFT JOIN supplier_products p ON p.id = sa.gift_wine_product_id").
+		Where("sa.deleted_at IS NULL AND sa.member_id = ? AND sa.is_gift_wine = 1", memberID)
+	if !hqUnbound || req.StoreID > 0 {
+		accountQuery = accountQuery.Where("sa.store_id = ?", req.StoreID)
+	}
+	if req.StartDate != "" {
+		accountQuery = accountQuery.Where("sa.created_at >= ?", req.StartDate+" 00:00:00")
+	}
+	if req.EndDate != "" {
+		accountQuery = accountQuery.Where("sa.created_at <= ?", req.EndDate+" 23:59:59")
+	}
+	if err := accountQuery.Select(`
+			sa.id,
+			sa.id AS order_id,
+			sa.account_no AS order_no,
+			sa.gift_wine_product_id AS product_id,
+			COALESCE(NULLIF(sa.gift_wine_product_name, ''), p.name, '') AS product_name,
+			sa.gift_wine_unit AS unit,
+			sa.gift_wine_quantity AS quantity,
+			sa.gift_wine_cost_amount AS cost_amount,
+			'记账赠酒' AS reason,
+			COALESCE(NULLIF(u.nickname, ''), NULLIF(u.username, ''), '') AS operator_name,
+			sa.created_at
+		`).
+		Order("sa.id DESC").
+		Scan(&accountRecords).Error; err != nil {
+		return nil, 0, err
+	}
+
+	records = append(records, lossRecords...)
+	records = append(records, accountRecords...)
+	sort.SliceStable(records, func(i, j int) bool {
+		if records[i].CreatedAt.Equal(records[j].CreatedAt) {
+			return records[i].ID > records[j].ID
+		}
+		return records[i].CreatedAt.After(records[j].CreatedAt)
+	})
+
+	total := int64(len(records))
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+	if offset >= len(records) {
+		return []*model.MemberGiftRecord{}, total, nil
+	}
+	end := offset + pageSize
+	if end > len(records) {
+		end = len(records)
+	}
+	return records[offset:end], total, nil
 }
 
 func (m *InventoryLossModule) GenerateOrderNo() string {

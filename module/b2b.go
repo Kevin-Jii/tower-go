@@ -230,6 +230,24 @@ func (m *B2BModule) ListSupplyOrders(req *model.ListB2BSupplyOrderReq) ([]*model
 	return rows, total, nil
 }
 
+func (m *B2BModule) GetSupplyOrderAmountByDateRange(storeID uint, startDate, endDate string) (float64, error) {
+	var totalAmount float64
+	q := m.db.Model(&model.B2BSupplyOrder{})
+	if storeID > 0 {
+		q = q.Where("store_id = ?", storeID)
+	}
+	if startDate != "" {
+		q = q.Where("order_date >= ?", startDate)
+	}
+	if endDate != "" {
+		q = q.Where("order_date <= ?", endDate)
+	}
+	if err := q.Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount).Error; err != nil {
+		return 0, err
+	}
+	return totalAmount, nil
+}
+
 func (m *B2BModule) GetSupplyOrder(id uint) (*model.B2BSupplyOrder, error) {
 	var order model.B2BSupplyOrder
 	if err := m.db.Preload("Customer").Preload("Items").First(&order, id).Error; err != nil {

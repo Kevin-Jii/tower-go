@@ -4,6 +4,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
@@ -136,6 +137,59 @@ func (c *B2BController) ListSupplyOrders(ctx *gin.Context) {
 		return
 	}
 	http.SuccessWithPagination(ctx, rows, total, req.Page, req.PageSize)
+}
+
+func (c *B2BController) ExportSupplyOrders(ctx *gin.Context) {
+	var req model.ListB2BSupplyOrderReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
+	if date == "" {
+		http.Error(ctx, 400, "请选择导出日期")
+		return
+	}
+	req.StartDate = startDate
+	req.EndDate = endDate
+	req.Page = 1
+	req.PageSize = exportPageSize
+	if !middleware.HQUnboundAdmin(ctx) {
+		req.StoreID = middleware.GetStoreID(ctx)
+	}
+
+	list, _, err := c.service.ListSupplyOrders(&req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	rows := make([][]interface{}, 0, len(list))
+	for _, item := range list {
+		rows = append(rows, []interface{}{
+			item.OrderDate,
+			item.OrderNo,
+			item.CustomerName,
+			b2bDeliveryLabel(item.DeliveryStatus),
+			b2bPaymentLabel(item.PaymentStatus),
+			formatAmount(item.TotalAmount),
+			formatAmount(item.PaidAmount),
+			formatAmount(item.UnpaidAmount),
+			formatAmount(item.CostAmount),
+			formatAmount(item.ProfitAmount),
+			b2bItemsText(item.Items),
+			item.OperatorName,
+			item.Remark,
+			item.CreatedAt,
+		})
+	}
+
+	data := excelxml.Build([]excelxml.Sheet{{
+		Name:    "B2B供货",
+		Headers: []string{"供货日期", "供货单号", "客户", "配送状态", "收款状态", "应收金额", "已收金额", "未收金额", "成本金额", "毛利金额", "商品明细", "操作人", "备注", "创建时间"},
+		Rows:    rows,
+	}})
+	http.File(ctx, data, excelxml.Filename("b2b-supply-orders-"+date))
 }
 
 func (c *B2BController) GetSupplyOrder(ctx *gin.Context) {

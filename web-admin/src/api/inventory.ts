@@ -1,5 +1,6 @@
 import { http, unwrap } from './http'
 import type { InventoryOrder, InventoryRow, Paginated } from './types'
+import { downloadBlob, filenameFromDisposition } from '@/utils/download'
 
 export async function listInventories(params?: {
   page?: number
@@ -31,6 +32,12 @@ export async function listInventoryOrders(params?: {
     params,
   })
   return unwrap(res)
+}
+
+export async function exportInventoryOrders(params: { date: string; store_id?: number }): Promise<void> {
+  const res = await http.get<Blob>('/inventory-orders/export', { params, responseType: 'blob' })
+  const filename = filenameFromDisposition(res.headers['content-disposition'], `inventory-orders-${params.date}.xls`)
+  downloadBlob(res.data, filename)
 }
 
 export async function getInventoryOrder(id: number): Promise<InventoryOrder> {

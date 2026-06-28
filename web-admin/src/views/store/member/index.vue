@@ -87,6 +87,7 @@
             <BaseInput v-model="consEnd" type="date" />
           </BaseFormItem>
           <BaseButton variant="primary" :loading="consLoading" @click="reloadConsumptions">查询</BaseButton>
+          <BaseButton variant="secondary" @click="openConsExportDlg">导出Excel</BaseButton>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded border border-[var(--color-border-2)] p-3">
           <div>
@@ -126,19 +127,20 @@
       </template>
     </BaseDialog>
 
+    <BaseDialog v-model="consExportDlg" title="导出会员消费" max-width="min(420px, 96vw)">
+      <BaseFormItem label="导出日期" required>
+        <a-date-picker v-model="consExportDate" value-format="YYYY-MM-DD" class="w-full" :allow-clear="false" />
+      </BaseFormItem>
+      <template #footer>
+        <BaseButton variant="ghost" @click="consExportDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="consExporting" @click="submitConsExport">导出</BaseButton>
+      </template>
+    </BaseDialog>
+
     <BaseDialog v-model="giftDlg" title="会员赠品记录" max-width="min(960px, 96vw)">
       <div class="space-y-4">
         <div class="text-sm text-slate-600">
           会员：{{ giftMember ? `${giftMember.phone}${giftMember.name ? `（${giftMember.name}）` : ''}` : '-' }}
-        </div>
-        <div class="flex flex-wrap items-end gap-2">
-          <BaseFormItem label="开始日期" class="w-44">
-            <BaseInput v-model="giftStart" type="date" />
-          </BaseFormItem>
-          <BaseFormItem label="结束日期" class="w-44">
-            <BaseInput v-model="giftEnd" type="date" />
-          </BaseFormItem>
-          <BaseButton variant="primary" :loading="giftLoading" @click="reloadGifts">查询</BaseButton>
         </div>
         <BaseTable
           :columns="giftColumns"
@@ -253,6 +255,7 @@ import {
   createMemberPointRule,
   deleteMember,
   deleteMemberPointRule,
+  exportMemberConsumptions,
   listMemberConsumptions,
   listMemberGiftRecords,
   listMemberPointRules,
@@ -471,6 +474,9 @@ const consLoading = ref(false)
 const consMember = ref<MemberRow | null>(null)
 const consStart = ref('')
 const consEnd = ref('')
+const consExportDlg = ref(false)
+const consExportDate = ref(new Date().toISOString().slice(0, 10))
+const consExporting = ref(false)
 const consPage = ref(1)
 const consPageSize = ref(10)
 const consTotal = ref(0)
@@ -520,6 +526,28 @@ function reloadConsumptions(): void {
   void loadConsumptions()
 }
 
+function openConsExportDlg(): void {
+  consExportDate.value = consStart.value || consEnd.value || new Date().toISOString().slice(0, 10)
+  consExportDlg.value = true
+}
+
+async function submitConsExport(): Promise<void> {
+  if (!consMember.value) return
+  if (!consExportDate.value) {
+    toast.warning('请选择导出日期')
+    return
+  }
+  consExporting.value = true
+  try {
+    await exportMemberConsumptions(consMember.value.id, { date: consExportDate.value })
+    consExportDlg.value = false
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    consExporting.value = false
+  }
+}
+
 function openConsumptions(row: MemberRow): void {
   consMember.value = row
   const r = currentMonthRange()
@@ -547,8 +575,6 @@ watch([consPage, consPageSize], () => {
 const giftDlg = ref(false)
 const giftLoading = ref(false)
 const giftMember = ref<MemberRow | null>(null)
-const giftStart = ref('')
-const giftEnd = ref('')
 const giftPage = ref(1)
 const giftPageSize = ref(10)
 const giftTotal = ref(0)
@@ -559,8 +585,6 @@ async function loadGifts(): Promise<void> {
   giftLoading.value = true
   try {
     const data = await listMemberGiftRecords(giftMember.value.id, {
-      start_date: giftStart.value || undefined,
-      end_date: giftEnd.value || undefined,
       page: giftPage.value,
       page_size: giftPageSize.value,
     })
@@ -573,15 +597,8 @@ async function loadGifts(): Promise<void> {
   }
 }
 
-function reloadGifts(): void {
-  giftPage.value = 1
-  void loadGifts()
-}
-
 function openGifts(row: MemberRow): void {
   giftMember.value = row
-  giftStart.value = ''
-  giftEnd.value = ''
   giftPage.value = 1
   giftPageSize.value = 10
   giftTotal.value = 0

@@ -1,5 +1,6 @@
 import { http, unwrap } from './http'
 import type { MemberConsumptionPage, MemberGiftRecord, MemberPointRule, MemberRow, MemberWineStorage, MemberWineTransaction, Paginated } from './types'
+import { downloadBlob, filenameFromDisposition } from '@/utils/download'
 
 export async function listMembers(params?: {
   page?: number
@@ -82,6 +83,12 @@ export async function listMemberConsumptions(
 ): Promise<MemberConsumptionPage> {
   const res = await http.get<import('./types').ApiEnvelope<MemberConsumptionPage>>(`/members/${id}/consumptions`, { params })
   return unwrap(res)
+}
+
+export async function exportMemberConsumptions(id: number, params: { date: string }): Promise<void> {
+  const res = await http.get<Blob>(`/members/${id}/consumptions/export`, { params, responseType: 'blob' })
+  const filename = filenameFromDisposition(res.headers['content-disposition'], `member-consumptions-${params.date}.xls`)
+  downloadBlob(res.data, filename)
 }
 
 export async function listMemberGiftRecords(

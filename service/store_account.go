@@ -106,6 +106,67 @@ func tryResolveUnitSpecSalePrice(unit string, specs []*model.ProductUnitSpec) (f
 	return 0, false
 }
 
+type giftWineSnapshot struct {
+	ProductID   uint
+	ProductName string
+	Unit        string
+	Quantity    float64
+	CostAmount  float64
+}
+
+func giftWineValue(v *giftWineSnapshot, pick func(*giftWineSnapshot) uint) uint {
+	if v == nil {
+		return 0
+	}
+	return pick(v)
+}
+
+func giftWineStringValue(v *giftWineSnapshot, pick func(*giftWineSnapshot) string) string {
+	if v == nil {
+		return ""
+	}
+	return pick(v)
+}
+
+func giftWineFloatValue(v *giftWineSnapshot, pick func(*giftWineSnapshot) float64) float64 {
+	if v == nil {
+		return 0
+	}
+	return pick(v)
+}
+
+func (s *StoreAccountService) resolveGiftWineSnapshot(productID uint, unit string, quantity, costAmount float64) (*giftWineSnapshot, error) {
+	if productID == 0 {
+		return nil, fmt.Errorf("请选择赠酒商品")
+	}
+	unit = strings.TrimSpace(unit)
+	if unit == "" {
+		return nil, fmt.Errorf("请选择赠酒规格")
+	}
+	if quantity <= 0 {
+		return nil, fmt.Errorf("请填写赠酒数量")
+	}
+
+	productName := ""
+	if s.productModule != nil {
+		product, err := s.productModule.GetByID(productID)
+		if err != nil || product == nil {
+			return nil, fmt.Errorf("赠酒商品不存在")
+		}
+		productName = product.Name
+	}
+	if costAmount < 0 {
+		return nil, fmt.Errorf("赠酒成本不能小于0")
+	}
+	return &giftWineSnapshot{
+		ProductID:   productID,
+		ProductName: productName,
+		Unit:        unit,
+		Quantity:    quantity,
+		CostAmount:  costAmount,
+	}, nil
+}
+
 func resolveUnitCostFromSpecs(unit string, specs []*model.ProductUnitSpec) float64 {
 	if len(specs) == 0 {
 		return 0
@@ -163,6 +224,7 @@ type StoreAccountService struct {
 	memberModule          *module.MemberModule
 	userModule            *module.UserModule
 	dictModule            *module.DictModule
+	b2bModule             *module.B2BModule
 	dingTalkService       *DingTalkService
 	botModule             *module.DingTalkBotModule
 	templateService       *MessageTemplateService
@@ -178,6 +240,7 @@ func NewStoreAccountService(
 	memberModule *module.MemberModule,
 	userModule *module.UserModule,
 	dictModule *module.DictModule,
+	b2bModule *module.B2BModule,
 	dingTalkService *DingTalkService,
 	botModule *module.DingTalkBotModule,
 	templateService *MessageTemplateService,
@@ -192,6 +255,7 @@ func NewStoreAccountService(
 		memberModule:          memberModule,
 		userModule:            userModule,
 		dictModule:            dictModule,
+		b2bModule:             b2bModule,
 		dingTalkService:       dingTalkService,
 		botModule:             botModule,
 		templateService:       templateService,
@@ -429,26 +493,38 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	}
 	isGiftWine := req.IsGiftWine
 	giftWineCostAmount := req.GiftWineCostAmount
+	var giftWine *giftWineSnapshot
 	if isGiftWine != 1 {
 		isGiftWine = 0
 		giftWineCostAmount = 0
+	} else {
+		var err error
+		giftWine, err = s.resolveGiftWineSnapshot(req.GiftWineProductID, req.GiftWineUnit, req.GiftWineQuantity, giftWineCostAmount)
+		if err != nil {
+			return nil, err
+		}
+		giftWineCostAmount = giftWine.CostAmount
 	}
 
 	account := &model.StoreAccount{
-		AccountNo:          accountNo,
-		StoreID:            storeID,
-		MemberID:           req.MemberID,
-		PaymentStatus:      resolvePaymentStatus(req.PaymentStatus),
-		Channel:            req.Channel,
-		OrderNo:            orderNo,
-		TotalAmount:        totalAmount,
-		OtherExpenseAmount: req.OtherExpenseAmount,
-		RoundAmount:        req.RoundAmount,
-		IsGiftWine:         isGiftWine,
-		GiftWineCostAmount: giftWineCostAmount,
-		IsErrandOrder:      req.IsErrandOrder,
-		ErrandFee:          errandFee,
-		IsSupplement:       req.IsSupplement,
+		AccountNo:           accountNo,
+		StoreID:             storeID,
+		MemberID:            req.MemberID,
+		PaymentStatus:       resolvePaymentStatus(req.PaymentStatus),
+		Channel:             req.Channel,
+		OrderNo:             orderNo,
+		TotalAmount:         totalAmount,
+		OtherExpenseAmount:  req.OtherExpenseAmount,
+		RoundAmount:         req.RoundAmount,
+		IsGiftWine:          isGiftWine,
+		GiftWineProductID:   giftWineValue(giftWine, func(v *giftWineSnapshot) uint { return v.ProductID }),
+		GiftWineProductName: giftWineStringValue(giftWine, func(v *giftWineSnapshot) string { return v.ProductName }),
+		GiftWineUnit:        giftWineStringValue(giftWine, func(v *giftWineSnapshot) string { return v.Unit }),
+		GiftWineQuantity:    giftWineFloatValue(giftWine, func(v *giftWineSnapshot) float64 { return v.Quantity }),
+		GiftWineCostAmount:  giftWineCostAmount,
+		IsErrandOrder:       req.IsErrandOrder,
+		ErrandFee:           errandFee,
+		IsSupplement:        req.IsSupplement,
 		NetIncomeAmount: calculateStoreAccountNetIncome(
 			totalAmount,
 			req.OtherExpenseAmount,
@@ -975,10 +1051,15 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 	nextOtherExpenseAmount := account.OtherExpenseAmount
 	nextRoundAmount := account.RoundAmount
 	nextIsGiftWine := account.IsGiftWine
+	nextGiftWineProductID := account.GiftWineProductID
+	nextGiftWineProductName := account.GiftWineProductName
+	nextGiftWineUnit := account.GiftWineUnit
+	nextGiftWineQuantity := account.GiftWineQuantity
 	nextGiftWineCostAmount := account.GiftWineCostAmount
 	nextIsErrandOrder := account.IsErrandOrder
 	nextErrandFee := account.ErrandFee
 	shouldRecalculateNetIncome := false
+	giftWineChanged := false
 
 	if req.Channel != "" {
 		updates["channel"] = req.Channel
@@ -1030,19 +1111,60 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 		nextIsGiftWine = *req.IsGiftWine
 		if nextIsGiftWine != 1 {
 			nextIsGiftWine = 0
+			nextGiftWineProductID = 0
+			nextGiftWineProductName = ""
+			nextGiftWineUnit = ""
+			nextGiftWineQuantity = 0
 			nextGiftWineCostAmount = 0
+			updates["gift_wine_product_id"] = 0
+			updates["gift_wine_product_name"] = ""
+			updates["gift_wine_unit"] = ""
+			updates["gift_wine_quantity"] = 0
 			updates["gift_wine_cost_amount"] = 0
 		}
 		updates["is_gift_wine"] = nextIsGiftWine
 		shouldRecalculateNetIncome = true
+		giftWineChanged = true
+	}
+	if req.GiftWineProductID != nil {
+		nextGiftWineProductID = *req.GiftWineProductID
+		giftWineChanged = true
+	}
+	if req.GiftWineUnit != "" {
+		nextGiftWineUnit = strings.TrimSpace(req.GiftWineUnit)
+		giftWineChanged = true
+	}
+	if req.GiftWineQuantity != nil {
+		nextGiftWineQuantity = *req.GiftWineQuantity
+		giftWineChanged = true
 	}
 	if req.GiftWineCostAmount != nil {
 		nextGiftWineCostAmount = *req.GiftWineCostAmount
 		updates["gift_wine_cost_amount"] = nextGiftWineCostAmount
 		shouldRecalculateNetIncome = true
+		giftWineChanged = true
 	}
 	if nextIsGiftWine != 1 {
+		nextGiftWineProductID = 0
+		nextGiftWineProductName = ""
+		nextGiftWineUnit = ""
+		nextGiftWineQuantity = 0
 		nextGiftWineCostAmount = 0
+	} else if giftWineChanged {
+		giftWine, err := s.resolveGiftWineSnapshot(nextGiftWineProductID, nextGiftWineUnit, nextGiftWineQuantity, nextGiftWineCostAmount)
+		if err != nil {
+			return err
+		}
+		nextGiftWineProductID = giftWine.ProductID
+		nextGiftWineProductName = giftWine.ProductName
+		nextGiftWineUnit = giftWine.Unit
+		nextGiftWineQuantity = giftWine.Quantity
+		nextGiftWineCostAmount = giftWine.CostAmount
+		updates["gift_wine_product_id"] = nextGiftWineProductID
+		updates["gift_wine_product_name"] = nextGiftWineProductName
+		updates["gift_wine_unit"] = nextGiftWineUnit
+		updates["gift_wine_quantity"] = nextGiftWineQuantity
+		updates["gift_wine_cost_amount"] = nextGiftWineCostAmount
 	}
 	if req.IsErrandOrder != nil {
 		nextIsErrandOrder = *req.IsErrandOrder
@@ -1144,16 +1266,27 @@ func (s *StoreAccountService) Delete(id uint) error {
 
 // GetStats 获取统计
 func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string) (map[string]interface{}, error) {
-	totalAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRange(storeID, startDate, endDate)
+	storeAccountTurnoverAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRange(storeID, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
+	var b2bSupplyOrderAmount float64
+	if s.b2bModule != nil {
+		b2bSupplyOrderAmount, err = s.b2bModule.GetSupplyOrderAmountByDateRange(storeID, startDate, endDate)
+		if err != nil {
+			return nil, err
+		}
+	}
+	totalTurnoverAmount := roundMoney(storeAccountTurnoverAmount + b2bSupplyOrderAmount)
 
 	return map[string]interface{}{
-		"total_amount":       netIncomeAmount,
-		"gross_total_amount": totalAmount,
-		"net_income_amount":  netIncomeAmount,
-		"count":              count,
+		"total_amount":                  netIncomeAmount,
+		"gross_total_amount":            storeAccountTurnoverAmount,
+		"store_account_turnover_amount": storeAccountTurnoverAmount,
+		"b2b_supply_order_amount":       b2bSupplyOrderAmount,
+		"total_turnover_amount":         totalTurnoverAmount,
+		"net_income_amount":             netIncomeAmount,
+		"count":                         count,
 	}, nil
 }
 

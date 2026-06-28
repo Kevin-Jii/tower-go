@@ -4,6 +4,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
@@ -44,6 +45,52 @@ func (c *StoreExpenseController) List(ctx *gin.Context) {
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
+}
+
+func (c *StoreExpenseController) Export(ctx *gin.Context) {
+	var req model.ListStoreExpenseReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
+	if date == "" {
+		http.Error(ctx, 400, "请选择导出日期")
+		return
+	}
+	req.StartDate = startDate
+	req.EndDate = endDate
+	req.Page = 1
+	req.PageSize = exportPageSize
+	if !middleware.HQUnboundAdmin(ctx) {
+		req.StoreID = middleware.GetStoreID(ctx)
+	}
+
+	list, _, err := c.storeExpenseService.List(ctx.Request.Context(), &req)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	rows := make([][]interface{}, 0, len(list))
+	for _, item := range list {
+		rows = append(rows, []interface{}{
+			item.ExpenseDate,
+			item.ExpenseNo,
+			storeName(item.Store),
+			item.CategoryName,
+			formatAmount(item.Amount),
+			userName(item.Operator, item.OperatorName),
+			item.Remark,
+			item.CreatedAt,
+		})
+	}
+	data := excelxml.Build([]excelxml.Sheet{{
+		Name:    "门店支出",
+		Headers: []string{"支出日期", "支出单号", "门店", "分类", "金额", "操作人", "备注", "创建时间"},
+		Rows:    rows,
+	}})
+	http.File(ctx, data, excelxml.Filename("store-expenses-"+date))
 }
 
 func (c *StoreExpenseController) Get(ctx *gin.Context) {

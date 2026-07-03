@@ -45,6 +45,14 @@ func (m *UserModule) GetByPhone(phone string) (*model.User, error) {
 	return &user, nil
 }
 
+func (m *UserModule) GetByWechatOpenID(openID string) (*model.User, error) {
+	var user model.User
+	if err := m.db.Preload("Role").Preload("Store").Where("wechat_open_id = ?", openID).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (m *UserModule) ExistsByPhone(phone string) (bool, error) {
 	var count int64
 	if err := m.db.Model(&model.User{}).Where("phone = ?", phone).Count(&count).Error; err != nil {
@@ -205,6 +213,10 @@ func (m *UserModule) UpdatePasswordByID(id uint, hashed string) error {
 // UpdateLastLoginAt 仅更新最后登录时间，避免 Save 全量写回触发关联保存与外键校验。
 func (m *UserModule) UpdateLastLoginAt(id uint, t time.Time) error {
 	return m.db.Model(&model.User{}).Where("id = ?", id).Update("last_login_at", t).Error
+}
+
+func (m *UserModule) BindWechatOpenID(id uint, openID string) error {
+	return m.db.Model(&model.User{}).Where("id = ?", id).Update("wechat_open_id", openID).Error
 }
 
 // GetByDingTalkID 根据钉钉用户ID获取用户（通过手机号关联）

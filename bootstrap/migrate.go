@@ -158,6 +158,10 @@ func shouldSkipMigration() bool {
 		return false
 	}
 
+	if migrator.HasTable(&model.User{}) && !migrator.HasColumn(&model.User{}, "wechat_open_id") {
+		return false
+	}
+
 	// 检查标记文件
 	if _, err := os.Stat(migrationVersionFile); err == nil {
 		// 文件存在，读取版本

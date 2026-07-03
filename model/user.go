@@ -3,16 +3,17 @@ package model
 import "time"
 
 type User struct {
-	ID         uint   `json:"id" gorm:"primarykey"`
-	EmployeeNo string `json:"employee_no" gorm:"uniqueIndex;type:varchar(6);not null"` // 工号，6位数字
-	Password   string `json:"-" gorm:"not null"`
-	Phone      string `json:"phone" gorm:"uniqueIndex;type:varchar(20)"`
-	Username   string `json:"username" gorm:"not null;uniqueIndex:idx_store_username;type:varchar(191)"`
-	Nickname   string `json:"nickname" gorm:"type:varchar(100)"`
-	Email      string `json:"email" gorm:"type:varchar(255)"`
+	ID           uint    `json:"id" gorm:"primarykey"`
+	EmployeeNo   string  `json:"employee_no" gorm:"uniqueIndex;type:varchar(6);not null"` // 工号，6位数字
+	Password     string  `json:"-" gorm:"not null"`
+	Phone        string  `json:"phone" gorm:"uniqueIndex;type:varchar(20)"`
+	Username     string  `json:"username" gorm:"not null;uniqueIndex:idx_store_username;type:varchar(191)"`
+	Nickname     string  `json:"nickname" gorm:"type:varchar(100)"`
+	Email        string  `json:"email" gorm:"type:varchar(255)"`
+	WechatOpenID *string `json:"wechat_openid,omitempty" gorm:"type:varchar(128);uniqueIndex"`
 
 	// --- 门店关联 ---
-	StoreID uint   `json:"store_id" gorm:"uniqueIndex:idx_store_username"`                          // 0=未绑店（超管/总部）；>0 绑定门店
+	StoreID uint   `json:"store_id" gorm:"uniqueIndex:idx_store_username"`                       // 0=未绑店（超管/总部）；>0 绑定门店
 	Store   *Store `json:"store,omitempty" gorm:"foreignKey:StoreID;references:ID;constraint:-"` // 不建外键，允许 store_id=0
 
 	// --- 权限管理 (RBAC) ---

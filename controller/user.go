@@ -20,6 +20,10 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required,min=6"` // 密码至少6位
 }
 
+type WechatCodeRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
 // LoginResponse 登录响应
 type LoginResponse struct {
 	Token            string      `json:"token"`
@@ -370,7 +374,53 @@ func (c *UserController) Login(ctx *gin.Context) {
 		return
 	}
 
-	// 获取角色代码和角色ID
+	resp, err := c.buildLoginResponse(ctx, user)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+
+	http.Success(ctx, resp)
+}
+
+func (c *UserController) WechatLogin(ctx *gin.Context) {
+	var req WechatCodeRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	user, err := c.userService.ValidateWechatLogin(req.Code)
+	if err != nil {
+		http.Error(ctx, 401, err.Error())
+		return
+	}
+	resp, err := c.buildLoginResponse(ctx, user)
+	if err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, resp)
+}
+
+func (c *UserController) BindWechat(ctx *gin.Context) {
+	var req WechatCodeRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		http.Error(ctx, 400, err.Error())
+		return
+	}
+	userID := middleware.GetUserID(ctx)
+	if userID == 0 {
+		http.Error(ctx, 401, "请先登录")
+		return
+	}
+	if err := c.userService.BindWechatCode(userID, req.Code); err != nil {
+		http.Error(ctx, 500, err.Error())
+		return
+	}
+	http.Success(ctx, nil)
+}
+
+func (c *UserController) buildLoginResponse(ctx *gin.Context, user *model.User) (LoginResponse, error) {
 	roleCode := ""
 	roleID := uint(0)
 	if user.Role != nil {
@@ -386,13 +436,11 @@ func (c *UserController) Login(ctx *gin.Context) {
 	// 生成token（包含StoreID、RoleCode 和 RoleID）
 	token, expiresIn, err := auth.GenerateToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
 	if err != nil {
-		http.Error(ctx, 500, "Failed to generate token")
-		return
+		return LoginResponse{}, err
 	}
 	refreshToken, refreshExpiresIn, err := auth.GenerateRefreshToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
 	if err != nil {
-		http.Error(ctx, 500, "Failed to generate refresh token")
-		return
+		return LoginResponse{}, err
 	}
 	_, _ = service.BuildUserPermissionCache(user.ID, tokenStoreID, roleID, roleCode)
 	ctx.Set("userID", user.ID)
@@ -411,7 +459,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 		}
 	}
 
-	http.Success(ctx, LoginResponse{
+	return LoginResponse{
 		Token:            token,
 		RefreshToken:     refreshToken,
 		TokenType:        "Bearer",
@@ -419,7 +467,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 		RefreshExpiresIn: refreshExpiresIn,
 		UserInfo:         user,
 		Strategy:         strategy,
-	})
+	}, nil
 }
 
 func (c *UserController) RefreshToken(ctx *gin.Context) {

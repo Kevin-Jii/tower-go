@@ -1,11 +1,16 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/utils"
@@ -15,6 +20,14 @@ import (
 type UserService struct {
 	userModule  *module.UserModule
 	storeModule *module.StoreModule
+}
+
+type wechatCodeSessionResp struct {
+	OpenID     string `json:"openid"`
+	SessionKey string `json:"session_key"`
+	UnionID    string `json:"unionid"`
+	ErrCode    int    `json:"errcode"`
+	ErrMsg     string `json:"errmsg"`
 }
 
 func NewUserService(userModule *module.UserModule, storeModule *module.StoreModule) *UserService {
@@ -254,6 +267,102 @@ func (s *UserService) ValidateUser(phone, password string) (*model.User, error) 
 
 	// **🔑 关键：返回的 user 必须包含 StoreID 字段**
 	return user, nil
+}
+
+func (s *UserService) ValidateWechatLogin(code string) (*model.User, error) {
+	openID, err := s.exchangeWechatCode(code)
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.userModule.GetByWechatOpenID(openID)
+	if err != nil {
+		return nil, errors.New("该微信未绑定账号，请先使用手机号密码登录并绑定微信")
+	}
+	return s.prepareLoginUser(user)
+}
+
+func (s *UserService) BindWechatCode(userID uint, code string) error {
+	openID, err := s.exchangeWechatCode(code)
+	if err != nil {
+		return err
+	}
+	if existing, err := s.userModule.GetByWechatOpenID(openID); err == nil && existing != nil && existing.ID != userID {
+		return errors.New("该微信已绑定其他账号")
+	}
+	user, err := s.userModule.GetByID(userID)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+	if user.Status == 2 {
+		return errors.New("该账号已经被禁用，请联系管理员")
+	}
+	return s.userModule.BindWechatOpenID(userID, openID)
+}
+
+func (s *UserService) prepareLoginUser(user *model.User) (*model.User, error) {
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+	if user.Status == 2 {
+		return nil, errors.New("该账号已经被禁用，请联系管理员")
+	}
+	roleCode := ""
+	if user.Role != nil {
+		roleCode = user.Role.Code
+	}
+	if !model.IsSuperAdminRole(roleCode) && user.StoreID > 0 && user.Store != nil && user.Store.Status == 2 {
+		return nil, errors.New("该门店已停业，暂时无法登录")
+	}
+
+	loginTime := time.Now()
+	user.LastLoginAt = &loginTime
+	if err := s.userModule.UpdateLastLoginAt(user.ID, loginTime); err != nil {
+		return nil, err
+	}
+	if model.IsSuperAdminRole(roleCode) {
+		user.StoreID = 0
+		user.Store = nil
+	}
+	return user, nil
+}
+
+func (s *UserService) exchangeWechatCode(code string) (string, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return "", errors.New("微信登录code不能为空")
+	}
+	cfg := config.GetWechatConfig()
+	if strings.TrimSpace(cfg.MiniAppID) == "" || strings.TrimSpace(cfg.MiniAppSecret) == "" {
+		return "", errors.New("未配置微信小程序登录参数")
+	}
+	endpoint := "https://api.weixin.qq.com/sns/jscode2session"
+	q := url.Values{}
+	q.Set("appid", cfg.MiniAppID)
+	q.Set("secret", cfg.MiniAppSecret)
+	q.Set("js_code", code)
+	q.Set("grant_type", "authorization_code")
+
+	client := &http.Client{Timeout: 8 * time.Second}
+	resp, err := client.Get(endpoint + "?" + q.Encode())
+	if err != nil {
+		return "", fmt.Errorf("微信登录请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var body wechatCodeSessionResp
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return "", fmt.Errorf("微信登录响应解析失败: %w", err)
+	}
+	if body.ErrCode != 0 {
+		if body.ErrCode == 40029 {
+			return "", errors.New("微信登录失败: code无效，请检查小程序项目AppID是否和后端WECHAT_MINI_APP_ID一致，并重新编译获取新code")
+		}
+		return "", fmt.Errorf("微信登录失败: %s", body.ErrMsg)
+	}
+	if strings.TrimSpace(body.OpenID) == "" {
+		return "", errors.New("微信登录未返回openid")
+	}
+	return strings.TrimSpace(body.OpenID), nil
 }
 
 // ResetPassword 重置指定用户密码为默认值（已加密）。

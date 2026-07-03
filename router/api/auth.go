@@ -8,6 +8,7 @@ func RegisterAuthRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		auth.POST("/register", c.User.Register)
 		auth.POST("/login", c.User.Login)
+		auth.POST("/wechat-login", c.User.WechatLogin)
 		auth.POST("/refresh", c.User.RefreshToken)
 	}
 }

@@ -215,7 +215,7 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		return 0, 0, 0, err
 	}
 
-	if err := query.Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount).Error; err != nil {
+	if err := query.Select("COALESCE(SUM(total_amount - COALESCE(round_amount, 0)), 0)").Scan(&totalAmount).Error; err != nil {
 		return 0, 0, 0, err
 	}
 

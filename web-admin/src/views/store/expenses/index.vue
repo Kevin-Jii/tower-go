@@ -5,11 +5,12 @@
         <div class="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h2 class="m-0 text-base font-semibold text-slate-900">门店支出</h2>
-            <p class="m-0 mt-1 text-xs text-slate-500">记录外卖推广、平台费用、维修维护等已支付支出</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <BaseInput v-model="filters.keyword" class="w-full sm:w-48" placeholder="单号 / 分类 / 备注 / 操作人" clearable @enter="reloadAll" />
-            <BaseSelect v-model="filters.category_code" class="w-full sm:w-44" :options="categoryFilterOptions" placeholder="全部分类" />
+            <BaseInput v-model="filters.keyword" class="w-full sm:w-48" placeholder="单号 / 分类 / 备注 / 操作人" clearable
+              @enter="reloadAll" />
+            <BaseSelect v-model="filters.category_code" class="w-full sm:w-44" :options="categoryFilterOptions"
+              placeholder="全部分类" />
             <a-date-picker v-model="filters.start_date" value-format="YYYY-MM-DD" class="w-full sm:w-36" />
             <a-date-picker v-model="filters.end_date" value-format="YYYY-MM-DD" class="w-full sm:w-36" />
             <BaseButton variant="primary" @click="reloadAll">查询</BaseButton>
@@ -21,13 +22,15 @@
 
       <div class="flex min-h-0 flex-1 flex-col gap-3 p-4">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div v-for="item in summaryCards" :key="item.label" class="rounded border border-slate-200 bg-slate-50 px-4 py-3">
+          <div v-for="item in summaryCards" :key="item.label"
+            class="rounded border border-slate-200 bg-slate-50 px-4 py-3">
             <div class="text-xs font-medium text-slate-500">{{ item.label }}</div>
             <div class="mt-1 text-lg font-semibold text-slate-900">{{ item.value }}</div>
           </div>
         </div>
 
-        <BaseTable :columns="columns" :data="(rows as unknown) as Record<string, unknown>[]" :loading="loading" min-width="1020px" class="min-h-0 flex-1">
+        <BaseTable :columns="columns" :data="(rows as unknown) as Record<string, unknown>[]" :loading="loading"
+          min-width="1020px" class="min-h-0 flex-1">
           <template #cell-store="{ row }">
             {{ (row as StoreExpense).store?.name || '-' }}
           </template>
@@ -49,13 +52,8 @@
         </BaseTable>
 
         <div class="flex shrink-0 justify-end">
-          <BasePagination
-            :page="page"
-            :page-size="pageSize"
-            :total="total"
-            @update:page="(p) => (page = p)"
-            @update:page-size="(s) => (pageSize = s)"
-          />
+          <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+            @update:page-size="(s) => (pageSize = s)" />
         </div>
       </div>
     </BaseCard>

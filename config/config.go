@@ -14,6 +14,7 @@ type Config struct {
 	Database    DatabaseConfig
 	Redis       RedisConfig
 	DingTalk    DingTalkConfig
+	Wechat      WechatConfig
 	RustFS      RustFSConfig
 	Xpyun       XpyunConfig
 	Performance PerformanceConfig
@@ -36,6 +37,11 @@ type RustFSConfig struct {
 	NotifyBucket  string // 通知图片专用bucket（不加密）
 	UseSSL        bool   // SDK 是否 HTTPS 连接 Endpoint
 	PublicBaseURL string // 对外访问根 URL，如 https://tower.usove.online；空则回退为 http(s)://Endpoint
+}
+
+type WechatConfig struct {
+	MiniAppID     string
+	MiniAppSecret string
 }
 
 // AppConfig 应用配置
@@ -95,6 +101,7 @@ func InitConfig() {
 		Database:    loadDatabaseConfig(),
 		Redis:       loadRedisConfig(),
 		DingTalk:    loadDingTalkConfig(),
+		Wechat:      loadWechatConfig(),
 		RustFS:      loadRustFSConfig(),
 		Xpyun:       loadXpyunConfig(),
 		Performance: loadPerformanceConfig(),
@@ -186,6 +193,10 @@ func GetDingTalkStreamConfig() DingTalkStreamConfig {
 	return GetConfig().DingTalk.Stream
 }
 
+func GetWechatConfig() WechatConfig {
+	return GetConfig().Wechat
+}
+
 // GetDingTalkMenuReportURL 获取钉钉报菜记录通知地址
 func GetDingTalkMenuReportURL() string {
 	return GetConfig().DingTalk.Webhook.MenuReportURL
@@ -255,6 +266,13 @@ func loadDingTalkConfig() DingTalkConfig {
 			AgentID:      getAppString("DINGTALK_AGENT_ID", ""),
 			MiniAppID:    getAppString("DINGTALK_MINI_APP_ID", ""),
 		},
+	}
+}
+
+func loadWechatConfig() WechatConfig {
+	return WechatConfig{
+		MiniAppID:     getAppString("WECHAT_MINI_APP_ID", ""),
+		MiniAppSecret: getAppString("WECHAT_MINI_APP_SECRET", ""),
 	}
 }
 

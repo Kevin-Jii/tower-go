@@ -13,6 +13,7 @@ func RegisterUserRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		users.GET("/profile", c.User.GetProfile)
 		users.PUT("/profile", c.User.UpdateProfile)
+		users.POST("/wechat-bind", c.User.BindWechat)
 		users.POST("", middleware.Permission("system:user:add"), c.User.CreateUser)
 		users.GET("", middleware.Permission("system:user:list"), c.User.ListUsers)
 		users.GET("/:id", middleware.Permission("system:user:list"), c.User.GetUser)

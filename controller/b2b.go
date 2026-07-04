@@ -57,9 +57,7 @@ func (c *B2BController) ListCustomers(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	if !middleware.HQUnboundAdmin(ctx) {
-		req.StoreID = middleware.GetStoreID(ctx)
-	}
+	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
 	rows, total, err := c.service.ListCustomers(ctx.Request.Context(), &req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -86,9 +84,7 @@ func (c *B2BController) ListPrices(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	if !middleware.HQUnboundAdmin(ctx) {
-		req.StoreID = middleware.GetStoreID(ctx)
-	}
+	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
 	rows, total, err := c.service.ListPrices(&req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -102,7 +98,7 @@ func (c *B2BController) DeletePrice(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := c.service.DeletePrice(id); err != nil {
+	if err := c.service.DeletePrice(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
 		http.Error(ctx, 500, err.Error())
 		return
 	}
@@ -128,9 +124,7 @@ func (c *B2BController) ListSupplyOrders(ctx *gin.Context) {
 		http.Error(ctx, 400, err.Error())
 		return
 	}
-	if !middleware.HQUnboundAdmin(ctx) {
-		req.StoreID = middleware.GetStoreID(ctx)
-	}
+	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
 	rows, total, err := c.service.ListSupplyOrders(&req)
 	if err != nil {
 		http.Error(ctx, 500, err.Error())
@@ -154,9 +148,7 @@ func (c *B2BController) ExportSupplyOrders(ctx *gin.Context) {
 	req.EndDate = endDate
 	req.Page = 1
 	req.PageSize = exportPageSize
-	if !middleware.HQUnboundAdmin(ctx) {
-		req.StoreID = middleware.GetStoreID(ctx)
-	}
+	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
 
 	list, _, err := c.service.ListSupplyOrders(&req)
 	if err != nil {

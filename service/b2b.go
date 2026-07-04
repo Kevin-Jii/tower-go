@@ -137,7 +137,14 @@ func (s *B2BService) ListPrices(req *model.ListB2BPriceReq) ([]*model.B2BCustome
 	return s.b2bModule.ListPrices(req)
 }
 
-func (s *B2BService) DeletePrice(id uint) error {
+func (s *B2BService) DeletePrice(id, storeID uint, isHQ bool) error {
+	price, err := s.b2bModule.GetPrice(id)
+	if err != nil {
+		return errors.New("price not found")
+	}
+	if !isHQ && price.StoreID != storeID {
+		return errors.New("permission denied")
+	}
 	return s.b2bModule.DeletePrice(id)
 }
 

@@ -34,6 +34,14 @@ func (m *B2BModule) GetCustomer(id uint) (*model.B2BCustomer, error) {
 	return &customer, nil
 }
 
+func (m *B2BModule) GetPrice(id uint) (*model.B2BCustomerProductPrice, error) {
+	var price model.B2BCustomerProductPrice
+	if err := m.db.First(&price, id).Error; err != nil {
+		return nil, err
+	}
+	return &price, nil
+}
+
 func (m *B2BModule) ListCustomers(req *model.ListB2BCustomerReq) ([]*model.B2BCustomer, int64, error) {
 	var rows []*model.B2BCustomer
 	var total int64

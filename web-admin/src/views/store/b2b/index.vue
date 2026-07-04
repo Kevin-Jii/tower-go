@@ -319,10 +319,10 @@ const customerKeyword = ref('')
 const customerStatus = ref<number | ''>('')
 const customerPage = ref(1)
 const customerPageSize = ref(10)
-const customerQueryKey = computed(() => ['b2b-customers', customerKeyword.value, customerStatus.value, customerPage.value, customerPageSize.value] as const)
+const customerQueryKey = computed(() => ['b2b-customers', storeId.value, customerKeyword.value, customerStatus.value, customerPage.value, customerPageSize.value] as const)
 const { data: customerPageData, isLoading: customerLoading } = useQuery({
   queryKey: customerQueryKey,
-  queryFn: () => listB2BCustomers({ keyword: customerKeyword.value.trim() || undefined, status: customerStatus.value || undefined, page: customerPage.value, page_size: customerPageSize.value }),
+  queryFn: () => listB2BCustomers({ store_id: storeId.value, keyword: customerKeyword.value.trim() || undefined, status: customerStatus.value || undefined, page: customerPage.value, page_size: customerPageSize.value }),
 })
 const customers = computed(() => customerPageData.value?.list ?? [])
 const customerTotal = computed(() => customerPageData.value?.total ?? 0)
@@ -435,10 +435,10 @@ function customerActions(row: B2BCustomer): TableRowAction[] {
 const priceKeyword = ref('')
 const pricePage = ref(1)
 const pricePageSize = ref(10)
-const priceQueryKey = computed(() => ['b2b-prices', priceKeyword.value, pricePage.value, pricePageSize.value] as const)
+const priceQueryKey = computed(() => ['b2b-prices', storeId.value, priceKeyword.value, pricePage.value, pricePageSize.value] as const)
 const { data: pricePageData, isLoading: priceLoading } = useQuery({
   queryKey: priceQueryKey,
-  queryFn: () => listB2BPrices({ keyword: priceKeyword.value.trim() || undefined, page: pricePage.value, page_size: pricePageSize.value }),
+  queryFn: () => listB2BPrices({ store_id: storeId.value, keyword: priceKeyword.value.trim() || undefined, page: pricePage.value, page_size: pricePageSize.value }),
 })
 const prices = computed(() => pricePageData.value?.list ?? [])
 const priceTotal = computed(() => pricePageData.value?.total ?? 0)
@@ -571,6 +571,7 @@ async function submitPrice(): Promise<void> {
       lines.map((line) =>
         upsertB2BPrice({
           customer_id: priceForm.customer_id || null,
+          store_id: storeId.value,
           price_level: priceForm.price_level.trim(),
           product_id: priceForm.product_id,
           unit_spec_id: line.unit_spec_id,
@@ -608,10 +609,10 @@ const orderExportDate = ref(new Date().toISOString().slice(0, 10))
 const orderExporting = ref(false)
 const orderPage = ref(1)
 const orderPageSize = ref(10)
-const orderQueryKey = computed(() => ['b2b-orders', orderKeyword.value, paymentStatus.value, startDate.value, endDate.value, orderPage.value, orderPageSize.value] as const)
+const orderQueryKey = computed(() => ['b2b-orders', storeId.value, orderKeyword.value, paymentStatus.value, startDate.value, endDate.value, orderPage.value, orderPageSize.value] as const)
 const { data: orderPageData, isLoading: orderLoading } = useQuery({
   queryKey: orderQueryKey,
-  queryFn: () => listB2BSupplyOrders({ keyword: orderKeyword.value.trim() || undefined, payment_status: paymentStatus.value || undefined, start_date: startDate.value || undefined, end_date: endDate.value || undefined, page: orderPage.value, page_size: orderPageSize.value }),
+  queryFn: () => listB2BSupplyOrders({ store_id: storeId.value, keyword: orderKeyword.value.trim() || undefined, payment_status: paymentStatus.value || undefined, start_date: startDate.value || undefined, end_date: endDate.value || undefined, page: orderPage.value, page_size: orderPageSize.value }),
 })
 const orders = computed(() => orderPageData.value?.list ?? [])
 const orderTotal = computed(() => orderPageData.value?.total ?? 0)
@@ -656,12 +657,12 @@ const selectedCustomer = computed(() => customers.value.find((item) => item.id =
 const selectedPriceLevel = computed(() => (selectedCustomer.value?.price_level || '').trim())
 const { data: orderCustomerPriceData, isFetching: orderCustomerPriceFetching } = useQuery({
   queryKey: computed(() => ['b2b-order-customer-prices', selectedCustomerId.value] as const),
-  queryFn: () => listB2BPrices({ customer_id: selectedCustomerId.value, page: 1, page_size: 100 }),
+  queryFn: () => listB2BPrices({ store_id: storeId.value, customer_id: selectedCustomerId.value, page: 1, page_size: 100 }),
   enabled: computed(() => selectedCustomerId.value > 0),
 })
 const { data: orderLevelPriceData, isFetching: orderLevelPriceFetching } = useQuery({
   queryKey: computed(() => ['b2b-order-level-prices', selectedPriceLevel.value] as const),
-  queryFn: () => listB2BPrices({ price_level: selectedPriceLevel.value, page: 1, page_size: 100 }),
+  queryFn: () => listB2BPrices({ store_id: storeId.value, price_level: selectedPriceLevel.value, page: 1, page_size: 100 }),
   enabled: computed(() => selectedPriceLevel.value !== ''),
 })
 const orderCustomerPrices = computed(() => orderCustomerPriceData.value?.list ?? [])
@@ -825,6 +826,7 @@ async function submitOrder(): Promise<void> {
   saving.value = true
   try {
     await createB2BSupplyOrder({
+      store_id: storeId.value,
       customer_id: orderForm.customer_id,
       order_date: orderForm.order_date,
       paid_amount: orderForm.paid_amount,

@@ -30,7 +30,8 @@
       </template>
       <template #cell-payment_status="{ row }">
         <span class="store-account-pay-status">
-          <span class="store-account-pay-status__dot" :class="paymentStatusDotClass((row as StoreAccount).payment_status)" />
+          <span class="store-account-pay-status__dot"
+            :class="paymentStatusDotClass((row as StoreAccount).payment_status)" />
           <span>{{ paymentStatusLabel((row as StoreAccount).payment_status) }}</span>
         </span>
       </template>
@@ -317,7 +318,7 @@
           <div><span class="text-[var(--color-text-3)]">商品成本</span>：{{ formatMoney(accountItemCost(viewAccount)) }}
           </div>
           <div><span class="text-[var(--color-text-3)]">耗材金额</span>：{{ formatMoney(accountConsumableAmount(viewAccount))
-            }}
+          }}
           </div>
           <div><span class="text-[var(--color-text-3)]">净收入</span>：{{ formatMoney(viewAccount.net_income_amount) }}
           </div>
@@ -361,7 +362,7 @@
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(it.price) }}
                   </td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(it.amount)
-                    }}
+                  }}
                   </td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ it.remark || '-' }}</td>
                 </tr>
@@ -387,7 +388,7 @@
                 <tr v-for="c in viewAccount.consumables" :key="c.id">
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5">{{ c.product_name ||
                     `商品#${c.product_id}`
-                    }}</td>
+                  }}</td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ c.quantity }}</td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-center">{{ c.unit || '-' }}</td>
                   <td class="border-b border-[var(--color-border-2)] px-2 py-1.5 text-right">{{ formatMoney(c.price) }}
@@ -468,7 +469,7 @@
           :data="(consumableProductRows as unknown) as Record<string, unknown>[]" :loading="consumableProductsLoading"
           min-width="620px" height="360px">
           <template #cell-cost_price="{ row }">{{ formatMoney((row as StoreAccountConsumableProduct).cost_price)
-            }}</template>
+          }}</template>
           <template #cell-actions="{ row }">
             <BaseTableRowActions :actions="consumableProductActions(row as StoreAccountConsumableProduct)"
               :max-inline="2" />
@@ -796,6 +797,8 @@ const columns: BaseTableColumn[] = [
   { key: 'channel', label: '渠道', prop: 'channel', width: '100px' },
   { key: 'member', label: '会员', width: '150px', ellipsis: true },
   { key: 'payment_status', label: '支付状态', width: '96px' },
+  { key: 'errand_fee', label: '跑腿费用', width: '96px' },
+  { key: 'round_amount', label: '抹零金额', width: '96px' },
   { key: 'total_amount', label: '销售额', prop: 'total_amount', width: '96px' },
   { key: 'operator', label: '操作人', width: '80px', ellipsis: true },
   { key: 'actions', label: '操作', width: '190px', minWidth: '140px', align: 'right', fixed: 'right' },

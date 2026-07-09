@@ -700,7 +700,40 @@ const channelDictMap = computed(() => {
   }
   return map
 })
-const takeoutChannelTokens = ['takeout', 'waimai', 'meituan', 'eleme', 'elm', 'taobao', 'tb', 'flash', 'shangou', 'jd', 'jingdong', '外卖', '美团', '饿了么', '淘宝', '闪购', '京东']
+const takeoutChannelTokens = [
+  'takeout',
+  'waimai',
+  'meituan',
+  'eleme',
+  'elm',
+  'taobao',
+  'tb',
+  'flash',
+  'shangou',
+  'jd',
+  'jingdong',
+  'douyin',
+  'tiktok',
+  'tuangou',
+  'groupbuy',
+  'group_buy',
+  'groupon',
+  'wechat_mini',
+  'mini_program',
+  'miniprogram',
+  'mall',
+  '外卖',
+  '美团',
+  '饿了么',
+  '淘宝',
+  '闪购',
+  '京东',
+  '抖音',
+  '团购',
+  '微信小程序',
+  '小程序',
+  '商城',
+]
 function isTakeoutChannel(channel: string | undefined): boolean {
   const raw = String(channel || '').trim()
   if (!raw) return false

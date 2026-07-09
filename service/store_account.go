@@ -205,7 +205,10 @@ func isTakeoutChannelValue(value string) bool {
 	tokens := []string{
 		"takeout", "waimai", "meituan", "eleme", "elm",
 		"taobao", "tb", "flash", "shangou", "jd", "jingdong",
+		"douyin", "tiktok", "tuangou", "groupbuy", "group_buy", "groupon",
+		"wechat_mini", "mini_program", "miniprogram", "mall",
 		"外卖", "美团", "饿了么", "淘宝", "闪购", "京东",
+		"抖音", "团购", "微信小程序", "小程序", "商城",
 	}
 	for _, token := range tokens {
 		if strings.Contains(v, strings.ToLower(token)) {
@@ -480,7 +483,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 
 	if req.IncomeAmount != nil {
 		if !s.isTakeoutChannel(req.Channel) {
-			return nil, fmt.Errorf("仅外卖平台渠道支持自定义收入金额")
+			return nil, fmt.Errorf("仅外卖/商城/团购平台渠道支持自定义收入金额")
 		}
 		totalAmount = *req.IncomeAmount
 	}
@@ -1189,7 +1192,7 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 	}
 	if req.IncomeAmount != nil {
 		if !s.isTakeoutChannel(nextChannel) {
-			return fmt.Errorf("仅外卖平台渠道支持自定义收入金额")
+			return fmt.Errorf("仅外卖/商城/团购平台渠道支持自定义收入金额")
 		}
 		updates["total_amount"] = *req.IncomeAmount
 		nextTotalAmount = *req.IncomeAmount

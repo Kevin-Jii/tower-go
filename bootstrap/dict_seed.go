@@ -6,7 +6,10 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"go.uber.org/zap"
 )
+
+const dictDataVersion = "1"
 
 // InitDefaultDicts 初始化默认字典数据（与 RunSeedSQL 相同开关：SKIP_SEED_DATA=1 时跳过）
 func InitDefaultDicts() {
@@ -14,22 +17,31 @@ func InitDefaultDicts() {
 		logging.LogInfo("跳过内存字典种子（SKIP_SEED_DATA=1）")
 		return
 	}
-	initSalesChannel()
-	initOrderSource()
-	initInventoryReason()
+	markerPath := initializationMarkerPath(dictMarkerFile)
+	if initializationComplete(markerPath, dictDataVersion) {
+		logging.LogInfo("跳过默认字典初始化（初始化版本已完成）", zap.String("version", dictDataVersion))
+		return
+	}
+	if !initSalesChannel() || !initOrderSource() || !initInventoryReason() {
+		logging.LogWarn("默认字典初始化未完成，不写入初始化标记，下次启动将重试")
+		return
+	}
 
 	logging.LogInfo("字典数据初始化完成")
+	if err := markInitializationComplete(markerPath, dictDataVersion); err != nil {
+		logging.LogWarn("无法写入字典初始化标记", zap.Error(err))
+	}
 }
 
 // initSalesChannel 初始化销售渠道字典
-func initSalesChannel() {
+func initSalesChannel() bool {
 	typeCode := "sales_channel"
 	typeName := "销售渠道"
 
 	// 创建或获取字典类型
 	typeID := ensureDictType(typeCode, typeName, "门店记账-销售渠道")
 	if typeID == 0 {
-		return
+		return false
 	}
 
 	// 字典数据
@@ -50,22 +62,28 @@ func initSalesChannel() {
 	}
 
 	// 批量检查已存在的数据
-	existingValues := getExistingDictValues(typeCode)
+	existingValues, ok := getExistingDictValues(typeCode)
+	if !ok {
+		return false
+	}
 	for _, item := range items {
 		if _, exists := existingValues[item.Value]; !exists {
-			ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+			if !ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort) {
+				return false
+			}
 		}
 	}
+	return true
 }
 
 // initOrderSource 初始化订单来源字典
-func initOrderSource() {
+func initOrderSource() bool {
 	typeCode := "order_source"
 	typeName := "订单来源"
 
 	typeID := ensureDictType(typeCode, typeName, "门店记账-订单来源")
 	if typeID == 0 {
-		return
+		return false
 	}
 
 	items := []struct {
@@ -82,22 +100,28 @@ func initOrderSource() {
 	}
 
 	// 批量检查已存在的数据
-	existingValues := getExistingDictValues(typeCode)
+	existingValues, ok := getExistingDictValues(typeCode)
+	if !ok {
+		return false
+	}
 	for _, item := range items {
 		if _, exists := existingValues[item.Value]; !exists {
-			ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+			if !ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort) {
+				return false
+			}
 		}
 	}
+	return true
 }
 
 // initInventoryReason 初始化出入库原因字典
-func initInventoryReason() {
+func initInventoryReason() bool {
 	typeCode := "inventory_reason"
 	typeName := "出入库原因"
 
 	typeID := ensureDictType(typeCode, typeName, "库存管理-出入库原因")
 	if typeID == 0 {
-		return
+		return false
 	}
 
 	items := []struct {
@@ -117,12 +141,18 @@ func initInventoryReason() {
 	}
 
 	// 批量检查已存在的数据
-	existingValues := getExistingDictValues(typeCode)
+	existingValues, ok := getExistingDictValues(typeCode)
+	if !ok {
+		return false
+	}
 	for _, item := range items {
 		if _, exists := existingValues[item.Value]; !exists {
-			ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort)
+			if !ensureDictData(typeID, typeCode, item.Label, item.Value, item.Sort) {
+				return false
+			}
 		}
 	}
+	return true
 }
 
 // ensureDictType 确保字典类型存在，返回类型ID
@@ -148,11 +178,11 @@ func ensureDictType(code, name, remark string) uint {
 }
 
 // ensureDictData 确保字典数据存在
-func ensureDictData(typeID uint, typeCode, label, value string, sort int) {
+func ensureDictData(typeID uint, typeCode, label, value string, sort int) bool {
 	var existing model.DictData
 	err := database.GetDB().Where("type_code = ? AND value = ?", typeCode, value).First(&existing).Error
 	if err == nil {
-		return // 已存在
+		return true // 已存在
 	}
 
 	data := model.DictData{
@@ -163,17 +193,24 @@ func ensureDictData(typeID uint, typeCode, label, value string, sort int) {
 		Sort:     sort,
 		Status:   1,
 	}
-	database.GetDB().Create(&data)
+	if err := database.GetDB().Create(&data).Error; err != nil {
+		logging.LogWarn("创建字典数据失败: " + typeCode + "." + value)
+		return false
+	}
+	return true
 }
 
 // getExistingDictValues 批量获取已存在的字典值
-func getExistingDictValues(typeCode string) map[string]bool {
+func getExistingDictValues(typeCode string) (map[string]bool, bool) {
 	var existingData []model.DictData
-	database.GetDB().Select("value").Where("type_code = ?", typeCode).Find(&existingData)
+	if err := database.GetDB().Select("value").Where("type_code = ?", typeCode).Find(&existingData).Error; err != nil {
+		logging.LogWarn("读取字典数据失败: " + typeCode)
+		return nil, false
+	}
 
 	result := make(map[string]bool)
 	for _, data := range existingData {
 		result[data.Value] = true
 	}
-	return result
+	return result, true
 }

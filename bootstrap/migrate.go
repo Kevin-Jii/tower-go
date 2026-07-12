@@ -103,7 +103,7 @@ func AutoMigrateAndSeeds() {
 	// 标记迁移已完成
 	markMigrationComplete()
 
-	logging.LogInfo("数据表迁移完成，种子数据请执行 migrations/init_seed_data.sql")
+	logging.LogInfo("数据表迁移完成，种子数据将按初始化版本执行")
 }
 
 // shouldSkipMigration 检查是否应该跳过迁移
@@ -163,9 +163,9 @@ func shouldSkipMigration() bool {
 	}
 
 	// 检查标记文件
-	if _, err := os.Stat(migrationVersionFile); err == nil {
+	if _, err := os.Stat(applicationFile(migrationVersionFile)); err == nil {
 		// 文件存在，读取版本
-		data, err := os.ReadFile(migrationVersionFile)
+		data, err := os.ReadFile(applicationFile(migrationVersionFile))
 		if err == nil && strings.TrimSpace(string(data)) == currentMigrationVersion {
 			return true
 		}
@@ -175,7 +175,7 @@ func shouldSkipMigration() bool {
 
 // markMigrationComplete 标记迁移已完成
 func markMigrationComplete() {
-	if err := os.WriteFile(migrationVersionFile, []byte(currentMigrationVersion), 0644); err != nil {
+	if err := markInitializationComplete(applicationFile(migrationVersionFile), currentMigrationVersion); err != nil {
 		logging.LogWarn("无法写入迁移标记文件", zap.Error(err))
 	}
 }

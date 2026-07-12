@@ -343,7 +343,7 @@ curl http://localhost:10024/api/v1/users/profile \
 - 初始化数据库连接
 - 初始化 Redis 缓存
 - 根据环境变量决定是否执行 AutoMigrate
-- 执行 SQL 种子、默认字典、默认消息模板
+- 按初始化版本执行一次 SQL 种子和默认字典初始化；默认消息模板仅在表为空时补齐
 - 修正超级管理员 `store_id=0` 相关历史数据
 - 初始化事件订阅、会话管理、定时任务、钉钉 Stream 客户端
 
@@ -352,7 +352,8 @@ curl http://localhost:10024/api/v1/users/profile \
 - 使用正式迁移流程管理表结构
 - 设置 `SKIP_AUTO_MIGRATE=1`
 - 设置 `SKIP_SEED_DATA=1`
-- 避免每次启动重复执行初始化数据
+- 初始化完成后会在项目根目录生成被 `.gitignore` 忽略的版本标记文件，不会在每次启动重复执行初始化 SQL
+- 修改 `migrations/init_seed_data.sql` 或默认字典内容后，递增 `bootstrap/seed.go`、`bootstrap/dict_seed.go` 中对应的初始化版本号
 
 ## 文件与图片服务
 

@@ -211,11 +211,39 @@ func isTakeoutChannelValue(value string) bool {
 		"抖音", "团购", "微信小程序", "小程序", "商城",
 	}
 	for _, token := range tokens {
-		if strings.Contains(v, strings.ToLower(token)) {
+		if isTakeoutChannelTokenMatch(v, strings.ToLower(token)) {
 			return true
 		}
 	}
 	return false
+}
+
+func isTakeoutChannelTokenMatch(value, token string) bool {
+	if token == "" {
+		return false
+	}
+	if !strings.ContainsAny(token, "abcdefghijklmnopqrstuvwxyz0123456789") {
+		return strings.Contains(value, token)
+	}
+	for offset := 0; offset < len(value); {
+		relative := strings.Index(value[offset:], token)
+		if relative < 0 {
+			return false
+		}
+		start := offset + relative
+		end := start + len(token)
+		beforeIsASCIIWord := start > 0 && isASCIIChannelWordByte(value[start-1])
+		afterIsASCIIWord := end < len(value) && isASCIIChannelWordByte(value[end])
+		if !beforeIsASCIIWord && !afterIsASCIIWord {
+			return true
+		}
+		offset = start + 1
+	}
+	return false
+}
+
+func isASCIIChannelWordByte(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9')
 }
 
 type StoreAccountService struct {

@@ -44,6 +44,8 @@ func initSalesChannel() {
 		{"抖音", "douyin", 4},
 		{"小红书", "xiaohongshu", 5},
 		{"微信小程序", "wechat_mini", 6},
+		{"团购", "group_buy", 7},
+		{"商城", "mall", 8},
 		{"其他", "other", 99},
 	}
 

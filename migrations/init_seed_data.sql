@@ -436,19 +436,33 @@ INSERT INTO dict_types (code, name, remark, status, created_at, updated_at) VALU
 ON DUPLICATE KEY UPDATE name=VALUES(name), remark=VALUES(remark), status=VALUES(status), updated_at=NOW();
 SET @channel_type_id = (SELECT id FROM dict_types WHERE code = 'sales_channel' ORDER BY id LIMIT 1);
 
-INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at) VALUES
-(@channel_type_id, 'sales_channel', '线下门店', 'offline', 1, 1, NOW(), NOW()),
-(@channel_type_id, 'sales_channel', '美团外卖', 'meituan', 2, 1, NOW(), NOW()),
-(@channel_type_id, 'sales_channel', '饿了么', 'eleme', 3, 1, NOW(), NOW()),
-(@channel_type_id, 'sales_channel', '抖音', 'douyin', 4, 1, NOW(), NOW()),
-(@channel_type_id, 'sales_channel', '小红书', 'xiaohongshu', 5, 1, NOW(), NOW()),
-(@channel_type_id, 'sales_channel', '微信小程序', 'wechat_mini', 6, 1, NOW(), NOW()),
-(@channel_type_id, 'sales_channel', '其他', 'other', 99, 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE
-  label=VALUES(label),
-  sort=VALUES(sort),
-  status=VALUES(status),
-  updated_at=NOW();
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '线下门店', 'offline', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='offline');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '美团外卖', 'meituan', 2, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='meituan');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '饿了么', 'eleme', 3, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='eleme');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '抖音', 'douyin', 4, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='douyin');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '小红书', 'xiaohongshu', 5, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='xiaohongshu');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '微信小程序', 'wechat_mini', 6, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='wechat_mini');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '团购', 'group_buy', 7, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='group_buy');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '商城', 'mall', 8, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='mall');
+INSERT INTO dict_data (type_id, type_code, label, value, sort, status, created_at, updated_at)
+SELECT @channel_type_id, 'sales_channel', '其他', 'other', 99, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM dict_data WHERE type_code='sales_channel' AND value='other');
 
 -- 字典数据 - 商品单位（用于商品规格换算）
 INSERT INTO dict_types (code, name, remark, status, created_at, updated_at) VALUES

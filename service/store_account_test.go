@@ -8,6 +8,29 @@ import (
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 )
 
+func TestIsTakeoutChannelValue(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "known mall value", value: "mall", want: true},
+		{name: "known group buy value", value: "group_buy", want: true},
+		{name: "known Chinese label", value: "美团外卖", want: true},
+		{name: "embedded known platform", value: "store-meituan", want: true},
+		{name: "small is not mall", value: "small", want: false},
+		{name: "small store is not mall", value: "small_store", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isTakeoutChannelValue(tt.value); got != tt.want {
+				t.Fatalf("isTakeoutChannelValue(%q) = %v, want %v", tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestStoreAccountEditWindow_CurrentBusinessDayOnly(t *testing.T) {
 	svc := &StoreAccountService{}
 	now := time.Now()

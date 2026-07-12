@@ -333,9 +333,13 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 
 	takeoutSalesQuery := m.db.Model(&model.StoreAccount{}).
 		Where(`deleted_at IS NULL AND account_date >= ? AND account_date <= ? AND (
-			LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR LOWER(channel) LIKE ? OR
+			LOWER(channel) REGEXP ? OR
+			channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR
 			channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ?
-		)`, startDate, endDate, "%takeout%", "%waimai%", "%meituan%", "%eleme%", "%elm%", "%shangou%", "%外卖%", "%美团%", "%饿了么%", "%闪购%", "%淘宝%")
+		)`, startDate, endDate,
+			`(^|[^a-z0-9])(takeout|waimai|meituan|eleme|elm|taobao|tb|flash|shangou|jd|jingdong|douyin|tiktok|tuangou|groupbuy|group_buy|groupon|wechat_mini|mini_program|miniprogram|mall)([^a-z0-9]|$)`,
+			"%外卖%", "%美团%", "%饿了么%", "%闪购%", "%淘宝%",
+			"%抖音%", "%团购%", "%微信小程序%", "%小程序%", "%商城%")
 	if storeID > 0 {
 		takeoutSalesQuery = takeoutSalesQuery.Where("store_id = ?", storeID)
 	}

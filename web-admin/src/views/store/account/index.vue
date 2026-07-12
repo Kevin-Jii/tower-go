@@ -739,7 +739,21 @@ function isTakeoutChannel(channel: string | undefined): boolean {
   if (!raw) return false
   const label = channelDictMap.value.get(raw) || ''
   const text = `${raw} ${label}`.toLowerCase()
-  return takeoutChannelTokens.some((token) => text.includes(token.toLowerCase()))
+  return takeoutChannelTokens.some((token) => hasTakeoutChannelToken(text, token.toLowerCase()))
+}
+function hasTakeoutChannelToken(text: string, token: string): boolean {
+  if (!/[a-z0-9]/.test(token)) return text.includes(token)
+  let offset = 0
+  while (offset < text.length) {
+    const index = text.indexOf(token, offset)
+    if (index < 0) return false
+    const before = index > 0 ? text[index - 1] : ''
+    const afterIndex = index + token.length
+    const after = afterIndex < text.length ? text[afterIndex] : ''
+    if (!/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after)) return true
+    offset = index + 1
+  }
+  return false
 }
 const { data: membersPageData } = useQuery({
   queryKey: ['store-account-members'],

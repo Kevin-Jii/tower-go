@@ -2,11 +2,11 @@ package module
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 	"github.com/google/uuid"
 
@@ -77,7 +77,7 @@ func (m *MemberModule) CreateMember(req *model.CreateMemberReq, storeID uint) (*
 	var count int64
 	m.db.Model(&model.Member{}).Where("store_id = ? AND phone = ?", storeID, req.Phone).Count(&count)
 	if count > 0 {
-		return nil, errors.New("手机号已注册")
+		return nil, apicode.New(apicode.MemberPhoneExists)
 	}
 
 	// 如果没有提供 UID，则自动生成
@@ -268,7 +268,7 @@ func (m *MemberModule) ListPointRules(req *model.ListMemberPointRuleReq, storeID
 func (m *MemberModule) CreatePointRule(req *model.UpsertMemberPointRuleReq, storeID uint, isAdmin bool) (*model.MemberPointRule, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		return nil, errors.New("请填写规则名称")
+		return nil, apicode.Newf(apicode.ValidationFailed, "请填写规则名称")
 	}
 	realStoreID := storeID
 	if isAdmin && req.StoreID > 0 {
@@ -300,7 +300,7 @@ func (m *MemberModule) UpdatePointRule(id uint, req *model.UpsertMemberPointRule
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		return nil, errors.New("请填写规则名称")
+		return nil, apicode.Newf(apicode.ValidationFailed, "请填写规则名称")
 	}
 	status := req.Status
 	if status == 0 {
@@ -383,25 +383,25 @@ func (m *MemberModule) ListWineStorages(req *model.ListMemberWineStorageReq, sto
 // AdjustWineStorage 存入或取出会员存酒
 func (m *MemberModule) AdjustWineStorage(storeID, operatorID uint, operatorName string, isAdmin bool, txnType int, req *model.MemberWineAdjustReq) (*model.MemberWineStorage, error) {
 	if req == nil {
-		return nil, errors.New("请求不能为空")
+		return nil, apicode.New(apicode.MissingParameter)
 	}
 	wineName := strings.TrimSpace(req.WineName)
 	if wineName == "" {
-		return nil, errors.New("请填写酒品名称")
+		return nil, apicode.Newf(apicode.ValidationFailed, "请填写酒品名称")
 	}
 	unit := strings.TrimSpace(req.Unit)
 	if unit == "" {
 		unit = "瓶"
 	}
 	if req.Quantity <= 0 {
-		return nil, errors.New("数量必须大于0")
+		return nil, apicode.Newf(apicode.ValidationFailed, "数量必须大于0")
 	}
 	member, err := m.GetMember(req.MemberID, storeID, isAdmin)
 	if err != nil {
-		return nil, errors.New("会员不存在")
+		return nil, apicode.New(apicode.MemberNotFound)
 	}
 	if !isAdmin && member.StoreID != storeID {
-		return nil, errors.New("会员不属于当前门店")
+		return nil, apicode.New(apicode.OperationDenied)
 	}
 	realStoreID := member.StoreID
 	if realStoreID == 0 {
@@ -418,7 +418,7 @@ func (m *MemberModule) AdjustWineStorage(storeID, operatorID uint, operatorName 
 				return err
 			}
 			if txnType == model.MemberWineTxnWithdraw {
-				return errors.New("该会员暂无此酒品存量")
+				return apicode.New(apicode.WineStorageNotFound)
 			}
 			storage = model.MemberWineStorage{
 				StoreID:  realStoreID,
@@ -439,11 +439,11 @@ func (m *MemberModule) AdjustWineStorage(storeID, operatorID uint, operatorName 
 			nextQty += req.Quantity
 		case model.MemberWineTxnWithdraw:
 			if storage.Quantity < req.Quantity {
-				return fmt.Errorf("存酒数量不足，当前剩余 %.2f%s", storage.Quantity, storage.Unit)
+				return apicode.Newf(apicode.WineInsufficient, "存酒数量不足，当前剩余 %.2f%s", storage.Quantity, storage.Unit)
 			}
 			nextQty -= req.Quantity
 		default:
-			return errors.New("不支持的存酒操作类型")
+			return apicode.Newf(apicode.ValidationFailed, "不支持的存酒操作类型")
 		}
 
 		if err := tx.Model(&storage).Updates(map[string]interface{}{
@@ -511,10 +511,10 @@ func (m *MemberModule) ListWineTransactions(req *model.ListMemberWineTransaction
 		query = query.Where("member_wine_transactions.type = ?", req.Type)
 	}
 	if req.StartDate != "" {
-		query = query.Where("DATE(member_wine_transactions.created_at) >= ?", req.StartDate)
+		query = query.Where("member_wine_transactions.created_at >= ?", req.StartDate)
 	}
 	if req.EndDate != "" {
-		query = query.Where("DATE(member_wine_transactions.created_at) <= ?", req.EndDate)
+		query = query.Where("member_wine_transactions.created_at < DATE_ADD(?, INTERVAL 1 DAY)", req.EndDate)
 	}
 	if kw := strings.TrimSpace(req.Keyword); kw != "" {
 		like := "%" + kw + "%"
@@ -540,7 +540,7 @@ func (m *MemberModule) AdjustBalanceWithLock(id uint, amount model.DecimalType, 
 
 	// 乐观锁校验
 	if member.Version != version {
-		return nil, errors.New("数据已被修改，请刷新后重试")
+		return nil, apicode.New(apicode.OptimisticLockConflict)
 	}
 
 	// 计算新余额
@@ -550,10 +550,10 @@ func (m *MemberModule) AdjustBalanceWithLock(id uint, amount model.DecimalType, 
 	} else if changeType == model.ChangeTypeAdjustLess {
 		newBalance = member.Balance.Sub(amount)
 		if newBalance.LessThan(model.DecimalZero()) {
-			return nil, errors.New("余额不足")
+			return nil, apicode.New(apicode.BalanceInsufficient)
 		}
 	} else {
-		return nil, errors.New("不支持的调整类型")
+		return nil, apicode.Newf(apicode.ValidationFailed, "不支持的调整类型")
 	}
 
 	// 更新余额和版本号

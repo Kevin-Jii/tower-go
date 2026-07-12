@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -168,10 +169,10 @@ func (m *B2BModule) CreateSupplyOrderWithInventory(order *model.B2BSupplyOrder) 
 			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 				Where("store_id = ? AND product_id = ?", order.StoreID, item.ProductID).
 				First(&inv).Error; err != nil {
-				return fmt.Errorf("商品【%s】库存不存在，无法供货", item.ProductName)
+				return apicode.Newf(apicode.InventoryNotFound, "商品【%s】库存不存在，无法供货", item.ProductName)
 			}
 			if inv.Quantity < item.BaseQuantity {
-				return fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，需出库: %.2f", item.ProductName, inv.Quantity, item.BaseQuantity)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，当前库存: %.2f，需出库: %.2f", item.ProductName, inv.Quantity, item.BaseQuantity)
 			}
 		}
 
@@ -187,7 +188,7 @@ func (m *B2BModule) CreateSupplyOrderWithInventory(order *model.B2BSupplyOrder) 
 				return res.Error
 			}
 			if res.RowsAffected == 0 {
-				return fmt.Errorf("商品【%s】库存不足，出库失败", item.ProductName)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，出库失败", item.ProductName)
 			}
 		}
 

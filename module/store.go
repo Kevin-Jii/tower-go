@@ -1,10 +1,10 @@
 package module
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 
 	"gorm.io/gorm"
@@ -41,7 +41,7 @@ func (m *StoreModule) GetByID(id uint) (*model.Store, error) {
 func (m *StoreModule) GetIDByStoreCode(code string) (uint, error) {
 	code = strings.TrimSpace(code)
 	if code == "" {
-		return 0, errors.New("门店编码不能为空")
+		return 0, apicode.Newf(apicode.MissingParameter, "门店编码不能为空")
 	}
 	var store model.Store
 	if err := m.db.Where("store_code = ?", code).First(&store).Error; err != nil {
@@ -96,7 +96,7 @@ func (m *StoreModule) BindThirdPartyAccount(storeID uint, accountID *uint) error
 			return err
 		}
 		if count > 0 {
-			return errors.New("该第三方账号已绑定其他门店")
+			return apicode.New(apicode.SupplierAlreadyUsed)
 		}
 	}
 	return m.db.Model(&model.Store{}).Where("id = ?", storeID).Updates(map[string]interface{}{

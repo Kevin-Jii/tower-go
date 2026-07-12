@@ -25,7 +25,7 @@ func (c *ThirdPartyAccountController) List(ctx *gin.Context) {
 	}
 	rows, err := c.svc.List(ctx.Query("keyword"))
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, rows)
@@ -59,7 +59,7 @@ func (c *ThirdPartyAccountController) Create(ctx *gin.Context) {
 	}
 	row, err := c.svc.Create(&req)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, row)
@@ -79,7 +79,7 @@ func (c *ThirdPartyAccountController) Update(ctx *gin.Context) {
 		return
 	}
 	if err := c.svc.Update(id, &req); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, gin.H{"message": "updated"})
@@ -95,7 +95,7 @@ func (c *ThirdPartyAccountController) Delete(ctx *gin.Context) {
 		return
 	}
 	if err := c.svc.Delete(id); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, gin.H{"message": "deleted"})
@@ -112,7 +112,7 @@ func (c *ThirdPartyAccountController) TestLogin(ctx *gin.Context) {
 	}
 	res, err := c.svc.TestLogin(id)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, res)
@@ -129,7 +129,7 @@ func (c *ThirdPartyAccountController) SyncLatestOrders(ctx *gin.Context) {
 	}
 	res, err := c.svc.SyncLatestOrders(id)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, res)
@@ -148,7 +148,7 @@ func (c *ThirdPartyAccountController) ListSyncedOrders(ctx *gin.Context) {
 	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "20"))
 	rows, total, err := c.svc.ListSyncedOrders(id, page, pageSize)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.SuccessWithPagination(ctx, rows, total, page, pageSize)

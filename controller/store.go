@@ -39,7 +39,7 @@ func (c *StoreController) CreateStore(ctx *gin.Context) {
 	}
 
 	if err := c.storeService.CreateStore(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 	}
 	store, err := c.storeService.GetStore(id)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 		}
 		store, err := c.storeService.GetStore(storeID)
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.SuccessWithPagination(ctx, []*model.Store{store}, 1, 1, 1)
@@ -108,7 +108,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 
 	stores, total, err := c.storeService.ListStores()
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func (c *StoreController) ListAllStores(ctx *gin.Context) {
 	}
 	stores, _, err := c.storeService.ListStores()
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, stores)
@@ -162,7 +162,7 @@ func (c *StoreController) UpdateStore(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeService.UpdateStore(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -188,7 +188,7 @@ func (c *StoreController) DeleteStore(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeService.DeleteStore(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -219,7 +219,7 @@ func (c *StoreController) BindThirdPartyAccount(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeService.BindThirdPartyAccount(id, req.ThirdPartyAccountID); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)

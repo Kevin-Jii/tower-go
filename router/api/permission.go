@@ -32,7 +32,7 @@ func RegisterPermissionRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		}
 		role, err := service.UpdateRole(req.ID, &req.UpdateRoleReq)
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.Success(ctx, role)
@@ -48,7 +48,7 @@ func RegisterPermissionRoutes(v1 *gin.RouterGroup, c *Controllers) {
 				http.ErrorApp(ctx, apicode.BuiltinRoleNotDeletable)
 				return
 			}
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.Success(ctx, nil)

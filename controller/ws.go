@@ -1,11 +1,11 @@
 package controller
 
 import (
+	authPkg "github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/session"
 	"net/http"
 	"strings"
 	"time"
-	authPkg "github.com/Kevin-Jii/tower-go/utils/auth"
-	"github.com/Kevin-Jii/tower-go/utils/session"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

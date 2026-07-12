@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/pkg/xpyun"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
@@ -40,20 +40,20 @@ func (s *PrinterService) BindPrinter(req *model.BindPrinterReq) error {
 	// 验证门店存在
 	_, err := s.storeModule.GetByID(req.StoreID)
 	if err != nil {
-		return errors.New("store not found")
+		return apicode.New(apicode.StoreNotFound)
 	}
 
 	// 检查SN是否已被本地绑定
 	existing, err := s.printerModule.GetBySn(req.Sn)
 	if err == nil && existing != nil {
-		return fmt.Errorf("printer sn %s already bound to store %d", req.Sn, existing.StoreID)
+		return apicode.Newf(apicode.Conflict, "打印机 SN %s 已绑定门店 %d", req.Sn, existing.StoreID)
 	}
 
 	// 推送到芯烨云（如果未存在会自动添加）
 	if s.xpyunClient != nil {
 		resp := s.xpyunClient.AddPrinter(req.Sn, req.Name)
 		if resp.Content != nil && !resp.Content.IsSuccess() {
-			return fmt.Errorf("push to xpyun failed: %s", resp.Content.Msg)
+			return apicode.Newf(apicode.ExternalServiceFailed, "推送打印机失败: %s", resp.Content.Msg)
 		}
 	}
 
@@ -85,7 +85,7 @@ func (s *PrinterService) BindPrinter(req *model.BindPrinterReq) error {
 func (s *PrinterService) UnbindPrinter(id uint) error {
 	printer, err := s.printerModule.GetByID(id)
 	if err != nil {
-		return errors.New("printer not found")
+		return apicode.New(apicode.PrinterNotFound)
 	}
 
 	// 从芯烨云删除
@@ -103,7 +103,7 @@ func (s *PrinterService) UnbindPrinter(id uint) error {
 func (s *PrinterService) UpdatePrinter(id uint, req *model.UpdatePrinterReq) error {
 	_, err := s.printerModule.GetByID(id)
 	if err != nil {
-		return errors.New("printer not found")
+		return apicode.New(apicode.PrinterNotFound)
 	}
 
 	updateMap := updatesPkg.BuildUpdatesFromReq(req)
@@ -145,18 +145,18 @@ func (s *PrinterService) GetDefaultPrinter(storeID uint) (*model.Printer, error)
 // QueryPrinterStatus 查询打印机在线状态
 func (s *PrinterService) QueryPrinterStatus(sn string) (int, error) {
 	if s.xpyunClient == nil {
-		return 0, errors.New("xpyun client not initialized")
+		return 0, apicode.New(apicode.ConfigMissing)
 	}
 
 	resp := s.xpyunClient.QueryPrinterStatus(sn)
 	if resp.Content == nil {
-		return 0, errors.New("query failed")
+		return 0, apicode.New(apicode.ExternalServiceFailed)
 	}
 
 	// 状态码: 0-离线, 1-在线正常, 2-在线异常
 	data, ok := resp.Content.Data.(map[string]interface{})
 	if !ok {
-		return 0, fmt.Errorf("invalid response: %v", resp.Content.Data)
+		return 0, apicode.Newf(apicode.ExternalServiceFailed, "打印机状态响应无效: %v", resp.Content.Data)
 	}
 
 	status, _ := data["status"].(float64)
@@ -167,7 +167,7 @@ func (s *PrinterService) QueryPrinterStatus(sn string) (int, error) {
 func (s *PrinterService) PrintReceipt(sn, content string, copies int) (string, error) {
 	fmt.Printf(">>>>>> PrintReceipt called: xpyunClient=%v, sn=%s\n", s.xpyunClient, sn)
 	if s.xpyunClient == nil {
-		return "", errors.New("xpyun client not initialized")
+		return "", apicode.New(apicode.ConfigMissing)
 	}
 
 	resp := s.xpyunClient.PrintReceipt(sn, content, copies)
@@ -175,11 +175,11 @@ func (s *PrinterService) PrintReceipt(sn, content string, copies int) (string, e
 		resp.HttpStatusCode, resp.Content.Code, resp.Content.Msg, resp.Content.OrderId)
 
 	if resp.Content == nil {
-		return "", errors.New("print failed")
+		return "", apicode.New(apicode.ExternalServiceFailed)
 	}
 
 	if !resp.Content.IsSuccess() {
-		return "", fmt.Errorf("print error: %s", resp.Content.Msg)
+		return "", apicode.Newf(apicode.ExternalServiceFailed, "打印失败: %s", resp.Content.Msg)
 	}
 
 	return resp.Content.OrderId, nil
@@ -191,7 +191,7 @@ func (s *PrinterService) TestPrint(printerID uint, content string, copies int) (
 
 	printer, err := s.printerModule.GetByID(printerID)
 	if err != nil {
-		return "", errors.New("printer not found")
+		return "", apicode.New(apicode.PrinterNotFound)
 	}
 
 	// 如果没有提供内容，使用默认测试内容
@@ -208,7 +208,7 @@ func (s *PrinterService) TestPrint(printerID uint, content string, copies int) (
 func (s *PrinterService) GetPrinterWithStatus(id uint) (*model.PrinterResp, error) {
 	printer, err := s.printerModule.GetByID(id)
 	if err != nil {
-		return nil, errors.New("printer not found")
+		return nil, apicode.New(apicode.PrinterNotFound)
 	}
 
 	resp := &model.PrinterResp{
@@ -282,7 +282,7 @@ func (s *PrinterService) BatchQueryStatus(storeID uint) ([]*model.PrinterStatus,
 // SyncAllPrinterStatus 同步所有打印机状态（定时任务调用）
 func (s *PrinterService) SyncAllPrinterStatus() error {
 	if s.xpyunClient == nil {
-		return errors.New("xpyun client not initialized")
+		return apicode.New(apicode.ConfigMissing)
 	}
 
 	total, err := s.printerModule.CountAll()
@@ -324,13 +324,13 @@ func (s *PrinterService) PrintPurchaseOrder(printerID uint, orderID uint) (strin
 	// 获取打印机信息
 	printer, err := s.printerModule.GetByID(printerID)
 	if err != nil {
-		return "", errors.New("printer not found")
+		return "", apicode.New(apicode.PrinterNotFound)
 	}
 
 	// 获取采购单完整信息
 	order, err := s.purchaseOrderModule.GetByIDWithDetails(orderID)
 	if err != nil {
-		return "", fmt.Errorf("purchase order not found: %v", err)
+		return "", apicode.Newf(apicode.OrderNotFound, "采购单不存在: %v", err)
 	}
 
 	// 构建打印内容

@@ -1,9 +1,9 @@
 package service
 
 import (
+	"github.com/Kevin-Jii/tower-go/model"
 	"sync"
 	"time"
-	"github.com/Kevin-Jii/tower-go/model"
 )
 
 // MenuTreeNode 菜单树节点（带缓存辅助信息）

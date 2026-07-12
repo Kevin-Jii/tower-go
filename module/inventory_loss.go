@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -29,14 +30,14 @@ func (m *InventoryLossModule) CreateWithStockDeduct(order *model.InventoryLossOr
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】不在库存中，无法扣减", name)
+				return apicode.Newf(apicode.InventoryNotFound, "商品【%s】不在库存中，无法扣减", name)
 			}
 			if inv.Quantity < item.BaseQuantity {
 				name := item.ProductName
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】库存不足，当前库存: %.2f%s，需要扣减: %.2f%s", name, inv.Quantity, inv.Unit, item.BaseQuantity, item.BaseUnit)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，当前库存: %.2f%s，需要扣减: %.2f%s", name, inv.Quantity, inv.Unit, item.BaseQuantity, item.BaseUnit)
 			}
 		}
 
@@ -56,7 +57,7 @@ func (m *InventoryLossModule) CreateWithStockDeduct(order *model.InventoryLossOr
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】库存不足，扣减失败", name)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，扣减失败", name)
 			}
 		}
 
@@ -102,30 +103,11 @@ func (m *InventoryLossModule) CancelWithStockRestore(id, storeID uint, hqUnbound
 			return err
 		}
 		if order.IsCanceled {
-			return fmt.Errorf("单据已撤销")
+			return apicode.Newf(apicode.OrderStateConflict, "单据已撤销")
 		}
 
 		for _, item := range order.Items {
-			var inv model.Inventory
-			err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-				Where("store_id = ? AND product_id = ?", order.StoreID, item.ProductID).
-				First(&inv).Error
-			if err == gorm.ErrRecordNotFound {
-				inv = model.Inventory{
-					StoreID:   order.StoreID,
-					ProductID: item.ProductID,
-					Quantity:  item.BaseQuantity,
-					Unit:      item.BaseUnit,
-				}
-				if err := tx.Create(&inv).Error; err != nil {
-					return err
-				}
-				continue
-			}
-			if err != nil {
-				return err
-			}
-			if err := tx.Model(&inv).Update("quantity", gorm.Expr("quantity + ?", item.BaseQuantity)).Error; err != nil {
+			if err := incrementInventoryQuantity(tx, order.StoreID, item.ProductID, item.BaseQuantity, item.BaseUnit); err != nil {
 				return err
 			}
 		}

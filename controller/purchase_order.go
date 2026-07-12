@@ -36,7 +36,7 @@ func (c *PurchaseOrderController) CreateOrder(ctx *gin.Context) {
 
 	order, err := c.orderService.CreateOrder(storeID, userID, &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -57,7 +57,7 @@ func (c *PurchaseOrderController) GetOrder(ctx *gin.Context) {
 	}
 	order, err := c.orderService.GetOrderScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -100,7 +100,7 @@ func (c *PurchaseOrderController) ListOrders(ctx *gin.Context) {
 
 	orders, total, err := c.orderService.ListOrders(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, orders, total, req.Page, req.PageSize)
@@ -126,7 +126,7 @@ func (c *PurchaseOrderController) UpdateOrder(ctx *gin.Context) {
 		return
 	}
 	if err := c.orderService.UpdateOrderScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -146,7 +146,7 @@ func (c *PurchaseOrderController) DeleteOrder(ctx *gin.Context) {
 		return
 	}
 	if err := c.orderService.DeleteOrderScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -167,7 +167,7 @@ func (c *PurchaseOrderController) GetOrdersBySupplier(ctx *gin.Context) {
 	}
 	result, err := c.orderService.GetOrdersBySupplierScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, result)
@@ -188,7 +188,7 @@ func (c *PurchaseOrderController) GetAvailableActions(ctx *gin.Context) {
 	}
 	actions, err := c.orderService.GetAvailableActionsScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, actions)
@@ -208,7 +208,7 @@ func (c *PurchaseOrderController) ConfirmOrder(ctx *gin.Context) {
 		return
 	}
 	if err := c.orderService.ConfirmOrderScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -228,7 +228,7 @@ func (c *PurchaseOrderController) CompleteOrder(ctx *gin.Context) {
 		return
 	}
 	if err := c.orderService.CompleteOrderScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -254,7 +254,7 @@ func (c *PurchaseOrderController) CancelOrder(ctx *gin.Context) {
 	}
 	_ = ctx.ShouldBindJSON(&req)
 	if err := c.orderService.CancelOrderScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), req.Reason); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)

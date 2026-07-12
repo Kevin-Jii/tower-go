@@ -20,6 +20,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
@@ -46,7 +47,7 @@ func (s *MeituanAIService) CreateAccount(storeID uint, hqUnbound bool, req *mode
 		realStoreID = req.StoreID
 	}
 	if realStoreID == 0 {
-		return nil, fmt.Errorf("请选择门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	row := &model.MeituanAIOperatorAccount{
 		StoreID:        realStoreID,
@@ -144,7 +145,7 @@ func (s *MeituanAIService) SyncOrdersFromFile(accountID, storeID uint, hqUnbound
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, fmt.Errorf("文件里没有识别到有效订单")
+		return nil, apicode.Newf(apicode.ValidationFailed, "文件里没有识别到有效订单")
 	}
 	orders, err := buildMeituanAIOrders(items)
 	if err != nil {
@@ -169,7 +170,7 @@ func (s *MeituanAIService) SyncOrdersFromOpenAPI(accountID, storeID uint, hqUnbo
 	}
 	orderIDs = dedupeStrings(orderIDs)
 	if len(orderIDs) == 0 {
-		return nil, fmt.Errorf("请输入需要同步的美团订单号")
+		return nil, apicode.Newf(apicode.MissingParameter, "请输入需要同步的美团订单号")
 	}
 	orders := make([]model.MeituanAIOrder, 0, len(orderIDs))
 	skipped := 0
@@ -182,7 +183,7 @@ func (s *MeituanAIService) SyncOrdersFromOpenAPI(accountID, storeID uint, hqUnbo
 		orders = append(orders, row)
 	}
 	if len(orders) == 0 {
-		return nil, fmt.Errorf("没有同步到有效订单，请检查开放平台凭证、订单号和接口权限")
+		return nil, apicode.Newf(apicode.ExternalServiceFailed, "没有同步到有效订单，请检查开放平台凭证、订单号和接口权限")
 	}
 	n, err := s.module.UpsertOrders(account, orders)
 	if err != nil {
@@ -200,7 +201,7 @@ func (s *MeituanAIService) ImportReviews(accountID, storeID uint, hqUnbound bool
 	for _, item := range req.Reviews {
 		t, err := parseFlexibleTime(item.ReviewTime)
 		if err != nil {
-			return nil, fmt.Errorf("评价%s时间格式错误", item.ReviewID)
+			return nil, apicode.Newf(apicode.InvalidDate, "评价%s时间格式错误", item.ReviewID)
 		}
 		sentiment, tags := classifyReview(item.Rating, item.Content)
 		reviewID := strings.TrimSpace(item.ReviewID)
@@ -231,7 +232,7 @@ func (s *MeituanAIService) ListOrders(storeID uint, hqUnbound bool, req *model.L
 		req.StoreID = storeID
 	}
 	if req.StoreID == 0 {
-		return nil, 0, fmt.Errorf("请选择门店")
+		return nil, 0, apicode.New(apicode.StoreRequired)
 	}
 	return s.module.ListOrders(req)
 }
@@ -241,7 +242,7 @@ func (s *MeituanAIService) ListReviews(storeID uint, hqUnbound bool, req *model.
 		req.StoreID = storeID
 	}
 	if req.StoreID == 0 {
-		return nil, 0, fmt.Errorf("请选择门店")
+		return nil, 0, apicode.New(apicode.StoreRequired)
 	}
 	return s.module.ListReviews(req)
 }
@@ -251,14 +252,14 @@ func (s *MeituanAIService) ListSuggestions(storeID uint, hqUnbound bool, req *mo
 		req.StoreID = storeID
 	}
 	if req.StoreID == 0 {
-		return nil, 0, fmt.Errorf("请选择门店")
+		return nil, 0, apicode.New(apicode.StoreRequired)
 	}
 	return s.module.ListSuggestions(req)
 }
 
 func (s *MeituanAIService) UpdateSuggestionStatus(id, storeID uint, req *model.UpdateMeituanAISuggestionStatusReq) error {
 	if storeID == 0 {
-		return fmt.Errorf("请选择门店")
+		return apicode.New(apicode.StoreRequired)
 	}
 	return s.module.UpdateSuggestionStatus(id, storeID, req.Status)
 }
@@ -268,7 +269,7 @@ func (s *MeituanAIService) Dashboard(storeID uint, hqUnbound bool, req *model.Li
 		req.StoreID = storeID
 	}
 	if req.StoreID == 0 {
-		return nil, fmt.Errorf("请选择门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	return s.module.Dashboard(req.StoreID, req.AccountID, req.StartDate, req.EndDate)
 }
@@ -387,7 +388,7 @@ type deepSeekSuggestionPayload struct {
 func (s *MeituanAIService) generateDeepSeekSuggestions(storeID, accountID uint, dash *model.MeituanAIDashboard, orders []*model.MeituanAIOrder, reviews []*model.MeituanAIReview, now time.Time) ([]model.MeituanAISuggestion, error) {
 	apiKey := strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))
 	if apiKey == "" {
-		return nil, fmt.Errorf("DEEPSEEK_API_KEY not configured")
+		return nil, apicode.New(apicode.ConfigMissing)
 	}
 	baseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("DEEPSEEK_BASE_URL")), "/")
 	if baseURL == "" {
@@ -429,12 +430,12 @@ func (s *MeituanAIService) generateDeepSeekSuggestions(storeID, accountID uint, 
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if result.Error != nil && result.Error.Message != "" {
-			return nil, fmt.Errorf("%s", result.Error.Message)
+			return nil, apicode.Newf(apicode.ExternalServiceFailed, "%s", result.Error.Message)
 		}
-		return nil, fmt.Errorf("deepseek request failed: %d", resp.StatusCode)
+		return nil, apicode.Newf(apicode.ExternalServiceFailed, "deepseek request failed: %d", resp.StatusCode)
 	}
 	if len(result.Choices) == 0 || strings.TrimSpace(result.Choices[0].Message.Content) == "" {
-		return nil, fmt.Errorf("deepseek empty response")
+		return nil, apicode.Newf(apicode.ExternalServiceFailed, "deepseek empty response")
 	}
 
 	var payload deepSeekSuggestionPayload
@@ -531,7 +532,7 @@ func buildMeituanAIOrders(items []model.ImportMeituanAIOrderItem) ([]model.Meitu
 		}
 		t, err := parseFlexibleTime(item.OrderTime)
 		if err != nil {
-			return nil, fmt.Errorf("订单%s时间格式错误", item.OrderNo)
+			return nil, apicode.Newf(apicode.InvalidDate, "订单%s时间格式错误", item.OrderNo)
 		}
 		raw := strings.TrimSpace(item.RawJSON)
 		if raw == "" {
@@ -562,13 +563,13 @@ func parseMeituanAIOrderFile(filename string, reader io.Reader) ([]model.ImportM
 		return nil, 0, err
 	}
 	if len(bytes.TrimSpace(data)) == 0 {
-		return nil, 0, fmt.Errorf("文件为空")
+		return nil, 0, apicode.Newf(apicode.ValidationFailed, "文件为空")
 	}
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext == ".json" || strings.HasPrefix(strings.TrimSpace(string(data)), "[") {
 		var items []model.ImportMeituanAIOrderItem
 		if err := json.Unmarshal(data, &items); err != nil {
-			return nil, 0, fmt.Errorf("JSON格式错误: %w", err)
+			return nil, 0, apicode.Wrap(apicode.ValidationFailed, err)
 		}
 		return items, 0, nil
 	}
@@ -592,10 +593,10 @@ func parseMeituanAIOrderCSV(data []byte) ([]model.ImportMeituanAIOrderItem, int,
 		}
 	}
 	if err != nil {
-		return nil, 0, fmt.Errorf("CSV格式错误: %w", err)
+		return nil, 0, apicode.Wrap(apicode.ValidationFailed, err)
 	}
 	if len(records) < 2 {
-		return nil, 0, fmt.Errorf("CSV至少需要表头和一行数据")
+		return nil, 0, apicode.Newf(apicode.ValidationFailed, "CSV至少需要表头和一行数据")
 	}
 	header := map[string]int{}
 	for i, name := range records[0] {
@@ -718,7 +719,7 @@ func normalizeMeituanAccountConfig(account *model.MeituanAIOperatorAccount) {
 
 func (s *MeituanAIService) fetchMeituanOrderByID(account *model.MeituanAIOperatorAccount, orderID string) (model.MeituanAIOrder, error) {
 	if strings.TrimSpace(account.DeveloperID) == "" || strings.TrimSpace(account.SignKey) == "" || strings.TrimSpace(account.AppAuthToken) == "" {
-		return model.MeituanAIOrder{}, fmt.Errorf("请先配置美团开放平台DeveloperId、SignKey和appAuthToken")
+		return model.MeituanAIOrder{}, apicode.New(apicode.ConfigMissing)
 	}
 	biz := map[string]interface{}{"orderId": orderID}
 	raw, err := s.callMeituanOpenAPI(account, account.QueryOrderPath, biz)
@@ -766,10 +767,10 @@ func (s *MeituanAIService) callMeituanOpenAPI(account *model.MeituanAIOperatorAc
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("美团接口请求失败: %d %s", resp.StatusCode, truncateText(string(raw), 200))
+		return nil, apicode.Newf(apicode.ExternalServiceFailed, "美团接口请求失败: %d %s", resp.StatusCode, truncateText(string(raw), 200))
 	}
 	if ok, msg := meituanOpenAPISuccess(raw); !ok {
-		return nil, fmt.Errorf("美团接口返回失败: %s", msg)
+		return nil, apicode.Newf(apicode.ExternalServiceFailed, "美团接口返回失败: %s", msg)
 	}
 	return raw, nil
 }
@@ -827,7 +828,7 @@ func parseMeituanOpenAPIOrder(orderID string, raw []byte) (model.MeituanAIOrder,
 	data := pickMeituanData(body)
 	m, ok := data.(map[string]interface{})
 	if !ok {
-		return model.MeituanAIOrder{}, fmt.Errorf("美团订单返回结构无法识别")
+		return model.MeituanAIOrder{}, apicode.Newf(apicode.ExternalServiceFailed, "美团订单返回结构无法识别")
 	}
 	orderNo := firstString(m, "orderId", "order_id", "orderNo", "order_no", "wmOrderIdView", "wm_order_id_view")
 	if orderNo == "" {

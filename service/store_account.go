@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
@@ -137,26 +137,26 @@ func giftWineFloatValue(v *giftWineSnapshot, pick func(*giftWineSnapshot) float6
 
 func (s *StoreAccountService) resolveGiftWineSnapshot(productID uint, unit string, quantity, costAmount float64) (*giftWineSnapshot, error) {
 	if productID == 0 {
-		return nil, fmt.Errorf("请选择赠酒商品")
+		return nil, apicode.Newf(apicode.MissingParameter, "请选择赠酒商品")
 	}
 	unit = strings.TrimSpace(unit)
 	if unit == "" {
-		return nil, fmt.Errorf("请选择赠酒规格")
+		return nil, apicode.Newf(apicode.MissingParameter, "请选择赠酒规格")
 	}
 	if quantity <= 0 {
-		return nil, fmt.Errorf("请填写赠酒数量")
+		return nil, apicode.Newf(apicode.ValidationFailed, "请填写赠酒数量")
 	}
 
 	productName := ""
 	if s.productModule != nil {
 		product, err := s.productModule.GetByID(productID)
 		if err != nil || product == nil {
-			return nil, fmt.Errorf("赠酒商品不存在")
+			return nil, apicode.New(apicode.ProductNotFound)
 		}
 		productName = product.Name
 	}
 	if costAmount < 0 {
-		return nil, fmt.Errorf("赠酒成本不能小于0")
+		return nil, apicode.Newf(apicode.ValidationFailed, "赠酒成本不能小于0")
 	}
 	return &giftWineSnapshot{
 		ProductID:   productID,
@@ -298,7 +298,7 @@ func NewStoreAccountService(
 func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.CreateStoreAccountReq) (*model.StoreAccount, error) {
 	if req.MemberID != nil && *req.MemberID > 0 && s.memberModule != nil {
 		if _, err := s.memberModule.GetMember(*req.MemberID, storeID, false); err != nil {
-			return nil, fmt.Errorf("会员不存在")
+			return nil, apicode.New(apicode.MemberNotFound)
 		}
 	}
 
@@ -313,15 +313,15 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	accountDate := businessdate.Date(time.Now())
 	if req.IsSupplement == 1 {
 		if strings.TrimSpace(req.AccountDate) == "" {
-			return nil, fmt.Errorf("补记账请选择记账日期")
+			return nil, apicode.Newf(apicode.MissingParameter, "补记账请选择记账日期")
 		}
 		t, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(req.AccountDate), time.Local)
 		if err != nil {
-			return nil, fmt.Errorf("补记账日期格式错误")
+			return nil, apicode.New(apicode.InvalidDate)
 		}
 		today := businessdate.Date(time.Now())
 		if t.After(today) {
-			return nil, fmt.Errorf("补记账日期不能晚于当前营业日")
+			return nil, apicode.Newf(apicode.InvalidDate, "补记账日期不能晚于当前营业日")
 		}
 		accountDate = t
 	}
@@ -338,22 +338,22 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		if item.ProductID == model.StoreAccountItemCustomProductID {
 			name := strings.TrimSpace(item.ProductName)
 			if name == "" {
-				return nil, fmt.Errorf("自定义明细描述不能为空")
+				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细描述不能为空")
 			}
 			unit := strings.TrimSpace(item.Unit)
 			if unit == "" {
-				return nil, fmt.Errorf("自定义明细「%s」请填写单位", name)
+				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」请填写单位", name)
 			}
 			price := item.Price
 			if price <= 0 {
-				return nil, fmt.Errorf("自定义明细「%s」请填写单价", name)
+				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」请填写单价", name)
 			}
 			amount := item.Amount
 			if amount <= 0 && item.Quantity > 0 {
 				amount = price * item.Quantity
 			}
 			if amount <= 0 {
-				return nil, fmt.Errorf("自定义明细「%s」金额无效", name)
+				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」金额无效", name)
 			}
 			items = append(items, model.StoreAccountItem{
 				ProductID:   model.StoreAccountItemCustomProductID,
@@ -399,7 +399,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return nil, fmt.Errorf("商品【%s】单位【%s】未配置售价，请先在商品单位配置中维护该单位售价", name, unit)
+				return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】单位【%s】未配置售价，请先在商品单位配置中维护该单位售价", name, unit)
 			}
 			price = specPrice
 		} else if price <= 0 && product != nil {
@@ -445,7 +445,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		if item.ConsumableProductID > 0 {
 			product := consumableProductMap[item.ConsumableProductID]
 			if product == nil {
-				return nil, fmt.Errorf("消耗品档案不存在或不属于当前门店")
+				return nil, apicode.Newf(apicode.ItemNotFound, "消耗品档案不存在或不属于当前门店")
 			}
 			quantity := item.Quantity
 			amount := product.CostPrice * quantity
@@ -487,7 +487,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return nil, fmt.Errorf("消耗品【%s】单位【%s】未配置售价，请先维护该单位售价", name, unit)
+				return nil, apicode.Newf(apicode.ValidationFailed, "消耗品【%s】单位【%s】未配置售价，请先维护该单位售价", name, unit)
 			}
 			price = specPrice
 		} else if price <= 0 && product != nil {
@@ -511,7 +511,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 
 	if req.IncomeAmount != nil {
 		if !s.isTakeoutChannel(req.Channel) {
-			return nil, fmt.Errorf("仅外卖/商城/团购平台渠道支持自定义收入金额")
+			return nil, apicode.Newf(apicode.ValidationFailed, "仅外卖/商城/团购平台渠道支持自定义收入金额")
 		}
 		totalAmount = *req.IncomeAmount
 	}
@@ -520,7 +520,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		errandFee = 0
 	}
 	if req.IsErrandOrder == 1 && errandFee <= 0 {
-		return nil, fmt.Errorf("跑腿订单请填写跑腿费用")
+		return nil, apicode.Newf(apicode.ValidationFailed, "跑腿订单请填写跑腿费用")
 	}
 	isGiftWine := req.IsGiftWine
 	giftWineCostAmount := req.GiftWineCostAmount
@@ -1029,7 +1029,7 @@ func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
 
 func (s *StoreAccountService) GetScoped(id, storeID uint, hqUnbound bool) (*model.StoreAccount, error) {
 	if !hqUnbound && storeID == 0 {
-		return nil, errors.New("当前账号未绑定门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	account, err := s.storeAccountModule.GetByIDScoped(id, storeID, hqUnbound)
 	if err != nil {
@@ -1073,7 +1073,7 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 
 func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) error {
 	if !s.canApplyPaymentStatusOnlyUpdate(account, req) && !s.CanUpdateAccount(account, req) {
-		return errors.New("记账已超过可编辑时间，仅支持当前营业日内修改")
+		return apicode.New(apicode.StoreAccountEditTimeout)
 	}
 
 	updates := make(map[string]interface{})
@@ -1103,7 +1103,7 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 		if *req.MemberID > 0 {
 			if s.memberModule != nil {
 				if _, err := s.memberModule.GetMember(*req.MemberID, account.StoreID, false); err != nil {
-					return fmt.Errorf("会员不存在")
+					return apicode.New(apicode.MemberNotFound)
 				}
 			}
 			updates["member_id"] = *req.MemberID
@@ -1216,11 +1216,11 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 		nextErrandFee = 0
 	}
 	if nextIsErrandOrder == 1 && nextErrandFee <= 0 {
-		return fmt.Errorf("跑腿订单请填写跑腿费用")
+		return apicode.Newf(apicode.ValidationFailed, "跑腿订单请填写跑腿费用")
 	}
 	if req.IncomeAmount != nil {
 		if !s.isTakeoutChannel(nextChannel) {
-			return fmt.Errorf("仅外卖/商城/团购平台渠道支持自定义收入金额")
+			return apicode.Newf(apicode.ValidationFailed, "仅外卖/商城/团购平台渠道支持自定义收入金额")
 		}
 		updates["total_amount"] = *req.IncomeAmount
 		nextTotalAmount = *req.IncomeAmount
@@ -1281,7 +1281,7 @@ func (s *StoreAccountService) canApplyPaymentStatusOnlyUpdate(account *model.Sto
 
 func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
 	if !hqUnbound && storeID == 0 {
-		return errors.New("当前账号未绑定门店")
+		return apicode.New(apicode.StoreRequired)
 	}
 	account, err := s.storeAccountModule.GetByIDScoped(id, storeID, hqUnbound)
 	if err != nil {
@@ -1292,7 +1292,7 @@ func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req
 
 // Delete 删除记账
 func (s *StoreAccountService) Delete(id uint) error {
-	return errors.New("记账记录不允许删除")
+	return apicode.Newf(apicode.OperationDenied, "记账记录不允许删除")
 }
 
 // GetStats 获取统计
@@ -1386,7 +1386,7 @@ func (s *StoreAccountService) BindConsumables(accountID uint, req *model.BindSto
 
 func (s *StoreAccountService) BindConsumablesScoped(accountID, storeID uint, hqUnbound bool, req *model.BindStoreAccountConsumablesReq) error {
 	if !hqUnbound && storeID == 0 {
-		return errors.New("当前账号未绑定门店")
+		return apicode.New(apicode.StoreRequired)
 	}
 	account, err := s.storeAccountModule.GetByIDScoped(accountID, storeID, hqUnbound)
 	if err != nil {
@@ -1397,7 +1397,7 @@ func (s *StoreAccountService) BindConsumablesScoped(accountID, storeID uint, hqU
 
 func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.StoreAccount, req *model.BindStoreAccountConsumablesReq) error {
 	if !s.CanBindConsumables(account) {
-		return errors.New("该记账单已绑定消耗品，不能重复绑定")
+		return apicode.New(apicode.DuplicateOperation)
 	}
 	accountID := account.ID
 	consumables := make([]model.StoreAccountConsumable, 0, len(req.Consumables))
@@ -1415,7 +1415,7 @@ func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.Stor
 		if item.ConsumableProductID > 0 {
 			product := consumableProductMap[item.ConsumableProductID]
 			if product == nil {
-				return fmt.Errorf("消耗品档案不存在或不属于当前门店")
+				return apicode.Newf(apicode.ItemNotFound, "消耗品档案不存在或不属于当前门店")
 			}
 			quantity := item.Quantity
 			amount := product.CostPrice * quantity
@@ -1434,10 +1434,10 @@ func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.Stor
 		if item.ProductID == 0 {
 			name := strings.TrimSpace(item.ProductName)
 			if name == "" {
-				return fmt.Errorf("自定义消耗品名称不能为空")
+				return apicode.Newf(apicode.ValidationFailed, "自定义消耗品名称不能为空")
 			}
 			if item.Amount <= 0 {
-				return fmt.Errorf("自定义消耗品【%s】金额必须大于0", name)
+				return apicode.Newf(apicode.ValidationFailed, "自定义消耗品【%s】金额必须大于0", name)
 			}
 			quantity := item.Quantity
 			if quantity <= 0 {
@@ -1481,7 +1481,7 @@ func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.Stor
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("消耗品【%s】单位【%s】未配置售价，请先维护该单位售价", name, unit)
+				return apicode.Newf(apicode.ValidationFailed, "消耗品【%s】单位【%s】未配置售价，请先维护该单位售价", name, unit)
 			}
 			price = specPrice
 		} else if price <= 0 && product != nil {
@@ -1539,7 +1539,7 @@ func (s *StoreAccountService) ListConsumableProducts(ctx context.Context, req *m
 
 func (s *StoreAccountService) DeleteConsumableProduct(id, storeID uint, hqUnbound bool) error {
 	if !hqUnbound && storeID == 0 {
-		return fmt.Errorf("current user has no store")
+		return apicode.New(apicode.StoreRequired)
 	}
 	return s.storeAccountModule.DeleteConsumableProduct(id, storeID, hqUnbound)
 }
@@ -1550,11 +1550,11 @@ func (s *StoreAccountService) buildConsumableProduct(storeID uint, hqUnbound boo
 		realStoreID = req.StoreID
 	}
 	if realStoreID == 0 {
-		return nil, fmt.Errorf("请选择门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		return nil, fmt.Errorf("消耗品名称不能为空")
+		return nil, apicode.Newf(apicode.ValidationFailed, "消耗品名称不能为空")
 	}
 	return &model.StoreAccountConsumableProduct{
 		StoreID:   realStoreID,

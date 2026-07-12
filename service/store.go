@@ -1,9 +1,9 @@
 package service
 
 import (
-	"errors"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils"
 )
 
@@ -55,7 +55,7 @@ func (s *StoreService) UpdateStore(id uint, req *model.UpdateStoreReq) error {
 	// 确认门店存在
 	_, err := s.storeModule.GetByID(id)
 	if err != nil {
-		return errors.New("store not found")
+		return apicode.New(apicode.StoreNotFound)
 	}
 
 	// 使用动态更新避免整行覆盖
@@ -70,14 +70,14 @@ func (s *StoreService) DeleteStore(id uint) error {
 // BindThirdPartyAccount 绑定门店第三方账号（一个门店最多绑定一个账号）
 func (s *StoreService) BindThirdPartyAccount(storeID uint, accountID *uint) error {
 	if _, err := s.storeModule.GetByID(storeID); err != nil {
-		return errors.New("store not found")
+		return apicode.New(apicode.StoreNotFound)
 	}
 	if accountID != nil {
 		if s.thirdPartyAccountModule == nil {
-			return errors.New("third party account module not configured")
+			return apicode.New(apicode.ConfigMissing)
 		}
 		if _, err := s.thirdPartyAccountModule.GetByID(*accountID); err != nil {
-			return errors.New("third party account not found")
+			return apicode.New(apicode.ThirdPartyAccountNotFound)
 		}
 	}
 	return s.storeModule.BindThirdPartyAccount(storeID, accountID)

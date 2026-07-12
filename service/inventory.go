@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
@@ -288,10 +288,10 @@ func (s *InventoryService) GetOrderByNoScoped(orderNo string, storeID uint, hqUn
 		return order, nil
 	}
 	if storeID == 0 {
-		return nil, errors.New("current user has no store")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	if order.StoreID != storeID {
-		return nil, errors.New("inventory order not found in current store")
+		return nil, apicode.New(apicode.OrderNotFound)
 	}
 	return order, nil
 }
@@ -310,10 +310,10 @@ func (s *InventoryService) GetOrderByIDScoped(id, storeID uint, hqUnbound bool) 
 		return order, nil
 	}
 	if storeID == 0 {
-		return nil, errors.New("current user has no store")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	if order.StoreID != storeID {
-		return nil, errors.New("inventory order not found in current store")
+		return nil, apicode.New(apicode.OrderNotFound)
 	}
 	return order, nil
 }
@@ -343,10 +343,10 @@ func (s *InventoryService) GetInventoryByIDScoped(id, storeID uint, hqUnbound bo
 		return inv, nil
 	}
 	if storeID == 0 {
-		return nil, errors.New("current user has no store")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	if inv.StoreID != storeID {
-		return nil, errors.New("inventory not found in current store")
+		return nil, apicode.New(apicode.InventoryNotFound)
 	}
 	return inv, nil
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 )
 
@@ -39,7 +39,7 @@ func NewB2BService(
 
 func (s *B2BService) CreateCustomer(storeID uint, req *model.CreateB2BCustomerReq) (*model.B2BCustomer, error) {
 	if storeID == 0 {
-		return nil, errors.New("store_id is required")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	customer := &model.B2BCustomer{
 		StoreID:       storeID,
@@ -63,10 +63,10 @@ func (s *B2BService) CreateCustomer(storeID uint, req *model.CreateB2BCustomerRe
 func (s *B2BService) UpdateCustomer(id, storeID uint, isHQ bool, req *model.UpdateB2BCustomerReq) (*model.B2BCustomer, error) {
 	customer, err := s.b2bModule.GetCustomer(id)
 	if err != nil {
-		return nil, errors.New("customer not found")
+		return nil, apicode.New(apicode.CustomerNotFound)
 	}
 	if !isHQ && customer.StoreID != storeID {
-		return nil, errors.New("permission denied")
+		return nil, apicode.New(apicode.OperationDenied)
 	}
 	updates := updatesPkg.BuildUpdatesFromReq(req)
 	if v, ok := updates["settlement"]; ok {
@@ -89,26 +89,26 @@ func (s *B2BService) UpsertPrice(storeID uint, isHQ bool, req *model.UpsertB2BPr
 		storeID = req.StoreID
 	}
 	if storeID == 0 {
-		return errors.New("store_id is required")
+		return apicode.New(apicode.StoreRequired)
 	}
 	if req.CustomerID == nil && strings.TrimSpace(req.PriceLevel) == "" {
-		return errors.New("customer_id 和 price_level 至少填写一个")
+		return apicode.Newf(apicode.MissingParameter, "customer_id 和 price_level 至少填写一个")
 	}
 	if req.CustomerID != nil && *req.CustomerID > 0 {
 		customer, err := s.b2bModule.GetCustomer(*req.CustomerID)
 		if err != nil {
-			return errors.New("customer not found")
+			return apicode.New(apicode.CustomerNotFound)
 		}
 		if customer.StoreID != storeID {
-			return errors.New("customer not in store")
+			return apicode.New(apicode.OperationDenied)
 		}
 	}
 	spec, err := s.unitSpecModule.GetByID(req.UnitSpecID)
 	if err != nil || spec == nil {
-		return errors.New("unit spec not found")
+		return apicode.New(apicode.UnitSpecNotFound)
 	}
 	if spec.ProductID != req.ProductID {
-		return errors.New("unit spec does not match product")
+		return apicode.New(apicode.UnitSpecMismatch)
 	}
 	enabled := true
 	if req.IsEnabled != nil {
@@ -140,10 +140,10 @@ func (s *B2BService) ListPrices(req *model.ListB2BPriceReq) ([]*model.B2BCustome
 func (s *B2BService) DeletePrice(id, storeID uint, isHQ bool) error {
 	price, err := s.b2bModule.GetPrice(id)
 	if err != nil {
-		return errors.New("price not found")
+		return apicode.New(apicode.PriceListNotFound)
 	}
 	if !isHQ && price.StoreID != storeID {
-		return errors.New("permission denied")
+		return apicode.New(apicode.OperationDenied)
 	}
 	return s.b2bModule.DeletePrice(id)
 }
@@ -153,17 +153,17 @@ func (s *B2BService) CreateSupplyOrder(storeID, operatorID uint, isHQ bool, req 
 		storeID = req.StoreID
 	}
 	if storeID == 0 {
-		return nil, errors.New("store_id is required")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	customer, err := s.b2bModule.GetCustomer(req.CustomerID)
 	if err != nil {
-		return nil, errors.New("customer not found")
+		return nil, apicode.New(apicode.CustomerNotFound)
 	}
 	if customer.StoreID != storeID {
-		return nil, errors.New("customer not in store")
+		return nil, apicode.New(apicode.OperationDenied)
 	}
 	if customer.Status != model.B2BCustomerStatusEnabled {
-		return nil, errors.New("customer disabled")
+		return nil, apicode.New(apicode.CustomerDisabled)
 	}
 
 	orderDate := time.Now()
@@ -186,14 +186,14 @@ func (s *B2BService) CreateSupplyOrder(storeID, operatorID uint, isHQ bool, req 
 	for _, line := range req.Items {
 		product, err := s.productModule.GetByID(line.ProductID)
 		if err != nil || product == nil {
-			return nil, fmt.Errorf("product %d not found", line.ProductID)
+			return nil, apicode.Newf(apicode.ProductNotFound, "商品 %d 不存在", line.ProductID)
 		}
 		spec, err := s.unitSpecModule.GetByID(line.UnitSpecID)
 		if err != nil || spec == nil {
-			return nil, fmt.Errorf("unit spec %d not found", line.UnitSpecID)
+			return nil, apicode.Newf(apicode.UnitSpecNotFound, "商品规格 %d 不存在", line.UnitSpecID)
 		}
 		if spec.ProductID != line.ProductID || !spec.IsEnabled {
-			return nil, fmt.Errorf("商品【%s】规格不可用", product.Name)
+			return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】规格不可用", product.Name)
 		}
 		price := line.SupplyPrice
 		if price <= 0 {
@@ -205,7 +205,7 @@ func (s *B2BService) CreateSupplyOrder(storeID, operatorID uint, isHQ bool, req 
 			price = spec.SalePrice
 		}
 		if price <= 0 {
-			return nil, fmt.Errorf("商品【%s】未配置供货价", product.Name)
+			return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】未配置供货价", product.Name)
 		}
 
 		factor := spec.FactorToBase
@@ -287,7 +287,7 @@ func (s *B2BService) GetSupplyOrder(id, storeID uint, isHQ bool) (*model.B2BSupp
 		return nil, err
 	}
 	if !isHQ && order.StoreID != storeID {
-		return nil, errors.New("permission denied")
+		return nil, apicode.New(apicode.OperationDenied)
 	}
 	return order, nil
 }
@@ -318,10 +318,10 @@ func (s *B2BService) UpdateSupplyOrderPayment(id, storeID uint, isHQ bool, req *
 		paid = total
 	case model.B2BPaymentPartial:
 		if paid <= 0 || paid >= total {
-			return nil, errors.New("部分收款时已收金额必须大于0且小于订单金额")
+			return nil, apicode.Newf(apicode.ValidationFailed, "部分收款时已收金额必须大于0且小于订单金额")
 		}
 	default:
-		return nil, errors.New("invalid payment status")
+		return nil, apicode.New(apicode.PaymentStatusInvalid)
 	}
 	if paid > total {
 		paid = total

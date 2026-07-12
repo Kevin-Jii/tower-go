@@ -40,7 +40,7 @@ func (c *SupplierController) CreateSupplier(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 
 	if err := c.supplierService.CreateSupplier(storeID, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (c *SupplierController) GetSupplier(ctx *gin.Context) {
 
 	supplier, err := c.supplierService.GetSupplierScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (c *SupplierController) GetSupplierPublic(ctx *gin.Context) {
 
 	supplier, err := c.supplierService.GetSupplier(id)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -136,7 +136,7 @@ func (c *SupplierController) ListSuppliers(ctx *gin.Context) {
 		suppliers, total = []*model.Supplier{}, 0
 	}
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -167,7 +167,7 @@ func (c *SupplierController) UpdateSupplier(ctx *gin.Context) {
 	}
 
 	if err := c.supplierService.UpdateSupplierScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -192,7 +192,7 @@ func (c *SupplierController) DeleteSupplier(ctx *gin.Context) {
 	}
 
 	if err := c.supplierService.DeleteSupplierScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

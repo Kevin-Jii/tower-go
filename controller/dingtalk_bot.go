@@ -106,7 +106,7 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 
 	bots, total, err := c.svc.ListBots(page, pageSize)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (c *DingTalkBotController) DeleteBot(ctx *gin.Context) {
 	}
 
 	if err := c.svc.DeleteBot(id); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -238,7 +238,7 @@ func (c *DingTalkBotController) TestBot(ctx *gin.Context) {
 	}
 
 	if err := c.svc.TestBot(id); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 

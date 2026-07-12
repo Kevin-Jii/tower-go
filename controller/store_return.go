@@ -27,7 +27,7 @@ func (c *StoreReturnController) Create(ctx *gin.Context) {
 
 	record, err := c.storeReturnService.Create(storeID, userID, &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, record)
@@ -47,7 +47,7 @@ func (c *StoreReturnController) List(ctx *gin.Context) {
 
 	list, total, err := c.storeReturnService.List(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -78,7 +78,7 @@ func (c *StoreReturnController) Update(ctx *gin.Context) {
 	}
 	record, err := c.storeReturnService.Update(id, middleware.GetStoreID(ctx), middleware.GetUserID(ctx), &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, record)
@@ -90,7 +90,7 @@ func (c *StoreReturnController) Delete(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeReturnService.Delete(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -108,7 +108,7 @@ func (c *StoreReturnController) Stats(ctx *gin.Context) {
 	}
 	stats, err := c.storeReturnService.Stats(&req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, stats)
@@ -123,7 +123,7 @@ func (c *StoreReturnController) CreateProduct(ctx *gin.Context) {
 	}
 	product, err := c.storeReturnService.CreateProduct(storeID, &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, product)
@@ -142,7 +142,7 @@ func (c *StoreReturnController) ListProducts(ctx *gin.Context) {
 	}
 	list, total, err := c.storeReturnService.ListProducts(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -160,7 +160,7 @@ func (c *StoreReturnController) UpdateProduct(ctx *gin.Context) {
 	}
 	product, err := c.storeReturnService.UpdateProduct(id, middleware.GetStoreID(ctx), &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, product)
@@ -172,7 +172,7 @@ func (c *StoreReturnController) DeleteProduct(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeReturnService.DeleteProduct(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)

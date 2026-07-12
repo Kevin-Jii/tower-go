@@ -1,7 +1,6 @@
 package module
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
@@ -24,49 +23,45 @@ func NewStatisticsModule(db *gorm.DB) *StatisticsModule {
 	return &StatisticsModule{db: db}
 }
 
+func withStoreID(query *gorm.DB, storeID uint) *gorm.DB {
+	if storeID > 0 {
+		return query.Where("store_id = ?", storeID)
+	}
+	return query
+}
+
 // GetInventoryStats 获取库存统计
 func (m *StatisticsModule) GetInventoryStats(storeID uint) (*model.InventoryStats, error) {
 	stats := &model.InventoryStats{}
 
-	// 商品种类数和总库存
-	query := m.db.Model(&model.Inventory{}).Where("deleted_at IS NULL")
-	if storeID > 0 {
-		query = query.Where("store_id = ?", storeID)
+	var inventorySummary struct {
+		TotalProducts int64
+		TotalQuantity float64
 	}
-	query.Count(&stats.TotalProducts)
-	query.Select("COALESCE(SUM(quantity), 0)").Scan(&stats.TotalQuantity)
-
-	// 出入库单总数
-	orderQuery := m.db.Model(&model.InventoryOrder{}).Where("deleted_at IS NULL")
-	if storeID > 0 {
-		orderQuery = orderQuery.Where("store_id = ?", storeID)
+	inventoryQuery := withStoreID(m.db.Model(&model.Inventory{}).Where("deleted_at IS NULL"), storeID)
+	if err := inventoryQuery.Select("COUNT(*) AS total_products, COALESCE(SUM(quantity), 0) AS total_quantity").Scan(&inventorySummary).Error; err != nil {
+		return nil, err
 	}
-	orderQuery.Count(&stats.TotalRecords)
+	stats.TotalProducts = inventorySummary.TotalProducts
+	stats.TotalQuantity = inventorySummary.TotalQuantity
 
-	// 今日入库/出库（从出入库单统计）
 	today := time.Now().Format("2006-01-02")
-
-	// 今日入库
-	m.db.Model(&model.InventoryOrder{}).
-		Where("deleted_at IS NULL AND DATE(created_at) = ? AND type = ?", today, model.InventoryTypeIn).
-		Where(func(db *gorm.DB) *gorm.DB {
-			if storeID > 0 {
-				return db.Where("store_id = ?", storeID)
-			}
-			return db
-		}(m.db)).
-		Select("COALESCE(SUM(total_quantity), 0)").Scan(&stats.TodayIn)
-
-	// 今日出库
-	m.db.Model(&model.InventoryOrder{}).
-		Where("deleted_at IS NULL AND DATE(created_at) = ? AND type = ?", today, model.InventoryTypeOut).
-		Where(func(db *gorm.DB) *gorm.DB {
-			if storeID > 0 {
-				return db.Where("store_id = ?", storeID)
-			}
-			return db
-		}(m.db)).
-		Select("COALESCE(SUM(total_quantity), 0)").Scan(&stats.TodayOut)
+	var orderSummary struct {
+		TotalRecords int64
+		TodayIn      float64
+		TodayOut     float64
+	}
+	orderQuery := withStoreID(m.db.Model(&model.InventoryOrder{}).Where("deleted_at IS NULL"), storeID)
+	if err := orderQuery.Select(`
+		COUNT(*) AS total_records,
+		COALESCE(SUM(CASE WHEN type = ? AND created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY) THEN total_quantity ELSE 0 END), 0) AS today_in,
+		COALESCE(SUM(CASE WHEN type = ? AND created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY) THEN total_quantity ELSE 0 END), 0) AS today_out
+	`, model.InventoryTypeIn, today, today, model.InventoryTypeOut, today, today).Scan(&orderSummary).Error; err != nil {
+		return nil, err
+	}
+	stats.TotalRecords = orderSummary.TotalRecords
+	stats.TodayIn = orderSummary.TodayIn
+	stats.TodayOut = orderSummary.TodayOut
 
 	return stats, nil
 }
@@ -75,10 +70,7 @@ func (m *StatisticsModule) GetInventoryStats(storeID uint) (*model.InventoryStat
 func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string) (*model.SalesStats, error) {
 	stats := &model.SalesStats{}
 
-	query := m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL")
-	if storeID > 0 {
-		query = query.Where("store_id = ?", storeID)
-	}
+	query := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -86,26 +78,17 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 		query = query.Where("account_date <= ?", endDate)
 	}
 
-	// 总订单数
-	query.Count(&stats.TotalOrders)
-
-	// 总销售额和总数量（使用新字段 total_amount 和 item_count）
-	m.db.Model(&model.StoreAccount{}).
-		Where("deleted_at IS NULL").
-		Where(func(db *gorm.DB) *gorm.DB {
-			if storeID > 0 {
-				db = db.Where("store_id = ?", storeID)
-			}
-			if startDate != "" {
-				db = db.Where("account_date >= ?", startDate)
-			}
-			if endDate != "" {
-				db = db.Where("account_date <= ?", endDate)
-			}
-			return db
-		}(m.db)).
-		Select("COALESCE(SUM(total_amount), 0) as total_amount, COALESCE(SUM(item_count), 0) as total_qty").
-		Row().Scan(&stats.TotalAmount, &stats.TotalQty)
+	var summary struct {
+		TotalOrders int64
+		TotalAmount float64
+		TotalQty    float64
+	}
+	if err := query.Select("COUNT(*) AS total_orders, COALESCE(SUM(total_amount), 0) AS total_amount, COALESCE(SUM(item_count), 0) AS total_qty").Scan(&summary).Error; err != nil {
+		return nil, err
+	}
+	stats.TotalOrders = summary.TotalOrders
+	stats.TotalAmount = summary.TotalAmount
+	stats.TotalQty = summary.TotalQty
 
 	// 平均客单价
 	if stats.TotalOrders > 0 {
@@ -114,25 +97,18 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 
 	// 今日销售额
 	today := businessdate.DateString(time.Now())
-	fmt.Printf("🔍 [Statistics] 今日日期: %s, storeID: %d\n", today, storeID)
-	todayQuery := m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND DATE(account_date) = ?", today)
-	if storeID > 0 {
-		todayQuery = todayQuery.Where("store_id = ?", storeID)
+	todayQuery := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND account_date >= ? AND account_date < DATE_ADD(?, INTERVAL 1 DAY)", today, today), storeID)
+	if err := todayQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TodayAmount).Error; err != nil {
+		return nil, err
 	}
-	todayQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TodayAmount)
-	fmt.Printf("🔍 [Statistics] 今日销售额: %.2f\n", stats.TodayAmount)
 
 	// 本月销售额
 	businessToday := businessdate.Date(time.Now())
 	monthStart := time.Date(businessToday.Year(), businessToday.Month(), 1, 0, 0, 0, 0, businessToday.Location()).Format("2006-01-02")
-	fmt.Printf("🔍 [Statistics] 本月开始: %s\n", monthStart)
-	monthQuery := m.db.Model(&model.StoreAccount{}).
-		Where("deleted_at IS NULL AND DATE(account_date) >= ?", monthStart)
-	if storeID > 0 {
-		monthQuery = monthQuery.Where("store_id = ?", storeID)
+	monthQuery := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND account_date >= ?", monthStart), storeID)
+	if err := monthQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.MonthAmount).Error; err != nil {
+		return nil, err
 	}
-	monthQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.MonthAmount)
-	fmt.Printf("🔍 [Statistics] 本月销售额: %.2f\n", stats.MonthAmount)
 
 	return stats, nil
 }
@@ -148,13 +124,9 @@ func (m *StatisticsModule) GetSalesTrend(storeID uint, startDate, endDate, perio
 		dateFormat = "%Y-%m"
 	}
 
-	query := m.db.Model(&model.StoreAccount{}).
+	query := withStoreID(m.db.Model(&model.StoreAccount{}).
 		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders", dateFormat).
-		Where("deleted_at IS NULL")
-
-	if storeID > 0 {
-		query = query.Where("store_id = ?", storeID)
-	}
+		Where("deleted_at IS NULL"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -162,7 +134,9 @@ func (m *StatisticsModule) GetSalesTrend(storeID uint, startDate, endDate, perio
 		query = query.Where("account_date <= ?", endDate)
 	}
 
-	query.Group("date").Order("date ASC").Scan(&results)
+	if err := query.Group("date").Order("date ASC").Scan(&results).Error; err != nil {
+		return nil, err
+	}
 
 	return results, nil
 }
@@ -175,19 +149,18 @@ func (m *StatisticsModule) GetSalesTrendByGranularity(storeID uint, startDate, e
 		dateFormat = "%Y-%m"
 	}
 
-	query := m.db.Model(&model.StoreAccount{}).
+	query := withStoreID(m.db.Model(&model.StoreAccount{}).
 		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders", dateFormat).
-		Where("deleted_at IS NULL")
-	if storeID > 0 {
-		query = query.Where("store_id = ?", storeID)
-	}
+		Where("deleted_at IS NULL"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
 	if endDate != "" {
 		query = query.Where("account_date <= ?", endDate)
 	}
-	query.Group("date").Order("date ASC").Scan(&results)
+	if err := query.Group("date").Order("date ASC").Scan(&results).Error; err != nil {
+		return nil, err
+	}
 	return results, nil
 }
 
@@ -195,13 +168,9 @@ func (m *StatisticsModule) GetSalesTrendByGranularity(storeID uint, startDate, e
 func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate string) ([]model.ChannelStatsItem, error) {
 	var results []model.ChannelStatsItem
 
-	query := m.db.Model(&model.StoreAccount{}).
+	query := withStoreID(m.db.Model(&model.StoreAccount{}).
 		Select("channel, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders").
-		Where("deleted_at IS NULL")
-
-	if storeID > 0 {
-		query = query.Where("store_id = ?", storeID)
-	}
+		Where("deleted_at IS NULL"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -209,7 +178,9 @@ func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate stri
 		query = query.Where("account_date <= ?", endDate)
 	}
 
-	query.Group("channel").Order("amount DESC").Scan(&results)
+	if err := query.Group("channel").Order("amount DESC").Scan(&results).Error; err != nil {
+		return nil, err
+	}
 
 	// 计算总额和占比
 	var totalAmount float64
@@ -218,7 +189,10 @@ func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate stri
 	}
 
 	// 获取渠道名称映射
-	channelMap := m.getChannelNameMap()
+	channelMap, err := m.getChannelNameMap()
+	if err != nil {
+		return nil, err
+	}
 
 	for i := range results {
 		if totalAmount > 0 {
@@ -235,17 +209,19 @@ func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate stri
 }
 
 // getChannelNameMap 获取渠道名称映射
-func (m *StatisticsModule) getChannelNameMap() map[string]string {
+func (m *StatisticsModule) getChannelNameMap() (map[string]string, error) {
 	channelMap := make(map[string]string)
 
 	var dictData []model.DictData
-	m.db.Where("type_code = ? AND status = 1", "sales_channel").Find(&dictData)
+	if err := m.db.Where("type_code = ? AND status = 1", "sales_channel").Find(&dictData).Error; err != nil {
+		return nil, err
+	}
 
 	for _, d := range dictData {
 		channelMap[d.Value] = d.Label
 	}
 
-	return channelMap
+	return channelMap, nil
 }
 
 // GetBusinessOverview 获取经营总览统计（按日期）
@@ -299,13 +275,23 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	if storeID > 0 {
 		salesQuery = salesQuery.Where("store_id = ?", storeID)
 	}
-	if err := salesQuery.Count(&stats.SalesOrderCount).Error; err != nil {
+	var salesSummary struct {
+		SalesOrderCount    int64
+		SalesAmount        float64
+		OtherExpenseAmount float64
+		ErrandFeeAmount    float64
+		RoundAmount        float64
+		GiftWineCostAmount float64
+	}
+	if err := salesQuery.Select("COUNT(*) AS sales_order_count, COALESCE(SUM(total_amount), 0) AS sales_amount, COALESCE(SUM(other_expense_amount), 0) AS other_expense_amount, COALESCE(SUM(errand_fee), 0) AS errand_fee_amount, COALESCE(SUM(round_amount), 0) AS round_amount, COALESCE(SUM(gift_wine_cost_amount), 0) AS gift_wine_cost_amount").Scan(&salesSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := salesQuery.Select("COALESCE(SUM(total_amount), 0), COALESCE(SUM(other_expense_amount), 0), COALESCE(SUM(errand_fee), 0), COALESCE(SUM(round_amount), 0), COALESCE(SUM(gift_wine_cost_amount), 0)").
-		Row().Scan(&stats.SalesAmount, &stats.OtherExpenseAmount, &stats.ErrandFeeAmount, &stats.RoundAmount, &stats.GiftWineCostAmount); err != nil {
-		return nil, err
-	}
+	stats.SalesOrderCount = salesSummary.SalesOrderCount
+	stats.SalesAmount = salesSummary.SalesAmount
+	stats.OtherExpenseAmount = salesSummary.OtherExpenseAmount
+	stats.ErrandFeeAmount = salesSummary.ErrandFeeAmount
+	stats.RoundAmount = salesSummary.RoundAmount
+	stats.GiftWineCostAmount = salesSummary.GiftWineCostAmount
 	consumableQuery := m.db.Table("store_account_consumables AS sac").
 		Joins("JOIN store_accounts AS sa ON sa.id = sac.account_id AND sa.deleted_at IS NULL").
 		Where("sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
@@ -321,15 +307,15 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	if storeID > 0 {
 		expenseQuery = expenseQuery.Where("store_id = ?", storeID)
 	}
-	if err := expenseQuery.Select("COALESCE(SUM(amount), 0)").Scan(&stats.StoreExpenseAmount).Error; err != nil {
+	var expenseSummary struct {
+		StoreExpenseAmount     float64
+		TakeoutPromotionAmount float64
+	}
+	if err := expenseQuery.Select("COALESCE(SUM(amount), 0) AS store_expense_amount, COALESCE(SUM(CASE WHEN category_code = ? THEN amount ELSE 0 END), 0) AS takeout_promotion_amount", "takeout_promotion").Scan(&expenseSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := expenseQuery.Session(&gorm.Session{}).
-		Where("category_code = ?", "takeout_promotion").
-		Select("COALESCE(SUM(amount), 0)").
-		Scan(&stats.TakeoutPromotionAmount).Error; err != nil {
-		return nil, err
-	}
+	stats.StoreExpenseAmount = expenseSummary.StoreExpenseAmount
+	stats.TakeoutPromotionAmount = expenseSummary.TakeoutPromotionAmount
 
 	takeoutSalesQuery := m.db.Model(&model.StoreAccount{}).
 		Where(`deleted_at IS NULL AND account_date >= ? AND account_date <= ? AND (
@@ -355,12 +341,15 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	if storeID > 0 {
 		b2bQuery = b2bQuery.Where("store_id = ?", storeID)
 	}
-	if err := b2bQuery.Count(&stats.B2BSupplyOrderCount).Error; err != nil {
+	var b2bSummary struct {
+		B2BSupplyOrderCount int64
+		B2BSupplyAmount     float64
+	}
+	if err := b2bQuery.Select("COUNT(*) AS b2b_supply_order_count, COALESCE(SUM(total_amount), 0) AS b2b_supply_amount").Scan(&b2bSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := b2bQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.B2BSupplyAmount).Error; err != nil {
-		return nil, err
-	}
+	stats.B2BSupplyOrderCount = b2bSummary.B2BSupplyOrderCount
+	stats.B2BSupplyAmount = b2bSummary.B2BSupplyAmount
 
 	returnQuery := m.db.Model(&model.StoreReturn{}).
 		Where("deleted_at IS NULL AND return_date >= ? AND return_date <= ?", startDate, endDate)
@@ -377,26 +366,24 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	if storeID > 0 {
 		lossBaseQuery = lossBaseQuery.Where("store_id = ?", storeID)
 	}
-	if err := lossBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeLoss).Count(&stats.InventoryLossCount).Error; err != nil {
+	var lossSummary struct {
+		InventoryLossCount     int64
+		InventoryLossAmount    float64
+		InventorySelfUseCount  int64
+		InventorySelfUseAmount float64
+	}
+	if err := lossBaseQuery.Select(`
+		COUNT(CASE WHEN type = ? THEN 1 END) AS inventory_loss_count,
+		COALESCE(SUM(CASE WHEN type = ? THEN total_cost ELSE 0 END), 0) AS inventory_loss_amount,
+		COUNT(CASE WHEN type = ? THEN 1 END) AS inventory_self_use_count,
+		COALESCE(SUM(CASE WHEN type = ? THEN total_cost ELSE 0 END), 0) AS inventory_self_use_amount
+	`, model.InventoryLossTypeLoss, model.InventoryLossTypeLoss, model.InventoryLossTypeSelfUse, model.InventoryLossTypeSelfUse).Scan(&lossSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := lossBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeLoss).
-		Select("COALESCE(SUM(total_cost), 0)").Scan(&stats.InventoryLossAmount).Error; err != nil {
-		return nil, err
-	}
-
-	selfUseBaseQuery := m.db.Model(&model.InventoryLossOrder{}).
-		Where("deleted_at IS NULL AND is_canceled = 0 AND created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY)", startDate, endDate)
-	if storeID > 0 {
-		selfUseBaseQuery = selfUseBaseQuery.Where("store_id = ?", storeID)
-	}
-	if err := selfUseBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeSelfUse).Count(&stats.InventorySelfUseCount).Error; err != nil {
-		return nil, err
-	}
-	if err := selfUseBaseQuery.Session(&gorm.Session{}).Where("type = ?", model.InventoryLossTypeSelfUse).
-		Select("COALESCE(SUM(total_cost), 0)").Scan(&stats.InventorySelfUseAmount).Error; err != nil {
-		return nil, err
-	}
+	stats.InventoryLossCount = lossSummary.InventoryLossCount
+	stats.InventoryLossAmount = lossSummary.InventoryLossAmount
+	stats.InventorySelfUseCount = lossSummary.InventorySelfUseCount
+	stats.InventorySelfUseAmount = lossSummary.InventorySelfUseAmount
 
 	memberRankQuery := m.db.Table("store_accounts AS sa").
 		Select(`
@@ -432,16 +419,22 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	}
 
 	inOutQuery := m.db.Model(&model.InventoryOrder{}).
-		Where("deleted_at IS NULL AND DATE(created_at) >= ? AND DATE(created_at) <= ?", startDate, endDate)
+		Where("deleted_at IS NULL AND created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY)", startDate, endDate)
 	if storeID > 0 {
 		inOutQuery = inOutQuery.Where("store_id = ?", storeID)
 	}
-	if err := inOutQuery.Where("type = ?", model.InventoryTypeIn).Count(&stats.InventoryInCount).Error; err != nil {
+	var inOutSummary struct {
+		InventoryInCount  int64
+		InventoryOutCount int64
+	}
+	if err := inOutQuery.Select(`
+		COUNT(CASE WHEN type = ? THEN 1 END) AS inventory_in_count,
+		COUNT(CASE WHEN type = ? THEN 1 END) AS inventory_out_count
+	`, model.InventoryTypeIn, model.InventoryTypeOut).Scan(&inOutSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := inOutQuery.Where("type = ?", model.InventoryTypeOut).Count(&stats.InventoryOutCount).Error; err != nil {
-		return nil, err
-	}
+	stats.InventoryInCount = inOutSummary.InventoryInCount
+	stats.InventoryOutCount = inOutSummary.InventoryOutCount
 
 	stats.GrossProfitAmount = stats.SalesAmount - itemCostAmount
 	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - stats.ErrandFeeAmount - stats.ConsumableAmount - itemCostAmount - stats.GiftWineCostAmount - stats.RoundAmount - stats.StoreExpenseAmount

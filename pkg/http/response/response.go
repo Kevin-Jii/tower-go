@@ -5,27 +5,28 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/gin-gonic/gin"
 )
 
 // StatusCode 标准状态码
 const (
-	StatusSuccess           = 200  // 成功
-	StatusCreated           = 201  // 创建成功
-	StatusAccepted          = 202  // 已接受
-	StatusNoContent         = 204  // 无内容
-	StatusBadRequest        = 400  // 请求错误
-	StatusUnauthorized      = 401  // 未授权
-	StatusForbidden         = 403  // 禁止访问
-	StatusNotFound          = 404  // 未找到
-	StatusMethodNotAllowed  = 405  // 方法不允许
-	StatusConflict          = 409  // 冲突
-	StatusValidationFailed  = 422  // 验证失败
-	StatusTooManyRequests   = 429  // 请求过多
+	StatusSuccess             = 200 // 成功
+	StatusCreated             = 201 // 创建成功
+	StatusAccepted            = 202 // 已接受
+	StatusNoContent           = 204 // 无内容
+	StatusBadRequest          = 400 // 请求错误
+	StatusUnauthorized        = 401 // 未授权
+	StatusForbidden           = 403 // 禁止访问
+	StatusNotFound            = 404 // 未找到
+	StatusMethodNotAllowed    = 405 // 方法不允许
+	StatusConflict            = 409 // 冲突
+	StatusValidationFailed    = 422 // 验证失败
+	StatusTooManyRequests     = 429 // 请求过多
 	StatusInternalServerError = 500 // 内部服务器错误
-	StatusNotImplemented    = 501  // 未实现
-	StatusBadGateway        = 502  // 网关错误
-	StatusServiceUnavailable = 503 // 服务不可用
+	StatusNotImplemented      = 501 // 未实现
+	StatusBadGateway          = 502 // 网关错误
+	StatusServiceUnavailable  = 503 // 服务不可用
 )
 
 // Response 标准API响应结构
@@ -61,10 +62,10 @@ type ErrorResponse struct {
 
 // Config 响应配置
 type Config struct {
-	EnableRequestID bool    `yaml:"enable_request_id" json:"enable_request_id"`
-	DefaultMessage  string  `yaml:"default_message" json:"default_message"`
-	StackTrace      bool    `yaml:"stack_trace" json:"stack_trace"`
-	TimeFormat      string  `yaml:"time_format" json:"time_format"`
+	EnableRequestID bool   `yaml:"enable_request_id" json:"enable_request_id"`
+	DefaultMessage  string `yaml:"default_message" json:"default_message"`
+	StackTrace      bool   `yaml:"stack_trace" json:"stack_trace"`
+	TimeFormat      string `yaml:"time_format" json:"time_format"`
 }
 
 // DefaultConfig 返回默认配置
@@ -139,6 +140,20 @@ func (r *Responder) Error(ginContext *gin.Context, code int, message string) {
 	resp := r.buildResponse(ginContext, code, message, nil, "")
 	statusCode := r.getHTTPStatus(code)
 	ginContext.JSON(statusCode, resp)
+}
+
+// ErrorApp 使用统一错误码响应。
+func (r *Responder) ErrorApp(ginContext *gin.Context, code apicode.Code) {
+	r.Error(ginContext, code.Num, code.Msg)
+}
+
+// ErrorFrom 将统一业务错误转换为响应，未识别错误统一返回内部错误。
+func (r *Responder) ErrorFrom(ginContext *gin.Context, err error) {
+	if code, ok := apicode.Resolve(err); ok {
+		r.ErrorApp(ginContext, code)
+		return
+	}
+	r.ErrorApp(ginContext, apicode.InternalError)
 }
 
 // ErrorWithDetails 带详细信息的错误响应
@@ -231,6 +246,9 @@ func (r *Responder) Stream(ginContext *gin.Context, data []byte, contentType str
 
 // getHTTPStatus 根据业务状态码获取HTTP状态码
 func (r *Responder) getHTTPStatus(code int) int {
+	if status := apicode.HTTPStatus(code); status > 0 {
+		return status
+	}
 	switch {
 	case code >= 200 && code < 300:
 		return http.StatusOK
@@ -298,6 +316,16 @@ func Success(c *gin.Context, data interface{}) {
 // Error 错误响应
 func Error(c *gin.Context, code int, message string) {
 	defaultResponder.Error(c, code, message)
+}
+
+// ErrorApp 使用统一错误码响应。
+func ErrorApp(c *gin.Context, code apicode.Code) {
+	defaultResponder.ErrorApp(c, code)
+}
+
+// ErrorFrom 将统一业务错误转换为响应。
+func ErrorFrom(c *gin.Context, err error) {
+	defaultResponder.ErrorFrom(c, err)
 }
 
 // ErrorWithException 带异常的错误响应

@@ -3,6 +3,7 @@ package module
 import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type MessageTemplateModule struct {
@@ -57,20 +58,10 @@ func (m *MessageTemplateModule) Delete(id uint) error {
 
 // Upsert 创建或更新模板（根据code）
 func (m *MessageTemplateModule) Upsert(template *model.MessageTemplate) error {
-	var existing model.MessageTemplate
-	err := m.db.Where("code = ?", template.Code).First(&existing).Error
-	if err == gorm.ErrRecordNotFound {
-		return m.db.Create(template).Error
-	}
-	if err != nil {
-		return err
-	}
-	// 更新现有记录
-	return m.db.Model(&existing).Updates(map[string]interface{}{
-		"name":        template.Name,
-		"title":       template.Title,
-		"content":     template.Content,
-		"description": template.Description,
-		"variables":   template.Variables,
-	}).Error
+	return m.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "code"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"name", "title", "content", "description", "variables",
+		}),
+	}).Create(template).Error
 }

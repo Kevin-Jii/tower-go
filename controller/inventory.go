@@ -46,7 +46,7 @@ func (c *InventoryController) ListInventory(ctx *gin.Context) {
 
 	list, total, err := c.inventoryService.ListInventory(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (c *InventoryController) CreateOrder(ctx *gin.Context) {
 
 	order, err := c.inventoryService.CreateOrder(storeID, userID, &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func (c *InventoryController) ListOrders(ctx *gin.Context) {
 
 	list, total, err := c.inventoryService.ListOrders(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (c *InventoryController) ExportOrders(ctx *gin.Context) {
 
 	list, _, err := c.inventoryService.ListOrders(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -259,7 +259,7 @@ func (c *InventoryController) UpdateInventory(ctx *gin.Context) {
 	}
 
 	if err := c.inventoryService.UpdateInventory(id, req.Quantity); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

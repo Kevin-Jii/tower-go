@@ -1,10 +1,9 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/pkg/composite"
 )
 
@@ -113,14 +112,14 @@ func (s *MenuService) UpdateMenu(id uint, req *model.UpdateMenuReq) error {
 // checkCircularReference 检查是否会形成循环引用
 func (s *MenuService) checkCircularReference(menuID uint, parentID uint) error {
 	if menuID == parentID {
-		return errors.New("父级菜单不能是自己")
+		return apicode.Newf(apicode.Conflict, "父级菜单不能是自己")
 	}
 
 	// 向上查找，检查parentID的所有祖先节点
 	currentID := parentID
 	for currentID != 0 {
 		if currentID == menuID {
-			return errors.New("不能将菜单移动到自己的子菜单下")
+			return apicode.Newf(apicode.Conflict, "不能将菜单移动到自己的子菜单下")
 		}
 
 		menu, err := s.menuModule.GetByID(currentID)
@@ -141,7 +140,7 @@ func (s *MenuService) DeleteMenu(id uint) error {
 		return err
 	}
 	if len(children) > 0 {
-		return errors.New("存在子菜单，无法删除")
+		return apicode.Newf(apicode.ResourceInUse, "存在子菜单，无法删除")
 	}
 
 	// 删除菜单相关的权限关联

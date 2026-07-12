@@ -3,8 +3,8 @@ package module
 import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/utils/database"
-	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 	"github.com/Kevin-Jii/tower-go/utils/search"
+	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 
 	"gorm.io/gorm"
 )

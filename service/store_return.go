@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 type StoreReturnService struct {
@@ -63,7 +63,7 @@ func (s *StoreReturnService) Update(id, storeID, operatorID uint, req *model.Upd
 		return nil, err
 	}
 	if !s.IsReturnEditable(existing) {
-		return nil, fmt.Errorf("返厂记录仅允许在录入当天修改")
+		return nil, apicode.Newf(apicode.OrderStateConflict, "返厂记录仅允许在录入当天修改")
 	}
 	record, err := s.buildRecord(storeID, operatorID, hqUnbound, req.StoreID, req.ReturnDate, req.LogisticsFee, req.Remark, req.Items)
 	if err != nil {
@@ -91,12 +91,12 @@ func (s *StoreReturnService) buildRecord(
 		realStoreID = reqStoreID
 	}
 	if realStoreID == 0 {
-		return nil, fmt.Errorf("请选择门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 
 	parsedDate, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(returnDate), time.Local)
 	if err != nil {
-		return nil, fmt.Errorf("返厂日期格式应为 YYYY-MM-DD")
+		return nil, apicode.New(apicode.ReturnDateInvalid)
 	}
 
 	operatorName := ""
@@ -128,22 +128,22 @@ func (s *StoreReturnService) buildRecord(
 		if item.ProductID > 0 {
 			product := productMap[item.ProductID]
 			if product == nil {
-				return nil, fmt.Errorf("返厂商品不存在或不属于当前门店")
+				return nil, apicode.Newf(apicode.ProductNotFound, "返厂商品不存在或不属于当前门店")
 			}
 			if product.Status != 1 {
-				return nil, fmt.Errorf("返厂商品【%s】已停用", product.ProductName)
+				return nil, apicode.Newf(apicode.ValidationFailed, "返厂商品【%s】已停用", product.ProductName)
 			}
 			name = product.ProductName
 			deposit = product.Deposit
 		}
 		if name == "" {
-			return nil, fmt.Errorf("商品名称不能为空")
+			return nil, apicode.Newf(apicode.ValidationFailed, "商品名称不能为空")
 		}
 		if deposit < 0 {
-			return nil, fmt.Errorf("商品【%s】押金不能小于0", name)
+			return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】押金不能小于0", name)
 		}
 		if item.Quantity <= 0 {
-			return nil, fmt.Errorf("商品【%s】数量必须大于0", name)
+			return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】数量必须大于0", name)
 		}
 		items = append(items, model.StoreReturnItem{
 			ProductID:   item.ProductID,
@@ -175,21 +175,21 @@ func (s *StoreReturnService) List(ctx context.Context, req *model.ListStoreRetur
 
 func (s *StoreReturnService) Get(id, storeID uint, hqUnbound bool) (*model.StoreReturn, error) {
 	if !hqUnbound && storeID == 0 {
-		return nil, fmt.Errorf("current user has no store")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	return s.returnModule.GetByIDScoped(id, storeID, hqUnbound)
 }
 
 func (s *StoreReturnService) Delete(id, storeID uint, hqUnbound bool) error {
 	if !hqUnbound && storeID == 0 {
-		return fmt.Errorf("current user has no store")
+		return apicode.New(apicode.StoreRequired)
 	}
 	existing, err := s.returnModule.GetByIDScoped(id, storeID, hqUnbound)
 	if err != nil {
 		return err
 	}
 	if !s.IsReturnEditable(existing) {
-		return fmt.Errorf("返厂记录仅允许在录入当天删除")
+		return apicode.Newf(apicode.OrderStateConflict, "返厂记录仅允许在录入当天删除")
 	}
 	return s.returnModule.Delete(id, storeID, hqUnbound)
 }
@@ -240,11 +240,11 @@ func (s *StoreReturnService) buildProduct(storeID uint, hqUnbound bool, reqStore
 		realStoreID = reqStoreID
 	}
 	if realStoreID == 0 {
-		return nil, fmt.Errorf("请选择门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	name := strings.TrimSpace(productName)
 	if name == "" {
-		return nil, fmt.Errorf("商品名称不能为空")
+		return nil, apicode.Newf(apicode.ValidationFailed, "商品名称不能为空")
 	}
 	return &model.StoreReturnProduct{
 		StoreID:     realStoreID,
@@ -262,7 +262,7 @@ func (s *StoreReturnService) ListProducts(ctx context.Context, req *model.ListSt
 
 func (s *StoreReturnService) DeleteProduct(id, storeID uint, hqUnbound bool) error {
 	if !hqUnbound && storeID == 0 {
-		return fmt.Errorf("current user has no store")
+		return apicode.New(apicode.StoreRequired)
 	}
 	return s.returnModule.DeleteProduct(id, storeID, hqUnbound)
 }

@@ -28,7 +28,7 @@ func (c *InventoryLossController) CreateOrder(ctx *gin.Context) {
 
 	order, err := c.inventoryLossService.CreateOrder(storeID, userID, &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -49,7 +49,7 @@ func (c *InventoryLossController) ListOrders(ctx *gin.Context) {
 
 	list, total, err := c.inventoryLossService.ListOrders(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -78,7 +78,7 @@ func (c *InventoryLossController) ExportOrders(ctx *gin.Context) {
 
 	list, _, err := c.inventoryLossService.ListOrders(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (c *InventoryLossController) UpdateOrder(ctx *gin.Context) {
 	}
 	order, err := c.inventoryLossService.UpdateOrder(id, middleware.GetStoreID(ctx), &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -152,7 +152,7 @@ func (c *InventoryLossController) CancelOrder(ctx *gin.Context) {
 		return
 	}
 	if err := c.inventoryLossService.CancelOrder(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -172,7 +172,7 @@ func (c *InventoryLossController) ListMemberGiftRecords(ctx *gin.Context) {
 
 	list, total, err := c.inventoryLossService.ListMemberGiftRecords(memberID, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)

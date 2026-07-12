@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/pkg/datascope"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -12,6 +13,21 @@ import (
 
 type InventoryModule struct {
 	db *gorm.DB
+}
+
+func incrementInventoryQuantity(db *gorm.DB, storeID, productID uint, quantity float64, unit string) error {
+	inv := &model.Inventory{
+		StoreID:   storeID,
+		ProductID: productID,
+		Quantity:  quantity,
+		Unit:      unit,
+	}
+	return db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "store_id"}, {Name: "product_id"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"quantity": gorm.Expr("quantity + VALUES(quantity)"),
+		}),
+	}).Create(inv).Error
 }
 
 func NewInventoryModule(db *gorm.DB) *InventoryModule {
@@ -30,39 +46,26 @@ func (m *InventoryModule) GetByStoreAndProduct(storeID, productID uint) (*model.
 
 // AddQuantity 增加库存
 func (m *InventoryModule) AddQuantity(storeID, productID uint, quantity float64, unit string) error {
-	var inv model.Inventory
-	err := m.db.Where("store_id = ? AND product_id = ?", storeID, productID).First(&inv).Error
-
-	if err == gorm.ErrRecordNotFound {
-		inv = model.Inventory{
-			StoreID:   storeID,
-			ProductID: productID,
-			Quantity:  quantity,
-			Unit:      unit,
-		}
-		return m.db.Create(&inv).Error
-	}
-
-	if err != nil {
-		return err
-	}
-
-	return m.db.Model(&inv).Update("quantity", gorm.Expr("quantity + ?", quantity)).Error
+	return incrementInventoryQuantity(m.db, storeID, productID, quantity, unit)
 }
 
 // SubQuantity 减少库存
 func (m *InventoryModule) SubQuantity(storeID, productID uint, quantity float64) error {
+	res := m.db.Model(&model.Inventory{}).
+		Where("store_id = ? AND product_id = ? AND quantity >= ?", storeID, productID, quantity).
+		Update("quantity", gorm.Expr("quantity - ?", quantity))
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected > 0 {
+		return nil
+	}
+
 	var inv model.Inventory
-	err := m.db.Where("store_id = ? AND product_id = ?", storeID, productID).First(&inv).Error
-	if err != nil {
+	if err := m.db.Where("store_id = ? AND product_id = ?", storeID, productID).First(&inv).Error; err != nil {
 		return err
 	}
-
-	if inv.Quantity < quantity {
-		return fmt.Errorf("库存不足，当前库存: %.2f", inv.Quantity)
-	}
-
-	return m.db.Model(&inv).Update("quantity", gorm.Expr("quantity - ?", quantity)).Error
+	return apicode.Newf(apicode.InventoryInsufficient, "库存不足，当前库存: %.2f", inv.Quantity)
 }
 
 // UpdateQuantity 直接修改库存数量
@@ -135,14 +138,14 @@ func (m *InventoryModule) CreateOrderWithStockApply(order *model.InventoryOrder)
 					if name == "" {
 						name = fmt.Sprintf("商品ID:%d", item.ProductID)
 					}
-					return fmt.Errorf("商品【%s】不在库存中，无法出库", name)
+					return apicode.Newf(apicode.InventoryNotFound, "商品【%s】不在库存中，无法出库", name)
 				}
 				if inv.Quantity < item.Quantity {
 					name := item.ProductName
 					if name == "" {
 						name = fmt.Sprintf("商品ID:%d", item.ProductID)
 					}
-					return fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，出库数量: %.2f", name, inv.Quantity, item.Quantity)
+					return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，当前库存: %.2f，出库数量: %.2f", name, inv.Quantity, item.Quantity)
 				}
 			}
 		}
@@ -153,24 +156,7 @@ func (m *InventoryModule) CreateOrderWithStockApply(order *model.InventoryOrder)
 
 		for _, item := range order.Items {
 			if order.Type == model.InventoryTypeIn {
-				var inv model.Inventory
-				err := tx.Where("store_id = ? AND product_id = ?", order.StoreID, item.ProductID).First(&inv).Error
-				if err == gorm.ErrRecordNotFound {
-					inv = model.Inventory{
-						StoreID:   order.StoreID,
-						ProductID: item.ProductID,
-						Quantity:  item.Quantity,
-						Unit:      item.Unit,
-					}
-					if err := tx.Create(&inv).Error; err != nil {
-						return err
-					}
-					continue
-				}
-				if err != nil {
-					return err
-				}
-				if err := tx.Model(&inv).Update("quantity", gorm.Expr("quantity + ?", item.Quantity)).Error; err != nil {
+				if err := incrementInventoryQuantity(tx, order.StoreID, item.ProductID, item.Quantity, item.Unit); err != nil {
 					return err
 				}
 				continue
@@ -187,7 +173,7 @@ func (m *InventoryModule) CreateOrderWithStockApply(order *model.InventoryOrder)
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】库存不足，出库失败", name)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，出库失败", name)
 			}
 		}
 
@@ -228,7 +214,7 @@ func (m *InventoryModule) ListOrders(req *model.ListInventoryOrderReq) ([]*model
 		query = query.Where("order_no LIKE ?", "%"+req.OrderNo+"%")
 	}
 	if req.Date != "" {
-		query = query.Where("DATE(created_at) = ?", req.Date)
+		query = query.Where("created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY)", req.Date, req.Date)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

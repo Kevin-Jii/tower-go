@@ -1,6 +1,8 @@
 package module
 
 import (
+	"sort"
+
 	"github.com/Kevin-Jii/tower-go/model"
 
 	"gorm.io/gorm"
@@ -114,25 +116,38 @@ func (m *PrinterModule) UpdateOnlineStatus(sn string, online int) error {
 	return m.db.Model(&model.Printer{}).
 		Where("sn = ?", sn).
 		Updates(map[string]interface{}{
-			"online":          online,
+			"online":         online,
 			"last_heartbeat": gorm.Expr("NOW()"),
 		}).Error
 }
 
 // BatchUpdateOnlineStatus 批量更新打印机在线状态
 func (m *PrinterModule) BatchUpdateOnlineStatus(statuses map[string]int) error {
-	return m.db.Transaction(func(tx *gorm.DB) error {
-		for sn, online := range statuses {
-			if err := tx.Model(&model.Printer{}).
-				Where("sn = ?", sn).
-				Updates(map[string]interface{}{
-					"online":          online,
-					"last_heartbeat": gorm.Expr("NOW()"),
-				}).Error; err != nil {
-				return err
-			}
-		}
+	if len(statuses) == 0 {
 		return nil
+	}
+
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		sns := make([]string, 0, len(statuses))
+		for sn := range statuses {
+			sns = append(sns, sn)
+		}
+		sort.Strings(sns)
+
+		caseSQL := "CASE sn"
+		caseArgs := make([]interface{}, 0, len(sns)*2)
+		for _, sn := range sns {
+			caseSQL += " WHEN ? THEN ?"
+			caseArgs = append(caseArgs, sn, statuses[sn])
+		}
+		caseSQL += " END"
+
+		return tx.Model(&model.Printer{}).
+			Where("sn IN ?", sns).
+			Updates(map[string]interface{}{
+				"online":         gorm.Expr(caseSQL, caseArgs...),
+				"last_heartbeat": gorm.Expr("NOW()"),
+			}).Error
 	})
 }
 

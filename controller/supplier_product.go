@@ -45,7 +45,7 @@ func (c *SupplierProductController) CreateProduct(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.CreateProduct(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -66,7 +66,7 @@ func (c *SupplierProductController) GetProduct(ctx *gin.Context) {
 	}
 	product, err := c.productService.GetProduct(id)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, product)
@@ -91,7 +91,7 @@ func (c *SupplierProductController) ListProducts(ctx *gin.Context) {
 	}
 	products, err := c.productService.ListProducts(&req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, products)
@@ -120,7 +120,7 @@ func (c *SupplierProductController) UpdateProduct(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.UpdateProduct(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -143,7 +143,7 @@ func (c *SupplierProductController) DeleteProduct(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.DeleteProduct(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -167,7 +167,7 @@ func (c *SupplierProductController) CreateCategory(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.CreateCategory(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -189,7 +189,7 @@ func (c *SupplierProductController) ListCategories(ctx *gin.Context) {
 	}
 	categories, err := c.productService.ListCategories(supplierID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, categories)
@@ -218,7 +218,7 @@ func (c *SupplierProductController) UpdateCategory(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.UpdateCategory(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -241,7 +241,7 @@ func (c *SupplierProductController) DeleteCategory(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.DeleteCategory(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -265,7 +265,7 @@ func (c *SupplierProductController) CreateProductUnitSpec(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.CreateUnitSpec(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -290,7 +290,7 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 	if storeID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
 		invalid, err := c.storeSupplierService.ValidateStoreProducts(storeID, []uint{productID})
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		if len(invalid) > 0 {
@@ -300,7 +300,7 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 	}
 	specs, err := c.productService.ListUnitSpecs(productID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, specs)
@@ -325,7 +325,7 @@ func (c *SupplierProductController) BatchListProductUnitSpecs(ctx *gin.Context) 
 	if storeID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
 		invalid, err := c.storeSupplierService.ValidateStoreProducts(storeID, productIDs)
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		if len(invalid) > 0 {
@@ -336,7 +336,7 @@ func (c *SupplierProductController) BatchListProductUnitSpecs(ctx *gin.Context) 
 
 	specs, err := c.productService.ListUnitSpecsByProductIDs(productIDs)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, specs)
@@ -394,7 +394,7 @@ func (c *SupplierProductController) UpdateProductUnitSpec(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.UpdateUnitSpec(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -417,7 +417,7 @@ func (c *SupplierProductController) DeleteProductUnitSpec(ctx *gin.Context) {
 		return
 	}
 	if err := c.productService.DeleteUnitSpec(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -441,7 +441,7 @@ func (c *SupplierProductController) BatchUpsertProductUnitSpecs(ctx *gin.Context
 		return
 	}
 	if err := c.productService.BatchUpsertUnitSpecs(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)

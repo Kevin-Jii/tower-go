@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/pkg/statemachine"
 	"github.com/Kevin-Jii/tower-go/utils"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
@@ -82,7 +82,7 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 	if strings.TrimSpace(req.OrderDate) != "" {
 		parsedDate, err := time.Parse("2006-01-02", req.OrderDate)
 		if err != nil {
-			return nil, errors.New("invalid order date format")
+			return nil, apicode.New(apicode.InvalidDate)
 		}
 		orderDate = parsedDate
 	}
@@ -99,7 +99,7 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 		return nil, err
 	}
 	if len(unboundIDs) > 0 {
-		return nil, errors.New("some products are not bound to the store")
+		return nil, apicode.New(apicode.ProductNotBound)
 	}
 
 	products, err := s.productModule.GetByIDs(productIDs)
@@ -155,11 +155,13 @@ func (s *PurchaseOrderService) CreateOrder(storeID, userID uint, req *model.Crea
 			return nil, err
 		}
 	} else {
-		return nil, errors.New("no valid purchase items")
+		return nil, apicode.Newf(apicode.ValidationFailed, "no valid purchase items")
 	}
 
 	// 更新总金额
-	s.orderModule.GetDB().Model(&model.PurchaseOrder{}).Where("id = ?", order.ID).Update("total_amount", totalAmount)
+	if err := s.orderModule.GetDB().Model(&model.PurchaseOrder{}).Where("id = ?", order.ID).Update("total_amount", totalAmount).Error; err != nil {
+		return nil, err
+	}
 	order.TotalAmount = totalAmount
 
 	// 发布订单创建事件
@@ -185,10 +187,10 @@ func (s *PurchaseOrderService) GetOrderScoped(id, storeID uint, hqUnbound bool) 
 		return order, nil
 	}
 	if storeID == 0 {
-		return nil, errors.New("current user has no store")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	if order.StoreID != storeID {
-		return nil, errors.New("purchase order not found in current store")
+		return nil, apicode.New(apicode.OrderNotFound)
 	}
 	return order, nil
 }
@@ -208,14 +210,14 @@ func (s *PurchaseOrderService) ListOrders(ctx context.Context, req *model.ListPu
 func (s *PurchaseOrderService) UpdateOrder(id uint, req *model.UpdatePurchaseOrderReq) error {
 	order, err := s.orderModule.GetByID(id)
 	if err != nil {
-		return errors.New("order not found")
+		return apicode.New(apicode.OrderNotFound)
 	}
 
 	// 使用状态机验证状态转换
 	if req.Status != nil {
 		action := s.getActionForStatus(order.Status, *req.Status)
 		if action == "" {
-			return errors.New("invalid status transition")
+			return apicode.New(apicode.OrderStateConflict)
 		}
 
 		// 执行状态机转换（会触发钩子和事件）
@@ -253,7 +255,7 @@ func (s *PurchaseOrderService) getActionForStatus(currentStatus, newStatus int8)
 func (s *PurchaseOrderService) GetAvailableActions(id uint) ([]string, error) {
 	order, err := s.orderModule.GetByID(id)
 	if err != nil {
-		return nil, errors.New("order not found")
+		return nil, apicode.New(apicode.OrderNotFound)
 	}
 
 	actions := s.stateMachine.GetAvailableActions(statemachine.State(order.Status))
@@ -308,10 +310,10 @@ func (s *PurchaseOrderService) CancelOrderScoped(id, storeID uint, hqUnbound boo
 func (s *PurchaseOrderService) DeleteOrder(id uint) error {
 	order, err := s.orderModule.GetByID(id)
 	if err != nil {
-		return errors.New("order not found")
+		return apicode.New(apicode.OrderNotFound)
 	}
 	if order.Status != model.PurchaseStatusPending && order.Status != model.PurchaseStatusCancelled {
-		return errors.New("order cannot be deleted: only pending or cancelled orders can be deleted, current status is " + getStatusName(order.Status))
+		return apicode.Newf(apicode.OrderDeletionDenied, "订单仅允许删除待处理或已取消状态，当前状态为%s", getStatusName(order.Status))
 	}
 	return s.orderModule.Delete(id)
 }

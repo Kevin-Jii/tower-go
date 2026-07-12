@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 )
 
@@ -94,10 +94,10 @@ func (s *StoreExpenseService) buildRecord(storeID, operatorID uint, hqUnbound bo
 		realStoreID = reqStoreID
 	}
 	if realStoreID == 0 {
-		return nil, fmt.Errorf("请选择门店")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	if amount <= 0 {
-		return nil, fmt.Errorf("支出金额必须大于0")
+		return nil, apicode.Newf(apicode.ValidationFailed, "支出金额必须大于0")
 	}
 	categoryCode, categoryName, err := s.resolveCategory(categoryCode)
 	if err != nil {
@@ -127,14 +127,14 @@ func (s *StoreExpenseService) buildRecord(storeID, operatorID uint, hqUnbound bo
 func (s *StoreExpenseService) resolveCategory(code string) (string, string, error) {
 	code = strings.TrimSpace(code)
 	if code == "" {
-		return "", "", fmt.Errorf("请选择支出分类")
+		return "", "", apicode.Newf(apicode.ExpenseCategoryInvalid, "请选择支出分类")
 	}
 	if s.dictModule == nil {
 		return code, code, nil
 	}
 	data, err := s.dictModule.GetDataByTypeAndValue(model.StoreExpenseCategoryDictCode, code)
 	if err != nil || data == nil || data.Status != 1 {
-		return "", "", fmt.Errorf("支出分类不存在或已停用")
+		return "", "", apicode.New(apicode.ExpenseCategoryInvalid)
 	}
 	return data.Value, data.Label, nil
 }

@@ -1,10 +1,9 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils"
 )
 
@@ -26,7 +25,7 @@ func NewStoreSupplierService(
 // BindSuppliers 门店绑定供应商
 func (s *StoreSupplierService) BindSuppliers(storeID uint, supplierIDs []uint) error {
 	if storeID == 0 {
-		return errors.New("门店ID不能为空")
+		return apicode.New(apicode.StoreRequired)
 	}
 	if err := s.storeSupplierModule.BindSuppliers(storeID, supplierIDs); err != nil {
 		return err
@@ -44,7 +43,7 @@ func (s *StoreSupplierService) BindSuppliers(storeID uint, supplierIDs []uint) e
 // UnbindSuppliers 门店解绑供应商
 func (s *StoreSupplierService) UnbindSuppliers(storeID uint, supplierIDs []uint) error {
 	if storeID == 0 {
-		return errors.New("门店ID不能为空")
+		return apicode.New(apicode.StoreRequired)
 	}
 	return s.storeSupplierModule.UnbindSuppliers(storeID, supplierIDs)
 }

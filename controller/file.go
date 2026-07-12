@@ -115,7 +115,7 @@ func (c *FileController) UploadImage(ctx *gin.Context) {
 	imageType := ctx.PostForm("type")
 	storeID := ctx.PostForm("store_id")
 	baseFolder := ""
-	
+
 	switch imageType {
 	case "product":
 		baseFolder = "products"

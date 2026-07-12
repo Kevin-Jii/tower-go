@@ -41,7 +41,7 @@ func (c *StoreAccountController) Create(ctx *gin.Context) {
 
 	account, err := c.storeAccountService.Create(storeID, userID, &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (c *StoreAccountController) Get(ctx *gin.Context) {
 
 	account, err := c.storeAccountService.GetScoped(uint(id), middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 	list, total, err := c.storeAccountService.List(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -139,7 +139,7 @@ func (c *StoreAccountController) Export(ctx *gin.Context) {
 
 	list, _, err := c.storeAccountService.List(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 	}
 
 	if err := c.storeAccountService.UpdateScoped(uint(id), middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -239,7 +239,7 @@ func (c *StoreAccountController) BindConsumables(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeAccountService.BindConsumablesScoped(uint(id), middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -254,7 +254,7 @@ func (c *StoreAccountController) CreateConsumableProduct(ctx *gin.Context) {
 	}
 	product, err := c.storeAccountService.CreateConsumableProduct(storeID, &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, product)
@@ -273,7 +273,7 @@ func (c *StoreAccountController) ListConsumableProducts(ctx *gin.Context) {
 	}
 	list, total, err := c.storeAccountService.ListConsumableProducts(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -291,7 +291,7 @@ func (c *StoreAccountController) UpdateConsumableProduct(ctx *gin.Context) {
 	}
 	product, err := c.storeAccountService.UpdateConsumableProduct(id, middleware.GetStoreID(ctx), &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, product)
@@ -303,7 +303,7 @@ func (c *StoreAccountController) DeleteConsumableProduct(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeAccountService.DeleteConsumableProduct(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -326,7 +326,7 @@ func (c *StoreAccountController) Stats(ctx *gin.Context) {
 
 	stats, err := c.storeAccountService.GetStats(queryStoreID, startDate, endDate)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

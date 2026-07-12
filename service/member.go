@@ -1,12 +1,12 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 )
 
@@ -462,7 +462,7 @@ func (s *MemberService) CancelRechargeOrder(orderNo string, storeID uint, isAdmi
 func (s *MemberService) ListMemberConsumptions(memberID uint, startDate, endDate string, page, pageSize int, storeID uint, isAdmin bool) ([]model.MemberConsumptionRecord, int64, *model.MemberConsumptionSummary, error) {
 	member, err := s.module.GetMember(memberID, storeID, isAdmin)
 	if err != nil || member == nil {
-		return nil, 0, nil, errors.New("member not found")
+		return nil, 0, nil, apicode.New(apicode.MemberNotFound)
 	}
 
 	records, total, summary, err := s.module.ListMemberConsumptions(memberID, startDate, endDate, page, pageSize)

@@ -1,11 +1,11 @@
 package service
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 )
 
@@ -66,13 +66,13 @@ func (s *StatisticsService) GetChannelStats(storeID uint, period string) ([]mode
 // GetBusinessOverview 获取经营总览（按日期范围）
 func (s *StatisticsService) GetBusinessOverview(storeID uint, startDate, endDate string) (*model.BusinessOverviewStats, error) {
 	if startDate == "" || endDate == "" {
-		return nil, fmt.Errorf("start_date 和 end_date 不能为空")
+		return nil, apicode.Newf(apicode.MissingParameter, "start_date 和 end_date 不能为空")
 	}
 	if _, err := time.Parse("2006-01-02", startDate); err != nil {
-		return nil, fmt.Errorf("start_date 格式错误，应为 YYYY-MM-DD")
+		return nil, apicode.Newf(apicode.InvalidDate, "start_date 格式错误，应为 YYYY-MM-DD")
 	}
 	if _, err := time.Parse("2006-01-02", endDate); err != nil {
-		return nil, fmt.Errorf("end_date 格式错误，应为 YYYY-MM-DD")
+		return nil, apicode.Newf(apicode.InvalidDate, "end_date 格式错误，应为 YYYY-MM-DD")
 	}
 	return s.statisticsModule.GetBusinessOverview(storeID, startDate, endDate)
 }
@@ -80,19 +80,19 @@ func (s *StatisticsService) GetBusinessOverview(storeID uint, startDate, endDate
 // GetHomeChartsStats 获取首页图表数据（折线/扇形/雷达）
 func (s *StatisticsService) GetHomeChartsStats(storeID uint, startDate, endDate, granularity string) (*model.HomeChartsStats, error) {
 	if startDate == "" || endDate == "" {
-		return nil, fmt.Errorf("start_date 和 end_date 不能为空")
+		return nil, apicode.Newf(apicode.MissingParameter, "start_date 和 end_date 不能为空")
 	}
 	if _, err := time.Parse("2006-01-02", startDate); err != nil {
-		return nil, fmt.Errorf("start_date 格式错误，应为 YYYY-MM-DD")
+		return nil, apicode.Newf(apicode.InvalidDate, "start_date 格式错误，应为 YYYY-MM-DD")
 	}
 	if _, err := time.Parse("2006-01-02", endDate); err != nil {
-		return nil, fmt.Errorf("end_date 格式错误，应为 YYYY-MM-DD")
+		return nil, apicode.Newf(apicode.InvalidDate, "end_date 格式错误，应为 YYYY-MM-DD")
 	}
 	if granularity == "" {
 		granularity = "day"
 	}
 	if granularity != "day" && granularity != "month" {
-		return nil, fmt.Errorf("granularity 仅支持 day/month")
+		return nil, apicode.Newf(apicode.InvalidParameter, "granularity 仅支持 day/month")
 	}
 
 	line, err := s.statisticsModule.GetSalesTrendByGranularity(storeID, startDate, endDate, granularity)

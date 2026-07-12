@@ -1,10 +1,9 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 type DictService struct {
@@ -21,7 +20,7 @@ func NewDictService(dictModule *module.DictModule) *DictService {
 func (s *DictService) CreateType(req *model.CreateDictTypeReq) error {
 	// 检查编码是否已存在
 	if _, err := s.dictModule.GetTypeByCode(req.Code); err == nil {
-		return errors.New("字典类型编码已存在")
+		return apicode.New(apicode.DictTypeAlreadyExists)
 	}
 
 	dictType := &model.DictType{

@@ -1,7 +1,7 @@
 package apicode
 
 // Code 统一错误码（与 JSON 响应里的 code 字段一致）及默认中文文案。
-// 约定：2xxxx 成功/通用；4xxxx 客户端；5xxxx 服务端。
+// 约定：错误码使用 HTTP 状态码前三位 + 两位业务序号；例如 40101、40402、50001。
 type Code struct {
 	Num int
 	Msg string

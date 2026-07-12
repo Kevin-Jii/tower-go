@@ -23,7 +23,7 @@ func (c *ThirdPartyRouteController) List(ctx *gin.Context) {
 	}
 	rows, err := c.svc.List()
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, rows)
@@ -40,7 +40,7 @@ func (c *ThirdPartyRouteController) Create(ctx *gin.Context) {
 	}
 	row, err := c.svc.Create(&req)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, row)
@@ -60,7 +60,7 @@ func (c *ThirdPartyRouteController) Update(ctx *gin.Context) {
 		return
 	}
 	if err := c.svc.Update(id, &req); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, gin.H{"message": "updated"})
@@ -76,7 +76,7 @@ func (c *ThirdPartyRouteController) Delete(ctx *gin.Context) {
 		return
 	}
 	if err := c.svc.Delete(id); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, gin.H{"message": "deleted"})
@@ -97,7 +97,7 @@ func (c *ThirdPartyRouteController) ImportByDate(ctx *gin.Context) {
 	}
 	items, err := c.svc.ImportByDateRange(id, req.StartDate, req.EndDate)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, gin.H{
@@ -123,7 +123,7 @@ func (c *ThirdPartyRouteController) SaveLogisticsSheet(ctx *gin.Context) {
 	}
 	row, err := c.svc.SaveLogisticsSheet(id, &req)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, row)
@@ -140,7 +140,7 @@ func (c *ThirdPartyRouteController) ListLogisticsSheets(ctx *gin.Context) {
 	}
 	rows, err := c.svc.ListLogisticsSheets(id)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, rows)

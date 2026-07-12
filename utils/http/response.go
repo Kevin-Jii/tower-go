@@ -49,6 +49,21 @@ func ErrorApp(c *gin.Context, co apicode.Code) {
 	Error(c, co.Num, co.Msg)
 }
 
+// ErrorFrom 将 Service/Module 返回的统一业务错误转换为 API 响应。
+// 未包装的底层错误不会直接暴露给客户端，只返回统一内部错误提示。
+func ErrorFrom(c *gin.Context, err error) {
+	if err == nil {
+		ErrorApp(c, apicode.InternalError)
+		return
+	}
+	if code, ok := apicode.Resolve(err); ok {
+		ErrorApp(c, code)
+		return
+	}
+	logging.LogError("API Error", zap.Error(err))
+	ErrorApp(c, apicode.InternalError)
+}
+
 // Error 错误响应
 func Error(c *gin.Context, code int, message string) {
 	resp := Response{

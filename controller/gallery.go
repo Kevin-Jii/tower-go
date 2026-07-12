@@ -146,7 +146,7 @@ func (c *GalleryController) List(ctx *gin.Context) {
 
 	galleries, _, err := c.galleryService.List(&req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -175,7 +175,7 @@ func (c *GalleryController) Get(ctx *gin.Context) {
 
 	gallery, err := c.galleryService.Get(uint(id))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, gallery)
@@ -204,7 +204,7 @@ func (c *GalleryController) Update(ctx *gin.Context) {
 	}
 
 	if err := c.galleryService.Update(uint(id), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -231,7 +231,7 @@ func (c *GalleryController) Delete(ctx *gin.Context) {
 	}
 
 	if err := c.galleryService.Delete(uint(id)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -258,7 +258,7 @@ func (c *GalleryController) BatchDelete(ctx *gin.Context) {
 	}
 
 	if err := c.galleryService.BatchDelete(req.IDs); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)

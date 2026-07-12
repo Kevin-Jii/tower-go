@@ -41,7 +41,7 @@ func (c *DictController) CreateType(ctx *gin.Context) {
 	}
 
 	if err := c.dictService.CreateType(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -64,7 +64,7 @@ func (c *DictController) GetType(ctx *gin.Context) {
 
 	dictType, err := c.dictService.GetType(uint(id))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, dictType)
@@ -91,7 +91,7 @@ func (c *DictController) ListTypes(ctx *gin.Context) {
 
 	types, err := c.dictService.ListTypes(keyword, status)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, types)
@@ -125,7 +125,7 @@ func (c *DictController) UpdateType(ctx *gin.Context) {
 	}
 
 	if err := c.dictService.UpdateType(uint(id), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -152,7 +152,7 @@ func (c *DictController) DeleteType(ctx *gin.Context) {
 	}
 
 	if err := c.dictService.DeleteType(uint(id)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -181,7 +181,7 @@ func (c *DictController) CreateData(ctx *gin.Context) {
 	}
 
 	if err := c.dictService.CreateData(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -204,7 +204,7 @@ func (c *DictController) GetData(ctx *gin.Context) {
 
 	dictData, err := c.dictService.GetData(uint(id))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, dictData)
@@ -227,7 +227,7 @@ func (c *DictController) ListDataByType(ctx *gin.Context) {
 	if typeCode != "" {
 		dataList, err := c.dictService.ListDataByTypeCode(typeCode)
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.Success(ctx, dataList)
@@ -249,7 +249,7 @@ func (c *DictController) ListDataByType(ctx *gin.Context) {
 		}
 		dataList, err := c.dictService.ListDataByTypeID(uint(typeID), status)
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.Success(ctx, dataList)
@@ -287,7 +287,7 @@ func (c *DictController) UpdateData(ctx *gin.Context) {
 	}
 
 	if err := c.dictService.UpdateData(uint(id), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -314,7 +314,7 @@ func (c *DictController) DeleteData(ctx *gin.Context) {
 	}
 
 	if err := c.dictService.DeleteData(uint(id)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -331,7 +331,7 @@ func (c *DictController) DeleteData(ctx *gin.Context) {
 func (c *DictController) GetAllDict(ctx *gin.Context) {
 	result, err := c.dictService.GetAllDict()
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, result)

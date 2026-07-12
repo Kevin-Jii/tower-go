@@ -19,7 +19,7 @@ func NewMeituanAIController(svc *service.MeituanAIService) *MeituanAIController 
 func (c *MeituanAIController) ListAccounts(ctx *gin.Context) {
 	rows, err := c.svc.ListAccounts(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, rows)
@@ -32,7 +32,7 @@ func (c *MeituanAIController) CreateAccount(ctx *gin.Context) {
 	}
 	row, err := c.svc.CreateAccount(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, row)
@@ -48,7 +48,7 @@ func (c *MeituanAIController) UpdateAccount(ctx *gin.Context) {
 		return
 	}
 	if err := c.svc.UpdateAccount(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -62,7 +62,7 @@ func (c *MeituanAIController) Dashboard(ctx *gin.Context) {
 	}
 	stats, err := c.svc.Dashboard(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, stats)
@@ -79,7 +79,7 @@ func (c *MeituanAIController) ImportOrders(ctx *gin.Context) {
 	}
 	res, err := c.svc.ImportOrders(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, res)
@@ -98,7 +98,7 @@ func (c *MeituanAIController) SyncOrders(ctx *gin.Context) {
 	defer file.Close()
 	res, err := c.svc.SyncOrdersFromFile(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), header.Filename, file)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, res)
@@ -115,7 +115,7 @@ func (c *MeituanAIController) SyncOrdersFromOpenAPI(ctx *gin.Context) {
 	}
 	res, err := c.svc.SyncOrdersFromOpenAPI(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, res)
@@ -132,7 +132,7 @@ func (c *MeituanAIController) ImportReviews(ctx *gin.Context) {
 	}
 	res, err := c.svc.ImportReviews(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, res)
@@ -146,7 +146,7 @@ func (c *MeituanAIController) ListOrders(ctx *gin.Context) {
 	}
 	rows, total, err := c.svc.ListOrders(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, rows, total, req.Page, req.PageSize)
@@ -160,7 +160,7 @@ func (c *MeituanAIController) ListReviews(ctx *gin.Context) {
 	}
 	rows, total, err := c.svc.ListReviews(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, rows, total, req.Page, req.PageSize)
@@ -178,7 +178,7 @@ func (c *MeituanAIController) GenerateSuggestions(ctx *gin.Context) {
 	}
 	res, err := c.svc.GenerateSuggestions(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, res)
@@ -192,7 +192,7 @@ func (c *MeituanAIController) ListSuggestions(ctx *gin.Context) {
 	}
 	rows, total, err := c.svc.ListSuggestions(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, rows, total, req.Page, req.PageSize)
@@ -208,7 +208,7 @@ func (c *MeituanAIController) UpdateSuggestionStatus(ctx *gin.Context) {
 		return
 	}
 	if err := c.svc.UpdateSuggestionStatus(id, middleware.GetStoreID(ctx), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)

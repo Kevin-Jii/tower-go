@@ -2,14 +2,13 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 type ThirdPartyRouteService struct {
@@ -33,7 +32,7 @@ func (s *ThirdPartyRouteService) List() ([]*model.ThirdPartyRoute, error) {
 func (s *ThirdPartyRouteService) Create(req *model.UpsertThirdPartyRouteReq) (*model.ThirdPartyRoute, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		return nil, errors.New("路线名称不能为空")
+		return nil, apicode.Newf(apicode.MissingParameter, "路线名称不能为空")
 	}
 	row := &model.ThirdPartyRoute{
 		Name:   name,
@@ -220,7 +219,7 @@ func (s *ThirdPartyRouteService) ListLogisticsSheets(routeID uint) ([]map[string
 func (s *ThirdPartyRouteService) validateStores(storeIDs []uint) error {
 	for _, storeID := range storeIDs {
 		if _, err := s.storeModule.GetByID(storeID); err != nil {
-			return fmt.Errorf("门店不存在: %d", storeID)
+			return apicode.Newf(apicode.StoreNotFound, "门店不存在: %d", storeID)
 		}
 	}
 	return nil
@@ -271,14 +270,14 @@ func normalizeDateRange(startDate, endDate string) (time.Time, time.Time, error)
 	endDate = strings.TrimSpace(endDate)
 	start, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
-		return time.Time{}, time.Time{}, errors.New("开始日期格式必须为 YYYY-MM-DD")
+		return time.Time{}, time.Time{}, apicode.Newf(apicode.InvalidDate, "开始日期格式必须为 YYYY-MM-DD")
 	}
 	end, err := time.Parse("2006-01-02", endDate)
 	if err != nil {
-		return time.Time{}, time.Time{}, errors.New("结束日期格式必须为 YYYY-MM-DD")
+		return time.Time{}, time.Time{}, apicode.Newf(apicode.InvalidDate, "结束日期格式必须为 YYYY-MM-DD")
 	}
 	if end.Before(start) {
-		return time.Time{}, time.Time{}, errors.New("结束日期不能早于开始日期")
+		return time.Time{}, time.Time{}, apicode.Newf(apicode.InvalidDate, "结束日期不能早于开始日期")
 	}
 	return start, end, nil
 }

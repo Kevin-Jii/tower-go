@@ -39,7 +39,7 @@ func (c *AuditLogController) List(ctx *gin.Context) {
 
 	rows, total, err := c.service.List(req, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, rows, total, req.Page, req.PageSize)
@@ -57,7 +57,7 @@ func (c *AuditLogController) Get(ctx *gin.Context) {
 			http.Error(ctx, 403, err.Error())
 			return
 		}
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, row)

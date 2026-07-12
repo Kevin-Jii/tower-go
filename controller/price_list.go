@@ -44,7 +44,7 @@ func (c *PriceListController) CreatePriceList(ctx *gin.Context) {
 	fmt.Printf("==============================\n\n")
 
 	if err := c.priceListService.CreatePriceList(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -75,7 +75,7 @@ func (c *PriceListController) UpdatePriceList(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.UpdatePriceList(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (c *PriceListController) DeletePriceList(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.DeletePriceList(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (c *PriceListController) ListPriceLists(ctx *gin.Context) {
 
 	priceLists, err := c.priceListService.ListPriceLists(storeID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -192,7 +192,7 @@ func (c *PriceListController) CreateCategory(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.CreateCategory(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -223,7 +223,7 @@ func (c *PriceListController) UpdateCategory(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.UpdateCategory(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -248,7 +248,7 @@ func (c *PriceListController) DeleteCategory(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.DeleteCategory(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -275,7 +275,7 @@ func (c *PriceListController) AddItem(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.AddItem(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -306,7 +306,7 @@ func (c *PriceListController) UpdateItem(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.UpdateItem(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -331,7 +331,7 @@ func (c *PriceListController) DeleteItem(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.DeleteItem(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -356,7 +356,7 @@ func (c *PriceListController) BatchAddItems(ctx *gin.Context) {
 	}
 
 	if err := c.priceListService.BatchAddItems(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

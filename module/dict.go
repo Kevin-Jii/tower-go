@@ -63,9 +63,12 @@ func (m *DictModule) UpdateType(id uint, updates map[string]interface{}) error {
 
 // DeleteType 删除字典类型
 func (m *DictModule) DeleteType(id uint) error {
-	// 先删除关联的字典数据
-	m.db.Where("type_id = ?", id).Delete(&model.DictData{})
-	return m.db.Delete(&model.DictType{}, id).Error
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("type_id = ?", id).Delete(&model.DictData{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.DictType{}, id).Error
+	})
 }
 
 // ========== 字典数据 ==========

@@ -65,7 +65,7 @@ func (c *PrinterController) BindPrinter(ctx *gin.Context) {
 
 	if err := c.printerService.BindPrinter(&req); err != nil {
 		fmt.Printf("❌ 绑定失败: %v\n\n", err)
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -94,7 +94,7 @@ func (c *PrinterController) UnbindPrinter(ctx *gin.Context) {
 	}
 
 	if err := c.printerService.UnbindPrinter(id); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (c *PrinterController) UpdatePrinter(ctx *gin.Context) {
 	}
 
 	if err := c.printerService.UpdatePrinter(id, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -153,7 +153,7 @@ func (c *PrinterController) GetPrinter(ctx *gin.Context) {
 
 	resp, err := c.printerService.GetPrinterWithStatus(id)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -178,7 +178,7 @@ func (c *PrinterController) ListPrinters(ctx *gin.Context) {
 
 	printers, err := c.printerService.ListPrintersByStore(storeID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (c *PrinterController) ListAllPrinters(ctx *gin.Context) {
 
 	printers, total, err := c.printerService.ListAllPrinters()
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -253,7 +253,7 @@ func (c *PrinterController) QueryPrinterStatus(ctx *gin.Context) {
 
 	status, err := c.printerService.QueryPrinterStatus(sn)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -282,7 +282,7 @@ func (c *PrinterController) BatchQueryStatus(ctx *gin.Context) {
 
 	statuses, err := c.printerService.BatchQueryStatus(storeID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -328,7 +328,7 @@ func (c *PrinterController) TestPrint(ctx *gin.Context) {
 	orderId, err := c.printerService.TestPrint(id, req.Content, req.Copies)
 	if err != nil {
 		fmt.Printf("❌ 打印失败: %v\n", err)
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -376,7 +376,7 @@ func (c *PrinterController) PrintPurchaseOrder(ctx *gin.Context) {
 	orderId, err := c.printerService.PrintPurchaseOrder(id, req.OrderID)
 	if err != nil {
 		fmt.Printf("❌ 打印失败: %v\n\n", err)
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

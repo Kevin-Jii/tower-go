@@ -1,11 +1,11 @@
 package module
 
 import (
-	"errors"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ThirdPartyRouteModule struct {
@@ -68,22 +68,13 @@ func (m *ThirdPartyRouteModule) ReplaceStores(routeID uint, storeIDs []uint) err
 }
 
 func (m *ThirdPartyRouteModule) SaveLogisticsSheet(row *model.ThirdPartyLogisticsSheet) error {
-	var existing model.ThirdPartyLogisticsSheet
-	err := m.db.Where("route_id = ? AND start_date = ? AND end_date = ?", row.RouteID, row.StartDate, row.EndDate).
-		First(&existing).Error
-	if err == nil {
-		return m.db.Model(&existing).Updates(map[string]interface{}{
-			"sheet_date":    row.SheetDate,
-			"headers_json":  row.HeadersJSON,
-			"rows_json":     row.RowsJSON,
-			"products_json": row.ProductsJSON,
-			"updated_at":    time.Now(),
-		}).Error
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-	return m.db.Create(row).Error
+	row.UpdatedAt = time.Now()
+	return m.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "route_id"}, {Name: "start_date"}, {Name: "end_date"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"sheet_date", "headers_json", "rows_json", "products_json", "updated_at",
+		}),
+	}).Create(row).Error
 }
 
 // GetLogisticsSheet 按路线 + 导入日期区间取单条（用于保存后回读）

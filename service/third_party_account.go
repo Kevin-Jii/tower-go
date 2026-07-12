@@ -395,11 +395,11 @@ func (s *ThirdPartyAccountService) SyncLatestOrders(id uint) (map[string]interfa
 		"last_sync_count": len(rows),
 	})
 	return map[string]interface{}{
-		"synced_count": len(rows),
-		"latest_date":  latestDate,
-		"place_time_up": placeTimeUp,
+		"synced_count":   len(rows),
+		"latest_date":    latestDate,
+		"place_time_up":  placeTimeUp,
 		"place_time_end": placeTimeEnd,
-		"message":      msg,
+		"message":        msg,
 	}, nil
 }
 

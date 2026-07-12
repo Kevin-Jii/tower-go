@@ -32,7 +32,7 @@ func (c *MessageTemplateController) List(ctx *gin.Context) {
 
 	templates, err := c.svc.List()
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (c *MessageTemplateController) Create(ctx *gin.Context) {
 
 	template, err := c.svc.Create(&req)
 	if err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (c *MessageTemplateController) Update(ctx *gin.Context) {
 	}
 
 	if err := c.svc.Update(id, &req); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -150,7 +150,7 @@ func (c *MessageTemplateController) Delete(ctx *gin.Context) {
 	}
 
 	if err := c.svc.Delete(id); err != nil {
-		httpPkg.Error(ctx, 500, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 

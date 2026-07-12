@@ -31,7 +31,7 @@ func (c *StatisticsController) Dashboard(ctx *gin.Context) {
 
 	stats, err := c.statisticsService.GetDashboard(queryStoreID, period)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func (c *StatisticsController) InventoryStats(ctx *gin.Context) {
 	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	stats, err := c.statisticsService.GetInventoryStats(queryStoreID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (c *StatisticsController) SalesStats(ctx *gin.Context) {
 
 	stats, err := c.statisticsService.GetSalesStats(queryStoreID, period)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -94,7 +94,7 @@ func (c *StatisticsController) SalesTrend(ctx *gin.Context) {
 
 	trend, err := c.statisticsService.GetSalesTrend(queryStoreID, period)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (c *StatisticsController) ChannelStats(ctx *gin.Context) {
 
 	stats, err := c.statisticsService.GetChannelStats(queryStoreID, period)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

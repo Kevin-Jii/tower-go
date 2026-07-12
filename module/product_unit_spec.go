@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductUnitSpecModule struct {
@@ -28,19 +29,15 @@ func (m *ProductUnitSpecModule) GetByProductAndUnit(productID uint, unit string)
 		return nil, err
 	}
 
-	var count int64
-	if err := m.db.Model(&model.ProductUnitSpec{}).
-		Where("product_id = ? AND is_enabled = 1 AND unit_code = ?", productID, u).
-		Count(&count).Error; err != nil {
+	var specs []model.ProductUnitSpec
+	if err := m.db.Where("product_id = ? AND is_enabled = 1 AND unit_code = ?", productID, u).
+		Order("id ASC").Limit(2).Find(&specs).Error; err != nil {
 		return nil, err
 	}
-	if count != 1 {
+	if len(specs) != 1 {
 		return nil, gorm.ErrRecordNotFound
 	}
-	if err := m.db.Where("product_id = ? AND is_enabled = 1 AND unit_code = ?", productID, u).
-		First(&spec).Error; err != nil {
-		return nil, err
-	}
+	spec = specs[0]
 	return &spec, nil
 }
 
@@ -96,19 +93,10 @@ func (m *ProductUnitSpecModule) DeleteByID(id uint) error {
 }
 
 func (m *ProductUnitSpecModule) UpsertByProductAndUnit(spec *model.ProductUnitSpec) error {
-	var existing model.ProductUnitSpec
-	err := m.db.Where("product_id = ? AND unit_code = ? AND unit_name = ?", spec.ProductID, spec.UnitCode, spec.UnitName).First(&existing).Error
-	if err == nil {
-		return m.db.Model(&existing).Updates(map[string]interface{}{
-			"factor_to_base": spec.FactorToBase,
-			"precision":      spec.Precision,
-			"cost_price":     spec.CostPrice,
-			"sale_price":     spec.SalePrice,
-			"is_enabled":     spec.IsEnabled,
-		}).Error
-	}
-	if err != nil && err != gorm.ErrRecordNotFound {
-		return err
-	}
-	return m.db.Create(spec).Error
+	return m.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "product_id"}, {Name: "unit_code"}, {Name: "unit_name"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"factor_to_base", "precision", "cost_price", "sale_price", "is_enabled",
+		}),
+	}).Create(spec).Error
 }

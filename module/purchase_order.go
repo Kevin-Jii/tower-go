@@ -59,7 +59,7 @@ func (m *PurchaseOrderModule) List(req *model.ListPurchaseOrderReq) ([]*model.Pu
 		query = query.Where("purchase_orders.status = ?", *req.Status)
 	}
 	if req.Date != "" {
-		query = query.Where("DATE(purchase_orders.order_date) = ?", req.Date)
+		query = query.Where("purchase_orders.order_date >= ? AND purchase_orders.order_date < DATE_ADD(?, INTERVAL 1 DAY)", req.Date, req.Date)
 	}
 
 	// 如果指定了供应商，需要关联查询
@@ -100,10 +100,12 @@ func (m *PurchaseOrderModule) UpdateByID(id uint, req *model.UpdatePurchaseOrder
 }
 
 func (m *PurchaseOrderModule) Delete(id uint) error {
-	// 先删除明细
-	m.db.Where("order_id = ?", id).Delete(&model.PurchaseOrderItem{})
-	// 再删除主单
-	return m.db.Delete(&model.PurchaseOrder{}, id).Error
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("order_id = ?", id).Delete(&model.PurchaseOrderItem{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.PurchaseOrder{}, id).Error
+	})
 }
 
 // CreateItems 批量创建采购单明细

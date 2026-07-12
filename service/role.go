@@ -1,14 +1,13 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 // ErrBuiltinRoleNotDeletable 尝试删除系统内置角色（super_admin / admin / store_admin / staff）
-var ErrBuiltinRoleNotDeletable = errors.New("builtin role not deletable")
+var ErrBuiltinRoleNotDeletable = apicode.New(apicode.BuiltinRoleNotDeletable)
 
 // CreateRole 创建角色
 func CreateRole(req *model.Role) (*model.Role, error) {

@@ -77,7 +77,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 
 	// 使用当前登录用户的门店ID（从Token获取）
 	if err := c.userService.CreateUser(storeID, roleCode, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 		user, err = c.userService.GetUserByStoreID(uint(id), storeID)
 	}
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -159,7 +159,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		filterStore := parseFilterStore()
 		users, total, err = c.userService.ListAllUsers(keyword, filterStore, page, pageSize)
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.SuccessWithPagination(ctx, users, total, page, pageSize)
@@ -178,7 +178,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 		users, total, err = c.userService.ListUsersByStoreID(storeIDCtx, page, pageSize)
 	}
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -211,7 +211,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 
 	if middleware.HQUnboundAdmin(ctx) {
 		if err := c.userService.UpdateUser(uint(id), &req); err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.Success(ctx, nil)
@@ -226,7 +226,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	req.StoreID = nil
 	req.StoreCode = ""
 	if err := c.userService.UpdateUserByStoreID(uint(id), storeID, &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -257,7 +257,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 	// 未绑定门店的总部 admin / super_admin：可删除任意用户
 	if middleware.HQUnboundAdmin(ctx) {
 		if err := c.userService.DeleteUser(uint(id)); err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		http.Success(ctx, nil)
@@ -270,7 +270,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 		return
 	}
 	if err := c.userService.DeleteUserByStoreID(uint(id), storeID); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -316,7 +316,7 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 	}
 
 	if err := c.userService.ResetPassword(uint(id), tempPassword); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -345,7 +345,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 
 	// 注册时默认不分配门店（由管理员后续分配）
 	if err := c.userService.CreateUser(0, "", &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -376,7 +376,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 
 	resp, err := c.buildLoginResponse(ctx, user)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -396,7 +396,7 @@ func (c *UserController) WechatLogin(ctx *gin.Context) {
 	}
 	resp, err := c.buildLoginResponse(ctx, user)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, resp)
@@ -414,7 +414,7 @@ func (c *UserController) BindWechat(ctx *gin.Context) {
 		return
 	}
 	if err := c.userService.BindWechatCode(userID, req.Code); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -542,7 +542,7 @@ func (c *UserController) AssignUserRole(ctx *gin.Context) {
 	}
 	if middleware.HQUnboundAdmin(ctx) {
 		if err := c.userService.UpdateUser(req.UserID, updateReq); err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 	} else {
@@ -552,7 +552,7 @@ func (c *UserController) AssignUserRole(ctx *gin.Context) {
 			return
 		}
 		if err := c.userService.UpdateUserByStoreID(req.UserID, storeID, updateReq); err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 	}
@@ -562,7 +562,7 @@ func (c *UserController) AssignUserRole(ctx *gin.Context) {
 		user, err = c.userService.GetUserByStoreID(req.UserID, middleware.GetStoreID(ctx))
 	}
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -593,7 +593,7 @@ func (c *UserController) GetProfile(ctx *gin.Context) {
 	userID, _ := ctx.Get("userID")
 	user, err := c.userService.GetUser(userID.(uint))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -620,7 +620,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 	}
 
 	if err := c.userService.UpdateProfile(userID.(uint), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

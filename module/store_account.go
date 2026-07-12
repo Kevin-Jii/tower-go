@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/pkg/datascope"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -59,14 +60,14 @@ func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount,
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】库存不存在，无法出库", name)
+				return apicode.Newf(apicode.InventoryNotFound, "商品【%s】库存不存在，无法出库", name)
 			}
 			if inv.Quantity < item.Quantity {
 				name := item.ProductName
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】库存不足，当前库存: %.2f，需出库: %.2f", name, inv.Quantity, item.Quantity)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，当前库存: %.2f，需出库: %.2f", name, inv.Quantity, item.Quantity)
 			}
 		}
 
@@ -92,7 +93,7 @@ func (m *StoreAccountModule) CreateWithInventoryOut(account *model.StoreAccount,
 				if name == "" {
 					name = fmt.Sprintf("商品ID:%d", item.ProductID)
 				}
-				return fmt.Errorf("商品【%s】库存不足，出库失败", name)
+				return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，出库失败", name)
 			}
 		}
 
@@ -196,9 +197,11 @@ func (m *StoreAccountModule) GenerateAccountNo() string {
 
 // GetStatsByDateRange 按日期范围统计
 func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDate string) (float64, float64, int64, error) {
-	var totalAmount float64
 	var netIncomeAmount float64
-	var count int64
+	var summary struct {
+		TotalAmount float64
+		Count       int64
+	}
 
 	query := m.db.Model(&model.StoreAccount{})
 	if storeID > 0 {
@@ -211,11 +214,7 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		query = query.Where("account_date <= ?", endDate)
 	}
 
-	if err := query.Count(&count).Error; err != nil {
-		return 0, 0, 0, err
-	}
-
-	if err := query.Select("COALESCE(SUM(total_amount - COALESCE(round_amount, 0)), 0)").Scan(&totalAmount).Error; err != nil {
+	if err := query.Select("COALESCE(SUM(total_amount - COALESCE(round_amount, 0)), 0) AS total_amount, COUNT(*) AS count").Scan(&summary).Error; err != nil {
 		return 0, 0, 0, err
 	}
 
@@ -241,7 +240,7 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		return 0, 0, 0, err
 	}
 
-	return totalAmount, netIncomeAmount, count, nil
+	return summary.TotalAmount, netIncomeAmount, summary.Count, nil
 }
 
 func (m *StoreAccountModule) ReplaceConsumables(accountID uint, consumables []model.StoreAccountConsumable) error {

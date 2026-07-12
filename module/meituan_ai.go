@@ -12,6 +12,8 @@ type MeituanAIModule struct {
 	db *gorm.DB
 }
 
+const meituanImportBatchSize = 100
+
 func NewMeituanAIModule(db *gorm.DB) *MeituanAIModule {
 	return &MeituanAIModule{db: db}
 }
@@ -62,15 +64,15 @@ func (m *MeituanAIModule) UpsertOrders(account *model.MeituanAIOperatorAccount, 
 			orders[i].StoreID = account.StoreID
 			orders[i].AccountID = account.ID
 			orders[i].ImportedAt = now
-			if err := tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "account_id"}, {Name: "order_no"}},
-				DoUpdates: clause.AssignmentColumns([]string{
-					"order_time", "customer_name", "product_summary", "original_amount", "actual_amount",
-					"delivery_fee", "platform_fee", "refund_amount", "status", "raw_json", "imported_at", "updated_at",
-				}),
-			}).Create(&orders[i]).Error; err != nil {
-				return err
-			}
+		}
+		if err := tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "account_id"}, {Name: "order_no"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"order_time", "customer_name", "product_summary", "original_amount", "actual_amount",
+				"delivery_fee", "platform_fee", "refund_amount", "status", "raw_json", "imported_at", "updated_at",
+			}),
+		}).CreateInBatches(orders, meituanImportBatchSize).Error; err != nil {
+			return err
 		}
 		return tx.Model(&model.MeituanAIOperatorAccount{}).Where("id = ?", account.ID).Updates(map[string]interface{}{
 			"last_imported_at": now,
@@ -88,14 +90,14 @@ func (m *MeituanAIModule) UpsertReviews(account *model.MeituanAIOperatorAccount,
 			reviews[i].StoreID = account.StoreID
 			reviews[i].AccountID = account.ID
 			reviews[i].ImportedAt = now
-			if err := tx.Clauses(clause.OnConflict{
-				Columns: []clause.Column{{Name: "account_id"}, {Name: "review_id"}},
-				DoUpdates: clause.AssignmentColumns([]string{
-					"order_no", "rating", "content", "sentiment", "tags", "suggested_reply", "review_time", "reply_status", "imported_at", "updated_at",
-				}),
-			}).Create(&reviews[i]).Error; err != nil {
-				return err
-			}
+		}
+		if err := tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "account_id"}, {Name: "review_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"order_no", "rating", "content", "sentiment", "tags", "suggested_reply", "review_time", "reply_status", "imported_at", "updated_at",
+			}),
+		}).CreateInBatches(reviews, meituanImportBatchSize).Error; err != nil {
+			return err
 		}
 		return tx.Model(&model.MeituanAIOperatorAccount{}).Where("id = ?", account.ID).Updates(map[string]interface{}{
 			"last_imported_at": now,
@@ -212,13 +214,20 @@ func (m *MeituanAIModule) Dashboard(storeID, accountID uint, startDate, endDate 
 	if endDate != "" {
 		orders = orders.Where("order_time <= ?", endDate+" 23:59:59")
 	}
-	if err := orders.Count(&stats.OrderCount).Error; err != nil {
+	var orderSummary struct {
+		OrderCount   int64
+		SalesAmount  float64
+		RefundAmount float64
+		PlatformFee  float64
+	}
+	if err := orders.Select("COUNT(*) AS order_count, COALESCE(SUM(actual_amount), 0) AS sales_amount, COALESCE(SUM(refund_amount), 0) AS refund_amount, COALESCE(SUM(platform_fee), 0) AS platform_fee").
+		Scan(&orderSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := orders.Select("COALESCE(SUM(actual_amount),0), COALESCE(SUM(refund_amount),0), COALESCE(SUM(platform_fee),0)").
-		Row().Scan(&stats.SalesAmount, &stats.RefundAmount, &stats.PlatformFee); err != nil {
-		return nil, err
-	}
+	stats.OrderCount = orderSummary.OrderCount
+	stats.SalesAmount = orderSummary.SalesAmount
+	stats.RefundAmount = orderSummary.RefundAmount
+	stats.PlatformFee = orderSummary.PlatformFee
 	if stats.OrderCount > 0 {
 		stats.AvgOrderAmount = stats.SalesAmount / float64(stats.OrderCount)
 	}
@@ -233,12 +242,16 @@ func (m *MeituanAIModule) Dashboard(storeID, accountID uint, startDate, endDate 
 	if endDate != "" {
 		reviews = reviews.Where("review_time <= ?", endDate+" 23:59:59")
 	}
-	if err := reviews.Count(&stats.ReviewCount).Error; err != nil {
+	var reviewSummary struct {
+		ReviewCount   int64
+		NegativeCount int64
+	}
+	if err := reviews.Select("COUNT(*) AS review_count, COALESCE(SUM(CASE WHEN rating <= 3 OR sentiment = ? THEN 1 ELSE 0 END), 0) AS negative_count", "negative").
+		Scan(&reviewSummary).Error; err != nil {
 		return nil, err
 	}
-	if err := reviews.Where("rating <= 3 OR sentiment = ?", "negative").Count(&stats.NegativeCount).Error; err != nil {
-		return nil, err
-	}
+	stats.ReviewCount = reviewSummary.ReviewCount
+	stats.NegativeCount = reviewSummary.NegativeCount
 	if stats.ReviewCount > 0 {
 		stats.NegativeRate = float64(stats.NegativeCount) / float64(stats.ReviewCount) * 100
 	}

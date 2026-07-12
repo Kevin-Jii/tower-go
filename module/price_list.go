@@ -158,14 +158,25 @@ func (m *PriceListModule) GetPriceListWithDetails(id uint) (*model.PriceList, []
 		return nil, nil, nil, err
 	}
 
-	// 获取所有商品并按分类分组
-	itemsByCategory := make(map[uint][]*model.PriceListItem)
+	// 一次获取所有商品，再按分类分组，避免分类数量增加时产生 N+1 查询。
+	itemsByCategory := make(map[uint][]*model.PriceListItem, len(categories))
+	categoryIDs := make([]uint, 0, len(categories))
 	for _, category := range categories {
-		items, err := m.ListItemsByCategory(category.ID)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		itemsByCategory[category.ID] = items
+		itemsByCategory[category.ID] = make([]*model.PriceListItem, 0)
+		categoryIDs = append(categoryIDs, category.ID)
+	}
+	if len(categoryIDs) == 0 {
+		return priceList, categories, itemsByCategory, nil
+	}
+
+	var items []*model.PriceListItem
+	if err := m.db.Preload("Product").Preload("Product.Supplier").
+		Where("category_id IN ?", categoryIDs).
+		Order("category_id ASC, sort ASC, id ASC").Find(&items).Error; err != nil {
+		return nil, nil, nil, err
+	}
+	for _, item := range items {
+		itemsByCategory[item.CategoryID] = append(itemsByCategory[item.CategoryID], item)
 	}
 
 	return priceList, categories, itemsByCategory, nil

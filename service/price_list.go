@@ -1,10 +1,9 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
 )
 
@@ -29,12 +28,14 @@ func (s *PriceListService) CreatePriceList(req *model.CreatePriceListReq) error 
 	// 验证门店存在
 	_, err := s.storeModule.GetByID(req.StoreID)
 	if err != nil {
-		return errors.New("store not found")
+		return apicode.New(apicode.StoreNotFound)
 	}
 
 	// 如果设置为默认，先清除其他默认标记
 	if req.IsDefault == 1 {
-		s.priceListModule.ClearDefaultPriceList(req.StoreID)
+		if err := s.priceListModule.ClearDefaultPriceList(req.StoreID); err != nil {
+			return err
+		}
 	}
 
 	priceList := &model.PriceList{
@@ -53,12 +54,14 @@ func (s *PriceListService) CreatePriceList(req *model.CreatePriceListReq) error 
 func (s *PriceListService) UpdatePriceList(id uint, req *model.UpdatePriceListReq) error {
 	priceList, err := s.priceListModule.GetPriceListByID(id)
 	if err != nil {
-		return errors.New("price list not found")
+		return apicode.New(apicode.PriceListNotFound)
 	}
 
 	// 如果设置为默认，先清除其他默认标记
 	if req.IsDefault != nil && *req.IsDefault == 1 {
-		s.priceListModule.ClearDefaultPriceList(priceList.StoreID)
+		if err := s.priceListModule.ClearDefaultPriceList(priceList.StoreID); err != nil {
+			return err
+		}
 	}
 
 	updates := updatesPkg.BuildUpdatesFromReq(req)
@@ -124,7 +127,7 @@ func (s *PriceListService) CreateCategory(req *model.CreatePriceListCategoryReq)
 	// 验证价目单存在
 	_, err := s.priceListModule.GetPriceListByID(req.PriceListID)
 	if err != nil {
-		return errors.New("price list not found")
+		return apicode.New(apicode.PriceListNotFound)
 	}
 
 	category := &model.PriceListCategory{
@@ -141,7 +144,7 @@ func (s *PriceListService) CreateCategory(req *model.CreatePriceListCategoryReq)
 func (s *PriceListService) UpdateCategory(id uint, req *model.UpdatePriceListCategoryReq) error {
 	_, err := s.priceListModule.GetCategoryByID(id)
 	if err != nil {
-		return errors.New("category not found")
+		return apicode.New(apicode.CategoryNotFound)
 	}
 
 	updates := updatesPkg.BuildUpdatesFromReq(req)
@@ -164,13 +167,13 @@ func (s *PriceListService) AddItem(req *model.AddPriceListItemReq) error {
 	// 验证分类存在
 	_, err := s.priceListModule.GetCategoryByID(req.CategoryID)
 	if err != nil {
-		return errors.New("category not found")
+		return apicode.New(apicode.CategoryNotFound)
 	}
 
 	// 验证商品存在
 	product, err := s.supplierProductModule.GetByID(req.ProductID)
 	if err != nil {
-		return errors.New("product not found")
+		return apicode.New(apicode.ProductNotFound)
 	}
 
 	// 如果没有指定显示名称，使用商品名称
@@ -203,7 +206,7 @@ func (s *PriceListService) AddItem(req *model.AddPriceListItemReq) error {
 func (s *PriceListService) UpdateItem(id uint, req *model.UpdatePriceListItemReq) error {
 	_, err := s.priceListModule.GetItemByID(id)
 	if err != nil {
-		return errors.New("item not found")
+		return apicode.New(apicode.ItemNotFound)
 	}
 
 	updates := updatesPkg.BuildUpdatesFromReq(req)
@@ -224,7 +227,7 @@ func (s *PriceListService) BatchAddItems(req *model.BatchAddPriceListItemsReq) e
 	// 验证分类存在
 	_, err := s.priceListModule.GetCategoryByID(req.CategoryID)
 	if err != nil {
-		return errors.New("category not found")
+		return apicode.New(apicode.CategoryNotFound)
 	}
 
 	// 批量查出商品信息
@@ -234,7 +237,7 @@ func (s *PriceListService) BatchAddItems(req *model.BatchAddPriceListItemsReq) e
 	}
 	products, err := s.supplierProductModule.GetByIDs(productIDs)
 	if err != nil {
-		return errors.New("failed to query products")
+		return apicode.Wrap(apicode.InternalError, err)
 	}
 
 	// 构建商品 ID -> 商品 的 map

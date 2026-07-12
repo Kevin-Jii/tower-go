@@ -58,7 +58,7 @@ func (c *MenuController) CreateMenu(ctx *gin.Context) {
 	}
 
 	if err := c.menuService.CreateMenu(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (c *MenuController) GetMenu(ctx *gin.Context) {
 
 	menu, err := c.menuService.GetMenu(uint(id))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (c *MenuController) GetMenu(ctx *gin.Context) {
 func (c *MenuController) ListMenus(ctx *gin.Context) {
 	menus, err := c.menuService.ListMenus()
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (c *MenuController) ListMenus(ctx *gin.Context) {
 func (c *MenuController) GetMenuTree(ctx *gin.Context) {
 	tree, err := c.menuService.GetMenuTree()
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -159,7 +159,7 @@ func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 	}
 
 	if err := c.menuService.UpdateMenu(uint(id), &req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 	}
 
 	if err := c.menuService.DeleteMenu(uint(id)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -219,7 +219,7 @@ func (c *MenuController) AssignMenusToRole(ctx *gin.Context) {
 	}
 
 	if err := c.menuService.AssignMenusToRole(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -245,7 +245,7 @@ func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 
 	tree, err := c.menuService.GetRoleMenuTree(uint(roleID))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -271,7 +271,7 @@ func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 
 	menuIDs, err := c.menuService.GetRoleMenuIDs(uint(roleID))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -297,7 +297,7 @@ func (c *MenuController) GetRoleMenuPermissions(ctx *gin.Context) {
 
 	perms, err := c.menuService.GetRoleMenuPermissions(uint(roleID))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -337,7 +337,7 @@ func (c *MenuController) AssignMenusToStoreRole(ctx *gin.Context) {
 	}
 
 	if err := c.menuService.AssignMenusToStoreRole(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -363,7 +363,7 @@ func (c *MenuController) GetStoreRoleMenus(ctx *gin.Context) {
 
 	tree, err := c.menuService.GetStoreRoleMenuTree(storeID, roleID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -389,7 +389,7 @@ func (c *MenuController) GetStoreRoleMenuIDs(ctx *gin.Context) {
 
 	menuIDs, err := c.menuService.GetStoreRoleMenuIDs(storeID, roleID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -415,7 +415,7 @@ func (c *MenuController) GetStoreRoleMenuPermissions(ctx *gin.Context) {
 
 	perms, err := c.menuService.GetStoreRoleMenuPermissions(storeID, roleID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -445,7 +445,7 @@ func (c *MenuController) CopyStoreMenus(ctx *gin.Context) {
 	}
 
 	if err := c.menuService.CopyStoreMenus(&req); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -469,7 +469,7 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	if middleware.HQUnboundAdmin(ctx) {
 		tree, err := c.menuService.GetMenuTree()
 		if err != nil {
-			http.Error(ctx, 500, err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 		userID := middleware.GetUserID(ctx)
@@ -485,7 +485,7 @@ func (c *MenuController) GetUserMenus(ctx *gin.Context) {
 	// 其他用户根据门店和角色获取菜单
 	tree, err := c.menuService.GetUserMenuTree(storeID, roleID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	userID := middleware.GetUserID(ctx)
@@ -522,7 +522,7 @@ func (c *MenuController) GetUserPermissions(ctx *gin.Context) {
 	}
 
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

@@ -41,7 +41,7 @@ func (c *MemberController) CreateMember(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	member, err := c.service.CreateMember(&req, storeID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, member)
@@ -73,7 +73,7 @@ func (c *MemberController) UpdateMember(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	member, err := c.service.UpdateMember(uint(id), &req, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, member)
@@ -97,7 +97,7 @@ func (c *MemberController) DeleteMember(ctx *gin.Context) {
 	}
 	storeID := middleware.GetStoreID(ctx)
 	if err := c.service.DeleteMember(uint(id), storeID, middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -155,7 +155,7 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	members, total, err := c.service.ListMembers(keyword, page, pageSize, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, members, total, page, pageSize)
@@ -174,7 +174,7 @@ func (c *MemberController) ListPointRules(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	list, total, err := c.service.ListPointRules(&req, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -190,7 +190,7 @@ func (c *MemberController) CreatePointRule(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	row, err := c.service.CreatePointRule(&req, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, row)
@@ -211,7 +211,7 @@ func (c *MemberController) UpdatePointRule(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	row, err := c.service.UpdatePointRule(uint(id), &req, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, row)
@@ -226,7 +226,7 @@ func (c *MemberController) DeletePointRule(ctx *gin.Context) {
 	}
 	storeID := middleware.GetStoreID(ctx)
 	if err := c.service.DeletePointRule(uint(id), storeID, middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -245,7 +245,7 @@ func (c *MemberController) ListWineStorages(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	list, total, err := c.service.ListWineStorages(&req, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -261,7 +261,7 @@ func (c *MemberController) DepositWine(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	row, err := c.service.DepositWine(storeID, middleware.GetUserID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, row)
@@ -277,7 +277,7 @@ func (c *MemberController) WithdrawWine(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	row, err := c.service.WithdrawWine(storeID, middleware.GetUserID(ctx), middleware.HQUnboundAdmin(ctx), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, row)
@@ -296,7 +296,7 @@ func (c *MemberController) ListWineTransactions(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	list, total, err := c.service.ListWineTransactions(&req, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -339,7 +339,7 @@ func (c *MemberController) AdjustBalance(ctx *gin.Context) {
 
 	member, err := c.service.AdjustBalance(uint(id), req.Amount, req.Type, req.Remark, req.Version, storeID, userID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, member)
@@ -403,7 +403,7 @@ func (c *MemberController) ListWalletLogs(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	logs, total, err := c.service.ListWalletLogs(&req, page, pageSize, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, logs, total, page, pageSize)
@@ -434,7 +434,7 @@ func (c *MemberController) CreateRechargeOrder(ctx *gin.Context) {
 
 	order, err := c.service.CreateRechargeOrder(&req, storeID, userID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -504,7 +504,7 @@ func (c *MemberController) ListRechargeOrders(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	orders, total, err := c.service.ListRechargeOrders(memberID, status, page, pageSize, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, orders, total, page, pageSize)
@@ -533,7 +533,7 @@ func (c *MemberController) PayRechargeOrder(ctx *gin.Context) {
 
 	order, err := c.service.PayRechargeOrder(req.OrderNo, storeID, userID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -558,7 +558,7 @@ func (c *MemberController) CancelRechargeOrder(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	order, err := c.service.CancelRechargeOrder(orderNo, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -598,7 +598,7 @@ func (c *MemberController) ListMemberConsumptions(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	list, total, summary, err := c.service.ListMemberConsumptions(uint(id), startDate, endDate, page, pageSize, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -631,7 +631,7 @@ func (c *MemberController) ExportMemberConsumptions(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	list, _, _, err := c.service.ListMemberConsumptions(uint(id), date, date, 1, exportPageSize, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

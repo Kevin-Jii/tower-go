@@ -1,11 +1,11 @@
 package service
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 func (s *SupplierProductService) validateUnitCodeAndGetName(unitCode string) (string, error) {
@@ -14,10 +14,10 @@ func (s *SupplierProductService) validateUnitCodeAndGetName(unitCode string) (st
 	}
 	dictData, err := s.dictModule.GetDataByTypeAndValue("product_unit", strings.TrimSpace(unitCode))
 	if err != nil || dictData == nil {
-		return "", errors.New("unit_code 未在字典 product_unit 中定义")
+		return "", apicode.Newf(apicode.DictDataNotFound, "unit_code 未在字典 product_unit 中定义")
 	}
 	if dictData.Status != 1 {
-		return "", errors.New("unit_code 在字典中已禁用")
+		return "", apicode.Newf(apicode.ValidationFailed, "unit_code 在字典中已禁用")
 	}
 	return dictData.Label, nil
 }
@@ -51,13 +51,13 @@ func (s *SupplierProductService) CreateProduct(req *model.CreateSupplierProductR
 	// 验证供应商存在
 	_, err := s.supplierModule.GetByID(req.SupplierID)
 	if err != nil {
-		return errors.New("supplier not found")
+		return apicode.New(apicode.SupplierNotFound)
 	}
 
 	// 验证分类存在
 	_, err = s.categoryModule.GetByID(req.CategoryID)
 	if err != nil {
-		return errors.New("category not found")
+		return apicode.New(apicode.CategoryNotFound)
 	}
 
 	product := &model.SupplierProduct{
@@ -95,7 +95,7 @@ func (s *SupplierProductService) ListProducts(req *model.ListSupplierProductReq)
 func (s *SupplierProductService) UpdateProduct(id uint, req *model.UpdateSupplierProductReq) error {
 	_, err := s.productModule.GetByID(id)
 	if err != nil {
-		return errors.New("product not found")
+		return apicode.New(apicode.ProductNotFound)
 	}
 	// 兼容旧字段：更新 price 时同步单瓶价；更新单瓶价时同步兼容字段 price
 	if req.Price != nil && req.BottlePrice == nil {
@@ -111,7 +111,7 @@ func (s *SupplierProductService) UpdateProduct(id uint, req *model.UpdateSupplie
 func (s *SupplierProductService) DeleteProduct(id uint) error {
 	_, err := s.productModule.GetByID(id)
 	if err != nil {
-		return errors.New("product not found")
+		return apicode.New(apicode.ProductNotFound)
 	}
 	return s.productModule.Delete(id)
 }
@@ -120,7 +120,7 @@ func (s *SupplierProductService) DeleteProduct(id uint) error {
 func (s *SupplierProductService) CreateCategory(req *model.CreateSupplierCategoryReq) error {
 	_, err := s.supplierModule.GetByID(req.SupplierID)
 	if err != nil {
-		return errors.New("supplier not found")
+		return apicode.New(apicode.SupplierNotFound)
 	}
 
 	category := &model.SupplierCategory{
@@ -146,7 +146,7 @@ func (s *SupplierProductService) ListCategories(supplierID uint) ([]*model.Suppl
 func (s *SupplierProductService) UpdateCategory(id uint, req *model.UpdateSupplierCategoryReq) error {
 	_, err := s.categoryModule.GetByID(id)
 	if err != nil {
-		return errors.New("category not found")
+		return apicode.New(apicode.CategoryNotFound)
 	}
 	return s.categoryModule.UpdateByID(id, req)
 }
@@ -155,14 +155,14 @@ func (s *SupplierProductService) UpdateCategory(id uint, req *model.UpdateSuppli
 func (s *SupplierProductService) DeleteCategory(id uint) error {
 	_, err := s.categoryModule.GetByID(id)
 	if err != nil {
-		return errors.New("category not found")
+		return apicode.New(apicode.CategoryNotFound)
 	}
 	return s.categoryModule.Delete(id)
 }
 
 func (s *SupplierProductService) CreateUnitSpec(req *model.CreateProductUnitSpecReq) error {
 	if _, err := s.productModule.GetByID(req.ProductID); err != nil {
-		return errors.New("product not found")
+		return apicode.New(apicode.ProductNotFound)
 	}
 	dictUnitName, err := s.validateUnitCodeAndGetName(req.UnitCode)
 	if err != nil {
@@ -190,7 +190,7 @@ func (s *SupplierProductService) CreateUnitSpec(req *model.CreateProductUnitSpec
 
 func (s *SupplierProductService) ListUnitSpecs(productID uint) ([]*model.ProductUnitSpec, error) {
 	if _, err := s.productModule.GetByID(productID); err != nil {
-		return nil, errors.New("product not found")
+		return nil, apicode.New(apicode.ProductNotFound)
 	}
 	return s.unitSpecModule.ListEnabledByProductID(productID)
 }
@@ -202,7 +202,7 @@ func (s *SupplierProductService) ListUnitSpecsByProductIDs(productIDs []uint) ([
 func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProductUnitSpecReq) error {
 	_, err := s.unitSpecModule.GetByID(id)
 	if err != nil {
-		return errors.New("unit spec not found")
+		return apicode.New(apicode.UnitSpecNotFound)
 	}
 	if req.UnitCode != nil {
 		dictUnitName, err := s.validateUnitCodeAndGetName(*req.UnitCode)
@@ -240,14 +240,14 @@ func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProduc
 
 func (s *SupplierProductService) DeleteUnitSpec(id uint) error {
 	if _, err := s.unitSpecModule.GetByID(id); err != nil {
-		return errors.New("unit spec not found")
+		return apicode.New(apicode.UnitSpecNotFound)
 	}
 	return s.unitSpecModule.DeleteByID(id)
 }
 
 func (s *SupplierProductService) BatchUpsertUnitSpecs(req *model.BatchUpsertProductUnitSpecsReq) error {
 	if _, err := s.productModule.GetByID(req.ProductID); err != nil {
-		return errors.New("product not found")
+		return apicode.New(apicode.ProductNotFound)
 	}
 	existingSpecs, err := s.unitSpecModule.ListByProductID(req.ProductID)
 	if err != nil {
@@ -265,7 +265,7 @@ func (s *SupplierProductService) BatchUpsertUnitSpecs(req *model.BatchUpsertProd
 		}
 		dupKey := strings.ToLower(strings.TrimSpace(unit.UnitCode)) + "\x00" + strings.ToLower(unitName)
 		if _, ok := seen[dupKey]; ok {
-			return errors.New("同一商品下规格编码和规格名称不能重复")
+			return apicode.Newf(apicode.Conflict, "同一商品下规格编码和规格名称不能重复")
 		}
 		seen[dupKey] = struct{}{}
 		spec := &model.ProductUnitSpec{

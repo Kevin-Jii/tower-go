@@ -1,11 +1,11 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 type SupplierService struct {
@@ -72,17 +72,17 @@ func (s *SupplierService) GetSupplierScoped(id, storeID uint, hqUnbound bool) (*
 		return supplier, nil
 	}
 	if storeID == 0 {
-		return nil, errors.New("current user has no store")
+		return nil, apicode.New(apicode.StoreRequired)
 	}
 	if s.storeSupplierModule == nil {
-		return nil, errors.New("store supplier module not configured")
+		return nil, apicode.New(apicode.ConfigMissing)
 	}
 	bound, err := s.storeSupplierModule.IsSupplierBound(storeID, id)
 	if err != nil {
 		return nil, err
 	}
 	if !bound {
-		return nil, errors.New("supplier not bound to current store")
+		return nil, apicode.New(apicode.OperationDenied)
 	}
 	return supplier, nil
 }
@@ -99,7 +99,7 @@ func (s *SupplierService) ListSuppliersByStoreID(storeID uint, req *model.ListSu
 func (s *SupplierService) UpdateSupplier(id uint, req *model.UpdateSupplierReq) error {
 	_, err := s.supplierModule.GetByID(id)
 	if err != nil {
-		return errors.New("supplier not found")
+		return apicode.New(apicode.SupplierNotFound)
 	}
 	return s.supplierModule.UpdateByID(id, req)
 }
@@ -114,7 +114,7 @@ func (s *SupplierService) UpdateSupplierScoped(id, storeID uint, hqUnbound bool,
 func (s *SupplierService) DeleteSupplier(id uint) error {
 	_, err := s.supplierModule.GetByID(id)
 	if err != nil {
-		return errors.New("supplier not found")
+		return apicode.New(apicode.SupplierNotFound)
 	}
 	return s.supplierModule.Delete(id)
 }

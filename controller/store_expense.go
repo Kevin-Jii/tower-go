@@ -24,7 +24,7 @@ func (c *StoreExpenseController) Create(ctx *gin.Context) {
 	}
 	record, err := c.storeExpenseService.Create(middleware.GetStoreID(ctx), middleware.GetUserID(ctx), &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, record)
@@ -41,7 +41,7 @@ func (c *StoreExpenseController) List(ctx *gin.Context) {
 	}
 	list, total, err := c.storeExpenseService.List(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
@@ -68,7 +68,7 @@ func (c *StoreExpenseController) Export(ctx *gin.Context) {
 
 	list, _, err := c.storeExpenseService.List(ctx.Request.Context(), &req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (c *StoreExpenseController) Update(ctx *gin.Context) {
 	}
 	record, err := c.storeExpenseService.Update(id, middleware.GetStoreID(ctx), middleware.GetUserID(ctx), &req, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, record)
@@ -129,7 +129,7 @@ func (c *StoreExpenseController) Delete(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeExpenseService.Delete(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -146,7 +146,7 @@ func (c *StoreExpenseController) Stats(ctx *gin.Context) {
 	}
 	stats, err := c.storeExpenseService.Stats(&req)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, stats)

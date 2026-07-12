@@ -60,13 +60,13 @@ func (c *StoreSupplierController) BindSuppliers(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeSupplierService.BindSuppliers(storeID, req.SupplierIDs); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	// 返回已绑定列表便于前端直接刷新（POST 仍兼容 data 为空的旧客户端）
 	list, err := c.storeSupplierService.ListSuppliersByStoreID(storeID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, list)
@@ -83,7 +83,7 @@ func (c *StoreSupplierController) UnbindSuppliers(ctx *gin.Context) {
 		return
 	}
 	if err := c.storeSupplierService.UnbindSuppliers(storeID, req.SupplierIDs); err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, nil)
@@ -97,7 +97,7 @@ func (c *StoreSupplierController) ListSuppliers(ctx *gin.Context) {
 	}
 	suppliers, err := c.storeSupplierService.ListSuppliersByStoreID(storeID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, suppliers)
@@ -120,7 +120,7 @@ func (c *StoreSupplierController) ListCategories(ctx *gin.Context) {
 
 	categories, err := c.storeSupplierService.ListCategoriesByStoreID(storeID, supplierID)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, categories)
@@ -137,7 +137,7 @@ func (c *StoreSupplierController) ListProducts(ctx *gin.Context) {
 	keyword := ctx.Query("keyword")
 	products, err := c.storeSupplierService.ListProductsByStoreID(storeID, supplierID, categoryID, keyword)
 	if err != nil {
-		http.Error(ctx, 500, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

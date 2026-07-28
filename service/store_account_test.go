@@ -120,7 +120,7 @@ func TestStoreAccountCanBindConsumables_UnboundOnly(t *testing.T) {
 	}
 }
 
-func TestStoreAccountCanCancel_CurrentBusinessDayOnly(t *testing.T) {
+func TestStoreAccountCanCancel_UncanceledAccount(t *testing.T) {
 	svc := &StoreAccountService{}
 	now := time.Now()
 	previousBusinessDay := businessdate.Date(now).AddDate(0, 0, -1).Add(16 * time.Hour)
@@ -136,9 +136,14 @@ func TestStoreAccountCanCancel_CurrentBusinessDayOnly(t *testing.T) {
 			want:    true,
 		},
 		{
-			name:    "previous business day account cannot be canceled",
+			name:    "previous business day account can be canceled",
 			account: &model.StoreAccount{CreatedAt: previousBusinessDay},
-			want:    false,
+			want:    true,
+		},
+		{
+			name:    "account without created time can be canceled",
+			account: &model.StoreAccount{},
+			want:    true,
 		},
 		{
 			name:    "already canceled account cannot be canceled again",
@@ -158,5 +163,46 @@ func TestStoreAccountCanCancel_CurrentBusinessDayOnly(t *testing.T) {
 				t.Fatalf("CanCancelAccount() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBuildCancelRestoreOrderUsesStableAccountOrderNo(t *testing.T) {
+	svc := &StoreAccountService{}
+	account := &model.StoreAccount{
+		ID:        466,
+		AccountNo: "JZ202607290001",
+		StoreID:   2,
+		Items: []model.StoreAccountItem{
+			{
+				ProductID:   123,
+				ProductName: "测试商品",
+				Quantity:    2,
+				Unit:        "瓶",
+			},
+			{
+				ProductID:   model.StoreAccountItemCustomProductID,
+				ProductName: "自定义商品",
+				Quantity:    1,
+				Unit:        "项",
+			},
+		},
+	}
+
+	first := svc.buildCancelRestoreOrder(account, 1003)
+	second := svc.buildCancelRestoreOrder(account, 1003)
+	if first == nil || second == nil {
+		t.Fatal("buildCancelRestoreOrder() returned nil")
+	}
+	if first.OrderNo != "RKZF0000000466" {
+		t.Fatalf("OrderNo = %q, want %q", first.OrderNo, "RKZF0000000466")
+	}
+	if second.OrderNo != first.OrderNo {
+		t.Fatalf("OrderNo is not stable: first=%q second=%q", first.OrderNo, second.OrderNo)
+	}
+	if other := storeAccountCancelInventoryOrderNo(467); other == first.OrderNo {
+		t.Fatalf("different accounts share OrderNo %q", other)
+	}
+	if len(first.Items) != 1 || first.Items[0].ProductID != 123 {
+		t.Fatalf("restore items = %#v, want only system product 123", first.Items)
 	}
 }

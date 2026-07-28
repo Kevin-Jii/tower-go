@@ -963,7 +963,7 @@ function canBindConsumables(row: StoreAccount): boolean {
 function canCancelAccount(row: StoreAccount): boolean {
   if (isCanceledAccount(row)) return false
   if (typeof row.can_cancel === 'boolean') return row.can_cancel
-  return canEditAccount(row)
+  return true
 }
 
 function businessDateKey(date: Date): string {
@@ -995,13 +995,10 @@ function accountRowActions(row: StoreAccount): TableRowAction[] {
     return [detailAction]
   }
   const editable = canEditAccount(row)
-  if (!editable) {
-    return [detailAction]
-  }
   const consumableEditable = canBindConsumables(row)
   const cancelable = canCancelAccount(row)
   const actions: TableRowAction[] = []
-  if (Number(row.payment_status || 1) === 2) {
+  if (editable && Number(row.payment_status || 1) === 2) {
     actions.push({
       label: '支付完成',
       permission: 'store:account:edit',

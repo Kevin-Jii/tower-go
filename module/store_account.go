@@ -192,24 +192,31 @@ func (m *StoreAccountModule) CancelWithStockRestore(id, storeID uint, hqUnbound 
 
 		if restoreOrder != nil && len(restoreOrder.Items) > 0 {
 			if err := tx.Create(restoreOrder).Error; err != nil {
-				return err
+				return fmt.Errorf("create store account cancel inventory order: %w", err)
 			}
 			for _, item := range restoreOrder.Items {
 				if err := incrementInventoryQuantity(tx, account.StoreID, item.ProductID, item.Quantity, item.Unit); err != nil {
-					return err
+					return fmt.Errorf("restore store account inventory for product %d: %w", item.ProductID, err)
 				}
 			}
 		}
 
 		now := time.Now()
-		return tx.Model(&model.StoreAccount{}).
+		res := tx.Model(&model.StoreAccount{}).
 			Where("id = ? AND is_canceled = ?", account.ID, false).
 			Updates(map[string]interface{}{
 				"is_canceled":    true,
 				"canceled_at":    &now,
 				"canceled_by_id": operatorID,
 				"cancel_remark":  remark,
-			}).Error
+			})
+		if res.Error != nil {
+			return fmt.Errorf("mark store account canceled: %w", res.Error)
+		}
+		if res.RowsAffected == 0 {
+			return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
+		}
+		return nil
 	})
 }
 

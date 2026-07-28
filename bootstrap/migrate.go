@@ -71,6 +71,11 @@ var autoMigrateModels = []interface{}{
 }
 
 func AutoMigrateAndSeeds() {
+	if err := ensureStoreAccountCancelColumns(); err != nil {
+		logging.LogError("门店记账作废字段迁移失败", zap.Error(err))
+		return
+	}
+
 	skipAuto := os.Getenv("SKIP_AUTO_MIGRATE") == "1"
 	if skipAuto && shouldSkipMigration() {
 		logging.LogInfo("跳过数据库迁移（SKIP_AUTO_MIGRATE=1 且表结构完整）")
@@ -104,6 +109,28 @@ func AutoMigrateAndSeeds() {
 	markMigrationComplete()
 
 	logging.LogInfo("数据表迁移完成，种子数据将按初始化版本执行")
+}
+
+func ensureStoreAccountCancelColumns() error {
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+	migrator := db.Migrator()
+	account := &model.StoreAccount{}
+	if !migrator.HasTable(account) {
+		return nil
+	}
+
+	for _, field := range []string{"IsCanceled", "CanceledAt", "CanceledByID", "CancelRemark"} {
+		if migrator.HasColumn(account, field) {
+			continue
+		}
+		if err := migrator.AddColumn(account, field); err != nil {
+			return fmt.Errorf("add store_accounts column %s: %w", field, err)
+		}
+	}
+	return nil
 }
 
 // shouldSkipMigration 检查是否应该跳过迁移

@@ -1308,11 +1308,8 @@ func (s *StoreAccountService) CancelScoped(id, storeID, operatorID uint, hqUnbou
 	if err != nil {
 		return err
 	}
-	if !s.CanCancelAccount(account) {
-		if account.IsCanceled {
-			return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
-		}
-		return apicode.New(apicode.StoreAccountEditTimeout)
+	if account.IsCanceled {
+		return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
 	}
 
 	remark := ""
@@ -1324,11 +1321,11 @@ func (s *StoreAccountService) CancelScoped(id, storeID, operatorID uint, hqUnbou
 }
 
 func (s *StoreAccountService) buildCancelRestoreOrder(account *model.StoreAccount, operatorID uint) *model.InventoryOrder {
-	if account == nil || s.inventoryModule == nil {
+	if account == nil {
 		return nil
 	}
 	order := &model.InventoryOrder{
-		OrderNo:       s.inventoryModule.GenerateOrderNo(model.InventoryTypeIn),
+		OrderNo:       storeAccountCancelInventoryOrderNo(account.ID),
 		Type:          model.InventoryTypeIn,
 		StoreID:       account.StoreID,
 		Reason:        "记账作废退回",
@@ -1384,6 +1381,11 @@ func (s *StoreAccountService) buildCancelRestoreOrder(account *model.StoreAccoun
 		return nil
 	}
 	return order
+}
+
+// 作废退库单与记账主键一一对应，避免并发生成日流水号时发生唯一键冲突。
+func storeAccountCancelInventoryOrderNo(accountID uint) string {
+	return fmt.Sprintf("RKZF%010d", accountID)
 }
 
 // GetStats 获取统计
@@ -1687,5 +1689,5 @@ func (s *StoreAccountService) CanBindConsumables(account *model.StoreAccount) bo
 }
 
 func (s *StoreAccountService) CanCancelAccount(account *model.StoreAccount) bool {
-	return account != nil && !account.IsCanceled && s.IsAccountEditable(account)
+	return account != nil && !account.IsCanceled
 }

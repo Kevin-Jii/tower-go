@@ -220,7 +220,7 @@ func (c *StoreAccountController) Delete(ctx *gin.Context) {
 
 // Cancel godoc
 // @Summary 作废记账
-// @Description 作废当前营业日内创建的记账单，并恢复系统商品库存；自定义商品不影响库存
+// @Description 作废记账单，并恢复系统商品库存；自定义商品不影响库存
 // @Tags 门店记账
 // @Accept json
 // @Produce json

@@ -113,7 +113,7 @@ func (s *StatisticsService) GetHomeChartsStats(storeID uint, startDate, endDate,
 		{Name: "入库金额", Value: overview.InboundAmount},
 		{Name: "出库成本", Value: overview.OutboundAmount},
 		{Name: "其他支出", Value: overview.OtherExpenseAmount},
-		{Name: "净利润", Value: overview.NetProfitAmount},
+		{Name: "记账净利", Value: overview.NetProfitAmount},
 	}
 
 	return &model.HomeChartsStats{

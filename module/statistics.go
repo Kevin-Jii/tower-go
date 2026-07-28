@@ -437,7 +437,15 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	stats.InventoryOutCount = inOutSummary.InventoryOutCount
 
 	stats.GrossProfitAmount = stats.SalesAmount - itemCostAmount
-	stats.NetProfitAmount = stats.SalesAmount - stats.OtherExpenseAmount - stats.ErrandFeeAmount - stats.ConsumableAmount - itemCostAmount - stats.GiftWineCostAmount - stats.RoundAmount - stats.StoreExpenseAmount
+	stats.NetProfitAmount = calculateBusinessOverviewNetProfit(stats, itemCostAmount)
 
 	return stats, nil
+}
+
+func calculateBusinessOverviewNetProfit(stats *model.BusinessOverviewStats, itemCostAmount float64) float64 {
+	if stats == nil {
+		return 0
+	}
+	// 门店支出在大屏单独展示；记账净利保持与有效记账单的净利润口径一致。
+	return stats.SalesAmount - stats.OtherExpenseAmount - stats.ErrandFeeAmount - stats.ConsumableAmount - itemCostAmount - stats.GiftWineCostAmount - stats.RoundAmount
 }

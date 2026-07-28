@@ -195,7 +195,7 @@ func (m *InventoryLossModule) ListMemberGiftRecords(memberID uint, req *model.Li
 	accountQuery := m.db.Table("store_accounts sa").
 		Joins("LEFT JOIN users u ON u.id = sa.operator_id").
 		Joins("LEFT JOIN supplier_products p ON p.id = sa.gift_wine_product_id").
-		Where("sa.deleted_at IS NULL AND sa.member_id = ? AND sa.is_gift_wine = 1", memberID)
+		Where("sa.deleted_at IS NULL AND sa.is_canceled = 0 AND sa.member_id = ? AND sa.is_gift_wine = 1", memberID)
 	if !hqUnbound || req.StoreID > 0 {
 		accountQuery = accountQuery.Where("sa.store_id = ?", req.StoreID)
 	}

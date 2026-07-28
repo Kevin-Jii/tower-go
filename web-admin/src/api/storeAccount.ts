@@ -75,6 +75,10 @@ export async function updateStoreAccount(id: number, body: Record<string, unknow
   await http.put<import('./types').ApiEnvelope<unknown>>(`/store-accounts/${id}`, body)
 }
 
+export async function cancelStoreAccount(id: number, body?: { remark?: string }): Promise<void> {
+  await http.post<import('./types').ApiEnvelope<unknown>>(`/store-accounts/${id}/cancel`, body ?? {})
+}
+
 export async function deleteStoreAccount(id: number): Promise<void> {
   await http.delete<import('./types').ApiEnvelope<unknown>>(`/store-accounts/${id}`)
 }

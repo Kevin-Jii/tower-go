@@ -42,6 +42,10 @@ type StoreAccount struct {
 	Remark              string                   `json:"remark" gorm:"type:text;comment:备注"`
 	OperatorID          uint                     `json:"operator_id" gorm:"not null;comment:操作人ID"`
 	AccountDate         time.Time                `json:"account_date" gorm:"type:date;index;comment:记账日期"`
+	IsCanceled          bool                     `json:"is_canceled" gorm:"not null;default:false;index;comment:是否作废"`
+	CanceledAt          *time.Time               `json:"canceled_at,omitempty" gorm:"comment:作废时间"`
+	CanceledByID        uint                     `json:"canceled_by_id" gorm:"not null;default:0;index;comment:作废操作人ID"`
+	CancelRemark        string                   `json:"cancel_remark" gorm:"type:varchar(500);comment:作废备注"`
 	CreatedAt           time.Time                `json:"created_at"`
 	UpdatedAt           time.Time                `json:"updated_at"`
 	DeletedAt           gorm.DeletedAt           `json:"-" gorm:"index"`
@@ -49,6 +53,7 @@ type StoreAccount struct {
 	Consumables         []StoreAccountConsumable `json:"consumables,omitempty" gorm:"foreignKey:AccountID"`
 	CanEdit             bool                     `json:"can_edit" gorm:"-"`
 	CanBindConsumables  bool                     `json:"can_bind_consumables" gorm:"-"`
+	CanCancel           bool                     `json:"can_cancel" gorm:"-"`
 
 	// 关联
 	Store    *Store  `json:"store,omitempty" gorm:"foreignKey:StoreID"`
@@ -150,6 +155,10 @@ type UpdateStoreAccountReq struct {
 	GiftWineCostAmount *float64 `json:"gift_wine_cost_amount" binding:"omitempty,gte=0"`
 	IsErrandOrder      *int     `json:"is_errand_order" binding:"omitempty,oneof=0 1"`
 	ErrandFee          *float64 `json:"errand_fee" binding:"omitempty,gte=0"`
+}
+
+type CancelStoreAccountReq struct {
+	Remark string `json:"remark" binding:"max=500"`
 }
 
 type BindStoreAccountConsumablesReq struct {

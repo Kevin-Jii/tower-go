@@ -11,16 +11,14 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/pkg/clientsource"
-	"github.com/Kevin-Jii/tower-go/utils/database"
-	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 func AuditLogMiddleware(maxBody int) gin.HandlerFunc {
 	if maxBody <= 0 {
 		maxBody = 4096
 	}
+	writer := newAuditLogWriter()
 	return func(c *gin.Context) {
 		if !shouldAuditRequest(c) {
 			c.Next()
@@ -29,17 +27,18 @@ func AuditLogMiddleware(maxBody int) gin.HandlerFunc {
 
 		start := time.Now()
 		body := readAuditBody(c, maxBody)
-		blw := &auditBodyLogWriter{ResponseWriter: c.Writer, body: bytes.NewBuffer(nil)}
+		blw := &auditBodyLogWriter{
+			ResponseWriter: c.Writer,
+			body:           &auditBodyBuffer{limit: maxBody},
+		}
 		c.Writer = blw
 		c.Next()
 
 		log := buildAuditLog(c, body, blw.body.String(), time.Since(start))
-		if log == nil || database.DB == nil {
+		if log == nil || writer == nil {
 			return
 		}
-		if err := database.DB.Create(log).Error; err != nil {
-			logging.LogWarn("写入操作日志失败", zap.Error(err))
-		}
+		writer.enqueue(log)
 	}
 }
 
@@ -83,7 +82,7 @@ func readAuditBody(c *gin.Context, maxBody int) string {
 
 type auditBodyLogWriter struct {
 	gin.ResponseWriter
-	body *bytes.Buffer
+	body *auditBodyBuffer
 }
 
 func (w *auditBodyLogWriter) Write(b []byte) (int, error) {
@@ -91,8 +90,29 @@ func (w *auditBodyLogWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
+type auditBodyBuffer struct {
+	bytes.Buffer
+	limit int
+}
+
+func (b *auditBodyBuffer) Write(p []byte) (int, error) {
+	if b.limit <= 0 {
+		return len(p), nil
+	}
+	remaining := b.limit - b.Len()
+	if remaining <= 0 {
+		return len(p), nil
+	}
+	if len(p) > remaining {
+		_, _ = b.Buffer.Write(p[:remaining])
+		return len(p), nil
+	}
+	_, _ = b.Buffer.Write(p)
+	return len(p), nil
+}
+
 func (w *auditBodyLogWriter) WriteString(s string) (int, error) {
-	w.body.WriteString(s)
+	_, _ = w.body.Write([]byte(s))
 	return w.ResponseWriter.WriteString(s)
 }
 
@@ -111,21 +131,14 @@ func buildAuditLog(c *gin.Context, body string, responseBody string, latency tim
 	roleCode := GetRoleCode(c)
 	var nickname, phone, roleName, storeName string
 
-	if database.DB != nil && userID > 0 {
-		var user model.User
-		if err := database.DB.Preload("Role").Preload("Store").First(&user, userID).Error; err == nil {
-			username = user.Username
-			nickname = user.Nickname
-			phone = user.Phone
-			storeID = user.StoreID
-			if user.Role != nil {
-				roleName = user.Role.Name
-				roleCode = user.Role.Code
-			}
-			if user.Store != nil {
-				storeName = user.Store.Name
-			}
-		}
+	if snapshot, ok := getAuditUserSnapshot(userID); ok {
+		username = snapshot.username
+		nickname = snapshot.nickname
+		phone = snapshot.phone
+		storeID = snapshot.storeID
+		roleName = snapshot.roleName
+		roleCode = snapshot.roleCode
+		storeName = snapshot.storeName
 	}
 
 	if c.Request.URL.Path == "/api/v1/auth/login" && userID == 0 {

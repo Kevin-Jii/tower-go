@@ -1060,6 +1060,7 @@ func (s *StoreAccountService) fillAccountActionFlags(account *model.StoreAccount
 	}
 	account.CanEdit = s.CanUpdateAccount(account, nil)
 	account.CanBindConsumables = s.CanBindConsumables(account)
+	account.CanCancel = s.CanCancelAccount(account)
 }
 
 // Update 更新记账
@@ -1072,6 +1073,9 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 }
 
 func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) error {
+	if account.IsCanceled {
+		return apicode.Newf(apicode.OperationDenied, "作废记账单不允许修改")
+	}
 	if !s.canApplyPaymentStatusOnlyUpdate(account, req) && !s.CanUpdateAccount(account, req) {
 		return apicode.New(apicode.StoreAccountEditTimeout)
 	}
@@ -1293,6 +1297,93 @@ func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req
 // Delete 删除记账
 func (s *StoreAccountService) Delete(id uint) error {
 	return apicode.Newf(apicode.OperationDenied, "记账记录不允许删除")
+}
+
+// CancelScoped 作废记账单，并恢复系统商品库存。
+func (s *StoreAccountService) CancelScoped(id, storeID, operatorID uint, hqUnbound bool, req *model.CancelStoreAccountReq) error {
+	if !hqUnbound && storeID == 0 {
+		return apicode.New(apicode.StoreRequired)
+	}
+	account, err := s.storeAccountModule.GetByIDScoped(id, storeID, hqUnbound)
+	if err != nil {
+		return err
+	}
+	if !s.CanCancelAccount(account) {
+		if account.IsCanceled {
+			return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
+		}
+		return apicode.New(apicode.StoreAccountEditTimeout)
+	}
+
+	remark := ""
+	if req != nil {
+		remark = strings.TrimSpace(req.Remark)
+	}
+	restoreOrder := s.buildCancelRestoreOrder(account, operatorID)
+	return s.storeAccountModule.CancelWithStockRestore(account.ID, storeID, hqUnbound, operatorID, remark, restoreOrder)
+}
+
+func (s *StoreAccountService) buildCancelRestoreOrder(account *model.StoreAccount, operatorID uint) *model.InventoryOrder {
+	if account == nil || s.inventoryModule == nil {
+		return nil
+	}
+	order := &model.InventoryOrder{
+		OrderNo:       s.inventoryModule.GenerateOrderNo(model.InventoryTypeIn),
+		Type:          model.InventoryTypeIn,
+		StoreID:       account.StoreID,
+		Reason:        "记账作废退回",
+		Remark:        fmt.Sprintf("记账作废恢复库存，记账单号:%s", account.AccountNo),
+		TotalQuantity: 0,
+		ItemCount:     0,
+		OperatorID:    operatorID,
+	}
+	if s.storeModule != nil {
+		if store, err := s.storeModule.GetByID(account.StoreID); err == nil && store != nil {
+			order.StoreName = store.Name
+		}
+	}
+	if s.userModule != nil {
+		if user, err := s.userModule.GetByID(operatorID); err == nil && user != nil {
+			order.OperatorName = user.Nickname
+			if order.OperatorName == "" {
+				order.OperatorName = user.Username
+			}
+			order.OperatorPhone = user.Phone
+		}
+	}
+
+	for _, item := range account.Items {
+		if item.ProductID == model.StoreAccountItemCustomProductID || item.Quantity <= 0 {
+			continue
+		}
+		var product *model.SupplierProduct
+		if s.productModule != nil {
+			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
+				product = p
+			}
+		}
+		baseQuantity, baseUnit := convertToBaseQuantity(s.unitSpecModule, product, item.ProductID, item.Quantity, item.Unit)
+		if baseQuantity <= 0 {
+			continue
+		}
+		productName := strings.TrimSpace(item.ProductName)
+		if productName == "" {
+			productName = fmt.Sprintf("商品ID:%d", item.ProductID)
+		}
+		order.TotalQuantity += baseQuantity
+		order.Items = append(order.Items, model.InventoryOrderItem{
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Quantity:    baseQuantity,
+			Unit:        baseUnit,
+			Remark:      fmt.Sprintf("记账作废退回(原始: %.2f%s)", item.Quantity, item.Unit),
+		})
+	}
+	order.ItemCount = len(order.Items)
+	if order.ItemCount == 0 {
+		return nil
+	}
+	return order
 }
 
 // GetStats 获取统计
@@ -1575,6 +1666,9 @@ func (s *StoreAccountService) IsAccountEditableAt(account *model.StoreAccount, n
 	if account == nil || account.CreatedAt.IsZero() {
 		return false
 	}
+	if account.IsCanceled {
+		return false
+	}
 	loc := now.Location()
 	createdBusinessDate := businessdate.Date(account.CreatedAt.In(loc))
 	currentBusinessDate := businessdate.Date(now.In(loc))
@@ -1587,7 +1681,11 @@ func (s *StoreAccountService) CanUpdateAccount(account *model.StoreAccount, req 
 	return s.IsAccountEditable(account)
 }
 
-// CanBindConsumables 判断记账单是否允许绑定消耗品：仅未绑定过消耗品的记账单允许绑定。
+// CanBindConsumables 判断记账单是否允许绑定消耗品：仅当前营业日内、未作废、未绑定过消耗品的记账单允许绑定。
 func (s *StoreAccountService) CanBindConsumables(account *model.StoreAccount) bool {
-	return account != nil && len(account.Consumables) == 0
+	return account != nil && !account.IsCanceled && len(account.Consumables) == 0 && s.IsAccountEditable(account)
+}
+
+func (s *StoreAccountService) CanCancelAccount(account *model.StoreAccount) bool {
+	return account != nil && !account.IsCanceled && s.IsAccountEditable(account)
 }

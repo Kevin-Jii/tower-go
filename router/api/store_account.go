@@ -21,6 +21,7 @@ func RegisterStoreAccountRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		accounts.GET("/:id", middleware.Permission("store:account:list"), c.StoreAccount.Get)
 		accounts.PUT("/:id", middleware.Permission("store:account:edit"), c.StoreAccount.Update)
 		accounts.POST("/:id/consumables", middleware.Permission("store:account:edit"), c.StoreAccount.BindConsumables)
+		accounts.POST("/:id/cancel", middleware.Permission("store:account:edit"), c.StoreAccount.Cancel)
 		accounts.DELETE("/:id", middleware.Permission("store:account:delete"), c.StoreAccount.Delete)
 	}
 }

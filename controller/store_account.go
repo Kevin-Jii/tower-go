@@ -218,6 +218,37 @@ func (c *StoreAccountController) Delete(ctx *gin.Context) {
 	http.Error(ctx, 400, "记账记录不允许删除")
 }
 
+// Cancel godoc
+// @Summary 作废记账
+// @Description 作废当前营业日内创建的记账单，并恢复系统商品库存；自定义商品不影响库存
+// @Tags 门店记账
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "记账ID"
+// @Param body body model.CancelStoreAccountReq false "作废备注"
+// @Success 200 {object} http.Response
+// @Router /store-accounts/{id}/cancel [post]
+func (c *StoreAccountController) Cancel(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		http.ErrorApp(ctx, apicode.InvalidID)
+		return
+	}
+
+	var req model.CancelStoreAccountReq
+	if ctx.Request.Body != nil && ctx.Request.ContentLength > 0 {
+		if !http.BindJSON(ctx, &req) {
+			return
+		}
+	}
+	if err := c.storeAccountService.CancelScoped(uint(id), middleware.GetStoreID(ctx), middleware.GetUserID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, nil)
+}
+
 // BindConsumables godoc
 // @Summary 绑定记账单消耗品
 // @Tags 门店记账

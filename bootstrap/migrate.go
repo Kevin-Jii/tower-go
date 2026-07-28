@@ -131,7 +131,11 @@ func shouldSkipMigration() bool {
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_product_id") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_product_name") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_unit") ||
-			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_quantity") {
+			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_quantity") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "is_canceled") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "canceled_at") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "canceled_by_id") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "cancel_remark") {
 			return false
 		}
 	}

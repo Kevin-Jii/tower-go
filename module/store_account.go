@@ -176,6 +176,43 @@ func (m *StoreAccountModule) Update(id uint, updates map[string]interface{}) err
 	return m.db.Model(&model.StoreAccount{}).Where("id = ?", id).Updates(updates).Error
 }
 
+func (m *StoreAccountModule) CancelWithStockRestore(id, storeID uint, hqUnbound bool, operatorID uint, remark string, restoreOrder *model.InventoryOrder) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		var account model.StoreAccount
+		query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", id)
+		if !hqUnbound {
+			query = query.Where("store_id = ?", storeID)
+		}
+		if err := query.First(&account).Error; err != nil {
+			return err
+		}
+		if account.IsCanceled {
+			return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
+		}
+
+		if restoreOrder != nil && len(restoreOrder.Items) > 0 {
+			if err := tx.Create(restoreOrder).Error; err != nil {
+				return err
+			}
+			for _, item := range restoreOrder.Items {
+				if err := incrementInventoryQuantity(tx, account.StoreID, item.ProductID, item.Quantity, item.Unit); err != nil {
+					return err
+				}
+			}
+		}
+
+		now := time.Now()
+		return tx.Model(&model.StoreAccount{}).
+			Where("id = ? AND is_canceled = ?", account.ID, false).
+			Updates(map[string]interface{}{
+				"is_canceled":    true,
+				"canceled_at":    &now,
+				"canceled_by_id": operatorID,
+				"cancel_remark":  remark,
+			}).Error
+	})
+}
+
 // Delete 删除记账（含明细）
 func (m *StoreAccountModule) Delete(id uint) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
@@ -203,7 +240,7 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 		Count       int64
 	}
 
-	query := m.db.Model(&model.StoreAccount{})
+	query := m.db.Model(&model.StoreAccount{}).Where("is_canceled = ?", false)
 	if storeID > 0 {
 		query = query.Where("store_id = ?", storeID)
 	}
@@ -221,12 +258,14 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 	// 实时净利润：销售额 - 其他支出 - 跑腿费 - 消耗品金额 - 商品成本 - 赠酒成本 - 抹零金额（不依赖历史 net_income_amount 存量值）
 	costSub := m.db.Table("store_account_items AS sai").
 		Select("sai.account_id, COALESCE(SUM(sai.quantity * COALESCE(ps.cost_price,0)),0) AS cost_amount").
+		Joins("JOIN store_accounts AS sa_cost ON sa_cost.id = sai.account_id AND sa_cost.deleted_at IS NULL AND sa_cost.is_canceled = 0").
 		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
 		Group("sai.account_id")
 	netQuery := m.db.Model(&model.StoreAccount{}).
 		Select("COALESCE(SUM(store_accounts.total_amount - store_accounts.other_expense_amount - store_accounts.errand_fee - COALESCE(cons.sum_amount, 0) - COALESCE(costs.cost_amount,0) - store_accounts.gift_wine_cost_amount - store_accounts.round_amount), 0)").
-		Joins("LEFT JOIN (SELECT account_id, COALESCE(SUM(amount),0) AS sum_amount FROM store_account_consumables GROUP BY account_id) AS cons ON cons.account_id = store_accounts.id").
-		Joins("LEFT JOIN (?) AS costs ON costs.account_id = store_accounts.id", costSub)
+		Joins("LEFT JOIN (SELECT sac.account_id, COALESCE(SUM(sac.amount),0) AS sum_amount FROM store_account_consumables AS sac JOIN store_accounts AS sa_cons ON sa_cons.id = sac.account_id AND sa_cons.deleted_at IS NULL AND sa_cons.is_canceled = 0 GROUP BY sac.account_id) AS cons ON cons.account_id = store_accounts.id").
+		Joins("LEFT JOIN (?) AS costs ON costs.account_id = store_accounts.id", costSub).
+		Where("store_accounts.is_canceled = ?", false)
 	if storeID > 0 {
 		netQuery = netQuery.Where("store_accounts.store_id = ?", storeID)
 	}

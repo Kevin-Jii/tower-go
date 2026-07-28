@@ -277,6 +277,10 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   `remark` TEXT,
   `operator_id` BIGINT UNSIGNED NOT NULL,
   `account_date` DATE DEFAULT NULL,
+  `is_canceled` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否作废',
+  `canceled_at` DATETIME(3) DEFAULT NULL COMMENT '作废时间',
+  `canceled_by_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '作废操作人ID',
+  `cancel_remark` VARCHAR(500) DEFAULT NULL COMMENT '作废备注',
   `created_at` DATETIME(3) DEFAULT NULL,
   `updated_at` DATETIME(3) DEFAULT NULL,
   `deleted_at` DATETIME(3) DEFAULT NULL,
@@ -293,6 +297,8 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   KEY `idx_store_accounts_order_no` (`order_no`),
   KEY `idx_store_accounts_tag_code` (`tag_code`),
   KEY `idx_store_accounts_account_date` (`account_date`),
+  KEY `idx_store_accounts_is_canceled` (`is_canceled`),
+  KEY `idx_store_accounts_canceled_by_id` (`canceled_by_id`),
   KEY `idx_store_accounts_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='门店记账';
 
@@ -1018,6 +1024,74 @@ PREPARE stmt_add_is_supplement FROM @sql_add_is_supplement;
 EXECUTE stmt_add_is_supplement;
 DEALLOCATE PREPARE stmt_add_is_supplement;
 
+SET @sql_add_store_account_is_canceled = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'is_canceled'
+    ),
+    'SELECT ''skip add store account is_canceled''',
+    'ALTER TABLE store_accounts ADD COLUMN is_canceled TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否作废'' AFTER account_date'
+  )
+);
+PREPARE stmt_add_store_account_is_canceled FROM @sql_add_store_account_is_canceled;
+EXECUTE stmt_add_store_account_is_canceled;
+DEALLOCATE PREPARE stmt_add_store_account_is_canceled;
+
+SET @sql_add_store_account_canceled_at = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'canceled_at'
+    ),
+    'SELECT ''skip add store account canceled_at''',
+    'ALTER TABLE store_accounts ADD COLUMN canceled_at DATETIME(3) DEFAULT NULL COMMENT ''作废时间'' AFTER is_canceled'
+  )
+);
+PREPARE stmt_add_store_account_canceled_at FROM @sql_add_store_account_canceled_at;
+EXECUTE stmt_add_store_account_canceled_at;
+DEALLOCATE PREPARE stmt_add_store_account_canceled_at;
+
+SET @sql_add_store_account_canceled_by_id = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'canceled_by_id'
+    ),
+    'SELECT ''skip add store account canceled_by_id''',
+    'ALTER TABLE store_accounts ADD COLUMN canceled_by_id BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''作废操作人ID'' AFTER canceled_at'
+  )
+);
+PREPARE stmt_add_store_account_canceled_by_id FROM @sql_add_store_account_canceled_by_id;
+EXECUTE stmt_add_store_account_canceled_by_id;
+DEALLOCATE PREPARE stmt_add_store_account_canceled_by_id;
+
+SET @sql_add_store_account_cancel_remark = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'cancel_remark'
+    ),
+    'SELECT ''skip add store account cancel_remark''',
+    'ALTER TABLE store_accounts ADD COLUMN cancel_remark VARCHAR(500) DEFAULT NULL COMMENT ''作废备注'' AFTER canceled_by_id'
+  )
+);
+PREPARE stmt_add_store_account_cancel_remark FROM @sql_add_store_account_cancel_remark;
+EXECUTE stmt_add_store_account_cancel_remark;
+DEALLOCATE PREPARE stmt_add_store_account_cancel_remark;
+
 SET @sql_add_idx_store_accounts_is_gift_wine = (
   SELECT IF(
     EXISTS(
@@ -1068,6 +1142,40 @@ SET @sql_add_idx_store_accounts_is_supplement = (
 PREPARE stmt_add_idx_store_accounts_is_supplement FROM @sql_add_idx_store_accounts_is_supplement;
 EXECUTE stmt_add_idx_store_accounts_is_supplement;
 DEALLOCATE PREPARE stmt_add_idx_store_accounts_is_supplement;
+
+SET @sql_add_idx_store_accounts_is_canceled = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND INDEX_NAME = 'idx_store_accounts_is_canceled'
+    ),
+    'SELECT ''skip add idx_store_accounts_is_canceled''',
+    'CREATE INDEX idx_store_accounts_is_canceled ON store_accounts(is_canceled)'
+  )
+);
+PREPARE stmt_add_idx_store_accounts_is_canceled FROM @sql_add_idx_store_accounts_is_canceled;
+EXECUTE stmt_add_idx_store_accounts_is_canceled;
+DEALLOCATE PREPARE stmt_add_idx_store_accounts_is_canceled;
+
+SET @sql_add_idx_store_accounts_canceled_by_id = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND INDEX_NAME = 'idx_store_accounts_canceled_by_id'
+    ),
+    'SELECT ''skip add idx_store_accounts_canceled_by_id''',
+    'CREATE INDEX idx_store_accounts_canceled_by_id ON store_accounts(canceled_by_id)'
+  )
+);
+PREPARE stmt_add_idx_store_accounts_canceled_by_id FROM @sql_add_idx_store_accounts_canceled_by_id;
+EXECUTE stmt_add_idx_store_accounts_canceled_by_id;
+DEALLOCATE PREPARE stmt_add_idx_store_accounts_canceled_by_id;
 
 SET @sql_add_bottle_price = (
   SELECT IF(

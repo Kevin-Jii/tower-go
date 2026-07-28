@@ -692,9 +692,14 @@ export interface StoreAccount {
   tag_name?: string
   remark?: string
   account_date: string
+  is_canceled?: boolean
+  canceled_at?: string
+  canceled_by_id?: number
+  cancel_remark?: string
   created_at?: string
   can_edit?: boolean
   can_bind_consumables?: boolean
+  can_cancel?: boolean
   items?: StoreAccountItem[]
   consumables?: StoreAccountConsumable[]
 }

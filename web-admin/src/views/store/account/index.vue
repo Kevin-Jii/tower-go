@@ -31,8 +31,8 @@
       <template #cell-payment_status="{ row }">
         <span class="store-account-pay-status">
           <span class="store-account-pay-status__dot"
-            :class="paymentStatusDotClass((row as StoreAccount).payment_status)" />
-          <span>{{ paymentStatusLabel((row as StoreAccount).payment_status) }}</span>
+            :class="paymentStatusDotClass(row as StoreAccount)" />
+          <span>{{ paymentStatusLabel(row as StoreAccount) }}</span>
         </span>
       </template>
       <template #cell-operator="{ row }">
@@ -294,7 +294,13 @@
           <div><span class="text-[var(--color-text-3)]">记账日期</span>：{{ formatDate(viewAccount.account_date) }}</div>
           <div><span class="text-[var(--color-text-3)]">渠道</span>：{{ channelLabel(viewAccount.channel) }}</div>
           <div><span class="text-[var(--color-text-3)]">会员</span>：{{ memberLabel(viewAccount) }}</div>
-          <div><span class="text-[var(--color-text-3)]">支付状态</span>：{{ paymentStatusLabel(viewAccount.payment_status) }}
+          <div><span class="text-[var(--color-text-3)]">支付状态</span>：{{ paymentStatusLabel(viewAccount) }}
+          </div>
+          <div v-if="isCanceledAccount(viewAccount)">
+            <span class="text-[var(--color-text-3)]">作废时间</span>：{{ viewAccount.canceled_at ? formatDateTime(viewAccount.canceled_at) : '-' }}
+          </div>
+          <div v-if="isCanceledAccount(viewAccount)" class="sm:col-span-2">
+            <span class="text-[var(--color-text-3)]">作废备注</span>：{{ viewAccount.cancel_remark || '-' }}
           </div>
           <div><span class="text-[var(--color-text-3)]">订单号</span>：{{ viewAccount.order_no || '-' }}</div>
           <div><span class="text-[var(--color-text-3)]">总金额</span>：{{ formatMoney(viewAccount.total_amount) }}</div>
@@ -538,6 +544,7 @@ import {
 import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
 import {
   bindStoreAccountConsumables,
+  cancelStoreAccount,
   createStoreAccountConsumableProduct,
   createStoreAccount,
   deleteStoreAccountConsumableProduct,
@@ -927,22 +934,36 @@ const paymentStatusOptions = [
 ]
 const paymentStatusFilterOptions = computed(() => [{ label: '全部状态', value: 0 }, ...paymentStatusOptions])
 
-function paymentStatusLabel(v: number | undefined): string {
-  return Number(v) === 2 ? '未支付' : '已支付'
+function isCanceledAccount(row: StoreAccount): boolean {
+  return row.is_canceled === true || Number(row.is_canceled || 0) === 1
 }
 
-function paymentStatusDotClass(v: number | undefined): string {
-  return Number(v) === 2 ? 'store-account-pay-status__dot--unpaid' : 'store-account-pay-status__dot--paid'
+function paymentStatusLabel(row: StoreAccount): string {
+  if (isCanceledAccount(row)) return '已作废'
+  return Number(row.payment_status) === 2 ? '未支付' : '已支付'
+}
+
+function paymentStatusDotClass(row: StoreAccount): string {
+  if (isCanceledAccount(row)) return 'store-account-pay-status__dot--canceled'
+  return Number(row.payment_status) === 2 ? 'store-account-pay-status__dot--unpaid' : 'store-account-pay-status__dot--paid'
 }
 
 function canEditAccount(row: StoreAccount): boolean {
+  if (isCanceledAccount(row)) return false
   if (typeof row.can_edit === 'boolean') return row.can_edit
   return isWithinBusinessDays(row.created_at, 1)
 }
 
 function canBindConsumables(row: StoreAccount): boolean {
+  if (isCanceledAccount(row)) return false
   if (typeof row.can_bind_consumables === 'boolean') return row.can_bind_consumables
-  return (row.consumables?.length ?? 0) === 0
+  return (row.consumables?.length ?? 0) === 0 && canEditAccount(row)
+}
+
+function canCancelAccount(row: StoreAccount): boolean {
+  if (isCanceledAccount(row)) return false
+  if (typeof row.can_cancel === 'boolean') return row.can_cancel
+  return canEditAccount(row)
 }
 
 function businessDateKey(date: Date): string {
@@ -969,8 +990,16 @@ function isWithinBusinessDays(value: string | undefined, days: number): boolean 
 }
 
 function accountRowActions(row: StoreAccount): TableRowAction[] {
+  const detailAction: TableRowAction = { label: '详情', permission: 'store:account:list', onClick: () => openView(row) }
+  if (isCanceledAccount(row)) {
+    return [detailAction]
+  }
   const editable = canEditAccount(row)
+  if (!editable) {
+    return [detailAction]
+  }
   const consumableEditable = canBindConsumables(row)
+  const cancelable = canCancelAccount(row)
   const actions: TableRowAction[] = []
   if (Number(row.payment_status || 1) === 2) {
     actions.push({
@@ -979,7 +1008,7 @@ function accountRowActions(row: StoreAccount): TableRowAction[] {
       onClick: () => void markAccountPaid(row),
     })
   }
-  actions.push({ label: '详情', permission: 'store:account:list', onClick: () => openView(row) })
+  actions.push(detailAction)
   if (consumableEditable) {
     actions.push({
       label: '绑定消耗品',
@@ -987,14 +1016,22 @@ function accountRowActions(row: StoreAccount): TableRowAction[] {
       onClick: () => openConsumableDlg(row),
     })
   }
-  actions.push(
-    {
+  if (editable) {
+    actions.push({
       label: '编辑',
       permission: 'store:account:edit',
-      disabled: !editable,
       onClick: () => openEdit(row),
-    },
-  )
+    })
+  }
+  if (cancelable) {
+    actions.push({
+      label: '作废',
+      permission: 'store:account:edit',
+      danger: true,
+      place: 'more',
+      onClick: () => void cancelAccount(row),
+    })
+  }
   return actions
 }
 
@@ -1547,6 +1584,25 @@ async function markAccountPaid(row: StoreAccount): Promise<void> {
   }
 }
 
+async function cancelAccount(row: StoreAccount): Promise<void> {
+  const ok = await confirmDialog({
+    title: '作废记账单',
+    message: `确认作废记账单「${row.account_no || row.id}」？作废后将不计入统计，并恢复系统商品库存。`,
+  })
+  if (!ok) return
+  saving.value = true
+  try {
+    await cancelStoreAccount(row.id)
+    toast.success('账单已作废')
+    await qc.invalidateQueries({ queryKey: ['store-accounts'] })
+    await qc.invalidateQueries({ queryKey: ['store-account-stats'] })
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '作废失败')
+  } finally {
+    saving.value = false
+  }
+}
+
 const viewDlg = ref(false)
 const viewAccount = ref<StoreAccount | null>(null)
 const consumableDlg = ref(false)
@@ -1892,5 +1948,10 @@ function consumableProductActions(row: StoreAccountConsumableProduct): TableRowA
 .store-account-pay-status__dot--unpaid {
   background: #f59e0b;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+
+.store-account-pay-status__dot--canceled {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14);
 }
 </style>

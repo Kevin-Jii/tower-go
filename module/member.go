@@ -213,7 +213,7 @@ func (m *MemberModule) fillMemberUnsettledAmounts(members []model.Member, storeI
 	rows := make([]amountRow, 0)
 	q := m.db.Table("store_accounts").
 		Select("member_id, COALESCE(SUM(total_amount),0) AS amount").
-		Where("deleted_at IS NULL AND member_id IN ? AND payment_status = ?", ids, model.StoreAccountPaymentUnpaid)
+		Where("deleted_at IS NULL AND is_canceled = 0 AND member_id IN ? AND payment_status = ?", ids, model.StoreAccountPaymentUnpaid)
 	if !isAdmin {
 		q = q.Where("store_id = ?", storeID)
 	}
@@ -816,7 +816,7 @@ func (m *MemberModule) ListMemberConsumptions(memberID uint, startDate, endDate 
 	summary := &model.MemberConsumptionSummary{}
 
 	base := m.db.Table("store_accounts AS sa").
-		Where("sa.member_id = ?", memberID)
+		Where("sa.member_id = ? AND sa.deleted_at IS NULL AND sa.is_canceled = 0", memberID)
 	if startDate != "" {
 		base = base.Where("sa.account_date >= ?", startDate)
 	}
@@ -845,7 +845,7 @@ func (m *MemberModule) ListMemberConsumptions(memberID uint, startDate, endDate 
 			sa.created_at`).
 		Joins("LEFT JOIN (?) AS cons ON cons.account_id = sa.id", consSub).
 		Joins("LEFT JOIN (?) AS costs ON costs.account_id = sa.id", costSub).
-		Where("sa.member_id = ?", memberID)
+		Where("sa.member_id = ? AND sa.deleted_at IS NULL AND sa.is_canceled = 0", memberID)
 	if startDate != "" {
 		listQuery = listQuery.Where("sa.account_date >= ?", startDate)
 	}
@@ -866,7 +866,7 @@ func (m *MemberModule) ListMemberConsumptions(memberID uint, startDate, endDate 
 			COALESCE(SUM(sa.total_amount - sa.other_expense_amount - sa.errand_fee - COALESCE(cons.consumable_amount,0) - COALESCE(costs.cost_amount,0) - sa.gift_wine_cost_amount - sa.round_amount),0) AS net_income_amount`).
 		Joins("LEFT JOIN (?) AS cons ON cons.account_id = sa.id", consSub).
 		Joins("LEFT JOIN (?) AS costs ON costs.account_id = sa.id", costSub).
-		Where("sa.member_id = ?", memberID)
+		Where("sa.member_id = ? AND sa.deleted_at IS NULL AND sa.is_canceled = 0", memberID)
 	if startDate != "" {
 		summaryQuery = summaryQuery.Where("sa.account_date >= ?", startDate)
 	}

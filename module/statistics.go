@@ -70,7 +70,7 @@ func (m *StatisticsModule) GetInventoryStats(storeID uint) (*model.InventoryStat
 func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string) (*model.SalesStats, error) {
 	stats := &model.SalesStats{}
 
-	query := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL"), storeID)
+	query := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND is_canceled = 0"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -97,7 +97,7 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 
 	// 今日销售额
 	today := businessdate.DateString(time.Now())
-	todayQuery := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND account_date >= ? AND account_date < DATE_ADD(?, INTERVAL 1 DAY)", today, today), storeID)
+	todayQuery := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND is_canceled = 0 AND account_date >= ? AND account_date < DATE_ADD(?, INTERVAL 1 DAY)", today, today), storeID)
 	if err := todayQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TodayAmount).Error; err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (m *StatisticsModule) GetSalesStats(storeID uint, startDate, endDate string
 	// 本月销售额
 	businessToday := businessdate.Date(time.Now())
 	monthStart := time.Date(businessToday.Year(), businessToday.Month(), 1, 0, 0, 0, 0, businessToday.Location()).Format("2006-01-02")
-	monthQuery := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND account_date >= ?", monthStart), storeID)
+	monthQuery := withStoreID(m.db.Model(&model.StoreAccount{}).Where("deleted_at IS NULL AND is_canceled = 0 AND account_date >= ?", monthStart), storeID)
 	if err := monthQuery.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.MonthAmount).Error; err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (m *StatisticsModule) GetSalesTrend(storeID uint, startDate, endDate, perio
 
 	query := withStoreID(m.db.Model(&model.StoreAccount{}).
 		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders", dateFormat).
-		Where("deleted_at IS NULL"), storeID)
+		Where("deleted_at IS NULL AND is_canceled = 0"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -151,7 +151,7 @@ func (m *StatisticsModule) GetSalesTrendByGranularity(storeID uint, startDate, e
 
 	query := withStoreID(m.db.Model(&model.StoreAccount{}).
 		Select("DATE_FORMAT(account_date, ?) as date, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders", dateFormat).
-		Where("deleted_at IS NULL"), storeID)
+		Where("deleted_at IS NULL AND is_canceled = 0"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -170,7 +170,7 @@ func (m *StatisticsModule) GetChannelStats(storeID uint, startDate, endDate stri
 
 	query := withStoreID(m.db.Model(&model.StoreAccount{}).
 		Select("channel, COALESCE(SUM(total_amount), 0) as amount, COUNT(*) as orders").
-		Where("deleted_at IS NULL"), storeID)
+		Where("deleted_at IS NULL AND is_canceled = 0"), storeID)
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
 	}
@@ -271,7 +271,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	stats.AllCategoryAmount = stats.InboundAmount
 
 	salesQuery := m.db.Model(&model.StoreAccount{}).
-		Where("deleted_at IS NULL AND account_date >= ? AND account_date <= ?", startDate, endDate)
+		Where("deleted_at IS NULL AND is_canceled = 0 AND account_date >= ? AND account_date <= ?", startDate, endDate)
 	if storeID > 0 {
 		salesQuery = salesQuery.Where("store_id = ?", storeID)
 	}
@@ -293,7 +293,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	stats.RoundAmount = salesSummary.RoundAmount
 	stats.GiftWineCostAmount = salesSummary.GiftWineCostAmount
 	consumableQuery := m.db.Table("store_account_consumables AS sac").
-		Joins("JOIN store_accounts AS sa ON sa.id = sac.account_id AND sa.deleted_at IS NULL").
+		Joins("JOIN store_accounts AS sa ON sa.id = sac.account_id AND sa.deleted_at IS NULL AND sa.is_canceled = 0").
 		Where("sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
 	if storeID > 0 {
 		consumableQuery = consumableQuery.Where("sa.store_id = ?", storeID)
@@ -318,7 +318,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	stats.TakeoutPromotionAmount = expenseSummary.TakeoutPromotionAmount
 
 	takeoutSalesQuery := m.db.Model(&model.StoreAccount{}).
-		Where(`deleted_at IS NULL AND account_date >= ? AND account_date <= ? AND (
+		Where(`deleted_at IS NULL AND is_canceled = 0 AND account_date >= ? AND account_date <= ? AND (
 			LOWER(channel) REGEXP ? OR
 			channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR
 			channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ? OR channel LIKE ?
@@ -394,7 +394,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 			COUNT(sa.id) AS orders
 		`).
 		Joins("LEFT JOIN t_member AS tm ON tm.id = sa.member_id").
-		Where("sa.deleted_at IS NULL AND sa.member_id IS NOT NULL AND sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
+		Where("sa.deleted_at IS NULL AND sa.is_canceled = 0 AND sa.member_id IS NOT NULL AND sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
 	if storeID > 0 {
 		memberRankQuery = memberRankQuery.Where("sa.store_id = ?", storeID)
 	}
@@ -408,7 +408,7 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 
 	var itemCostAmount float64
 	itemCostQuery := m.db.Table("store_account_items AS sai").
-		Joins("JOIN store_accounts AS sa ON sa.id = sai.account_id AND sa.deleted_at IS NULL").
+		Joins("JOIN store_accounts AS sa ON sa.id = sai.account_id AND sa.deleted_at IS NULL AND sa.is_canceled = 0").
 		Joins("LEFT JOIN product_unit_specs AS ps ON ps.product_id = sai.product_id AND ps.is_enabled = 1 AND (ps.unit_code = sai.unit OR ps.unit_name = sai.unit)").
 		Where("sa.account_date >= ? AND sa.account_date <= ?", startDate, endDate)
 	if storeID > 0 {

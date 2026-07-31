@@ -206,3 +206,83 @@ func TestBuildCancelRestoreOrderUsesStableAccountOrderNo(t *testing.T) {
 		t.Fatalf("restore items = %#v, want only system product 123", first.Items)
 	}
 }
+
+func TestBuildStoreAccountItemsRecalculatesCustomItemAmount(t *testing.T) {
+	svc := &StoreAccountService{}
+	items, totalAmount, itemCostAmount, _, err := svc.buildStoreAccountItems([]model.CreateStoreAccountItemReq{
+		{
+			ProductID:   model.StoreAccountItemCustomProductID,
+			ProductName: "临时服务费",
+			Quantity:    3,
+			Unit:        "次",
+			Price:       12.5,
+			Amount:      1,
+		},
+	})
+	if err != nil {
+		t.Fatalf("buildStoreAccountItems() error = %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len(items) = %d, want 1", len(items))
+	}
+	if items[0].Amount != 37.5 {
+		t.Fatalf("custom item amount = %.2f, want recalculated amount 37.50", items[0].Amount)
+	}
+	if totalAmount != 37.5 {
+		t.Fatalf("totalAmount = %.2f, want 37.50", totalAmount)
+	}
+	if itemCostAmount != 0 {
+		t.Fatalf("itemCostAmount = %.2f, want 0", itemCostAmount)
+	}
+}
+
+func TestPaymentStatusOnlyUpdateRejectsItemReplacement(t *testing.T) {
+	paid := model.StoreAccountPaymentPaid
+	svc := &StoreAccountService{}
+	account := &model.StoreAccount{PaymentStatus: model.StoreAccountPaymentUnpaid}
+	req := &model.UpdateStoreAccountReq{
+		PaymentStatus: &paid,
+		Items: []model.CreateStoreAccountItemReq{
+			{ProductID: 1, Quantity: 1, Unit: "瓶"},
+		},
+	}
+	if svc.canApplyPaymentStatusOnlyUpdate(account, req) {
+		t.Fatal("item replacement must not be treated as a payment-status-only update")
+	}
+}
+
+func TestBuildAccountItemAdjustmentOrdersUsesStockDelta(t *testing.T) {
+	svc := &StoreAccountService{}
+	account := &model.StoreAccount{
+		ID:        88,
+		AccountNo: "JZ202607300088",
+		StoreID:   3,
+		Items: []model.StoreAccountItem{
+			{ProductID: 11, ProductName: "商品A", Quantity: 2, Unit: "瓶"},
+			{ProductID: 22, ProductName: "商品B", Quantity: 4, Unit: "瓶"},
+			{ProductID: 0, ProductName: "自定义", Quantity: 9, Unit: "项"},
+		},
+	}
+	newItems := []model.StoreAccountItem{
+		{ProductID: 11, ProductName: "商品A", Quantity: 5, Unit: "瓶"},
+		{ProductID: 22, ProductName: "商品B", Quantity: 1, Unit: "瓶"},
+		{ProductID: 0, ProductName: "自定义", Quantity: 1, Unit: "项"},
+	}
+
+	inOrder, outOrder, err := svc.buildAccountItemAdjustmentOrders(account, newItems, 1003)
+	if err != nil {
+		t.Fatalf("buildAccountItemAdjustmentOrders() error = %v", err)
+	}
+	if inOrder == nil || len(inOrder.Items) != 1 {
+		t.Fatalf("inOrder = %#v, want one stock return item", inOrder)
+	}
+	if inOrder.Items[0].ProductID != 22 || inOrder.Items[0].Quantity != 3 {
+		t.Fatalf("inOrder item = %#v, want product 22 quantity 3", inOrder.Items[0])
+	}
+	if outOrder == nil || len(outOrder.Items) != 1 {
+		t.Fatalf("outOrder = %#v, want one stock deduction item", outOrder)
+	}
+	if outOrder.Items[0].ProductID != 11 || outOrder.Items[0].Quantity != 3 {
+		t.Fatalf("outOrder item = %#v, want product 11 quantity 3", outOrder.Items[0])
+	}
+}

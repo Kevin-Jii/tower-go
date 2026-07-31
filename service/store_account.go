@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -294,6 +296,110 @@ func NewStoreAccountService(
 	}
 }
 
+func (s *StoreAccountService) buildStoreAccountItems(requestItems []model.CreateStoreAccountItemReq) ([]model.StoreAccountItem, float64, float64, map[uint]*model.SupplierProduct, error) {
+	if len(requestItems) == 0 {
+		return nil, 0, 0, nil, apicode.Newf(apicode.MissingParameter, "请至少选择一个商品")
+	}
+
+	items := make([]model.StoreAccountItem, 0, len(requestItems))
+	productMap := make(map[uint]*model.SupplierProduct)
+	specMap := make(map[uint][]*model.ProductUnitSpec)
+	var totalAmount float64
+	var itemCostAmount float64
+
+	for _, item := range requestItems {
+		if item.ProductID == model.StoreAccountItemCustomProductID {
+			name := strings.TrimSpace(item.ProductName)
+			if name == "" {
+				return nil, 0, 0, nil, apicode.Newf(apicode.ValidationFailed, "自定义明细描述不能为空")
+			}
+			unit := strings.TrimSpace(item.Unit)
+			if unit == "" {
+				return nil, 0, 0, nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」请填写单位", name)
+			}
+			price := item.Price
+			if price <= 0 {
+				return nil, 0, 0, nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」请填写单价", name)
+			}
+			amount := price * item.Quantity
+			if amount <= 0 {
+				return nil, 0, 0, nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」金额无效", name)
+			}
+			items = append(items, model.StoreAccountItem{
+				ProductID:   model.StoreAccountItemCustomProductID,
+				ProductName: name,
+				Spec:        strings.TrimSpace(item.Spec),
+				Quantity:    item.Quantity,
+				Unit:        unit,
+				Price:       price,
+				Amount:      amount,
+				Remark:      strings.TrimSpace(item.Remark),
+			})
+			totalAmount += amount
+			continue
+		}
+
+		product := productMap[item.ProductID]
+		if product == nil && s.productModule != nil {
+			if row, err := s.productModule.GetByID(item.ProductID); err == nil && row != nil {
+				product = row
+				productMap[item.ProductID] = row
+			}
+		}
+		productName := ""
+		unit := strings.TrimSpace(item.Unit)
+		price := item.Price
+		if product != nil {
+			productName = product.Name
+			if unit == "" {
+				unit = product.Unit
+			}
+		}
+
+		productUnitSpecs, specsLoaded := specMap[item.ProductID]
+		if !specsLoaded && s.unitSpecModule != nil {
+			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
+				productUnitSpecs = specs
+			}
+			specMap[item.ProductID] = productUnitSpecs
+		}
+		if s.unitSpecModule != nil {
+			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)
+			if !matched {
+				name := productName
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				return nil, 0, 0, nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】单位【%s】未配置售价，请先在商品单位配置中维护该单位售价", name, unit)
+			}
+			price = specPrice
+		} else if price <= 0 && product != nil {
+			price = resolveUnitPrice(unit, product)
+		}
+
+		amount := item.Amount
+		if price > 0 && item.Quantity > 0 {
+			amount = price * item.Quantity
+		}
+		items = append(items, model.StoreAccountItem{
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Spec:        strings.TrimSpace(item.Spec),
+			Quantity:    item.Quantity,
+			Unit:        unit,
+			Price:       price,
+			Amount:      amount,
+			Remark:      strings.TrimSpace(item.Remark),
+		})
+		totalAmount += amount
+		if item.Quantity > 0 {
+			itemCostAmount += item.Quantity * resolveUnitCostFromSpecs(unit, productUnitSpecs)
+		}
+	}
+
+	return items, totalAmount, itemCostAmount, productMap, nil
+}
+
 // Create 创建记账
 func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.CreateStoreAccountReq) (*model.StoreAccount, error) {
 	if req.MemberID != nil && *req.MemberID > 0 && s.memberModule != nil {
@@ -327,109 +433,12 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	}
 
 	// 构建明细
-	var items []model.StoreAccountItem
-	var consumables []model.StoreAccountConsumable
-	var totalAmount float64
-	var consumableAmount float64
-	var itemCostAmount float64
-	productMap := make(map[uint]*model.SupplierProduct)
-
-	for _, item := range req.Items {
-		if item.ProductID == model.StoreAccountItemCustomProductID {
-			name := strings.TrimSpace(item.ProductName)
-			if name == "" {
-				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细描述不能为空")
-			}
-			unit := strings.TrimSpace(item.Unit)
-			if unit == "" {
-				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」请填写单位", name)
-			}
-			price := item.Price
-			if price <= 0 {
-				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」请填写单价", name)
-			}
-			amount := item.Amount
-			if amount <= 0 && item.Quantity > 0 {
-				amount = price * item.Quantity
-			}
-			if amount <= 0 {
-				return nil, apicode.Newf(apicode.ValidationFailed, "自定义明细「%s」金额无效", name)
-			}
-			items = append(items, model.StoreAccountItem{
-				ProductID:   model.StoreAccountItemCustomProductID,
-				ProductName: name,
-				Spec:        strings.TrimSpace(item.Spec),
-				Quantity:    item.Quantity,
-				Unit:        unit,
-				Price:       price,
-				Amount:      amount,
-				Remark:      strings.TrimSpace(item.Remark),
-			})
-			totalAmount += amount
-			continue
-		}
-
-		// 获取商品名称
-		productName := ""
-		unit := item.Unit
-		price := item.Price
-		var productUnitSpecs []*model.ProductUnitSpec
-		var product *model.SupplierProduct
-		if s.productModule != nil {
-			if p, err := s.productModule.GetByID(item.ProductID); err == nil && p != nil {
-				product = p
-				productMap[item.ProductID] = p
-				productName = p.Name
-				if unit == "" {
-					unit = p.Unit
-				}
-			}
-		}
-		if s.unitSpecModule != nil {
-			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
-				productUnitSpecs = specs
-			}
-		}
-
-		// 严格模式：启用规格表后，单位必须匹配到规格售价
-		if s.unitSpecModule != nil {
-			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)
-			if !matched {
-				name := productName
-				if name == "" {
-					name = fmt.Sprintf("商品ID:%d", item.ProductID)
-				}
-				return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】单位【%s】未配置售价，请先在商品单位配置中维护该单位售价", name, unit)
-			}
-			price = specPrice
-		} else if price <= 0 && product != nil {
-			// 兼容兜底：未启用规格模块时，沿用旧逻辑
-			price = resolveUnitPrice(unit, product)
-		}
-
-		// 计算金额
-		amount := item.Amount
-		// 只要能确定单价，就由后端统一重算金额，避免前端旧金额污染
-		if price > 0 && item.Quantity > 0 {
-			amount = price * item.Quantity
-		}
-
-		items = append(items, model.StoreAccountItem{
-			ProductID:   item.ProductID,
-			ProductName: productName,
-			Spec:        item.Spec,
-			Quantity:    item.Quantity,
-			Unit:        unit,
-			Price:       price,
-			Amount:      amount,
-			Remark:      item.Remark,
-		})
-
-		totalAmount += amount
-		if item.Quantity > 0 {
-			itemCostAmount += item.Quantity * resolveUnitCostFromSpecs(unit, productUnitSpecs)
-		}
+	items, totalAmount, itemCostAmount, productMap, err := s.buildStoreAccountItems(req.Items)
+	if err != nil {
+		return nil, err
 	}
+	var consumables []model.StoreAccountConsumable
+	var consumableAmount float64
 
 	consumableProductIDs := make([]uint, 0, len(req.Consumables))
 	for _, item := range req.Consumables {
@@ -1054,6 +1063,123 @@ func (s *StoreAccountService) List(ctx context.Context, req *model.ListStoreAcco
 	return list, total, nil
 }
 
+type storeAccountInventoryDelta struct {
+	ProductID   uint
+	ProductName string
+	Quantity    float64
+	Unit        string
+}
+
+func (s *StoreAccountService) buildAccountItemAdjustmentOrders(account *model.StoreAccount, newItems []model.StoreAccountItem, operatorID uint) (*model.InventoryOrder, *model.InventoryOrder, error) {
+	if account == nil {
+		return nil, nil, apicode.New(apicode.ItemNotFound)
+	}
+
+	deltas := make(map[uint]*storeAccountInventoryDelta)
+	productCache := make(map[uint]*model.SupplierProduct)
+	collect := func(items []model.StoreAccountItem, factor float64) {
+		for _, item := range items {
+			if item.ProductID == model.StoreAccountItemCustomProductID || item.Quantity <= 0 {
+				continue
+			}
+			product, loaded := productCache[item.ProductID]
+			if !loaded && s.productModule != nil {
+				if row, err := s.productModule.GetByID(item.ProductID); err == nil && row != nil {
+					product = row
+				}
+				productCache[item.ProductID] = product
+			}
+			quantity, unit := convertToBaseQuantity(s.unitSpecModule, product, item.ProductID, item.Quantity, item.Unit)
+			if quantity <= 0 {
+				continue
+			}
+			delta := deltas[item.ProductID]
+			if delta == nil {
+				name := strings.TrimSpace(item.ProductName)
+				if name == "" && product != nil {
+					name = product.Name
+				}
+				if name == "" {
+					name = fmt.Sprintf("商品ID:%d", item.ProductID)
+				}
+				delta = &storeAccountInventoryDelta{
+					ProductID:   item.ProductID,
+					ProductName: name,
+					Unit:        unit,
+				}
+				deltas[item.ProductID] = delta
+			}
+			delta.Quantity += factor * quantity
+		}
+	}
+	collect(account.Items, -1)
+	collect(newItems, 1)
+
+	productIDs := make([]uint, 0, len(deltas))
+	for productID := range deltas {
+		productIDs = append(productIDs, productID)
+	}
+	sort.Slice(productIDs, func(i, j int) bool { return productIDs[i] < productIDs[j] })
+
+	newOrder := func(orderType int8, reason, remark string) *model.InventoryOrder {
+		order := &model.InventoryOrder{
+			OrderNo:    storeAccountEditInventoryOrderNo(account.ID, orderType),
+			Type:       orderType,
+			StoreID:    account.StoreID,
+			Reason:     reason,
+			Remark:     remark,
+			OperatorID: operatorID,
+		}
+		if s.storeModule != nil {
+			if store, err := s.storeModule.GetByID(account.StoreID); err == nil && store != nil {
+				order.StoreName = store.Name
+			}
+		}
+		if s.userModule != nil {
+			if user, err := s.userModule.GetByID(operatorID); err == nil && user != nil {
+				order.OperatorName = user.Nickname
+				if order.OperatorName == "" {
+					order.OperatorName = user.Username
+				}
+				order.OperatorPhone = user.Phone
+			}
+		}
+		return order
+	}
+
+	inOrder := newOrder(model.InventoryTypeIn, "记账编辑退回", fmt.Sprintf("编辑记账退回库存，记账单号:%s", account.AccountNo))
+	outOrder := newOrder(model.InventoryTypeOut, model.ReasonSale, fmt.Sprintf("编辑记账补扣库存，记账单号:%s", account.AccountNo))
+	for _, productID := range productIDs {
+		delta := deltas[productID]
+		if delta == nil || math.Abs(delta.Quantity) < 0.000001 {
+			continue
+		}
+		item := model.InventoryOrderItem{
+			ProductID:   delta.ProductID,
+			ProductName: delta.ProductName,
+			Quantity:    math.Abs(delta.Quantity),
+			Unit:        delta.Unit,
+			Remark:      "记账商品编辑库存差量",
+		}
+		if delta.Quantity > 0 {
+			outOrder.Items = append(outOrder.Items, item)
+			outOrder.TotalQuantity += item.Quantity
+			continue
+		}
+		inOrder.Items = append(inOrder.Items, item)
+		inOrder.TotalQuantity += item.Quantity
+	}
+	inOrder.ItemCount = len(inOrder.Items)
+	outOrder.ItemCount = len(outOrder.Items)
+	if len(inOrder.Items) == 0 {
+		inOrder = nil
+	}
+	if len(outOrder.Items) == 0 {
+		outOrder = nil
+	}
+	return inOrder, outOrder, nil
+}
+
 func (s *StoreAccountService) fillAccountActionFlags(account *model.StoreAccount) {
 	if account == nil {
 		return
@@ -1069,10 +1195,10 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 	if err != nil {
 		return err
 	}
-	return s.updateLoadedAccount(account, req)
+	return s.updateLoadedAccount(account, account.StoreID, account.OperatorID, false, req)
 }
 
-func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) error {
+func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, storeID, operatorID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
 	if account.IsCanceled {
 		return apicode.Newf(apicode.OperationDenied, "作废记账单不允许修改")
 	}
@@ -1095,6 +1221,10 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 	nextErrandFee := account.ErrandFee
 	shouldRecalculateNetIncome := false
 	giftWineChanged := false
+	var replacementItems []model.StoreAccountItem
+	var replacementItemCost float64
+	var inventoryInOrder *model.InventoryOrder
+	var inventoryOutOrder *model.InventoryOrder
 
 	if req.Channel != "" {
 		updates["channel"] = req.Channel
@@ -1222,6 +1352,24 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 	if nextIsErrandOrder == 1 && nextErrandFee <= 0 {
 		return apicode.Newf(apicode.ValidationFailed, "跑腿订单请填写跑腿费用")
 	}
+	if req.Items != nil {
+		items, itemTotal, itemCost, _, err := s.buildStoreAccountItems(req.Items)
+		if err != nil {
+			return err
+		}
+		inOrder, outOrder, err := s.buildAccountItemAdjustmentOrders(account, items, operatorID)
+		if err != nil {
+			return err
+		}
+		replacementItems = items
+		replacementItemCost = itemCost
+		inventoryInOrder = inOrder
+		inventoryOutOrder = outOrder
+		nextTotalAmount = itemTotal
+		updates["total_amount"] = itemTotal
+		updates["item_count"] = len(items)
+		shouldRecalculateNetIncome = true
+	}
 	if req.IncomeAmount != nil {
 		if !s.isTakeoutChannel(nextChannel) {
 			return apicode.Newf(apicode.ValidationFailed, "仅外卖/商城/团购平台渠道支持自定义收入金额")
@@ -1236,6 +1384,9 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 			consumableTotal += c.Amount
 		}
 		itemCostTotal := s.calculateAccountItemCost(account.Items)
+		if req.Items != nil {
+			itemCostTotal = replacementItemCost
+		}
 		updates["net_income_amount"] = calculateStoreAccountNetIncome(
 			nextTotalAmount,
 			nextOtherExpenseAmount,
@@ -1251,6 +1402,17 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, r
 		return nil
 	}
 
+	if req.Items != nil {
+		return s.storeAccountModule.ReplaceItemsWithInventoryAdjustments(
+			account.ID,
+			storeID,
+			hqUnbound,
+			updates,
+			replacementItems,
+			inventoryInOrder,
+			inventoryOutOrder,
+		)
+	}
 	return s.storeAccountModule.Update(account.ID, updates)
 }
 
@@ -1280,10 +1442,11 @@ func (s *StoreAccountService) canApplyPaymentStatusOnlyUpdate(account *model.Sto
 		req.GiftWineQuantity == nil &&
 		req.GiftWineCostAmount == nil &&
 		req.IsErrandOrder == nil &&
-		req.ErrandFee == nil
+		req.ErrandFee == nil &&
+		req.Items == nil
 }
 
-func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
+func (s *StoreAccountService) UpdateScoped(id, storeID, operatorID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
 	if !hqUnbound && storeID == 0 {
 		return apicode.New(apicode.StoreRequired)
 	}
@@ -1291,7 +1454,7 @@ func (s *StoreAccountService) UpdateScoped(id, storeID uint, hqUnbound bool, req
 	if err != nil {
 		return err
 	}
-	return s.updateLoadedAccount(account, req)
+	return s.updateLoadedAccount(account, storeID, operatorID, hqUnbound, req)
 }
 
 // Delete 删除记账
@@ -1386,6 +1549,14 @@ func (s *StoreAccountService) buildCancelRestoreOrder(account *model.StoreAccoun
 // 作废退库单与记账主键一一对应，避免并发生成日流水号时发生唯一键冲突。
 func storeAccountCancelInventoryOrderNo(accountID uint) string {
 	return fmt.Sprintf("RKZF%010d", accountID)
+}
+
+func storeAccountEditInventoryOrderNo(accountID uint, orderType int8) string {
+	prefix := "RKBJ"
+	if orderType == model.InventoryTypeOut {
+		prefix = "CKBJ"
+	}
+	return fmt.Sprintf("%s%010d%d", prefix, accountID, time.Now().UnixNano())
 }
 
 // GetStats 获取统计

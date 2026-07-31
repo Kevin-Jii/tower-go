@@ -22,7 +22,7 @@ func NewStoreAccountController(storeAccountService *service.StoreAccountService)
 
 // Create godoc
 // @Summary 创建记账
-// @Description 创建记账单，支持多个商品；items.product_id=0 时为自定义明细，items.product_name 必填且 items.price 必填，不扣库存。系统商品时 items.price 不传或传0则按 items.unit 自动选价；items.amount 不传或传0时按 price*quantity 计算
+// @Description 创建记账单，支持多个商品；items.product_id=0 时为自定义明细，items.product_name 必填且 items.price 必填，不扣库存。系统商品按 items.unit 自动选价；所有明细金额均由后端按最终单价乘数量计算
 // @Tags 门店记账
 // @Accept json
 // @Produce json
@@ -198,7 +198,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.storeAccountService.UpdateScoped(uint(id), middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
+	if err := c.storeAccountService.UpdateScoped(uint(id), middleware.GetStoreID(ctx), middleware.GetUserID(ctx), middleware.HQUnboundAdmin(ctx), &req); err != nil {
 		http.ErrorFrom(ctx, err)
 		return
 	}

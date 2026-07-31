@@ -176,6 +176,95 @@ func (m *StoreAccountModule) Update(id uint, updates map[string]interface{}) err
 	return m.db.Model(&model.StoreAccount{}).Where("id = ?", id).Updates(updates).Error
 }
 
+// ReplaceItemsWithInventoryAdjustments 原子替换记账明细并应用库存差量。
+func (m *StoreAccountModule) ReplaceItemsWithInventoryAdjustments(
+	id, storeID uint,
+	hqUnbound bool,
+	updates map[string]interface{},
+	items []model.StoreAccountItem,
+	inOrder, outOrder *model.InventoryOrder,
+) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		var account model.StoreAccount
+		query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", id)
+		if !hqUnbound {
+			query = query.Where("store_id = ?", storeID)
+		}
+		if err := query.First(&account).Error; err != nil {
+			return err
+		}
+		if account.IsCanceled {
+			return apicode.Newf(apicode.OperationDenied, "作废记账单不允许修改")
+		}
+
+		if outOrder != nil {
+			for _, item := range outOrder.Items {
+				var inv model.Inventory
+				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+					Where("store_id = ? AND product_id = ?", account.StoreID, item.ProductID).
+					First(&inv).Error; err != nil {
+					name := item.ProductName
+					if name == "" {
+						name = fmt.Sprintf("商品ID:%d", item.ProductID)
+					}
+					return apicode.Newf(apicode.InventoryNotFound, "商品【%s】库存不存在，无法补扣", name)
+				}
+				if inv.Quantity < item.Quantity {
+					name := item.ProductName
+					if name == "" {
+						name = fmt.Sprintf("商品ID:%d", item.ProductID)
+					}
+					return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，当前库存: %.2f，需补扣: %.2f", name, inv.Quantity, item.Quantity)
+				}
+			}
+		}
+
+		if inOrder != nil && len(inOrder.Items) > 0 {
+			if err := tx.Create(inOrder).Error; err != nil {
+				return fmt.Errorf("create account edit stock return order: %w", err)
+			}
+			for _, item := range inOrder.Items {
+				if err := incrementInventoryQuantity(tx, account.StoreID, item.ProductID, item.Quantity, item.Unit); err != nil {
+					return fmt.Errorf("return account edit stock for product %d: %w", item.ProductID, err)
+				}
+			}
+		}
+
+		if outOrder != nil && len(outOrder.Items) > 0 {
+			if err := tx.Create(outOrder).Error; err != nil {
+				return fmt.Errorf("create account edit stock out order: %w", err)
+			}
+			for _, item := range outOrder.Items {
+				res := tx.Model(&model.Inventory{}).
+					Where("store_id = ? AND product_id = ? AND quantity >= ?", account.StoreID, item.ProductID, item.Quantity).
+					Update("quantity", gorm.Expr("quantity - ?", item.Quantity))
+				if res.Error != nil {
+					return res.Error
+				}
+				if res.RowsAffected == 0 {
+					return apicode.Newf(apicode.InventoryInsufficient, "商品【%s】库存不足，补扣失败", item.ProductName)
+				}
+			}
+		}
+
+		if err := tx.Where("account_id = ?", account.ID).Delete(&model.StoreAccountItem{}).Error; err != nil {
+			return err
+		}
+		for i := range items {
+			items[i].ID = 0
+			items[i].AccountID = account.ID
+			items[i].DeletedAt = gorm.DeletedAt{}
+		}
+		if len(items) > 0 {
+			if err := tx.Create(&items).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Model(&model.StoreAccount{}).Where("id = ?", account.ID).Updates(updates).Error
+	})
+}
+
 func (m *StoreAccountModule) CancelWithStockRestore(id, storeID uint, hqUnbound bool, operatorID uint, remark string, restoreOrder *model.InventoryOrder) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		var account model.StoreAccount

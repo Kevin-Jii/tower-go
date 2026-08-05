@@ -15,15 +15,18 @@
         <div class="dash-toolbar" aria-label="数据大屏操作">
           <div class="dash-periods" role="tablist" aria-label="统计周期">
             <button v-for="option in periodOptions" :key="option.value" type="button" class="dash-period"
-              :class="{ 'dash-period--active': period === option.value }" role="tab"
-              :aria-selected="period === option.value" @click="period = option.value">
+              :class="{ 'dash-period--active': !hasCustomRange && period === option.value }" role="tab"
+              :aria-selected="!hasCustomRange && period === option.value" @click="selectPeriod(option.value)">
               {{ option.label }}
             </button>
           </div>
 
-          <div class="dash-range-control" title="当前统计日期范围">
+          <div class="dash-range-control" title="选择统计日期范围">
             <IconCalendar />
-            <span>{{ activeRange.start }} ~ {{ activeRange.end }}</span>
+            <a-range-picker v-model="dateRangeValue" class="dash-range-picker" value-format="YYYY-MM-DD"
+              format="YYYY-MM-DD" :allow-clear="false" :disabled-date="disableFutureDate"
+              :trigger-props="{ contentClass: 'dash-range-popup' }" :placeholder="['开始日期', '结束日期']"
+              aria-label="选择统计日期范围" />
           </div>
 
           <button class="dash-icon-button" type="button" title="刷新数据" aria-label="刷新数据" @click="refreshDash">
@@ -53,9 +56,14 @@
       <main class="dash-main">
         <section class="dash-hero-panel dash-panel" aria-label="经营关键指标">
           <div class="dash-hero-summary">
-            <span class="dash-eyebrow">{{ periodLabel }}净利润</span>
-            <strong class="dash-hero-value" :class="profitTone">
-              <CountUpNumber :value="overview?.net_profit_amount" prefix="¥" :decimals="2" :use-grouping="true" />
+            <span class="dash-eyebrow">{{ periodLabel }}销售收入</span>
+            <strong class="dash-hero-value">
+              <CountUpNumber
+                :value="overview?.sales_amount ?? dash?.sales.total_amount ?? 0"
+                prefix="¥"
+                :decimals="2"
+                :use-grouping="true"
+              />
             </strong>
             <span class="dash-hero-meta">{{ activeRange.start }} 至 {{ activeRange.end }} · 统计已同步</span>
             <div class="dash-hero-chart" ref="heroChartRef" aria-hidden="true" />
@@ -143,21 +151,28 @@
               </div>
               <span class="dash-panel-more">{{ memberRows.length }} 位会员</span>
             </div>
-            <div class="dash-ranking-list dash-ranking-list--member">
-              <div v-for="(item, index) in memberRows" :key="item.key" class="dash-ranking-row">
-                <span class="dash-ranking-index" :class="{ 'dash-ranking-index--top': index < 3 }">{{ index + 1
-                  }}</span>
-                <span class="dash-ranking-name">{{ item.name }}</span>
-                <span class="dash-ranking-orders">{{ item.orders }} 单</span>
-                <strong>{{ formatMoney(item.amount) }}</strong>
+            <div v-if="memberRows.length" class="dash-member-scroll">
+              <div class="dash-member-scroll__track"
+                :class="{ 'dash-member-scroll__track--active': memberRows.length > 5 }"
+                :style="{ '--member-scroll-duration': `${Math.max(16, memberRows.length * 2.2)}s` }">
+                <div v-for="groupIndex in (memberRows.length > 5 ? 2 : 1)" :key="groupIndex"
+                  class="dash-member-scroll__group" :aria-hidden="groupIndex > 1">
+                  <div v-for="(item, index) in memberRows" :key="`${groupIndex}-${item.key}`" class="dash-ranking-row">
+                    <span class="dash-ranking-index" :class="{ 'dash-ranking-index--top': index < 3 }">{{ index + 1
+                      }}</span>
+                    <span class="dash-ranking-name">{{ item.name }}</span>
+                    <span class="dash-ranking-orders">{{ item.orders }} 单</span>
+                    <strong>{{ formatMoney(item.amount) }}</strong>
+                  </div>
+                </div>
               </div>
-              <p v-if="!memberRows.length" class="dash-empty">暂无会员消费数据</p>
             </div>
+            <p v-else class="dash-empty">暂无会员消费数据</p>
           </article>
 
         </section>
 
-        <section class="dash-footer-grid" aria-label="库存与经营指标">
+        <section class="dash-footer-grid" aria-label="经营费用与利润指标">
           <article v-for="metric in footerCards" :key="metric.label" class="dash-footer-card dash-panel"
             :class="metric.cardTone">
             <span class="dash-footer-icon">
@@ -208,8 +223,7 @@ import type { HomeChartsStats } from '@/api/types'
 import { useUserStore } from '@/store/user'
 import {
   DashboardAverageIcon,
-  DashboardDepositIcon,
-  DashboardInboundIcon,
+  DashboardChannelIcon,
   DashboardLossIcon,
   DashboardMarginIcon,
   DashboardOrdersIcon,
@@ -217,7 +231,6 @@ import {
   DashboardProfitIcon,
   DashboardRoundIcon,
   DashboardSalesIcon,
-  DashboardStockIcon,
 } from './components/icons'
 
 defineProps<{
@@ -228,6 +241,7 @@ const userStore = useUserStore()
 const router = useRouter()
 const screenRoot = ref<HTMLElement | null>(null)
 const period = ref('month')
+const customRange = ref<string[]>([])
 const browserFullscreen = ref(false)
 const periodOptions = [
   { label: '今日', value: 'today' },
@@ -266,6 +280,14 @@ function dateText(value: Date): string {
   return `${y}-${m}-${d}`
 }
 
+function disableFutureDate(value: Date): boolean {
+  const current = new Date(value)
+  const today = new Date()
+  current.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  return current.getTime() > today.getTime()
+}
+
 function periodRange(value: string): { start: string; end: string } {
   const now = new Date()
   const end = dateText(now)
@@ -297,8 +319,24 @@ function rangeGranularity(range: { start: string; end: string }): 'day' | 'month
   return days > 92 ? 'month' : 'day'
 }
 
-const activeRange = computed(() => periodRange(period.value))
-const periodLabel = computed(() => periodOptions.find((item) => item.value === period.value)?.label || '本月')
+const hasCustomRange = computed(() => customRange.value.length === 2 && Boolean(customRange.value[0] && customRange.value[1]))
+const activeRange = computed(() => {
+  if (hasCustomRange.value) {
+    return { start: customRange.value[0], end: customRange.value[1] }
+  }
+  return periodRange(period.value)
+})
+const dateRangeValue = computed<string[]>({
+  get: () => [activeRange.value.start, activeRange.value.end],
+  set: (value) => {
+    if (!value?.[0] || !value?.[1]) return
+    customRange.value = [String(value[0]), String(value[1])]
+  },
+})
+const periodLabel = computed(() => {
+  if (hasCustomRange.value) return '自定义周期'
+  return periodOptions.find((item) => item.value === period.value)?.label || '本月'
+})
 const homeCharts = ref<HomeChartsStats | null>(null)
 const homeLoading = ref(false)
 const overview = computed(() => homeCharts.value?.overview ?? null)
@@ -306,6 +344,11 @@ const screenLoading = computed(() => dashPending.value || dashFetching.value || 
 
 function goAdmin(): void {
   void router.push('/admin')
+}
+
+function selectPeriod(value: string): void {
+  customRange.value = []
+  period.value = value
 }
 
 const grossMargin = computed(() => {
@@ -318,33 +361,30 @@ const avgOrderAmount = computed(() => {
   const orders = Number(overview.value?.sales_order_count ?? 0)
   return orders > 0 ? sales / orders : 0
 })
-const profitTone = computed(() => (Number(overview.value?.net_profit_amount ?? 0) >= 0 ? 'tone-good' : 'tone-bad'))
-
+const netProfitAmount = computed(() => Number(overview.value?.net_profit_amount ?? 0))
 const iconSet = {
   sales: markRaw(DashboardSalesIcon),
   profit: markRaw(DashboardProfitIcon),
   margin: markRaw(DashboardMarginIcon),
   average: markRaw(DashboardAverageIcon),
   orders: markRaw(DashboardOrdersIcon),
-  inbound: markRaw(DashboardInboundIcon),
+  channel: markRaw(DashboardChannelIcon),
   outbound: markRaw(DashboardOutboundIcon),
-  stock: markRaw(DashboardStockIcon),
   loss: markRaw(DashboardLossIcon),
   round: markRaw(DashboardRoundIcon),
-  deposit: markRaw(DashboardDepositIcon),
 }
 
 const metricCards = computed(() => [
   {
-    label: '销售收入',
-    value: Number(overview.value?.sales_amount ?? dash.value?.sales.total_amount ?? 0),
+    label: '净利润',
+    value: netProfitAmount.value,
     prefix: '¥',
     suffix: '',
     decimals: 2,
     note: '本期累计',
     icon: iconSet.sales,
     iconTone: 'dash-icon-tone--blue',
-    tone: '',
+    tone: netProfitAmount.value >= 0 ? 'tone-good' : 'tone-bad',
   },
   {
     label: '毛利额',
@@ -393,13 +433,13 @@ const metricCards = computed(() => [
 ])
 
 const footerCards = computed(() => [
-  { label: '入库金额', value: Number(overview.value?.inbound_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(overview.value?.inventory_in_count ?? 0)} 单入库`, icon: iconSet.inbound, cardTone: 'dash-footer-card--purple' },
-  { label: '出库金额', value: Number(overview.value?.outbound_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(overview.value?.inventory_out_count ?? 0)} 单出库`, icon: iconSet.outbound, cardTone: 'dash-footer-card--blue' },
-  { label: '库存金额', value: Number(overview.value?.all_category_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(dash.value?.inventory.total_quantity ?? 0)} 件库存`, icon: iconSet.stock, cardTone: 'dash-footer-card--orange' },
-  { label: '库存数量', value: Number(dash.value?.inventory.total_quantity ?? 0), prefix: '', suffix: ' 件', decimals: 0, note: `今日入库 ${Number(dash.value?.inventory.today_in ?? 0)} 件`, icon: iconSet.stock, cardTone: 'dash-footer-card--green' },
+  { label: '跑腿费用', value: Number(overview.value?.errand_fee_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.average, cardTone: 'dash-footer-card--purple' },
+  { label: 'B2B供货金额', value: Number(overview.value?.b2b_supply_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(overview.value?.b2b_supply_order_count ?? 0)} 笔供货`, icon: iconSet.outbound, cardTone: 'dash-footer-card--blue' },
+  { label: '推广金额', value: Number(overview.value?.takeout_promotion_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '外卖推广支出', icon: iconSet.channel, cardTone: 'dash-footer-card--orange' },
+  { label: '门店支出', value: Number(overview.value?.store_expense_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.loss, cardTone: 'dash-footer-card--red' },
+  { label: '毛利', value: Number(overview.value?.gross_profit_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.profit, cardTone: 'dash-footer-card--green' },
   { label: '报损金额', value: Number(overview.value?.inventory_loss_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(overview.value?.inventory_loss_count ?? 0)} 笔报损`, icon: iconSet.loss, cardTone: 'dash-footer-card--red' },
   { label: '抹零金额', value: Number(overview.value?.round_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.round, cardTone: 'dash-footer-card--blue' },
-  { label: '退货押金', value: Number(overview.value?.return_deposit_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `物流费用 ${formatMoney(Number(overview.value?.return_logistics_fee ?? 0))}`, icon: iconSet.deposit, cardTone: 'dash-footer-card--purple' },
 ])
 
 const lineRows = computed(() => homeCharts.value?.line ?? [])
@@ -462,6 +502,38 @@ function formatMoney(value: number): string {
   return `¥${Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+function formatTrendDate(value: string): string {
+  const text = String(value || '')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text.slice(5)
+  return text
+}
+
+type TooltipPositionSize = {
+  contentSize: [number, number]
+  viewSize: [number, number]
+}
+
+function keepTooltipInView(
+  point: number[],
+  _params: unknown,
+  _dom: HTMLElement,
+  _rect: unknown,
+  size: TooltipPositionSize,
+): [number, number] {
+  const gap = 12
+  const [contentWidth, contentHeight] = size.contentSize
+  const [viewWidth, viewHeight] = size.viewSize
+  const maxX = Math.max(gap, viewWidth - contentWidth - gap)
+  const maxY = Math.max(gap, viewHeight - contentHeight - gap)
+  const preferredX = point[0] + contentWidth + gap <= viewWidth ? point[0] + gap : point[0] - contentWidth - gap
+  const preferredY = point[1] + contentHeight + gap <= viewHeight ? point[1] + gap : point[1] - contentHeight - gap
+
+  return [
+    Math.max(gap, Math.min(preferredX, maxX)),
+    Math.max(gap, Math.min(preferredY, maxY)),
+  ]
+}
+
 function disposeCharts(): void {
   lineChart?.dispose()
   pieChart?.dispose()
@@ -488,21 +560,31 @@ function applyChartOptions(hc: HomeChartsStats): void {
       tooltip: {
         trigger: 'axis',
         appendToBody: true,
-        confine: false,
+        confine: true,
+        position: keepTooltipInView,
         extraCssText: 'z-index: 1000; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);',
         backgroundColor: '#0a1832',
         borderColor: '#1f5ca5',
         textStyle: { color: '#e7f0ff' },
         valueFormatter: (value: unknown) => Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 }),
       },
-      grid: { left: compact ? 38 : 56, right: compact ? 38 : 54, top: 20, bottom: compact ? 34 : 28 },
+      grid: { left: compact ? 38 : 56, right: compact ? 38 : 54, top: 20, bottom: compact ? 54 : 46 },
       xAxis: {
         type: 'category',
         data: line.map((item) => item.date),
         boundaryGap: false,
         axisLine: { lineStyle: { color: 'rgba(155, 185, 231, 0.32)' } },
         axisTick: { show: false },
-        axisLabel: { color: axisText, fontSize: compact ? 10 : 11, margin: 12, rotate: compact || line.length > 12 ? 28 : 0 },
+        axisLabel: {
+          color: axisText,
+          fontSize: compact ? 10 : 11,
+          margin: 12,
+          rotate: compact || line.length > 12 ? 28 : 0,
+          hideOverlap: true,
+          showMinLabel: true,
+          showMaxLabel: true,
+          formatter: (value: string) => formatTrendDate(value),
+        },
       },
       yAxis: [
         {
@@ -549,7 +631,7 @@ function applyChartOptions(hc: HomeChartsStats): void {
     pieChart.setOption({
       backgroundColor: 'transparent',
       animationDuration: 520,
-      tooltip: { trigger: 'item', appendToBody: true, confine: false, extraCssText: 'z-index: 1000; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);', backgroundColor: '#0a1832', borderColor: '#1f5ca5', textStyle: { color: '#e7f0ff' }, formatter: (params: { name: string; value: number; percent: number }) => `${params.name}<br/>${formatMoney(params.value)} · ${params.percent}%` },
+      tooltip: { trigger: 'item', appendToBody: true, confine: true, position: keepTooltipInView, extraCssText: 'z-index: 1000; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);', backgroundColor: '#0a1832', borderColor: '#1f5ca5', textStyle: { color: '#e7f0ff' }, formatter: (params: { name: string; value: number; percent: number }) => `${params.name}<br/>${formatMoney(params.value)} · ${params.percent}%` },
       series: [{
         type: 'pie',
         radius: compact ? ['48%', '70%'] : ['54%', '76%'],
@@ -680,13 +762,12 @@ function bindResizeObserver(): void {
   resizeObserver.observe(screenRoot.value)
 }
 
-watch(period, () => {
-  void loadHomeCharts()
-})
-
-watch(currentStoreId, () => {
-  void loadHomeCharts()
-})
+watch(
+  () => [activeRange.value.start, activeRange.value.end, currentStoreId.value] as const,
+  () => {
+    void loadHomeCharts()
+  },
+)
 
 watch(homeCharts, (stats) => {
   if (stats) void paintChartsWhenReady(stats)
@@ -876,18 +957,68 @@ onBeforeUnmount(() => {
 .dash-range-control {
   gap: 8px;
   height: 36px;
-  padding: 0 12px;
+  width: 252px;
+  min-width: 252px;
+  padding: 0 4px 0 11px;
   border: 1px solid rgba(37, 98, 170, 0.32);
   border-radius: 8px;
   color: #bdcbe2;
   background: rgba(8, 24, 50, 0.82);
   font-size: 13px;
   white-space: nowrap;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.dash-range-control:hover,
+.dash-range-control:focus-within {
+  border-color: rgba(75, 143, 235, 0.72);
+  background: rgba(15, 42, 84, 0.88);
 }
 
 .dash-range-control svg {
+  flex: 0 0 auto;
   color: #90a7c8;
   font-size: 16px;
+}
+
+.dash-range-control :deep(.dash-range-picker) {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 5px 0 0;
+  border: 0;
+  color: #c7d5ea;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dash-range-control :deep(.dash-range-picker:hover),
+.dash-range-control :deep(.dash-range-picker.arco-picker-focused) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dash-range-control :deep(.arco-picker-input input) {
+  padding-left: 4px;
+  color: #c7d5ea;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.dash-range-control :deep(.arco-picker-input input::placeholder) {
+  color: #8499ba;
+}
+
+.dash-range-control :deep(.arco-picker-separator) {
+  min-width: 12px;
+  padding: 0 3px;
+  color: #7088ad;
+}
+
+.dash-range-control :deep(.arco-picker-suffix) {
+  display: none;
 }
 
 .dash-icon-button,
@@ -1066,6 +1197,14 @@ onBeforeUnmount(() => {
   background: rgba(192, 99, 28, 0.24);
 }
 
+.tone-good {
+  color: #a7f3d0 !important;
+}
+
+.tone-bad {
+  color: #fca5a5 !important;
+}
+
 .dash-metric-copy {
   display: grid;
   align-content: start;
@@ -1171,6 +1310,11 @@ onBeforeUnmount(() => {
   height: calc(100% - 44px);
   min-height: 246px;
   margin-top: 8px;
+}
+
+.dash-panel--trend .dash-chart {
+  height: calc(100% - 54px);
+  min-height: 0;
 }
 
 .dash-insight-title {
@@ -1289,16 +1433,17 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(130px, 0.88fr) minmax(0, 1.12fr);
-  gap: 8px;
-  align-items: center;
-  height: 214px;
-  margin-top: 6px;
+  grid-template-columns: minmax(120px, 0.82fr) minmax(0, 1.18fr);
+  gap: 14px;
+  align-items: stretch;
+  height: calc(100% - 34px);
+  min-height: 0;
+  margin-top: 8px;
 }
 
 .dash-pie-chart {
-  min-height: 190px;
-  height: 210px;
+  min-height: 0;
+  height: 100%;
   margin-top: 0;
 }
 
@@ -1312,22 +1457,28 @@ onBeforeUnmount(() => {
 
 .dash-channel-list {
   display: grid;
-  gap: 10px;
+  align-content: center;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .dash-channel-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 3px 8px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(78px, auto);
+  gap: 8px;
+  align-items: center;
   color: #a8b9d3;
   font-size: 11px;
 }
 
 .dash-channel-row strong {
-  grid-column: 1 / -1;
+  min-width: 0;
   color: #e5edf9;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 680;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .dash-channel-name {
@@ -1349,6 +1500,37 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 7px;
   margin-top: 16px;
+}
+
+.dash-member-scroll {
+  position: relative;
+  z-index: 1;
+  height: calc(100% - 36px);
+  min-height: 0;
+  margin-top: 12px;
+  overflow: hidden;
+  mask-image: linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
+}
+
+.dash-member-scroll__track {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.dash-member-scroll__track--active {
+  animation: dash-member-scroll var(--member-scroll-duration, 20s) linear infinite;
+}
+
+.dash-member-scroll:hover .dash-member-scroll__track--active {
+  animation-play-state: paused;
+}
+
+.dash-member-scroll__group {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 7px;
+  padding-bottom: 7px;
 }
 
 .dash-ranking-row {
@@ -1696,6 +1878,36 @@ onBeforeUnmount(() => {
   line-height: inherit;
 }
 
+:global(.dash-range-popup) {
+  --color-bg-popup: #0a1b36;
+  --color-bg-2: #10284d;
+  --color-fill-1: rgba(80, 104, 143, 0.12);
+  --color-fill-2: rgba(43, 84, 145, 0.18);
+  --color-fill-3: rgba(51, 105, 183, 0.28);
+  --color-neutral-3: rgba(55, 122, 207, 0.38);
+  --color-text-1: #edf4ff;
+  --color-text-2: #c0cee3;
+  --color-text-3: #91a5c4;
+  --color-text-4: #607697;
+  --color-primary-light-1: rgba(43, 121, 227, 0.2);
+  --color-primary-light-2: rgba(54, 136, 241, 0.34);
+  --primary-6: 55, 133, 229;
+}
+
+:global(.dash-range-popup .arco-picker-range-container) {
+  border-color: rgba(55, 122, 207, 0.48);
+  border-radius: 9px;
+  background: #0a1b36;
+}
+
+:global(.dash-range-popup .arco-picker-week-list-item) {
+  color: #8ea4c5;
+}
+
+:global(.dash-range-popup .arco-picker-cell-today::after) {
+  background: #42d29a;
+}
+
 @media (max-width: 1500px) {
   .dash-hero-panel {
     grid-template-columns: minmax(270px, 0.9fr) minmax(0, 2.1fr);
@@ -1795,6 +2007,8 @@ onBeforeUnmount(() => {
 
   .dash-range-control {
     flex: 1 1 180px;
+    width: auto;
+    min-width: 252px;
   }
 
   .dash-middle-grid {
@@ -1814,6 +2028,10 @@ onBeforeUnmount(() => {
   .dash-data-panel {
     min-height: 280px;
   }
+
+  .dash-member-scroll {
+    height: 220px;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1828,6 +2046,7 @@ onBeforeUnmount(() => {
   .dash-range-control {
     order: 3;
     flex-basis: 100%;
+    min-width: 100%;
   }
 
   .dash-export-button {
@@ -1879,6 +2098,11 @@ onBeforeUnmount(() => {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+
+  .dash-member-scroll__track--active {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 @keyframes dash-icon-spin {
@@ -1902,6 +2126,12 @@ onBeforeUnmount(() => {
   to {
     opacity: 1;
     transform: scale(1.08);
+  }
+}
+
+@keyframes dash-member-scroll {
+  to {
+    transform: translateY(-50%);
   }
 }
 </style>

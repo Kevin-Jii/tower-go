@@ -289,6 +289,9 @@
 
     <BaseDialog v-model="viewDlg" title="记账详情" max-width="min(720px, 96vw)">
       <div v-if="viewAccount" class="max-h-[70vh] overflow-y-auto space-y-4 pr-1">
+        <div v-if="isReadOnlyAccount(viewAccount)" class="inline-flex rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">
+          B2B 供货 · 只读账单
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div><span class="text-[var(--color-text-3)]">单号</span>：{{ viewAccount.account_no }}</div>
           <div><span class="text-[var(--color-text-3)]">记账日期</span>：{{ formatDate(viewAccount.account_date) }}</div>
@@ -938,6 +941,10 @@ function isCanceledAccount(row: StoreAccount): boolean {
   return row.is_canceled === true || Number(row.is_canceled || 0) === 1
 }
 
+function isReadOnlyAccount(row: StoreAccount): boolean {
+  return row.is_read_only === true || row.source_type === 'b2b_supply_order'
+}
+
 function paymentStatusLabel(row: StoreAccount): string {
   if (isCanceledAccount(row)) return '已作废'
   return Number(row.payment_status) === 2 ? '未支付' : '已支付'
@@ -949,19 +956,19 @@ function paymentStatusDotClass(row: StoreAccount): string {
 }
 
 function canEditAccount(row: StoreAccount): boolean {
-  if (isCanceledAccount(row)) return false
+  if (isCanceledAccount(row) || isReadOnlyAccount(row)) return false
   if (typeof row.can_edit === 'boolean') return row.can_edit
   return isWithinBusinessDays(row.created_at, 1)
 }
 
 function canBindConsumables(row: StoreAccount): boolean {
-  if (isCanceledAccount(row)) return false
+  if (isCanceledAccount(row) || isReadOnlyAccount(row)) return false
   if (typeof row.can_bind_consumables === 'boolean') return row.can_bind_consumables
   return (row.consumables?.length ?? 0) === 0 && canEditAccount(row)
 }
 
 function canCancelAccount(row: StoreAccount): boolean {
-  if (isCanceledAccount(row)) return false
+  if (isCanceledAccount(row) || isReadOnlyAccount(row)) return false
   if (typeof row.can_cancel === 'boolean') return row.can_cancel
   return true
 }
@@ -991,7 +998,7 @@ function isWithinBusinessDays(value: string | undefined, days: number): boolean 
 
 function accountRowActions(row: StoreAccount): TableRowAction[] {
   const detailAction: TableRowAction = { label: '详情', permission: 'store:account:list', onClick: () => openView(row) }
-  if (isCanceledAccount(row)) {
+  if (isCanceledAccount(row) || isReadOnlyAccount(row)) {
     return [detailAction]
   }
   const editable = canEditAccount(row)
@@ -1498,7 +1505,7 @@ const eForm = reactive({
 
 function openEdit(row: StoreAccount): void {
   if (!canEditAccount(row)) {
-    toast.warning('账单仅支持当前营业日内修改')
+    toast.warning(isReadOnlyAccount(row) ? 'B2B账单仅供查看' : '账单仅支持当前营业日内修改')
     return
   }
   editId.value = row.id
@@ -1567,6 +1574,10 @@ async function submitEdit(): Promise<void> {
 }
 
 async function markAccountPaid(row: StoreAccount): Promise<void> {
+  if (isReadOnlyAccount(row)) {
+    toast.warning('请在B2B供货单中修改收款状态')
+    return
+  }
   const ok = await confirmDialog({ message: `确认将记账单「${row.account_no || row.id}」标记为已支付？` })
   if (!ok) return
   saving.value = true
@@ -1582,6 +1593,10 @@ async function markAccountPaid(row: StoreAccount): Promise<void> {
 }
 
 async function cancelAccount(row: StoreAccount): Promise<void> {
+  if (isReadOnlyAccount(row)) {
+    toast.warning('B2B账单不允许作废')
+    return
+  }
   const ok = await confirmDialog({
     title: '作废记账单',
     message: `确认作废记账单「${row.account_no || row.id}」？作废后将不计入统计，并恢复系统商品库存。`,
@@ -1715,7 +1730,7 @@ const consumableBindTotal = computed(() =>
 
 async function openConsumableDlg(row: StoreAccount): Promise<void> {
   if (!canBindConsumables(row)) {
-    toast.warning('该记账单已绑定消耗品，不能重复绑定')
+    toast.warning(isReadOnlyAccount(row) ? 'B2B账单仅供查看' : '该记账单已绑定消耗品，不能重复绑定')
     return
   }
   consumableTarget.value = row

@@ -721,6 +721,8 @@ export interface StoreAccount {
   }
   channel: string
   order_no?: string
+  source_type?: string
+  source_id?: number
   total_amount: number
   other_expense_amount?: number
   round_amount?: number
@@ -746,6 +748,7 @@ export interface StoreAccount {
   can_edit?: boolean
   can_bind_consumables?: boolean
   can_cancel?: boolean
+  is_read_only?: boolean
   items?: StoreAccountItem[]
   consumables?: StoreAccountConsumable[]
 }

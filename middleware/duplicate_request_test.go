@@ -103,6 +103,20 @@ func TestDuplicateRequestFingerprintNormalizesMultipartBoundary(t *testing.T) {
 	}
 }
 
+func TestDuplicateRequestLocalLockExpires(t *testing.T) {
+	guard := newDuplicateRequestGuard(5*time.Millisecond, 0)
+	if !guard.acquireLocal("same-key", "first") {
+		t.Fatal("first request did not acquire local lock")
+	}
+	if guard.acquireLocal("same-key", "second") {
+		t.Fatal("concurrent request unexpectedly acquired local lock")
+	}
+	time.Sleep(10 * time.Millisecond)
+	if !guard.acquireLocal("same-key", "second") {
+		t.Fatal("request did not acquire expired local lock")
+	}
+}
+
 func performDuplicateRequest(handler http.Handler, body, authorization string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/orders?store_id=1", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")

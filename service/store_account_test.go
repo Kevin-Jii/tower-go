@@ -52,6 +52,14 @@ func TestStoreAccountEditWindow_CurrentBusinessDayOnly(t *testing.T) {
 			want:    false,
 		},
 		{
+			name: "B2B generated account is not editable",
+			account: &model.StoreAccount{
+				CreatedAt:  now,
+				SourceType: model.StoreAccountSourceB2BSupplyOrder,
+			},
+			want: false,
+		},
+		{
 			name:    "zero created time is not editable",
 			account: &model.StoreAccount{},
 			want:    false,
@@ -98,6 +106,14 @@ func TestStoreAccountCanBindConsumables_UnboundOnly(t *testing.T) {
 			name:    "canceled account cannot bind consumables",
 			account: &model.StoreAccount{CreatedAt: now, IsCanceled: true},
 			want:    false,
+		},
+		{
+			name: "B2B generated account cannot bind consumables",
+			account: &model.StoreAccount{
+				CreatedAt:  now,
+				SourceType: model.StoreAccountSourceB2BSupplyOrder,
+			},
+			want: false,
 		},
 		{
 			name:    "zero created time cannot bind consumables",
@@ -151,6 +167,14 @@ func TestStoreAccountCanCancel_UncanceledAccount(t *testing.T) {
 			want:    false,
 		},
 		{
+			name: "B2B generated account cannot be canceled",
+			account: &model.StoreAccount{
+				CreatedAt:  now,
+				SourceType: model.StoreAccountSourceB2BSupplyOrder,
+			},
+			want: false,
+		},
+		{
 			name:    "nil account cannot be canceled",
 			account: nil,
 			want:    false,
@@ -163,6 +187,45 @@ func TestStoreAccountCanCancel_UncanceledAccount(t *testing.T) {
 				t.Fatalf("CanCancelAccount() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestFillAccountActionFlagsMarksB2BAccountReadOnly(t *testing.T) {
+	svc := &StoreAccountService{}
+	account := &model.StoreAccount{
+		CreatedAt:  time.Now(),
+		SourceType: model.StoreAccountSourceB2BSupplyOrder,
+		SourceID:   42,
+	}
+
+	svc.fillAccountActionFlags(account)
+
+	if !account.IsReadOnly {
+		t.Fatal("B2B generated account should be marked read-only")
+	}
+	if account.CanEdit || account.CanBindConsumables || account.CanCancel {
+		t.Fatalf("B2B action flags = edit:%v bind:%v cancel:%v, want all false", account.CanEdit, account.CanBindConsumables, account.CanCancel)
+	}
+}
+
+func TestB2BAccountRejectsPaymentOnlyUpdate(t *testing.T) {
+	paid := model.StoreAccountPaymentPaid
+	svc := &StoreAccountService{}
+	account := &model.StoreAccount{
+		ID:            42,
+		PaymentStatus: model.StoreAccountPaymentUnpaid,
+		SourceType:    model.StoreAccountSourceB2BSupplyOrder,
+		SourceID:      99,
+	}
+
+	if svc.canApplyPaymentStatusOnlyUpdate(account, &model.UpdateStoreAccountReq{PaymentStatus: &paid}) {
+		t.Fatal("B2B generated account must not use the payment-only update exception")
+	}
+	if err := svc.updateLoadedAccount(account, 1, 1, false, &model.UpdateStoreAccountReq{PaymentStatus: &paid}); err == nil {
+		t.Fatal("B2B generated account payment update should be rejected")
+	}
+	if err := svc.bindConsumablesToLoadedAccount(account, &model.BindStoreAccountConsumablesReq{}); err == nil {
+		t.Fatal("B2B generated account consumable binding should be rejected")
 	}
 }
 

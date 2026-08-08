@@ -133,6 +133,11 @@ func ensureStoreAccountCompatibilityColumns() error {
 			return fmt.Errorf("add store_accounts column %s: %w", field, err)
 		}
 	}
+	if !migrator.HasIndex(account, "idx_store_accounts_source") {
+		if err := migrator.CreateIndex(account, "idx_store_accounts_source"); err != nil {
+			return fmt.Errorf("add store_accounts source index: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -163,11 +168,12 @@ func shouldSkipMigration() bool {
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_unit") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_quantity") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "is_canceled") ||
-				!migrator.HasColumn(&model.StoreAccount{}, "canceled_at") ||
-				!migrator.HasColumn(&model.StoreAccount{}, "canceled_by_id") ||
-				!migrator.HasColumn(&model.StoreAccount{}, "cancel_remark") ||
-				!migrator.HasColumn(&model.StoreAccount{}, "source_type") ||
-				!migrator.HasColumn(&model.StoreAccount{}, "source_id") {
+			!migrator.HasColumn(&model.StoreAccount{}, "canceled_at") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "canceled_by_id") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "cancel_remark") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "source_type") ||
+			!migrator.HasColumn(&model.StoreAccount{}, "source_id") ||
+			!migrator.HasIndex(&model.StoreAccount{}, "idx_store_accounts_source") {
 			return false
 		}
 	}

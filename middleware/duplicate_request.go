@@ -171,15 +171,20 @@ func writeFingerprintPart(digest hash.Hash, value string) {
 
 type duplicateRequestGuard struct {
 	mu               sync.Mutex
-	localLocks       map[string]string
+	localLocks       map[string]duplicateRequestLocalLock
 	lockTTL          time.Duration
 	cooldown         time.Duration
 	redisWarningOnce sync.Once
 }
 
+type duplicateRequestLocalLock struct {
+	token     string
+	expiresAt time.Time
+}
+
 func newDuplicateRequestGuard(lockTTL, cooldown time.Duration) *duplicateRequestGuard {
 	return &duplicateRequestGuard{
-		localLocks: make(map[string]string),
+		localLocks: make(map[string]duplicateRequestLocalLock),
 		lockTTL:    lockTTL,
 		cooldown:   cooldown,
 	}
@@ -215,10 +220,14 @@ func (g *duplicateRequestGuard) acquire(ctx context.Context, key string) (token 
 func (g *duplicateRequestGuard) acquireLocal(key, token string) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if _, exists := g.localLocks[key]; exists {
+	now := time.Now()
+	if lock, exists := g.localLocks[key]; exists && now.Before(lock.expiresAt) {
 		return false
 	}
-	g.localLocks[key] = token
+	g.localLocks[key] = duplicateRequestLocalLock{
+		token:     token,
+		expiresAt: now.Add(g.lockTTL),
+	}
 	return true
 }
 
@@ -246,7 +255,7 @@ func (g *duplicateRequestGuard) releaseAfter(key, token string, distributed bool
 func (g *duplicateRequestGuard) releaseLocal(key, token string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.localLocks[key] == token {
+	if g.localLocks[key].token == token {
 		delete(g.localLocks, key)
 	}
 }

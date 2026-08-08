@@ -172,8 +172,10 @@ type ListB2BPriceReq struct {
 	PriceLevel string `form:"price_level"`
 	ProductID  uint   `form:"product_id"`
 	Keyword    string `form:"keyword"`
-	Page       int    `form:"page,default=1" binding:"min=1"`
-	PageSize   int    `form:"page_size,default=20" binding:"min=1,max=100"`
+	// IncludeDisabled 仅供后台维护页使用；客户端默认只获取启用规格。
+	IncludeDisabled int `form:"include_disabled"`
+	Page            int `form:"page,default=1" binding:"min=1"`
+	PageSize        int `form:"page_size,default=20" binding:"min=1,max=100"`
 }
 
 type CreateB2BSupplyOrderReq struct {

@@ -326,6 +326,21 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @b2b_id, 'b2b-order-edit', '修改供货单状态', '', '', '', 3, 8, 'b2b:order:edit', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-edit' AND type=3);
 
+-- 预订单
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'preorder', '预订单', 'Calendar', '/store/preorder', 'store/preorder/index', 2, 11, 'preorder:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='preorder' AND type=2);
+SET @preorder_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='preorder' AND type=2 ORDER BY id LIMIT 1);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @preorder_id, 'preorder-add', '新增预订单', '', '', '', 3, 1, 'preorder:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@preorder_id AND name='preorder-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @preorder_id, 'preorder-edit', '编辑预订单', '', '', '', 3, 2, 'preorder:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@preorder_id AND name='preorder-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @preorder_id, 'preorder-delete', '删除预订单', '', '', '', 3, 3, 'preorder:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@preorder_id AND name='preorder-delete' AND type=3);
+
 -- 打印机管理（目录）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @store_id, 'printer', '打印机管理', 'printer', '', '', 1, 9, '', 1, 1, NOW(), NOW()
@@ -598,6 +613,7 @@ WHERE name LIKE 'store%'
    OR name LIKE 'inventory%'
    OR name LIKE 'printer%'
    OR name LIKE 'b2b-%'
+   OR name LIKE 'preorder%'
 ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员赋予会员管理权限

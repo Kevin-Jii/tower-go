@@ -35,40 +35,118 @@
     </template>
 
     <template v-else-if="tab === 'prices'">
-      <div class="flex flex-wrap items-center gap-2">
-        <BaseInput v-model="priceKeyword" class="w-56" placeholder="商品 / 客户 / 规格" clearable @enter="reloadPrices" />
-        <BaseButton variant="primary" @click="reloadPrices">查询</BaseButton>
-        <BaseButton variant="primary" @click="openPriceCreate">新增供货价</BaseButton>
-      </div>
-      <BaseTable :columns="priceColumns" :data="(groupedPrices as unknown) as Record<string, unknown>[]" :loading="priceLoading" min-width="1120px" row-key="id">
-        <template #cell-owner="{ row }">{{ (row as PriceGroupRow).owner }}</template>
-        <template #cell-product="{ row }">{{ (row as PriceGroupRow).productName }}</template>
-        <template #cell-specs="{ row }">
-          <div class="price-spec-grid">
-            <div class="price-spec-head">规格</div>
-            <div class="price-spec-head">供货价</div>
-            <div class="price-spec-head">起订</div>
-            <div class="price-spec-head">状态</div>
-            <div class="price-spec-head text-right">操作</div>
-            <template v-for="item in (row as PriceGroupRow).items" :key="item.id">
-              <div class="price-spec-cell font-medium text-slate-800">{{ item.unit_name }}</div>
-              <div class="price-spec-cell">{{ money(item.supply_price) }}</div>
-              <div class="price-spec-cell">{{ item.min_quantity }}</div>
-              <div class="price-spec-cell">
-                <a-tag :color="item.is_enabled ? 'green' : 'gray'">{{ item.is_enabled ? '启用' : '停用' }}</a-tag>
-              </div>
-              <div class="price-spec-cell text-right">
-                <BaseButton variant="link" size="sm" class="text-red-500" @click="onDeletePrice(item)">删除</BaseButton>
-              </div>
-            </template>
+      <div class="price-workspace">
+        <aside class="price-customer-panel">
+          <div class="price-customer-header">
+            <span class="price-customer-title">客户</span>
+            <span class="price-customer-count">{{ priceCustomers.length }}</span>
           </div>
-        </template>
-        <template #cell-actions="{ row }">
-          <BaseButton variant="link" size="sm" @click="openPriceGroupEdit(row as PriceGroupRow)">编辑</BaseButton>
-        </template>
-      </BaseTable>
-      <div class="flex justify-end">
-        <BasePagination :page="pricePage" :page-size="pricePageSize" :total="priceTotal" @update:page="(p) => (pricePage = p)" @update:page-size="(s) => (pricePageSize = s)" />
+          <div class="price-customer-search">
+            <BaseInput v-model="priceCustomerKeyword" placeholder="搜索客户" clearable @enter="reloadPriceCustomers" />
+          </div>
+          <div v-if="priceCustomerLoading" class="price-customer-loading">
+            <span v-for="item in 4" :key="item" class="price-customer-skeleton" />
+          </div>
+          <div v-else-if="priceCustomers.length" class="price-customer-list" role="listbox" aria-label="客户列表">
+            <button
+              v-for="customer in priceCustomers"
+              :key="customer.id"
+              type="button"
+              role="option"
+              class="price-customer-item"
+              :class="{ 'is-active': selectedPriceCustomerId === customer.id }"
+              :aria-selected="selectedPriceCustomerId === customer.id"
+              @click="selectedPriceCustomerId = customer.id"
+            >
+              <span class="price-customer-name">{{ customer.name }}</span>
+              <span class="price-customer-meta">
+                <span class="price-customer-state" :class="{ 'is-disabled': customer.status !== 1 }" />
+                {{ customer.status === 1 ? '启用' : '停用' }}
+              </span>
+              <IconCheck v-if="selectedPriceCustomerId === customer.id" class="price-customer-check" />
+            </button>
+          </div>
+          <div v-else class="price-customer-empty">暂无客户</div>
+        </aside>
+
+        <section class="price-config-panel">
+          <header class="price-config-header">
+            <div>
+              <h3 class="price-config-title">{{ selectedPriceCustomer?.name || '供货规格' }}</h3>
+              <p v-if="selectedPriceCustomerId" class="price-config-summary">
+                {{ priceProductGroups.length }} 个商品 · {{ prices.length }} 个规格 · {{ priceEnabledSpecCount }} 个启用
+              </p>
+            </div>
+            <BaseButton variant="primary" :disabled="!selectedPriceCustomerId" @click="openPriceCreate">
+              <IconPlus />
+              新增商品
+            </BaseButton>
+          </header>
+
+          <div v-if="!selectedPriceCustomerId" class="price-empty-state">请从左侧选择客户</div>
+          <div v-else-if="priceLoading" class="price-table-shell is-loading" aria-label="供货规格加载中">
+            <div class="price-table-head price-table-grid" aria-hidden="true">
+              <span>商品 / 规格</span><span>供货价</span><span>起订量</span><span>换算</span><span>状态</span><span />
+            </div>
+            <div v-for="item in 6" :key="item" class="price-table-skeleton-row price-table-grid">
+              <span /><span /><span /><span /><span /><span />
+            </div>
+          </div>
+          <div v-else-if="priceProductGroups.length" class="price-table-scroll">
+            <div class="price-table-shell" role="table" aria-label="客户供货规格">
+              <div class="price-table-head price-table-grid" role="row">
+                <span role="columnheader">商品 / 规格</span>
+                <span role="columnheader">供货价</span>
+                <span role="columnheader">起订量</span>
+                <span role="columnheader">换算</span>
+                <span role="columnheader">状态</span>
+                <span role="columnheader" class="price-actions-label">操作</span>
+              </div>
+              <template v-for="group in priceProductGroups" :key="group.product_id">
+                <div class="price-product-row price-table-grid" role="row">
+                  <div class="price-product-cell" role="cell">
+                    <span class="price-product-name">{{ group.productName }}</span>
+                    <span class="price-product-count">{{ group.items.length }} 个规格</span>
+                  </div>
+                  <div class="price-product-actions" role="cell">
+                    <BaseButton variant="link" size="sm" @click="openPriceGroupEdit(group)">
+                      <IconEdit />
+                      编辑
+                    </BaseButton>
+                    <a-tooltip content="删除该商品的全部供货规格">
+                      <BaseButton variant="ghost" size="sm" class="price-delete-action" aria-label="删除商品" @click="onDeletePriceGroup(group)">
+                        <IconDelete />
+                      </BaseButton>
+                    </a-tooltip>
+                  </div>
+                </div>
+                <div v-for="item in group.items" :key="item.id" class="price-spec-row price-table-grid" role="row">
+                  <div class="price-spec-name" role="cell">
+                    <span class="price-spec-marker" />
+                    <span>{{ item.unit_name }}</span>
+                  </div>
+                  <div class="price-money" role="cell">{{ money(item.supply_price) }}</div>
+                  <div class="price-cell-muted" role="cell">{{ item.min_quantity }}</div>
+                  <div class="price-cell-muted" role="cell">{{ item.unit_spec?.factor_to_base || '-' }}x</div>
+                  <div role="cell">
+                    <span class="price-status" :class="{ 'is-disabled': !item.is_enabled }">{{ item.is_enabled ? '启用' : '停用' }}</span>
+                  </div>
+                  <div class="price-spec-actions" role="cell">
+                    <a-tooltip content="删除规格">
+                      <BaseButton variant="ghost" size="sm" class="price-delete-action" :aria-label="`删除规格 ${item.unit_name}`" @click="onDeletePrice(item)">
+                        <IconDelete />
+                      </BaseButton>
+                    </a-tooltip>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+          <div v-else class="price-empty-state">
+            <span>暂无供货商品</span>
+            <BaseButton variant="primary" size="sm" @click="openPriceCreate"><IconPlus />新增商品</BaseButton>
+          </div>
+        </section>
       </div>
     </template>
 
@@ -123,15 +201,12 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="priceDlg" title="供货价格" max-width="min(920px, 96vw)">
+    <BaseDialog v-model="priceDlg" title="供货规格" max-width="min(920px, 96vw)">
       <div class="space-y-4">
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <BaseFormItem label="客户专属价">
-          <BaseSelect v-model="priceForm.customer_id" :options="customerOptionsWithNone" placeholder="不选则为价格等级价" />
-        </BaseFormItem>
-        <BaseFormItem label="价格等级">
-          <BaseInput v-model="priceForm.price_level" placeholder="客户专属价可不填；等级价必填" />
-        </BaseFormItem>
+        <div class="rounded bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          客户：<span class="font-medium text-slate-900">{{ selectedPriceCustomer?.name || '-' }}</span>
+        </div>
+        <div class="grid grid-cols-1 gap-3">
         <BaseFormItem label="商品" required class="md:col-span-2">
           <BaseSelect v-model="priceForm.product_id" :options="productOptions" @update:model-value="onPriceProductChange" />
         </BaseFormItem>
@@ -248,6 +323,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { IconCheck, IconDelete, IconEdit, IconPlus } from '@arco-design/web-vue/es/icon'
 import {
   BaseButton,
   BaseDialog,
@@ -327,7 +403,6 @@ const { data: customerPageData, isLoading: customerLoading } = useQuery({
 const customers = computed(() => customerPageData.value?.list ?? [])
 const customerTotal = computed(() => customerPageData.value?.total ?? 0)
 const customerOptions = computed<BaseSelectOption[]>(() => customers.value.map((x) => ({ label: x.name, value: x.id })))
-const customerOptionsWithNone = computed<BaseSelectOption[]>(() => [{ label: '不指定客户', value: 0 }, ...customerOptions.value])
 
 const { data: productData } = useQuery({
   queryKey: computed(() => ['b2b-products', storeId.value] as const),
@@ -358,6 +433,7 @@ const customerColumns: BaseTableColumn[] = [
 function reloadCustomers(): void {
   customerPage.value = 1
   void qc.invalidateQueries({ queryKey: ['b2b-customers'] })
+  void qc.invalidateQueries({ queryKey: ['b2b-price-customers'] })
 }
 
 const customerDlg = ref(false)
@@ -432,48 +508,45 @@ function customerActions(row: B2BCustomer): TableRowAction[] {
   return [{ label: '编辑', permission: 'b2b:customer:edit', onClick: () => openCustomerEdit(row) }]
 }
 
-const priceKeyword = ref('')
-const pricePage = ref(1)
-const pricePageSize = ref(10)
-const priceQueryKey = computed(() => ['b2b-prices', storeId.value, priceKeyword.value, pricePage.value, pricePageSize.value] as const)
+const priceCustomerKeyword = ref('')
+const priceCustomerQueryKey = computed(() => ['b2b-price-customers', storeId.value, priceCustomerKeyword.value] as const)
+const { data: priceCustomerData, isLoading: priceCustomerLoading } = useQuery({
+  queryKey: priceCustomerQueryKey,
+  queryFn: () => listB2BCustomers({ store_id: storeId.value, keyword: priceCustomerKeyword.value.trim() || undefined, page: 1, page_size: 100 }),
+})
+const priceCustomers = computed(() => priceCustomerData.value?.list ?? [])
+const selectedPriceCustomerId = ref(0)
+const selectedPriceCustomer = computed(() => priceCustomers.value.find((item) => item.id === selectedPriceCustomerId.value))
+
+watch(priceCustomers, (rows) => {
+  if (rows.some((row) => row.id === selectedPriceCustomerId.value)) return
+  selectedPriceCustomerId.value = rows[0]?.id || 0
+}, { immediate: true })
+
+const priceQueryKey = computed(() => ['b2b-prices', storeId.value, selectedPriceCustomerId.value] as const)
 const { data: pricePageData, isLoading: priceLoading } = useQuery({
   queryKey: priceQueryKey,
-  queryFn: () => listB2BPrices({ store_id: storeId.value, keyword: priceKeyword.value.trim() || undefined, page: pricePage.value, page_size: pricePageSize.value }),
+  queryFn: () => listB2BPrices({ store_id: storeId.value, customer_id: selectedPriceCustomerId.value, include_disabled: 1, page: 1, page_size: 100 }),
+  enabled: computed(() => selectedPriceCustomerId.value > 0),
 })
 const prices = computed(() => pricePageData.value?.list ?? [])
-const priceTotal = computed(() => pricePageData.value?.total ?? 0)
-const priceColumns: BaseTableColumn[] = [
-  { key: 'owner', label: '适用对象', minWidth: '160px', ellipsis: true },
-  { key: 'product', label: '商品', minWidth: '160px', ellipsis: true },
-  { key: 'specs', label: '规格价格', minWidth: '520px' },
-  { key: 'actions', label: '操作', width: '100px', align: 'right' },
-]
+const priceEnabledSpecCount = computed(() => prices.value.filter((item) => item.is_enabled).length)
 
 interface PriceGroupRow {
-  id: string
-  owner: string
   productName: string
-  customer_id: number | null
-  price_level: string
   product_id: number
   items: B2BCustomerProductPrice[]
 }
 
-const groupedPrices = computed<PriceGroupRow[]>(() => {
-  const map = new Map<string, PriceGroupRow>()
+const priceProductGroups = computed<PriceGroupRow[]>(() => {
+  const map = new Map<number, PriceGroupRow>()
   for (const item of prices.value) {
-    const ownerKey = item.customer_id ? `c:${item.customer_id}` : `l:${item.price_level || ''}`
-    const key = `${ownerKey}|p:${item.product_id}`
-    const group = map.get(key)
+    const group = map.get(item.product_id)
     if (group) {
       group.items.push(item)
     } else {
-      map.set(key, {
-        id: key,
-        owner: priceOwner(item),
+      map.set(item.product_id, {
         productName: item.product?.name || `商品#${item.product_id}`,
-        customer_id: item.customer_id ?? null,
-        price_level: item.price_level || '',
         product_id: item.product_id,
         items: [item],
       })
@@ -485,15 +558,16 @@ const groupedPrices = computed<PriceGroupRow[]>(() => {
   }))
 })
 
+function reloadPriceCustomers(): void {
+  void qc.invalidateQueries({ queryKey: ['b2b-price-customers'] })
+}
+
 function reloadPrices(): void {
-  pricePage.value = 1
   void qc.invalidateQueries({ queryKey: ['b2b-prices'] })
 }
 
 const priceDlg = ref(false)
 const priceForm = reactive({
-  customer_id: 0,
-  price_level: '',
   product_id: undefined as number | undefined,
 })
 
@@ -511,8 +585,10 @@ interface PriceLine {
 const priceLines = ref<PriceLine[]>([])
 
 function openPriceCreate(): void {
-  priceForm.customer_id = 0
-  priceForm.price_level = ''
+  if (!selectedPriceCustomerId.value) {
+    toast.warning('请先选择客户')
+    return
+  }
   priceForm.product_id = undefined
   priceLines.value = []
   priceDlg.value = true
@@ -544,8 +620,6 @@ function syncPriceLines(existing: B2BCustomerProductPrice[] = []): void {
 }
 
 function openPriceGroupEdit(row: PriceGroupRow): void {
-  priceForm.customer_id = row.customer_id || 0
-  priceForm.price_level = row.price_level || ''
   priceForm.product_id = row.product_id
   syncPriceLines(row.items)
   priceDlg.value = true
@@ -556,8 +630,8 @@ async function submitPrice(): Promise<void> {
     toast.warning('请选择商品')
     return
   }
-  if (!priceForm.customer_id && !priceForm.price_level.trim()) {
-    toast.warning('请选择客户或填写价格等级')
+  if (!selectedPriceCustomerId.value) {
+    toast.warning('请先选择客户')
     return
   }
   const lines = priceLines.value.filter((line) => Number(line.supply_price) > 0)
@@ -570,9 +644,8 @@ async function submitPrice(): Promise<void> {
     await Promise.all(
       lines.map((line) =>
         upsertB2BPrice({
-          customer_id: priceForm.customer_id || null,
+          customer_id: selectedPriceCustomerId.value,
           store_id: storeId.value,
-          price_level: priceForm.price_level.trim(),
           product_id: priceForm.product_id,
           unit_spec_id: line.unit_spec_id,
           supply_price: line.supply_price,
@@ -595,9 +668,25 @@ async function submitPrice(): Promise<void> {
 async function onDeletePrice(row: B2BCustomerProductPrice): Promise<void> {
   const ok = await confirmDialog({ message: '确定删除这条供货价？' })
   if (!ok) return
-  await deleteB2BPrice(row.id)
-  toast.success('已删除')
-  reloadPrices()
+  try {
+    await deleteB2BPrice(row.id)
+    toast.success('已删除')
+    reloadPrices()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '删除失败')
+  }
+}
+
+async function onDeletePriceGroup(row: PriceGroupRow): Promise<void> {
+  const ok = await confirmDialog({ message: `确定删除商品“${row.productName}”的全部供货规格？` })
+  if (!ok) return
+  try {
+    await Promise.all(row.items.map((item) => deleteB2BPrice(item.id)))
+    toast.success('商品供货规格已删除')
+    reloadPrices()
+  } catch (e: unknown) {
+    toast.error(e instanceof Error ? e.message : '删除失败')
+  }
 }
 
 const orderKeyword = ref('')
@@ -1021,12 +1110,6 @@ function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
   else ctx.fillText(text, x, y)
 }
 
-function priceOwner(row: B2BCustomerProductPrice): string {
-  if (row.customer?.name) return row.customer.name
-  if (row.price_level) return `等级：${row.price_level}`
-  return '通用'
-}
-
 function money(v: number | string | undefined): string {
   return `￥${Number(v || 0).toFixed(2)}`
 }
@@ -1067,35 +1150,417 @@ watch(tab, () => {
 </script>
 
 <style scoped>
-.price-spec-grid {
+.price-workspace {
   display: grid;
-  grid-template-columns: minmax(100px, 1.2fr) minmax(90px, 0.8fr) minmax(70px, 0.6fr) minmax(70px, 0.6fr) minmax(70px, 0.7fr);
-  align-items: center;
+  grid-template-columns: 236px minmax(0, 1fr);
+  min-height: 520px;
   overflow: hidden;
   border: 1px solid var(--color-border-2);
   border-radius: 8px;
-}
-
-.price-spec-head,
-.price-spec-cell {
-  min-height: 36px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border-2);
-}
-
-.price-spec-head {
-  background: var(--color-fill-2);
-  color: var(--color-text-2);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.price-spec-cell {
   background: var(--color-bg-2);
 }
 
-.price-spec-grid > :nth-last-child(-n + 5) {
+.price-customer-panel {
+  min-width: 0;
+  padding: 14px 12px;
+  border-right: 1px solid var(--color-border-2);
+  background: var(--color-fill-1);
+}
+
+.price-customer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  padding: 0 4px;
+}
+
+.price-customer-title,
+.price-config-title {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.price-customer-title {
+  font-size: 14px;
+}
+
+.price-customer-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  color: var(--color-text-3);
+  background: var(--color-fill-3);
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+}
+
+.price-customer-search {
+  margin-top: 10px;
+}
+
+.price-customer-list,
+.price-customer-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 438px;
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+.price-customer-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  margin: 0;
+  padding: 7px 34px 7px 10px;
+  appearance: none;
+  border: 0;
+  border-radius: 6px;
+  outline: none;
+  color: var(--color-text-2);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.16s ease, background-color 0.16s ease;
+}
+
+.price-customer-item:hover {
+  background: var(--color-fill-2);
+}
+
+.price-customer-item:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--primary-3));
+}
+
+.price-customer-item.is-active {
+  color: rgb(var(--primary-7));
+  background: rgb(var(--primary-1));
+}
+
+.price-customer-name {
+  grid-column: 1;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price-customer-meta {
+  grid-column: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  color: var(--color-text-3);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.price-customer-state {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--success-6));
+}
+
+.price-customer-state.is-disabled {
+  background: var(--color-text-4);
+}
+
+.price-customer-check {
+  position: absolute;
+  top: 17px;
+  right: 11px;
+  font-size: 16px;
+}
+
+.price-customer-empty,
+.price-customer-loading {
+  padding: 18px 4px;
+  color: var(--color-text-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+.price-customer-skeleton {
+  display: block;
+  width: 100%;
+  height: 50px;
+  border-radius: 6px;
+  background: var(--color-fill-3);
+  animation: price-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.price-config-panel {
+  min-width: 0;
+  padding: 0 18px 18px;
+}
+
+.price-config-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+}
+
+.price-config-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.price-config-summary {
+  margin: 3px 0 0;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.price-table-scroll {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.price-table-shell {
+  min-width: 720px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-2);
+  border-radius: 7px;
+  background: var(--color-bg-2);
+}
+
+.price-table-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(230px, 2.2fr)
+    minmax(110px, 0.85fr)
+    minmax(84px, 0.65fr)
+    minmax(84px, 0.65fr)
+    minmax(76px, 0.6fr)
+    64px;
+  align-items: center;
+}
+
+.price-table-head {
+  min-height: 38px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-border-2);
+  color: var(--color-text-3);
+  background: var(--color-fill-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.price-actions-label {
+  text-align: right;
+}
+
+.price-product-row {
+  min-height: 44px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--color-border-2);
+  background: var(--color-fill-1);
+}
+
+.price-product-cell {
+  grid-column: 1 / 5;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.price-product-name {
+  overflow: hidden;
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price-product-count {
+  flex: 0 0 auto;
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.price-product-actions {
+  grid-column: 5 / 7;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.price-spec-row {
+  min-height: 48px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--color-fill-3);
+  color: var(--color-text-2);
+  font-size: 13px;
+}
+
+.price-spec-row:last-child {
   border-bottom: 0;
+}
+
+.price-spec-row:hover {
+  background: var(--color-fill-1);
+}
+
+.price-spec-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+  color: var(--color-text-1);
+  font-weight: 500;
+}
+
+.price-spec-marker {
+  width: 14px;
+  height: 1px;
+  flex: 0 0 auto;
+  background: var(--color-border-3);
+}
+
+.price-money {
+  color: var(--color-text-1);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.price-cell-muted {
+  color: var(--color-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.price-status {
+  display: inline-flex;
+  width: 48px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: rgb(var(--success-7));
+  background: rgb(var(--success-1));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.price-status.is-disabled {
+  color: var(--color-text-3);
+  background: var(--color-fill-3);
+}
+
+.price-spec-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.price-delete-action {
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  color: var(--color-text-3) !important;
+}
+
+.price-delete-action:hover {
+  color: rgb(var(--danger-6)) !important;
+  background: rgb(var(--danger-1)) !important;
+}
+
+.price-empty-state {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-text-3);
+  font-size: 13px;
+}
+
+.price-table-skeleton-row {
+  min-height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-fill-3);
+}
+
+.price-table-skeleton-row > span {
+  width: calc(100% - 20px);
+  height: 12px;
+  border-radius: 3px;
+  background: var(--color-fill-3);
+  animation: price-skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes price-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .price-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .price-customer-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-2);
+  }
+
+  .price-customer-list,
+  .price-customer-loading {
+    flex-direction: row;
+    max-height: none;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .price-customer-item,
+  .price-customer-skeleton {
+    width: 176px;
+    min-width: 176px;
+  }
+
+  .price-config-panel {
+    padding: 0 12px 14px;
+  }
+
+  .price-config-header {
+    min-height: 68px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .price-customer-item,
+  .price-customer-skeleton,
+  .price-table-skeleton-row > span {
+    transition: none;
+    animation: none;
+  }
 }
 
 .supply-receipt-canvas {

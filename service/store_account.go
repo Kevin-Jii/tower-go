@@ -1184,6 +1184,13 @@ func (s *StoreAccountService) fillAccountActionFlags(account *model.StoreAccount
 	if account == nil {
 		return
 	}
+	account.IsReadOnly = account.IsB2BSupplyOrderAccount()
+	if account.IsReadOnly {
+		account.CanEdit = false
+		account.CanBindConsumables = false
+		account.CanCancel = false
+		return
+	}
 	account.CanEdit = s.CanUpdateAccount(account, nil)
 	account.CanBindConsumables = s.CanBindConsumables(account)
 	account.CanCancel = s.CanCancelAccount(account)
@@ -1199,6 +1206,9 @@ func (s *StoreAccountService) Update(id uint, req *model.UpdateStoreAccountReq) 
 }
 
 func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, storeID, operatorID uint, hqUnbound bool, req *model.UpdateStoreAccountReq) error {
+	if account.IsB2BSupplyOrderAccount() {
+		return apicode.Newf(apicode.OperationDenied, "B2B供货生成的记账单仅供查看")
+	}
 	if account.IsCanceled {
 		return apicode.Newf(apicode.OperationDenied, "作废记账单不允许修改")
 	}
@@ -1417,7 +1427,7 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 }
 
 func (s *StoreAccountService) canApplyPaymentStatusOnlyUpdate(account *model.StoreAccount, req *model.UpdateStoreAccountReq) bool {
-	if account == nil || req == nil {
+	if account == nil || req == nil || account.IsB2BSupplyOrderAccount() {
 		return false
 	}
 	if account.PaymentStatus != model.StoreAccountPaymentUnpaid {
@@ -1473,6 +1483,9 @@ func (s *StoreAccountService) CancelScoped(id, storeID, operatorID uint, hqUnbou
 	}
 	if account.IsCanceled {
 		return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
+	}
+	if account.IsB2BSupplyOrderAccount() {
+		return apicode.Newf(apicode.OperationDenied, "B2B供货生成的记账单不允许作废")
 	}
 
 	remark := ""
@@ -1565,21 +1578,12 @@ func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string) 
 	if err != nil {
 		return nil, err
 	}
-	var b2bSupplyOrderAmount float64
-	if s.b2bModule != nil {
-		b2bSupplyOrderAmount, err = s.b2bModule.GetSupplyOrderAmountByDateRange(storeID, startDate, endDate)
-		if err != nil {
-			return nil, err
-		}
-	}
-	totalTurnoverAmount := roundMoney(storeAccountTurnoverAmount + b2bSupplyOrderAmount)
 
 	return map[string]interface{}{
 		"total_amount":                  netIncomeAmount,
 		"gross_total_amount":            storeAccountTurnoverAmount,
 		"store_account_turnover_amount": storeAccountTurnoverAmount,
-		"b2b_supply_order_amount":       b2bSupplyOrderAmount,
-		"total_turnover_amount":         totalTurnoverAmount,
+		"total_turnover_amount":         storeAccountTurnoverAmount,
 		"net_income_amount":             netIncomeAmount,
 		"count":                         count,
 	}, nil
@@ -1660,6 +1664,9 @@ func (s *StoreAccountService) BindConsumablesScoped(accountID, storeID uint, hqU
 }
 
 func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.StoreAccount, req *model.BindStoreAccountConsumablesReq) error {
+	if account.IsB2BSupplyOrderAccount() {
+		return apicode.Newf(apicode.OperationDenied, "B2B供货生成的记账单不允许绑定消耗品")
+	}
 	if !s.CanBindConsumables(account) {
 		return apicode.New(apicode.DuplicateOperation)
 	}
@@ -1836,7 +1843,7 @@ func (s *StoreAccountService) IsAccountEditable(account *model.StoreAccount) boo
 // IsAccountEditableAt 判断记账记录在指定时间点是否允许编辑。
 // 规则：创建时间与当前时间归属同一个营业日才允许编辑。
 func (s *StoreAccountService) IsAccountEditableAt(account *model.StoreAccount, now time.Time) bool {
-	if account == nil || account.CreatedAt.IsZero() {
+	if account == nil || account.CreatedAt.IsZero() || account.IsB2BSupplyOrderAccount() {
 		return false
 	}
 	if account.IsCanceled {
@@ -1851,14 +1858,14 @@ func (s *StoreAccountService) IsAccountEditableAt(account *model.StoreAccount, n
 // CanUpdateAccount 判断本次记账更新是否允许：仅当前营业日内允许修改。
 func (s *StoreAccountService) CanUpdateAccount(account *model.StoreAccount, req *model.UpdateStoreAccountReq) bool {
 	_ = req
-	return s.IsAccountEditable(account)
+	return account != nil && !account.IsB2BSupplyOrderAccount() && s.IsAccountEditable(account)
 }
 
 // CanBindConsumables 判断记账单是否允许绑定消耗品：仅当前营业日内、未作废、未绑定过消耗品的记账单允许绑定。
 func (s *StoreAccountService) CanBindConsumables(account *model.StoreAccount) bool {
-	return account != nil && !account.IsCanceled && len(account.Consumables) == 0 && s.IsAccountEditable(account)
+	return account != nil && !account.IsB2BSupplyOrderAccount() && !account.IsCanceled && len(account.Consumables) == 0 && s.IsAccountEditable(account)
 }
 
 func (s *StoreAccountService) CanCancelAccount(account *model.StoreAccount) bool {
-	return account != nil && !account.IsCanceled
+	return account != nil && !account.IsB2BSupplyOrderAccount() && !account.IsCanceled
 }

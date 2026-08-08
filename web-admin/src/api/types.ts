@@ -493,6 +493,52 @@ export interface B2BSupplyOrder {
   updated_at?: string
 }
 
+export interface PreOrderItem {
+  id: number
+  pre_order_id: number
+  product_id: number
+  product_name: string
+  unit_spec_id: number
+  unit_name: string
+  quantity: number
+  remark?: string
+}
+
+export interface PreOrderReminderLog {
+  id: number
+  pre_order_id: number
+  reminder_key: string
+  status: number
+  sent_at?: string
+  error_message?: string
+  created_at?: string
+}
+
+export interface PreOrder {
+  id: number
+  order_no: string
+  store_id: number
+  customer_id: number
+  customer_name: string
+  contact_person?: string
+  contact_phone?: string
+  delivery_address?: string
+  scheduled_at: string
+  status: number
+  remark?: string
+  created_by: number
+  prepared_at?: string
+  delivered_at?: string
+  cancelled_at?: string
+  items?: PreOrderItem[]
+  reminder_logs?: PreOrderReminderLog[]
+  customer?: B2BCustomer
+  store?: { id?: number; name?: string }
+  creator?: { id?: number; username?: string; nickname?: string }
+  created_at?: string
+  updated_at?: string
+}
+
 export interface PurchaseOrderItem {
   id: number
   order_id?: number

@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/controller"
@@ -38,11 +39,13 @@ type Controllers struct {
 	Printer           *controller.PrinterController
 	PriceList         *controller.PriceListController
 	B2B               *controller.B2BController
+	PreOrder          *controller.PreOrderController
 	ThirdPartyAccount *controller.ThirdPartyAccountController
 	ThirdPartyRoute   *controller.ThirdPartyRouteController
 	AuditLog          *controller.AuditLogController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 	PrinterService    *service.PrinterService
+	PreOrderService   *service.PreOrderService
 }
 
 // BuildControllers 构建所有控制器及其依赖
@@ -74,6 +77,7 @@ func BuildControllers() *Controllers {
 	memberModule := userModulePkg.NewMemberModule(database.DB)
 	priceListModule := userModulePkg.NewPriceListModule(database.DB)
 	b2bModule := userModulePkg.NewB2BModule(database.DB)
+	preOrderModule := userModulePkg.NewPreOrderModule(database.DB)
 	thirdPartyAccountModule := userModulePkg.NewThirdPartyAccountModule(database.DB)
 	thirdPartyOrderModule := userModulePkg.NewThirdPartyOrderModule(database.DB)
 	thirdPartyRouteModule := userModulePkg.NewThirdPartyRouteModule(database.DB)
@@ -134,6 +138,7 @@ func BuildControllers() *Controllers {
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
 	priceListService := service.NewPriceListService(priceListModule, storeModule, supplierProductModule)
 	b2bService := service.NewB2BService(b2bModule, storeModule, supplierProductModule, productUnitSpecModule, userModule)
+	preOrderService := service.NewPreOrderService(preOrderModule, b2bModule, supplierProductModule, productUnitSpecModule, storeModule, dingTalkBotModule, dingTalkService)
 	thirdPartyAccountService := service.NewThirdPartyAccountService(thirdPartyAccountModule, thirdPartyOrderModule)
 	thirdPartyRouteService := service.NewThirdPartyRouteService(thirdPartyRouteModule, storeModule, thirdPartyOrderModule)
 	auditLogService := service.NewAuditLogService(auditLogModule)
@@ -195,17 +200,27 @@ func BuildControllers() *Controllers {
 		Printer:           controller.NewPrinterController(printerService),
 		PriceList:         controller.NewPriceListController(priceListService),
 		B2B:               controller.NewB2BController(b2bService),
+		PreOrder:          controller.NewPreOrderController(preOrderService),
 		ThirdPartyAccount: controller.NewThirdPartyAccountController(thirdPartyAccountService),
 		ThirdPartyRoute:   controller.NewThirdPartyRouteController(thirdPartyRouteService),
 		AuditLog:          controller.NewAuditLogController(auditLogService),
 		DingTalkBotModule: dingTalkBotModule,
 		PrinterService:    printerService,
+		PreOrderService:   preOrderService,
 	}
 }
 
 // StartCronJobs 启动定时任务
 func (c *Controllers) StartCronJobs() error {
-	// 启动打印机状态同步任务
-	_, err := cron.StartPrinterSync(c.PrinterService)
-	return err
+	var jobErrors []string
+	if _, err := cron.StartPrinterSync(c.PrinterService); err != nil {
+		jobErrors = append(jobErrors, err.Error())
+	}
+	if _, err := cron.StartPreOrderReminders(c.PreOrderService); err != nil {
+		jobErrors = append(jobErrors, err.Error())
+	}
+	if len(jobErrors) > 0 {
+		return fmt.Errorf("启动定时任务失败: %s", strings.Join(jobErrors, "; "))
+	}
+	return nil
 }

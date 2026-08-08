@@ -195,6 +195,13 @@ func (s *B2BService) CreateSupplyOrder(storeID, operatorID uint, isHQ bool, req 
 		if spec.ProductID != line.ProductID || !spec.IsEnabled {
 			return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】规格不可用", product.Name)
 		}
+		configured, configErr := s.b2bModule.GetConfiguredPrice(storeID, customer.ID, product.ID, spec.ID, customer.PriceLevel)
+		if configErr != nil {
+			return nil, configErr
+		}
+		if configured != nil && !configured.IsEnabled {
+			return nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】规格【%s】已停用，无法供货", product.Name, spec.UnitName)
+		}
 		price := line.SupplyPrice
 		if price <= 0 {
 			if configured, err := s.b2bModule.ResolvePrice(storeID, customer.ID, product.ID, spec.ID, customer.PriceLevel); err == nil && configured != nil {
@@ -271,10 +278,49 @@ func (s *B2BService) CreateSupplyOrder(storeID, operatorID uint, isHQ bool, req 
 		OperatorName:   operatorName,
 		Items:          items,
 	}
-	if err := s.b2bModule.CreateSupplyOrderWithInventory(order); err != nil {
+	account := buildB2BSupplyOrderAccount(order)
+	if err := s.b2bModule.CreateSupplyOrderWithInventory(order, account); err != nil {
 		return nil, err
 	}
 	return order, nil
+}
+
+func buildB2BSupplyOrderAccount(order *model.B2BSupplyOrder) *model.StoreAccount {
+	if order == nil {
+		return nil
+	}
+	items := make([]model.StoreAccountItem, 0, len(order.Items))
+	for _, item := range order.Items {
+		items = append(items, model.StoreAccountItem{
+			ProductID:   item.ProductID,
+			ProductName: item.ProductName,
+			Spec:        item.UnitName,
+			Quantity:    item.Quantity,
+			Unit:        item.UnitName,
+			Price:       item.SupplyPrice,
+			Amount:      item.Amount,
+			Remark:      item.Remark,
+		})
+	}
+	paymentStatus := model.StoreAccountPaymentUnpaid
+	if order.PaymentStatus == model.B2BPaymentPaid {
+		paymentStatus = model.StoreAccountPaymentPaid
+	}
+	return &model.StoreAccount{
+		AccountNo:       "JZ-" + order.OrderNo,
+		StoreID:         order.StoreID,
+		PaymentStatus:   paymentStatus,
+		Channel:         "B2B供货",
+		OrderNo:         order.OrderNo,
+		SourceType:      model.StoreAccountSourceB2BSupplyOrder,
+		TotalAmount:     order.TotalAmount,
+		NetIncomeAmount: order.ProfitAmount,
+		ItemCount:       len(items),
+		Remark:          order.Remark,
+		OperatorID:      order.OperatorID,
+		AccountDate:     order.OrderDate,
+		Items:           items,
+	}
 }
 
 func (s *B2BService) ListSupplyOrders(req *model.ListB2BSupplyOrderReq) ([]*model.B2BSupplyOrder, int64, error) {

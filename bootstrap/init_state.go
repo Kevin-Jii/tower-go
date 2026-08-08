@@ -71,7 +71,7 @@ func initializationComplete(path, version string) bool {
 		return false
 	}
 	value := strings.TrimSpace(string(data))
-	return value == version || (version == seedDataVersion && value == legacyMarkerValue)
+	return value == version || (version == "1" && value == legacyMarkerValue)
 }
 
 func markInitializationComplete(path, version string) error {

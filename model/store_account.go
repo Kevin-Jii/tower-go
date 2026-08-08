@@ -9,6 +9,8 @@ import (
 const (
 	StoreAccountPaymentPaid   = 1 // 已支付
 	StoreAccountPaymentUnpaid = 2 // 未支付
+
+	StoreAccountSourceB2BSupplyOrder = "b2b_supply_order"
 )
 
 // StoreAccountItemCustomProductID 手写/自定义商品明细（非系统商品），不参与库存扣减
@@ -23,6 +25,8 @@ type StoreAccount struct {
 	PaymentStatus       int                      `json:"payment_status" gorm:"not null;default:1;index;comment:支付状态 1=已支付 2=未支付"`
 	Channel             string                   `json:"channel" gorm:"type:varchar(50);index;comment:渠道来源(字典:sales_channel)"`
 	OrderNo             string                   `json:"order_no" gorm:"type:varchar(100);index;comment:订单编号"`
+	SourceType          string                   `json:"source_type" gorm:"type:varchar(50);not null;default:'';index:idx_store_accounts_source,priority:1;comment:来源类型"`
+	SourceID            uint                     `json:"source_id" gorm:"not null;default:0;index:idx_store_accounts_source,priority:2;comment:来源记录ID"`
 	TotalAmount         float64                  `json:"total_amount" gorm:"type:decimal(10,2);comment:总金额"`
 	OtherExpenseAmount  float64                  `json:"other_expense_amount" gorm:"type:decimal(10,2);default:0;comment:其他支出金额"`
 	RoundAmount         float64                  `json:"round_amount" gorm:"type:decimal(10,2);not null;default:0;comment:抹零金额"`
@@ -54,6 +58,7 @@ type StoreAccount struct {
 	CanEdit             bool                     `json:"can_edit" gorm:"-"`
 	CanBindConsumables  bool                     `json:"can_bind_consumables" gorm:"-"`
 	CanCancel           bool                     `json:"can_cancel" gorm:"-"`
+	IsReadOnly          bool                     `json:"is_read_only" gorm:"-"`
 
 	// 关联
 	Store    *Store  `json:"store,omitempty" gorm:"foreignKey:StoreID"`
@@ -63,6 +68,10 @@ type StoreAccount struct {
 
 func (StoreAccount) TableName() string {
 	return "store_accounts"
+}
+
+func (a *StoreAccount) IsB2BSupplyOrderAccount() bool {
+	return a != nil && a.SourceType == StoreAccountSourceB2BSupplyOrder
 }
 
 // StoreAccountItem 门店记账明细（子表）

@@ -77,6 +77,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/views/store/return/form.vue"),
         meta: { title: "返厂记录表单", permission: "store:return:add" },
       },
+      {
+        path: "store/preorder",
+        name: "PreOrder",
+        component: () => import("@/views/store/preorder/index.vue"),
+        meta: { title: "预订单", permission: "preorder:list" },
+      },
       // {
       //   path: "store/inventory-loss",
       //   name: "InventoryLossOrders",

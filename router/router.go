@@ -48,6 +48,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterPrinterRoutes(v1, c)
 	api.RegisterPriceListRoutes(v1, c)
 	api.RegisterB2BRoutes(v1, c)
+	api.RegisterPreOrderRoutes(v1, c)
 	api.RegisterThirdPartyAccountRoutes(v1, c)
 	api.RegisterThirdPartyRouteRoutes(v1, c)
 	api.RegisterAuditLogRoutes(v1, c)

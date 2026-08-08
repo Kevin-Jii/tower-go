@@ -196,6 +196,9 @@ func (m *StoreAccountModule) ReplaceItemsWithInventoryAdjustments(
 		if account.IsCanceled {
 			return apicode.Newf(apicode.OperationDenied, "作废记账单不允许修改")
 		}
+		if account.IsB2BSupplyOrderAccount() {
+			return apicode.Newf(apicode.OperationDenied, "B2B供货生成的记账单仅供查看")
+		}
 
 		if outOrder != nil {
 			for _, item := range outOrder.Items {
@@ -277,6 +280,9 @@ func (m *StoreAccountModule) CancelWithStockRestore(id, storeID uint, hqUnbound 
 		}
 		if account.IsCanceled {
 			return apicode.Newf(apicode.DuplicateOperation, "记账单已作废")
+		}
+		if account.IsB2BSupplyOrderAccount() {
+			return apicode.Newf(apicode.OperationDenied, "B2B供货生成的记账单不允许作废")
 		}
 
 		if restoreOrder != nil && len(restoreOrder.Items) > 0 {

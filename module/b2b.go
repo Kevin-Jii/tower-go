@@ -121,6 +121,9 @@ func (m *B2BModule) ListPrices(req *model.ListB2BPriceReq) ([]*model.B2BCustomer
 	if req.ProductID > 0 {
 		q = q.Where("product_id = ?", req.ProductID)
 	}
+	if req.IncludeDisabled == 0 {
+		q = q.Where("b2b_customer_product_prices.is_enabled = ?", true)
+	}
 	if kw := strings.TrimSpace(req.Keyword); kw != "" {
 		like := "%" + kw + "%"
 		q = q.Joins("LEFT JOIN supplier_products sp ON sp.id = b2b_customer_product_prices.product_id").
@@ -162,7 +165,36 @@ func (m *B2BModule) ResolvePrice(storeID, customerID, productID, unitSpecID uint
 	return nil, gorm.ErrRecordNotFound
 }
 
-func (m *B2BModule) CreateSupplyOrderWithInventory(order *model.B2BSupplyOrder) error {
+// GetConfiguredPrice returns the highest-priority customer or price-level
+// configuration regardless of its enabled state. It is used to prevent a
+// disabled customer specification from being submitted by bypassing the list API.
+func (m *B2BModule) GetConfiguredPrice(storeID, customerID, productID, unitSpecID uint, priceLevel string) (*model.B2BCustomerProductPrice, error) {
+	if customerID > 0 {
+		var price model.B2BCustomerProductPrice
+		err := m.db.Where("store_id = ? AND customer_id = ? AND product_id = ? AND unit_spec_id = ?",
+			storeID, customerID, productID, unitSpecID).First(&price).Error
+		if err == nil {
+			return &price, nil
+		}
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+	}
+	if strings.TrimSpace(priceLevel) != "" {
+		var price model.B2BCustomerProductPrice
+		err := m.db.Where("store_id = ? AND customer_id IS NULL AND price_level = ? AND product_id = ? AND unit_spec_id = ?",
+			storeID, strings.TrimSpace(priceLevel), productID, unitSpecID).First(&price).Error
+		if err == nil {
+			return &price, nil
+		}
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
+func (m *B2BModule) CreateSupplyOrderWithInventory(order *model.B2BSupplyOrder, account *model.StoreAccount) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
 		for _, item := range order.Items {
 			var inv model.Inventory
@@ -178,6 +210,12 @@ func (m *B2BModule) CreateSupplyOrderWithInventory(order *model.B2BSupplyOrder) 
 
 		if err := tx.Create(order).Error; err != nil {
 			return err
+		}
+		if account != nil {
+			account.SourceID = order.ID
+			if err := tx.Create(account).Error; err != nil {
+				return err
+			}
 		}
 
 		for _, item := range order.Items {
@@ -286,6 +324,15 @@ func (m *B2BModule) UpdateSupplyOrderPayment(id, customerID uint, paymentStatus 
 				Update("receivable", gorm.Expr("receivable + ?", receivableDelta)).Error; err != nil {
 				return err
 			}
+		}
+		accountPaymentStatus := model.StoreAccountPaymentUnpaid
+		if paymentStatus == model.B2BPaymentPaid {
+			accountPaymentStatus = model.StoreAccountPaymentPaid
+		}
+		if err := tx.Model(&model.StoreAccount{}).
+			Where("source_type = ? AND source_id = ?", model.StoreAccountSourceB2BSupplyOrder, id).
+			Update("payment_status", accountPaymentStatus).Error; err != nil {
+			return err
 		}
 		return nil
 	})

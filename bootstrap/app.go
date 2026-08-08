@@ -42,6 +42,7 @@ func Run() {
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RequestLoggerMiddleware(4096))
 	r.Use(middleware.AuditLogMiddleware(4096))
+	r.Use(middleware.DuplicateRequestMiddleware())
 
 	fmt.Println("🔧 正在初始化控制器...")
 	controllers := BuildControllers()

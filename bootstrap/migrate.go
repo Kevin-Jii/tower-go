@@ -62,6 +62,9 @@ var autoMigrateModels = []interface{}{
 	&model.B2BCustomerProductPrice{},
 	&model.B2BSupplyOrder{},
 	&model.B2BSupplyOrderItem{},
+	&model.PreOrder{},
+	&model.PreOrderItem{},
+	&model.PreOrderReminderLog{},
 	&model.ThirdPartyAccount{},
 	&model.ThirdPartyOrder{},
 	&model.ThirdPartyRoute{},
@@ -71,8 +74,8 @@ var autoMigrateModels = []interface{}{
 }
 
 func AutoMigrateAndSeeds() {
-	if err := ensureStoreAccountCancelColumns(); err != nil {
-		logging.LogError("门店记账作废字段迁移失败", zap.Error(err))
+	if err := ensureStoreAccountCompatibilityColumns(); err != nil {
+		logging.LogError("门店记账兼容字段迁移失败", zap.Error(err))
 		return
 	}
 
@@ -111,7 +114,7 @@ func AutoMigrateAndSeeds() {
 	logging.LogInfo("数据表迁移完成，种子数据将按初始化版本执行")
 }
 
-func ensureStoreAccountCancelColumns() error {
+func ensureStoreAccountCompatibilityColumns() error {
 	db := database.GetDB()
 	if db == nil {
 		return fmt.Errorf("database is not initialized")
@@ -122,7 +125,7 @@ func ensureStoreAccountCancelColumns() error {
 		return nil
 	}
 
-	for _, field := range []string{"IsCanceled", "CanceledAt", "CanceledByID", "CancelRemark"} {
+	for _, field := range []string{"IsCanceled", "CanceledAt", "CanceledByID", "CancelRemark", "SourceType", "SourceID"} {
 		if migrator.HasColumn(account, field) {
 			continue
 		}
@@ -160,9 +163,11 @@ func shouldSkipMigration() bool {
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_unit") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "gift_wine_quantity") ||
 			!migrator.HasColumn(&model.StoreAccount{}, "is_canceled") ||
-			!migrator.HasColumn(&model.StoreAccount{}, "canceled_at") ||
-			!migrator.HasColumn(&model.StoreAccount{}, "canceled_by_id") ||
-			!migrator.HasColumn(&model.StoreAccount{}, "cancel_remark") {
+				!migrator.HasColumn(&model.StoreAccount{}, "canceled_at") ||
+				!migrator.HasColumn(&model.StoreAccount{}, "canceled_by_id") ||
+				!migrator.HasColumn(&model.StoreAccount{}, "cancel_remark") ||
+				!migrator.HasColumn(&model.StoreAccount{}, "source_type") ||
+				!migrator.HasColumn(&model.StoreAccount{}, "source_id") {
 			return false
 		}
 	}

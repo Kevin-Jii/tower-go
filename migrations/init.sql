@@ -258,6 +258,8 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   `payment_status` TINYINT NOT NULL DEFAULT 1 COMMENT '支付状态 1=已支付 2=未支付',
   `channel` VARCHAR(50) DEFAULT NULL,
   `order_no` VARCHAR(100) DEFAULT NULL,
+  `source_type` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '来源类型',
+  `source_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '来源记录ID',
   `total_amount` DECIMAL(10,2) DEFAULT NULL,
   `other_expense_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '其他支出金额',
   `round_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '抹零金额',
@@ -295,6 +297,7 @@ CREATE TABLE IF NOT EXISTS `store_accounts` (
   KEY `idx_store_accounts_is_supplement` (`is_supplement`),
   KEY `idx_store_accounts_channel` (`channel`),
   KEY `idx_store_accounts_order_no` (`order_no`),
+  KEY `idx_store_accounts_source` (`source_type`, `source_id`),
   KEY `idx_store_accounts_tag_code` (`tag_code`),
   KEY `idx_store_accounts_account_date` (`account_date`),
   KEY `idx_store_accounts_is_canceled` (`is_canceled`),
@@ -1024,6 +1027,40 @@ PREPARE stmt_add_is_supplement FROM @sql_add_is_supplement;
 EXECUTE stmt_add_is_supplement;
 DEALLOCATE PREPARE stmt_add_is_supplement;
 
+SET @sql_add_store_account_source_type = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'source_type'
+    ),
+    'SELECT ''skip add store account source_type''',
+    'ALTER TABLE store_accounts ADD COLUMN source_type VARCHAR(50) NOT NULL DEFAULT '''' COMMENT ''来源类型'' AFTER order_no'
+  )
+);
+PREPARE stmt_add_store_account_source_type FROM @sql_add_store_account_source_type;
+EXECUTE stmt_add_store_account_source_type;
+DEALLOCATE PREPARE stmt_add_store_account_source_type;
+
+SET @sql_add_store_account_source_id = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND COLUMN_NAME = 'source_id'
+    ),
+    'SELECT ''skip add store account source_id''',
+    'ALTER TABLE store_accounts ADD COLUMN source_id BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''来源记录ID'' AFTER source_type'
+  )
+);
+PREPARE stmt_add_store_account_source_id FROM @sql_add_store_account_source_id;
+EXECUTE stmt_add_store_account_source_id;
+DEALLOCATE PREPARE stmt_add_store_account_source_id;
+
 SET @sql_add_store_account_is_canceled = (
   SELECT IF(
     EXISTS(
@@ -1176,6 +1213,23 @@ SET @sql_add_idx_store_accounts_canceled_by_id = (
 PREPARE stmt_add_idx_store_accounts_canceled_by_id FROM @sql_add_idx_store_accounts_canceled_by_id;
 EXECUTE stmt_add_idx_store_accounts_canceled_by_id;
 DEALLOCATE PREPARE stmt_add_idx_store_accounts_canceled_by_id;
+
+SET @sql_add_idx_store_accounts_source = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = @db_name
+        AND TABLE_NAME = 'store_accounts'
+        AND INDEX_NAME = 'idx_store_accounts_source'
+    ),
+    'SELECT ''skip add idx_store_accounts_source''',
+    'CREATE INDEX idx_store_accounts_source ON store_accounts(source_type, source_id)'
+  )
+);
+PREPARE stmt_add_idx_store_accounts_source FROM @sql_add_idx_store_accounts_source;
+EXECUTE stmt_add_idx_store_accounts_source;
+DEALLOCATE PREPARE stmt_add_idx_store_accounts_source;
 
 SET @sql_add_bottle_price = (
   SELECT IF(
@@ -1369,6 +1423,69 @@ CREATE TABLE IF NOT EXISTS b2b_supply_order_items (
   KEY idx_b2b_supply_order_items_deleted_at (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='B2B供货单明细';
 
+-- 客户预订单
+CREATE TABLE IF NOT EXISTS pre_orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_no VARCHAR(32) NOT NULL COMMENT '预订单号',
+  store_id BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+  customer_id BIGINT UNSIGNED NOT NULL COMMENT 'B2B客户ID',
+  customer_name VARCHAR(100) NOT NULL COMMENT '客户名称快照',
+  contact_person VARCHAR(50) NOT NULL DEFAULT '' COMMENT '联系人快照',
+  contact_phone VARCHAR(20) NOT NULL DEFAULT '' COMMENT '联系电话快照',
+  delivery_address VARCHAR(255) NOT NULL DEFAULT '' COMMENT '配送地址',
+  scheduled_at DATETIME(3) NOT NULL COMMENT '计划配送时间',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '状态 1=待备货 2=已备货 3=已配送 4=已取消',
+  remark VARCHAR(500) NOT NULL DEFAULT '' COMMENT '备注',
+  created_by BIGINT UNSIGNED NOT NULL COMMENT '创建人ID',
+  prepared_at DATETIME(3) DEFAULT NULL,
+  delivered_at DATETIME(3) DEFAULT NULL,
+  cancelled_at DATETIME(3) DEFAULT NULL,
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pre_orders_order_no (order_no),
+  KEY idx_pre_orders_store_id (store_id),
+  KEY idx_pre_orders_customer_id (customer_id),
+  KEY idx_pre_orders_scheduled_at (scheduled_at),
+  KEY idx_pre_orders_status (status),
+  KEY idx_pre_orders_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户预订单';
+
+CREATE TABLE IF NOT EXISTS pre_order_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  pre_order_id BIGINT UNSIGNED NOT NULL COMMENT '预订单ID',
+  product_id BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
+  product_name VARCHAR(200) NOT NULL COMMENT '商品名称快照',
+  unit_spec_id BIGINT UNSIGNED NOT NULL COMMENT '商品规格ID',
+  unit_name VARCHAR(50) NOT NULL COMMENT '规格名称快照',
+  quantity DECIMAL(10,2) NOT NULL COMMENT '预订数量',
+  remark VARCHAR(200) NOT NULL DEFAULT '' COMMENT '明细备注',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  deleted_at DATETIME(3) DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_pre_order_items_pre_order_id (pre_order_id),
+  KEY idx_pre_order_items_product_id (product_id),
+  KEY idx_pre_order_items_unit_spec_id (unit_spec_id),
+  KEY idx_pre_order_items_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预订单商品明细';
+
+CREATE TABLE IF NOT EXISTS pre_order_reminder_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  pre_order_id BIGINT UNSIGNED NOT NULL COMMENT '预订单ID',
+  reminder_key VARCHAR(40) NOT NULL COMMENT '提醒节点',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '状态 1=发送中 2=成功 3=失败',
+  sent_at DATETIME(3) DEFAULT NULL,
+  error_message VARCHAR(500) NOT NULL DEFAULT '',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pre_order_reminder (pre_order_id, reminder_key),
+  KEY idx_pre_order_reminder_logs_pre_order_id (pre_order_id),
+  KEY idx_pre_order_reminder_logs_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预订单钉钉提醒日志';
+
 SET @sql_add_roles_data_scope = (
   SELECT IF(
     EXISTS(
@@ -1499,6 +1616,21 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @b2b_id, 'b2b-order-edit', '修改供货单状态', '', '', '', 3, 8, 'b2b:order:edit', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@b2b_id AND name='b2b-order-edit' AND type=3);
 
+-- 预订单
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'preorder', '预订单', 'Calendar', '/store/preorder', 'store/preorder/index', 2, 11, 'preorder:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='preorder' AND type=2);
+SET @preorder_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='preorder' AND type=2 ORDER BY id LIMIT 1);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @preorder_id, 'preorder-add', '新增预订单', '', '', '', 3, 1, 'preorder:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@preorder_id AND name='preorder-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @preorder_id, 'preorder-edit', '编辑预订单', '', '', '', 3, 2, 'preorder:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@preorder_id AND name='preorder-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @preorder_id, 'preorder-delete', '删除预订单', '', '', '', 3, 3, 'preorder:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@preorder_id AND name='preorder-delete' AND type=3);
+
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @store_id, 'store-return', '门店返厂管理', 'Van', '/store/return', 'store/return/index', 2, 7, 'store:return:list', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='store-return' AND type=2);
@@ -1543,6 +1675,19 @@ SELECT 2, id, 15 FROM menus WHERE name LIKE 'b2b-%'
 ON DUPLICATE KEY UPDATE permissions=15;
 INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 3, id, 15 FROM menus WHERE name LIKE 'b2b-%'
+ON DUPLICATE KEY UPDATE permissions=15;
+
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 1, id, 15 FROM menus WHERE name LIKE 'preorder%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 999, id, 15 FROM menus WHERE name LIKE 'preorder%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 2, id, 15 FROM menus WHERE name LIKE 'preorder%'
+ON DUPLICATE KEY UPDATE permissions=15;
+INSERT INTO role_menus (role_id, menu_id, permissions)
+SELECT 3, id, 15 FROM menus WHERE name LIKE 'preorder%'
 ON DUPLICATE KEY UPDATE permissions=15;
 
 INSERT INTO role_menus (role_id, menu_id, permissions)

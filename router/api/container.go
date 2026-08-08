@@ -138,7 +138,7 @@ func BuildControllers() *Controllers {
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
 	priceListService := service.NewPriceListService(priceListModule, storeModule, supplierProductModule)
 	b2bService := service.NewB2BService(b2bModule, storeModule, supplierProductModule, productUnitSpecModule, userModule)
-	preOrderService := service.NewPreOrderService(preOrderModule, b2bModule, supplierProductModule, productUnitSpecModule, storeModule, dingTalkBotModule, dingTalkService)
+	preOrderService := service.NewPreOrderService(preOrderModule, memberModule, storeSupplierModule, supplierProductModule, productUnitSpecModule, storeModule, dingTalkBotModule, dingTalkService)
 	thirdPartyAccountService := service.NewThirdPartyAccountService(thirdPartyAccountModule, thirdPartyOrderModule)
 	thirdPartyRouteService := service.NewThirdPartyRouteService(thirdPartyRouteModule, storeModule, thirdPartyOrderModule)
 	auditLogService := service.NewAuditLogService(auditLogModule)

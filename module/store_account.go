@@ -334,8 +334,13 @@ func (m *StoreAccountModule) GenerateAccountNo() string {
 	return fmt.Sprintf("JZ%s%03d", now.Format("20060102150405"), random)
 }
 
-// GetStatsByDateRange 按日期范围统计
+// GetStatsByDateRange 按日期范围统计。
 func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDate string) (float64, float64, int64, error) {
+	return m.GetStatsByDateRangeWithPaymentStatus(storeID, startDate, endDate, 0)
+}
+
+// GetStatsByDateRangeWithPaymentStatus 按日期范围和支付状态统计。
+func (m *StoreAccountModule) GetStatsByDateRangeWithPaymentStatus(storeID uint, startDate, endDate string, paymentStatus int) (float64, float64, int64, error) {
 	var netIncomeAmount float64
 	var summary struct {
 		TotalAmount float64
@@ -351,6 +356,9 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 	}
 	if endDate != "" {
 		query = query.Where("account_date <= ?", endDate)
+	}
+	if paymentStatus > 0 {
+		query = query.Where("payment_status = ?", paymentStatus)
 	}
 
 	if err := query.Select("COALESCE(SUM(total_amount - COALESCE(round_amount, 0)), 0) AS total_amount, COUNT(*) AS count").Scan(&summary).Error; err != nil {
@@ -377,11 +385,39 @@ func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDat
 	if endDate != "" {
 		netQuery = netQuery.Where("store_accounts.account_date <= ?", endDate)
 	}
+	if paymentStatus > 0 {
+		netQuery = netQuery.Where("store_accounts.payment_status = ?", paymentStatus)
+	}
 	if err := netQuery.Scan(&netIncomeAmount).Error; err != nil {
 		return 0, 0, 0, err
 	}
 
 	return summary.TotalAmount, netIncomeAmount, summary.Count, nil
+}
+
+// GetChannelStatsByDateRange 按渠道统计销售额和订单数。
+func (m *StoreAccountModule) GetChannelStatsByDateRange(storeID uint, startDate, endDate string, paymentStatus int) ([]model.ChannelStatsItem, error) {
+	results := make([]model.ChannelStatsItem, 0)
+	query := m.db.Model(&model.StoreAccount{}).
+		Select("channel, COALESCE(SUM(total_amount), 0) AS amount, COUNT(*) AS orders").
+		Where("deleted_at IS NULL AND is_canceled = 0")
+	if storeID > 0 {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if startDate != "" {
+		query = query.Where("account_date >= ?", startDate)
+	}
+	if endDate != "" {
+		query = query.Where("account_date <= ?", endDate)
+	}
+	if paymentStatus > 0 {
+		query = query.Where("payment_status = ?", paymentStatus)
+	}
+
+	if err := query.Group("channel").Order("amount DESC").Scan(&results).Error; err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (m *StoreAccountModule) ReplaceConsumables(accountID uint, consumables []model.StoreAccountConsumable) error {

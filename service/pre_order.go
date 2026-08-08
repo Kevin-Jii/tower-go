@@ -35,18 +35,20 @@ type PreOrderReminderTarget struct {
 }
 
 type PreOrderService struct {
-	preOrderModule  *module.PreOrderModule
-	b2bModule       *module.B2BModule
-	productModule   *module.SupplierProductModule
-	unitSpecModule  *module.ProductUnitSpecModule
-	storeModule     *module.StoreModule
-	botModule       *module.DingTalkBotModule
-	dingTalkService *DingTalkService
+	preOrderModule      *module.PreOrderModule
+	memberModule        *module.MemberModule
+	storeSupplierModule *module.StoreSupplierModule
+	productModule       *module.SupplierProductModule
+	unitSpecModule      *module.ProductUnitSpecModule
+	storeModule         *module.StoreModule
+	botModule           *module.DingTalkBotModule
+	dingTalkService     *DingTalkService
 }
 
 func NewPreOrderService(
 	preOrderModule *module.PreOrderModule,
-	b2bModule *module.B2BModule,
+	memberModule *module.MemberModule,
+	storeSupplierModule *module.StoreSupplierModule,
 	productModule *module.SupplierProductModule,
 	unitSpecModule *module.ProductUnitSpecModule,
 	storeModule *module.StoreModule,
@@ -54,13 +56,14 @@ func NewPreOrderService(
 	dingTalkService *DingTalkService,
 ) *PreOrderService {
 	return &PreOrderService{
-		preOrderModule:  preOrderModule,
-		b2bModule:       b2bModule,
-		productModule:   productModule,
-		unitSpecModule:  unitSpecModule,
-		storeModule:     storeModule,
-		botModule:       botModule,
-		dingTalkService: dingTalkService,
+		preOrderModule:      preOrderModule,
+		memberModule:        memberModule,
+		storeSupplierModule: storeSupplierModule,
+		productModule:       productModule,
+		unitSpecModule:      unitSpecModule,
+		storeModule:         storeModule,
+		botModule:           botModule,
+		dingTalkService:     dingTalkService,
 	}
 }
 
@@ -118,38 +121,42 @@ func (s *PreOrderService) buildOrder(
 	contactPerson, contactPhone, address, remark string,
 	reqItems []model.CreatePreOrderItemReq,
 ) (*model.PreOrder, []model.PreOrderItem, error) {
-	customer, err := s.b2bModule.GetCustomer(customerID)
+	member, err := s.memberModule.GetMember(customerID, storeID, false)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, apicode.New(apicode.CustomerNotFound)
+			return nil, nil, apicode.New(apicode.MemberNotFound.WithMessage("会员不存在或不属于当前门店"))
 		}
 		return nil, nil, err
 	}
-	if customer.StoreID != storeID {
-		return nil, nil, apicode.New(apicode.CustomerNotFound)
-	}
-	if customer.Status != model.B2BCustomerStatusEnabled {
-		return nil, nil, apicode.New(apicode.CustomerDisabled)
-	}
 
 	if strings.TrimSpace(contactPerson) == "" {
-		contactPerson = customer.ContactPerson
+		contactPerson = member.Name
 	}
 	if strings.TrimSpace(contactPhone) == "" {
-		contactPhone = customer.Phone
+		contactPhone = member.Phone
 	}
-	if strings.TrimSpace(address) == "" {
-		address = customer.Address
-	}
+
 	items := make([]model.PreOrderItem, 0, len(reqItems))
 	seen := make(map[string]struct{}, len(reqItems))
+	productIDs := make([]uint, 0, len(reqItems))
 	for _, reqItem := range reqItems {
 		key := fmt.Sprintf("%d:%d", reqItem.ProductID, reqItem.UnitSpecID)
 		if _, exists := seen[key]; exists {
 			return nil, nil, apicode.Newf(apicode.ValidationFailed, "同一商品规格不能重复添加")
 		}
 		seen[key] = struct{}{}
+		productIDs = append(productIDs, reqItem.ProductID)
+	}
 
+	invalidProductIDs, err := s.storeSupplierModule.ValidateStoreProducts(storeID, productIDs)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(invalidProductIDs) > 0 {
+		return nil, nil, apicode.New(apicode.ProductNotBound)
+	}
+
+	for _, reqItem := range reqItems {
 		product, err := s.productModule.GetByID(reqItem.ProductID)
 		if err != nil || product.Status != 1 {
 			return nil, nil, apicode.New(apicode.ProductNotFound)
@@ -164,13 +171,6 @@ func (s *PreOrderService) buildOrder(
 		if !spec.IsEnabled {
 			return nil, nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】规格【%s】已停用", product.Name, spec.UnitName)
 		}
-		configuredPrice, err := s.b2bModule.GetConfiguredPrice(storeID, customer.ID, product.ID, spec.ID, customer.PriceLevel)
-		if err != nil {
-			return nil, nil, err
-		}
-		if configuredPrice == nil || !configuredPrice.IsEnabled {
-			return nil, nil, apicode.Newf(apicode.ValidationFailed, "商品【%s】规格【%s】未给该客户启用", product.Name, spec.UnitName)
-		}
 		items = append(items, model.PreOrderItem{
 			ProductID:   product.ID,
 			ProductName: product.Name,
@@ -183,10 +183,17 @@ func (s *PreOrderService) buildOrder(
 	if len(items) == 0 {
 		return nil, nil, apicode.Newf(apicode.ValidationFailed, "至少添加一项商品")
 	}
+	memberName := strings.TrimSpace(member.Name)
+	if memberName == "" {
+		memberName = strings.TrimSpace(member.Phone)
+	}
+	if memberName == "" {
+		memberName = fmt.Sprintf("会员%d", member.ID)
+	}
 	return &model.PreOrder{
 		StoreID:         storeID,
-		CustomerID:      customer.ID,
-		CustomerName:    customer.Name,
+		CustomerID:      member.ID,
+		CustomerName:    memberName,
 		ContactPerson:   strings.TrimSpace(contactPerson),
 		ContactPhone:    strings.TrimSpace(contactPhone),
 		DeliveryAddress: strings.TrimSpace(address),

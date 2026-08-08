@@ -172,7 +172,7 @@
 
         </section>
 
-        <section class="dash-footer-grid" aria-label="经营费用与利润指标">
+        <section class="dash-footer-grid" aria-label="经营费用与门店支出">
           <article v-for="metric in footerCards" :key="metric.label" class="dash-footer-card dash-panel"
             :class="metric.cardTone">
             <span class="dash-footer-icon">
@@ -186,6 +186,30 @@
               </strong>
               <small>{{ metric.note }}</small>
             </div>
+          </article>
+
+          <article class="dash-expense-panel dash-panel" aria-label="门店支出分类金额">
+            <div class="dash-expense-summary">
+              <span class="dash-footer-icon">
+                <component :is="iconSet.loss" />
+              </span>
+              <div>
+                <span>门店支出</span>
+                <strong>
+                  <CountUpNumber :value="Number(overview?.store_expense_amount ?? 0)" prefix="¥" :decimals="2"
+                    :use-grouping="true" />
+                </strong>
+                <small>本期累计</small>
+              </div>
+            </div>
+
+            <div v-if="expenseCategoryRows.length" class="dash-expense-categories">
+              <div v-for="item in expenseCategoryRows" :key="item.key" class="dash-expense-category">
+                <span :title="item.name">{{ item.name }}</span>
+                <strong>{{ formatMoney(item.amount) }}</strong>
+              </div>
+            </div>
+            <span v-else class="dash-expense-empty">暂无支出分类</span>
           </article>
         </section>
       </main>
@@ -218,8 +242,10 @@ import {
 } from '@arco-design/web-vue/es/icon'
 import { useRouter } from 'vue-router'
 import CountUpNumber from '@/components/CountUpNumber.vue'
+import { listDictDataByTypeCode } from '@/api/dict'
 import { getHomeCharts, getStatisticsDashboard } from '@/api/statistics'
-import type { HomeChartsStats } from '@/api/types'
+import { getStoreExpenseStats } from '@/api/storeExpense'
+import type { HomeChartsStats, StoreExpenseCategoryAmountItem } from '@/api/types'
 import { useUserStore } from '@/store/user'
 import {
   DashboardAverageIcon,
@@ -338,6 +364,7 @@ const periodLabel = computed(() => {
   return periodOptions.find((item) => item.value === period.value)?.label || '本月'
 })
 const homeCharts = ref<HomeChartsStats | null>(null)
+const expenseCategoryFallback = ref<StoreExpenseCategoryAmountItem[]>([])
 const homeLoading = ref(false)
 const overview = computed(() => homeCharts.value?.overview ?? null)
 const screenLoading = computed(() => dashPending.value || dashFetching.value || homeLoading.value)
@@ -436,11 +463,18 @@ const footerCards = computed(() => [
   { label: '跑腿费用', value: Number(overview.value?.errand_fee_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.average, cardTone: 'dash-footer-card--purple' },
   { label: 'B2B供货金额', value: Number(overview.value?.b2b_supply_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(overview.value?.b2b_supply_order_count ?? 0)} 笔供货`, icon: iconSet.outbound, cardTone: 'dash-footer-card--blue' },
   { label: '推广金额', value: Number(overview.value?.takeout_promotion_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '外卖推广支出', icon: iconSet.channel, cardTone: 'dash-footer-card--orange' },
-  { label: '门店支出', value: Number(overview.value?.store_expense_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.loss, cardTone: 'dash-footer-card--red' },
-  { label: '毛利', value: Number(overview.value?.gross_profit_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.profit, cardTone: 'dash-footer-card--green' },
   { label: '报损金额', value: Number(overview.value?.inventory_loss_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: `${Number(overview.value?.inventory_loss_count ?? 0)} 笔报损`, icon: iconSet.loss, cardTone: 'dash-footer-card--red' },
   { label: '抹零金额', value: Number(overview.value?.round_amount ?? 0), prefix: '¥', suffix: '', decimals: 2, note: '本期累计', icon: iconSet.round, cardTone: 'dash-footer-card--blue' },
 ])
+
+const expenseCategoryRows = computed(() => {
+  const categories = overview.value?.store_expense_categories ?? expenseCategoryFallback.value
+  return categories.map((item, index) => ({
+    key: `${item.category_code}-${index}`,
+    name: item.category_name || item.category_code || `分类 ${index + 1}`,
+    amount: Number(item.amount ?? 0),
+  }))
+})
 
 const lineRows = computed(() => homeCharts.value?.line ?? [])
 const channelColors = ['#2f8cff', '#25c7a4', '#f6b73c', '#e36b9a', '#7b61ff', '#35c8f4']
@@ -676,14 +710,45 @@ async function loadHomeCharts(): Promise<void> {
       granularity: rangeGranularity(range),
       ...(storeId > 0 ? { store_id: storeId } : {}),
     })
+    let categoryFallback: StoreExpenseCategoryAmountItem[] = []
+    if (stats.overview?.store_expense_categories === undefined) {
+      categoryFallback = await loadExpenseCategoryFallback(range, storeId)
+    }
     const latestKey = `${period.value}:${currentStoreId.value}:${activeRange.value.start}:${activeRange.value.end}`
     if (requestKey !== latestKey) return
+    expenseCategoryFallback.value = categoryFallback
     homeCharts.value = stats
     await paintChartsWhenReady(stats)
   } catch {
+    expenseCategoryFallback.value = []
     homeCharts.value = null
   } finally {
     homeLoading.value = false
+  }
+}
+
+async function loadExpenseCategoryFallback(
+  range: { start: string; end: string },
+  storeId: number,
+): Promise<StoreExpenseCategoryAmountItem[]> {
+  try {
+    const categories = (await listDictDataByTypeCode('EXPENDITURECLASS')).filter((item) => item.status === 1)
+    return await Promise.all(categories.map(async (item) => {
+      const stats = await getStoreExpenseStats({
+        category_code: item.value,
+        start_date: range.start,
+        end_date: range.end,
+        ...(storeId > 0 ? { store_id: storeId } : {}),
+      })
+      return {
+        category_code: item.value,
+        category_name: item.label,
+        amount: Number(stats.total_amount ?? 0),
+        count: Number(stats.count ?? 0),
+      }
+    }))
+  } catch {
+    return []
   }
 }
 
@@ -1677,6 +1742,114 @@ onBeforeUnmount(() => {
   background: rgba(9, 28, 59, 0.76);
 }
 
+.dash-expense-panel {
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: minmax(122px, 0.8fr) minmax(0, 2.2fr);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 14px;
+  border-color: rgba(211, 74, 114, 0.4);
+  background: rgba(9, 28, 59, 0.76);
+}
+
+.dash-expense-panel::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(188, 53, 91, 0.12), transparent 52%);
+}
+
+.dash-expense-summary {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.dash-expense-summary .dash-footer-icon {
+  color: #f07191;
+  background: rgba(188, 53, 91, 0.24);
+}
+
+.dash-expense-summary>div {
+  display: grid;
+  min-width: 0;
+}
+
+.dash-expense-summary span,
+.dash-expense-summary small {
+  color: var(--dash-muted);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.dash-expense-summary strong {
+  margin-top: 7px;
+  color: #f1f5ff;
+  font-size: 19px;
+  font-weight: 720;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dash-expense-summary small {
+  margin-top: 8px;
+  color: #7890b5;
+  font-weight: 550;
+}
+
+.dash-expense-categories {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: 7px 14px;
+  min-width: 0;
+}
+
+.dash-expense-category {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(123, 151, 194, 0.14);
+}
+
+.dash-expense-category span {
+  min-width: 0;
+  overflow: hidden;
+  color: #95a9c8;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-expense-category strong {
+  flex: 0 0 auto;
+  color: #e7eef9;
+  font-size: 10px;
+  font-weight: 680;
+  white-space: nowrap;
+}
+
+.dash-expense-empty {
+  position: relative;
+  z-index: 1;
+  color: #7389ad;
+  font-size: 11px;
+}
+
 .dash-footer-card::before {
   position: absolute;
   inset: 0;
@@ -1933,6 +2106,17 @@ onBeforeUnmount(() => {
     padding-left: 10px;
     padding-right: 8px;
   }
+
+  .dash-expense-panel {
+    grid-template-columns: minmax(110px, 0.72fr) minmax(0, 2.28fr);
+    gap: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .dash-expense-categories {
+    column-gap: 8px;
+  }
 }
 
 @media (max-width: 1220px) {
@@ -2084,6 +2268,11 @@ onBeforeUnmount(() => {
   }
 
   .dash-footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-expense-panel {
+    grid-column: 1;
     grid-template-columns: 1fr;
   }
 }

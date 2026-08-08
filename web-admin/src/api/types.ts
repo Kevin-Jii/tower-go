@@ -532,7 +532,7 @@ export interface PreOrder {
   cancelled_at?: string
   items?: PreOrderItem[]
   reminder_logs?: PreOrderReminderLog[]
-  customer?: B2BCustomer
+  customer?: MemberRow
   store?: { id?: number; name?: string }
   creator?: { id?: number; username?: string; nickname?: string }
   created_at?: string
@@ -867,8 +867,10 @@ export interface DashboardStats {
 export interface StoreAccountStats {
   total_amount?: number
   gross_total_amount?: number
+  sales_total_amount?: number
   net_income_amount?: number
   count?: number
+  channels?: ChannelStatsItem[]
 }
 
 export interface StoreExpense {
@@ -956,6 +958,13 @@ export interface MemberConsumptionRankItem {
   orders: number
 }
 
+export interface StoreExpenseCategoryAmountItem {
+  category_code: string
+  category_name: string
+  amount: number
+  count: number
+}
+
 export interface BusinessOverviewStats {
   start_date?: string
   end_date?: string
@@ -988,6 +997,7 @@ export interface BusinessOverviewStats {
   inventory_out_count?: number
   categories?: CategoryAmountItem[]
   member_consumption_rank?: MemberConsumptionRankItem[]
+  store_expense_categories?: StoreExpenseCategoryAmountItem[]
 }
 
 export interface SalesTrendItem {

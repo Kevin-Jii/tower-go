@@ -227,9 +227,10 @@ func (m *StatisticsModule) getChannelNameMap() (map[string]string, error) {
 // GetBusinessOverview 获取经营总览统计（按日期）
 func (m *StatisticsModule) GetBusinessOverview(storeID uint, startDate, endDate string) (*model.BusinessOverviewStats, error) {
 	stats := &model.BusinessOverviewStats{
-		StartDate: startDate,
-		EndDate:   endDate,
-		StoreID:   storeID,
+		StartDate:              startDate,
+		EndDate:                endDate,
+		StoreID:                storeID,
+		StoreExpenseCategories: make([]model.StoreExpenseCategoryAmountItem, 0),
 	}
 
 	var categoryRows []categoryAmountRow
@@ -316,6 +317,34 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 	}
 	stats.StoreExpenseAmount = expenseSummary.StoreExpenseAmount
 	stats.TakeoutPromotionAmount = expenseSummary.TakeoutPromotionAmount
+
+	expenseCategorySQL := `
+SELECT
+	dd.value AS category_code,
+	dd.label AS category_name,
+	COALESCE(SUM(se.amount), 0) AS amount,
+	COUNT(se.id) AS count
+FROM dict_data dd
+LEFT JOIN store_expenses se
+	ON se.category_code = dd.value
+	AND se.deleted_at IS NULL
+	AND se.expense_date >= ?
+	AND se.expense_date <= ?
+`
+	expenseCategoryArgs := []interface{}{startDate, endDate}
+	if storeID > 0 {
+		expenseCategorySQL += " AND se.store_id = ?"
+		expenseCategoryArgs = append(expenseCategoryArgs, storeID)
+	}
+	expenseCategorySQL += `
+WHERE dd.type_code = ? AND dd.status = 1
+GROUP BY dd.id, dd.value, dd.label, dd.sort
+ORDER BY dd.sort ASC, dd.id ASC
+`
+	expenseCategoryArgs = append(expenseCategoryArgs, model.StoreExpenseCategoryDictCode)
+	if err := m.db.Raw(expenseCategorySQL, expenseCategoryArgs...).Scan(&stats.StoreExpenseCategories).Error; err != nil {
+		return nil, err
+	}
 
 	takeoutSalesQuery := m.db.Model(&model.StoreAccount{}).
 		Where(`deleted_at IS NULL AND is_canceled = 0 AND account_date >= ? AND account_date <= ? AND (

@@ -11,7 +11,7 @@ func RegisterMemberRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	members.Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		members.POST("", middleware.Permission("store:member:add"), c.Member.CreateMember)
-		members.GET("", middleware.Permission("store:member:list"), c.Member.ListMembers)
+		members.GET("", middleware.PermissionAny("store:member:list", "preorder:list", "preorder:add", "preorder:edit"), c.Member.ListMembers)
 		members.GET("/phone", middleware.Permission("store:member:list"), c.Member.GetMemberByPhone)
 		members.GET("/point-rules", middleware.Permission("store:member:list"), c.Member.ListPointRules)
 		members.POST("/point-rules", middleware.Permission("store:member:edit"), c.Member.CreatePointRule)

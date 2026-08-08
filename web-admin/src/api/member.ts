@@ -3,6 +3,7 @@ import type { MemberConsumptionPage, MemberGiftRecord, MemberPointRule, MemberRo
 import { downloadBlob, filenameFromDisposition } from '@/utils/download'
 
 export async function listMembers(params?: {
+  store_id?: number
   page?: number
   page_size?: number
   keyword?: string

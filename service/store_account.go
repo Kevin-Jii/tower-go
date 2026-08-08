@@ -1573,19 +1573,49 @@ func storeAccountEditInventoryOrderNo(accountID uint, orderType int8) string {
 }
 
 // GetStats 获取统计
-func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string) (map[string]interface{}, error) {
-	storeAccountTurnoverAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRange(storeID, startDate, endDate)
+func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string, paymentStatus int) (map[string]interface{}, error) {
+	storeAccountTurnoverAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRangeWithPaymentStatus(storeID, startDate, endDate, paymentStatus)
 	if err != nil {
 		return nil, err
+	}
+
+	channels, err := s.storeAccountModule.GetChannelStatsByDateRange(storeID, startDate, endDate, paymentStatus)
+	if err != nil {
+		return nil, err
+	}
+	channelData, err := s.dictModule.ListDataByTypeCode("sales_channel")
+	if err != nil {
+		return nil, err
+	}
+	channelNames := make(map[string]string, len(channelData))
+	for _, item := range channelData {
+		if item != nil {
+			channelNames[item.Value] = item.Label
+		}
+	}
+	var salesTotalAmount float64
+	for _, channel := range channels {
+		salesTotalAmount += channel.Amount
+	}
+	for i := range channels {
+		channels[i].ChannelName = channelNames[channels[i].Channel]
+		if channels[i].ChannelName == "" {
+			channels[i].ChannelName = channels[i].Channel
+		}
+		if salesTotalAmount > 0 {
+			channels[i].Percent = channels[i].Amount / salesTotalAmount * 100
+		}
 	}
 
 	return map[string]interface{}{
 		"total_amount":                  netIncomeAmount,
 		"gross_total_amount":            storeAccountTurnoverAmount,
+		"sales_total_amount":            salesTotalAmount,
 		"store_account_turnover_amount": storeAccountTurnoverAmount,
 		"total_turnover_amount":         storeAccountTurnoverAmount,
 		"net_income_amount":             netIncomeAmount,
 		"count":                         count,
+		"channels":                      channels,
 	}, nil
 }
 

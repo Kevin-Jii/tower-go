@@ -204,9 +204,10 @@ import {
   BaseTextarea,
 } from '@/components/base'
 import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
-import { listB2BCustomers, listB2BPrices } from '@/api/b2b'
+import { listMembers } from '@/api/member'
 import { createPreOrder, deletePreOrder, listPreOrders, updatePreOrder, updatePreOrderStatus } from '@/api/preorder'
-import type { B2BCustomer, PreOrder } from '@/api/types'
+import { listPurchasableProducts } from '@/api/storeSupplier'
+import type { MemberRow, PreOrder } from '@/api/types'
 import { confirmDialog } from '@/feedback/confirm'
 import { toast } from '@/feedback/toast'
 import { useUserStore } from '@/store/user'
@@ -271,11 +272,12 @@ function reload(): void {
 
 const { data: customerData } = useQuery({
   queryKey: computed(() => ['preorder-customers', storeId.value] as const),
-  queryFn: () => listB2BCustomers({ store_id: storeId.value, status: 1, page: 1, page_size: 100 }),
+  queryFn: () => listMembers({ store_id: storeId.value, page: 1, page_size: 100 }),
+  enabled: computed(() => Number(storeId.value || 0) > 0),
 })
 const customers = computed(() => customerData.value?.list || [])
 const customerOptions = computed<BaseSelectOption[]>(() => customers.value.map((item) => ({
-  label: item.contact_person ? `${item.name} · ${item.contact_person}` : item.name,
+  label: item.name ? `${item.name} · ${item.phone}` : item.phone,
   value: item.id,
 })))
 
@@ -293,28 +295,22 @@ const form = reactive({
   items: [] as FormLine[],
 })
 
-const { data: priceData, isFetching: priceLoading } = useQuery({
-  queryKey: computed(() => ['preorder-customer-products', storeId.value, form.customer_id] as const),
-  queryFn: () => listB2BPrices({ store_id: storeId.value, customer_id: form.customer_id, page: 1, page_size: 100 }),
-  enabled: computed(() => drawerOpen.value && Number(form.customer_id || 0) > 0),
+const { data: productData, isFetching: productLoading } = useQuery({
+  queryKey: computed(() => ['preorder-products', storeId.value] as const),
+  queryFn: () => listPurchasableProducts({ store_id: storeId.value }),
+  enabled: computed(() => drawerOpen.value && Number(storeId.value || 0) > 0),
 })
-const prices = computed(() => priceData.value?.list || [])
-const productOptions = computed<BaseSelectOption[]>(() => {
-  const seen = new Set<number>()
-  const options: BaseSelectOption[] = []
-  for (const item of prices.value) {
-    if (seen.has(item.product_id)) continue
-    seen.add(item.product_id)
-    options.push({ label: item.product?.name || `商品#${item.product_id}`, value: item.product_id })
-  }
-  return options
-})
+const products = computed(() => productData.value || [])
+const productOptions = computed<BaseSelectOption[]>(() => products.value
+  .filter((item) => item.status !== 0 && (item.unit_specs || []).some((spec) => spec.is_enabled))
+  .map((item) => ({ label: item.name, value: item.id })))
 
 function specOptions(productId?: number): BaseSelectOption[] {
   if (!productId) return []
-  return prices.value
-    .filter((item) => item.product_id === productId && item.is_enabled)
-    .map((item) => ({ label: item.unit_name || item.unit_spec?.unit_name || `规格#${item.unit_spec_id}`, value: item.unit_spec_id }))
+  const product = products.value.find((item) => item.id === productId)
+  return (product?.unit_specs || [])
+    .filter((item) => item.is_enabled)
+    .map((item) => ({ label: item.unit_name || `规格#${item.id}`, value: item.id }))
 }
 
 function blankLine(): FormLine {
@@ -369,13 +365,12 @@ function onCustomerChange(value: string | number | undefined): void {
   const customer = customers.value.find((item) => item.id === Number(value))
   if (!customer) return
   fillCustomer(customer)
-  form.items = [blankLine()]
 }
 
-function fillCustomer(customer: B2BCustomer): void {
-  form.contact_person = customer.contact_person || ''
+function fillCustomer(customer: MemberRow): void {
+  form.contact_person = customer.name || ''
   form.contact_phone = customer.phone || ''
-  form.delivery_address = customer.address || ''
+  form.delivery_address = ''
 }
 
 function onProductChange(line: FormLine): void {
@@ -402,8 +397,8 @@ async function submit(): Promise<void> {
     toast.warning('请选择计划配送时间')
     return
   }
-  if (priceLoading.value) {
-    toast.warning('客户商品仍在加载，请稍后')
+  if (productLoading.value) {
+    toast.warning('商品规格仍在加载，请稍后')
     return
   }
   if (form.items.some((item) => !item.product_id || !item.unit_spec_id || !item.quantity || item.quantity <= 0)) {

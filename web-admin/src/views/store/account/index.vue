@@ -15,6 +15,33 @@
       </div>
     </div>
 
+    <section class="store-account-summary" aria-label="销售统计">
+      <div class="store-account-summary-card store-account-summary-card--total">
+        <div class="store-account-summary-card__heading">
+          <span class="store-account-summary-card__icon store-account-summary-card__icon--total">¥</span>
+          <span>总销售额</span>
+        </div>
+        <strong class="store-account-summary-card__amount">
+          {{ formatMoney(totalSalesAmount) }}
+        </strong>
+        <span class="store-account-summary-card__meta">{{ totalOrders }} 笔订单</span>
+      </div>
+
+      <div v-for="channel in channelCards" :key="channel.channel" class="store-account-summary-card">
+        <div class="store-account-summary-card__heading">
+          <span class="store-account-summary-card__icon store-account-channel__icon"
+            :class="channelIconClass(channel.channel)">
+            {{ channelIconText(channel.channel) }}
+          </span>
+          <span class="store-account-summary-card__channel-name">{{ channel.channel_name || channelLabel(channel.channel) }}</span>
+        </div>
+        <strong class="store-account-summary-card__amount">
+          {{ formatMoney(channel.amount) }}
+        </strong>
+        <span class="store-account-summary-card__meta">{{ channel.orders }} 笔订单</span>
+      </div>
+    </section>
+
     <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
       min-width="1080px" class="min-h-0 flex-1">
       <template #cell-channel="{ row }">
@@ -50,7 +77,7 @@
     </BaseTable>
 
     <div class="flex shrink-0 justify-end">
-      <BasePagination :page="page" :page-size="pageSize" :total="total" @update:page="(p) => (page = p)"
+      <BasePagination :page="page" :page-size="pageSize" :page-sizes="[10, 20, 50, 100]" :total="total" @update:page="(p) => (page = p)"
         @update:page-size="(s) => (pageSize = s)" />
     </div>
 
@@ -603,7 +630,7 @@ function disabledFutureDate(current?: Date): boolean {
 }
 
 const page = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(100)
 const listKey = computed(
   () => ['store-accounts', tenantStoreId.value, page.value, pageSize.value, accountDate.value, paymentStatusFilter.value] as const,
 )
@@ -623,6 +650,23 @@ const { data: pageData, isLoading: loading } = useQuery({
 
 const list = computed(() => pageData.value?.list ?? [])
 const total = computed(() => pageData.value?.total ?? 0)
+const accountSalesSummary = computed(() => {
+  const byChannel = new Map<string, { amount: number; orders: number }>()
+  let amount = 0
+  let orders = 0
+  for (const account of list.value) {
+    if (account.is_canceled) continue
+    const channel = String(account.channel || 'other').trim() || 'other'
+    const salesAmount = Number(account.total_amount || 0)
+    const current = byChannel.get(channel) ?? { amount: 0, orders: 0 }
+    current.amount += Number.isFinite(salesAmount) ? salesAmount : 0
+    current.orders += 1
+    byChannel.set(channel, current)
+    amount += Number.isFinite(salesAmount) ? salesAmount : 0
+    orders += 1
+  }
+  return { byChannel, amount, orders }
+})
 
 const consumableProductPage = ref(1)
 const consumableProductPageSize = ref(10)
@@ -710,6 +754,31 @@ const channelDictMap = computed(() => {
   }
   return map
 })
+const channelCards = computed(() => {
+  const cards = (channelData.value ?? []).map((dict) => {
+    const channel = String(dict.value)
+    const summary = accountSalesSummary.value.byChannel.get(channel)
+    return {
+      channel,
+      channel_name: dict.label || channel,
+      amount: summary?.amount ?? 0,
+      orders: summary?.orders ?? 0,
+    }
+  })
+  const knownChannels = new Set(cards.map((card) => card.channel))
+  for (const [channel, summary] of accountSalesSummary.value.byChannel) {
+    if (knownChannels.has(channel)) continue
+    cards.push({
+      channel,
+      channel_name: channelDictMap.value.get(channel) || channel,
+      amount: summary.amount,
+      orders: summary.orders,
+    })
+  }
+  return cards
+})
+const totalSalesAmount = computed(() => accountSalesSummary.value.amount)
+const totalOrders = computed(() => accountSalesSummary.value.orders)
 const takeoutChannelTokens = [
   'takeout',
   'waimai',
@@ -809,6 +878,7 @@ const productCascaderOptions = computed(() => {
 function reloadAll(): void {
   page.value = 1
   void qc.invalidateQueries({ queryKey: ['store-accounts'] })
+  void qc.invalidateQueries({ queryKey: ['store-account-stats'] })
 }
 
 function openExportDlg(): void {
@@ -847,6 +917,7 @@ watch(
   () => tenantStoreId.value,
   () => {
     void qc.invalidateQueries({ queryKey: ['store-accounts'] })
+    void qc.invalidateQueries({ queryKey: ['store-account-stats'] })
   },
 )
 
@@ -1585,6 +1656,7 @@ async function markAccountPaid(row: StoreAccount): Promise<void> {
     await updateStoreAccount(row.id, { payment_status: 1 })
     toast.success('已标记为已支付')
     await qc.invalidateQueries({ queryKey: ['store-accounts'] })
+    await qc.invalidateQueries({ queryKey: ['store-account-stats'] })
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : '支付状态修改失败')
   } finally {
@@ -1935,6 +2007,90 @@ function consumableProductActions(row: StoreAccountConsumableProduct): TableRowA
 
 .store-account-channel__icon--other {
   background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+.store-account-summary {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.store-account-summary-card {
+  box-sizing: border-box;
+  min-width: 136px;
+  min-height: 80px;
+  flex: 1 0 136px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-bg-2);
+}
+
+.store-account-summary-card--total {
+  border-color: #c8dcff;
+  background: #f4f8ff;
+}
+
+.store-account-summary-card__heading {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: var(--color-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.store-account-summary-card__channel-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-account-summary-card__icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.store-account-summary-card__icon--total {
+  background: #2563eb;
+}
+
+.store-account-summary-card__icon.store-account-channel__icon {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+  border-radius: 6px;
+}
+
+.store-account-summary-card__amount {
+  color: var(--color-text-1);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.store-account-summary-card__meta {
+  color: var(--color-text-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .store-account-pay-status {

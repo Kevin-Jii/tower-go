@@ -152,8 +152,9 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 		pageSize = 20
 	}
 
-	storeID := middleware.GetStoreID(ctx)
-	members, total, err := c.service.ListMembers(keyword, page, pageSize, storeID, middleware.HQUnboundAdmin(ctx))
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	allStores := middleware.HQUnboundAdmin(ctx) && storeID == 0
+	members, total, err := c.service.ListMembers(keyword, page, pageSize, storeID, allStores)
 	if err != nil {
 		http.ErrorFrom(ctx, err)
 		return

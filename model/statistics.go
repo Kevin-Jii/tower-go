@@ -75,39 +75,48 @@ type MemberConsumptionRankItem struct {
 	Orders      int64   `json:"orders"`
 }
 
+// StoreExpenseCategoryAmountItem 门店支出分类金额统计。
+type StoreExpenseCategoryAmountItem struct {
+	CategoryCode string  `json:"category_code"`
+	CategoryName string  `json:"category_name"`
+	Amount       float64 `json:"amount"`
+	Count        int64   `json:"count"`
+}
+
 // BusinessOverviewStats 经营汇总统计
 type BusinessOverviewStats struct {
-	StartDate              string                      `json:"start_date"`
-	EndDate                string                      `json:"end_date"`
-	StoreID                uint                        `json:"store_id"`
-	InboundAmount          float64                     `json:"inbound_amount"`
-	OutboundAmount         float64                     `json:"outbound_amount"`
-	AllCategoryAmount      float64                     `json:"all_category_amount"`
-	SalesAmount            float64                     `json:"sales_amount"`
-	ConsumableAmount       float64                     `json:"consumable_amount"`
-	B2BSupplyAmount        float64                     `json:"b2b_supply_amount"`
-	B2BSupplyOrderCount    int64                       `json:"b2b_supply_order_count"`
-	ReturnDepositAmount    float64                     `json:"return_deposit_amount"`
-	ReturnLogisticsFee     float64                     `json:"return_logistics_fee"`
-	ErrandFeeAmount        float64                     `json:"errand_fee_amount"`
-	RoundAmount            float64                     `json:"round_amount"`
-	GiftWineCostAmount     float64                     `json:"gift_wine_cost_amount"`
-	StoreExpenseAmount     float64                     `json:"store_expense_amount"`
-	TakeoutPromotionAmount float64                     `json:"takeout_promotion_amount"`
-	TakeoutSalesAmount     float64                     `json:"takeout_sales_amount"`
-	TakeoutPromotionROI    float64                     `json:"takeout_promotion_roi"`
-	InventoryLossAmount    float64                     `json:"inventory_loss_amount"`
-	InventoryLossCount     int64                       `json:"inventory_loss_count"`
-	InventorySelfUseAmount float64                     `json:"inventory_self_use_amount"`
-	InventorySelfUseCount  int64                       `json:"inventory_self_use_count"`
-	OtherExpenseAmount     float64                     `json:"other_expense_amount"`
-	GrossProfitAmount      float64                     `json:"gross_profit_amount"`
-	NetProfitAmount        float64                     `json:"net_profit_amount"`
-	SalesOrderCount        int64                       `json:"sales_order_count"`
-	InventoryInCount       int64                       `json:"inventory_in_count"`
-	InventoryOutCount      int64                       `json:"inventory_out_count"`
-	Categories             []CategoryAmountItem        `json:"categories"`
-	MemberConsumptionRank  []MemberConsumptionRankItem `json:"member_consumption_rank"`
+	StartDate              string                           `json:"start_date"`
+	EndDate                string                           `json:"end_date"`
+	StoreID                uint                             `json:"store_id"`
+	InboundAmount          float64                          `json:"inbound_amount"`
+	OutboundAmount         float64                          `json:"outbound_amount"`
+	AllCategoryAmount      float64                          `json:"all_category_amount"`
+	SalesAmount            float64                          `json:"sales_amount"`
+	ConsumableAmount       float64                          `json:"consumable_amount"`
+	B2BSupplyAmount        float64                          `json:"b2b_supply_amount"`
+	B2BSupplyOrderCount    int64                            `json:"b2b_supply_order_count"`
+	ReturnDepositAmount    float64                          `json:"return_deposit_amount"`
+	ReturnLogisticsFee     float64                          `json:"return_logistics_fee"`
+	ErrandFeeAmount        float64                          `json:"errand_fee_amount"`
+	RoundAmount            float64                          `json:"round_amount"`
+	GiftWineCostAmount     float64                          `json:"gift_wine_cost_amount"`
+	StoreExpenseAmount     float64                          `json:"store_expense_amount"`
+	TakeoutPromotionAmount float64                          `json:"takeout_promotion_amount"`
+	TakeoutSalesAmount     float64                          `json:"takeout_sales_amount"`
+	TakeoutPromotionROI    float64                          `json:"takeout_promotion_roi"`
+	InventoryLossAmount    float64                          `json:"inventory_loss_amount"`
+	InventoryLossCount     int64                            `json:"inventory_loss_count"`
+	InventorySelfUseAmount float64                          `json:"inventory_self_use_amount"`
+	InventorySelfUseCount  int64                            `json:"inventory_self_use_count"`
+	OtherExpenseAmount     float64                          `json:"other_expense_amount"`
+	GrossProfitAmount      float64                          `json:"gross_profit_amount"`
+	NetProfitAmount        float64                          `json:"net_profit_amount"`
+	SalesOrderCount        int64                            `json:"sales_order_count"`
+	InventoryInCount       int64                            `json:"inventory_in_count"`
+	InventoryOutCount      int64                            `json:"inventory_out_count"`
+	Categories             []CategoryAmountItem             `json:"categories"`
+	MemberConsumptionRank  []MemberConsumptionRankItem      `json:"member_consumption_rank"`
+	StoreExpenseCategories []StoreExpenseCategoryAmountItem `json:"store_expense_categories"`
 }
 
 // RadarMetricItem 雷达图指标

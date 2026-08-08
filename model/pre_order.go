@@ -29,8 +29,8 @@ type PreOrder struct {
 	ID              uint                  `json:"id" gorm:"primaryKey;autoIncrement"`
 	OrderNo         string                `json:"order_no" gorm:"type:varchar(32);not null;uniqueIndex;comment:预订单号"`
 	StoreID         uint                  `json:"store_id" gorm:"not null;index;comment:门店ID"`
-	CustomerID      uint                  `json:"customer_id" gorm:"not null;index;comment:B2B客户ID"`
-	CustomerName    string                `json:"customer_name" gorm:"type:varchar(100);not null;comment:客户名称快照"`
+	CustomerID      uint                  `json:"customer_id" gorm:"not null;index;comment:会员ID"`
+	CustomerName    string                `json:"customer_name" gorm:"type:varchar(100);not null;comment:会员名称快照"`
 	ContactPerson   string                `json:"contact_person" gorm:"type:varchar(50);not null;default:'';comment:联系人快照"`
 	ContactPhone    string                `json:"contact_phone" gorm:"type:varchar(20);not null;default:'';comment:联系电话快照"`
 	DeliveryAddress string                `json:"delivery_address" gorm:"type:varchar(255);not null;default:'';comment:配送地址"`
@@ -45,7 +45,7 @@ type PreOrder struct {
 	UpdatedAt       time.Time             `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt        `json:"-" gorm:"index"`
 	Store           *Store                `json:"store,omitempty" gorm:"foreignKey:StoreID"`
-	Customer        *B2BCustomer          `json:"customer,omitempty" gorm:"foreignKey:CustomerID"`
+	Customer        *Member               `json:"customer,omitempty" gorm:"foreignKey:CustomerID"`
 	Creator         *User                 `json:"creator,omitempty" gorm:"foreignKey:CreatedBy"`
 	Items           []PreOrderItem        `json:"items,omitempty" gorm:"foreignKey:PreOrderID"`
 	ReminderLogs    []PreOrderReminderLog `json:"reminder_logs,omitempty" gorm:"foreignKey:PreOrderID"`

@@ -33,6 +33,7 @@ export async function getStoreAccountStats(params?: {
   store_id?: number
   start_date?: string
   end_date?: string
+  payment_status?: number
 }): Promise<StoreAccountStats> {
   const res = await http.get<import('./types').ApiEnvelope<StoreAccountStats>>('/store-accounts/stats', { params })
   return unwrap(res)

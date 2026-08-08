@@ -43,6 +43,7 @@ type Controllers struct {
 	ThirdPartyAccount *controller.ThirdPartyAccountController
 	ThirdPartyRoute   *controller.ThirdPartyRouteController
 	AuditLog          *controller.AuditLogController
+	DailyTurnover     *controller.DailyTurnoverController
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 	PrinterService    *service.PrinterService
 	PreOrderService   *service.PreOrderService
@@ -82,6 +83,7 @@ func BuildControllers() *Controllers {
 	thirdPartyOrderModule := userModulePkg.NewThirdPartyOrderModule(database.DB)
 	thirdPartyRouteModule := userModulePkg.NewThirdPartyRouteModule(database.DB)
 	auditLogModule := userModulePkg.NewAuditLogModule(database.DB)
+	dailyTurnoverModule := userModulePkg.NewDailyTurnoverModule(database.DB)
 
 	userModulePkg.SetDB(database.DB)
 
@@ -142,6 +144,7 @@ func BuildControllers() *Controllers {
 	thirdPartyAccountService := service.NewThirdPartyAccountService(thirdPartyAccountModule, thirdPartyOrderModule)
 	thirdPartyRouteService := service.NewThirdPartyRouteService(thirdPartyRouteModule, storeModule, thirdPartyOrderModule)
 	auditLogService := service.NewAuditLogService(auditLogModule)
+	dailyTurnoverService := service.NewDailyTurnoverService(dailyTurnoverModule, dictModule)
 
 	// 初始化打印机模块
 	printerModule := userModulePkg.NewPrinterModule(database.DB)
@@ -204,6 +207,7 @@ func BuildControllers() *Controllers {
 		ThirdPartyAccount: controller.NewThirdPartyAccountController(thirdPartyAccountService),
 		ThirdPartyRoute:   controller.NewThirdPartyRouteController(thirdPartyRouteService),
 		AuditLog:          controller.NewAuditLogController(auditLogService),
+		DailyTurnover:     controller.NewDailyTurnoverController(dailyTurnoverService),
 		DingTalkBotModule: dingTalkBotModule,
 		PrinterService:    printerService,
 		PreOrderService:   preOrderService,

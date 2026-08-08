@@ -41,24 +41,25 @@ var (
 	WechatNotBound            = Code{40429, "微信未绑定账号"}
 
 	// 冲突与业务条件 409xx
-	Conflict               = Code{40901, "数据冲突"}
-	DictTypeAlreadyExists  = Code{40910, "字典类型编码已存在"}
-	SupplierAlreadyBound   = Code{40911, "供应商已绑定"}
-	InventoryInsufficient  = Code{40912, "库存不足"}
-	OrderStateConflict     = Code{40913, "单据状态不允许当前操作"}
-	MemberPhoneExists      = Code{40914, "手机号已注册"}
-	ResourceInUse          = Code{40915, "资源正在使用中"}
-	DuplicateOperation     = Code{40916, "重复操作"}
-	UnitSpecMismatch       = Code{40917, "商品规格与商品不匹配"}
-	ProductNotBound        = Code{40918, "商品未绑定到当前门店"}
-	OrderDeletionDenied    = Code{40919, "当前订单状态不允许删除"}
-	CustomerDisabled       = Code{40920, "客户已停用"}
-	OptimisticLockConflict = Code{40921, "数据已被其他操作修改"}
-	BalanceInsufficient    = Code{40922, "余额不足"}
-	WineInsufficient       = Code{40923, "存酒数量不足"}
-	WechatAlreadyBound     = Code{40924, "微信已绑定其他账号"}
-	PhoneAlreadyExists     = Code{40925, "手机号已注册"}
-	SupplierAlreadyUsed    = Code{40926, "供应商正在使用中"}
+	Conflict                  = Code{40901, "数据冲突"}
+	DictTypeAlreadyExists     = Code{40910, "字典类型编码已存在"}
+	SupplierAlreadyBound      = Code{40911, "供应商已绑定"}
+	InventoryInsufficient     = Code{40912, "库存不足"}
+	OrderStateConflict        = Code{40913, "单据状态不允许当前操作"}
+	MemberPhoneExists         = Code{40914, "手机号已注册"}
+	ResourceInUse             = Code{40915, "资源正在使用中"}
+	DuplicateOperation        = Code{40916, "重复操作"}
+	UnitSpecMismatch          = Code{40917, "商品规格与商品不匹配"}
+	ProductNotBound           = Code{40918, "商品未绑定到当前门店"}
+	OrderDeletionDenied       = Code{40919, "当前订单状态不允许删除"}
+	CustomerDisabled          = Code{40920, "客户已停用"}
+	OptimisticLockConflict    = Code{40921, "数据已被其他操作修改"}
+	BalanceInsufficient       = Code{40922, "余额不足"}
+	WineInsufficient          = Code{40923, "存酒数量不足"}
+	WechatAlreadyBound        = Code{40924, "微信已绑定其他账号"}
+	PhoneAlreadyExists        = Code{40925, "手机号已注册"}
+	SupplierAlreadyUsed       = Code{40926, "供应商正在使用中"}
+	StoreAccountOrderNoExists = Code{40927, "当前渠道下的外卖订单号已存在"}
 
 	// 服务与外部依赖 500xx / 502xx
 	ConfigMissing = Code{50002, "服务配置缺失"}

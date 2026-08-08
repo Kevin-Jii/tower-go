@@ -123,6 +123,19 @@ func (m *StoreAccountModule) GetByIDScoped(id, storeID uint, hqUnbound bool) (*m
 	return &account, nil
 }
 
+func (m *StoreAccountModule) ExistsByStoreChannelOrderNo(storeID, excludeID uint, channel, orderNo string) (bool, error) {
+	var count int64
+	query := m.db.Model(&model.StoreAccount{}).
+		Where("store_id = ? AND channel = ? AND order_no = ?", storeID, channel, orderNo)
+	if excludeID > 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+	if err := query.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // List 记账列表
 func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.StoreAccount, int64, error) {
 	accounts := make([]*model.StoreAccount, 0) // 初始化为空数组，避免返回null

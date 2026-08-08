@@ -31,6 +31,29 @@ func TestIsTakeoutChannelValue(t *testing.T) {
 	}
 }
 
+func TestIsNumericOrderNo(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "single digit", value: "1", want: true},
+		{name: "long numeric order", value: "202608080001", want: true},
+		{name: "empty", value: "", want: false},
+		{name: "Chinese suffix", value: "1号", want: false},
+		{name: "platform prefix", value: "美团1", want: false},
+		{name: "decimal", value: "1.0", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isNumericOrderNo(tt.value); got != tt.want {
+				t.Fatalf("isNumericOrderNo(%q) = %v, want %v", tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestStoreAccountEditWindow_CurrentBusinessDayOnly(t *testing.T) {
 	svc := &StoreAccountService{}
 	now := time.Now()

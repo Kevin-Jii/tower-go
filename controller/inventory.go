@@ -227,7 +227,7 @@ func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
 
 // UpdateInventory godoc
 // @Summary 修改库存数量
-// @Description 直接修改库存数量（仅管理员）
+// @Description 直接修改库存数量（门店管理员仅限本店，总部管理员和超级管理员按数据范围操作）
 // @Tags 库存管理
 // @Accept json
 // @Produce json
@@ -237,8 +237,8 @@ func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /inventories/{id} [put]
 func (c *InventoryController) UpdateInventory(ctx *gin.Context) {
-	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可修改库存")
+	if !middleware.IsStoreManager(ctx) {
+		http.Error(ctx, 403, "仅门店管理员或超级管理员可修改库存")
 		return
 	}
 

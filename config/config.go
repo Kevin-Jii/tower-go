@@ -10,14 +10,20 @@ import (
 
 // Config 应用配置
 type Config struct {
-	App         AppConfig
-	Database    DatabaseConfig
-	Redis       RedisConfig
-	DingTalk    DingTalkConfig
-	Wechat      WechatConfig
-	RustFS      RustFSConfig
-	Xpyun       XpyunConfig
-	Performance PerformanceConfig
+	App             AppConfig
+	Database        DatabaseConfig
+	Redis           RedisConfig
+	DingTalk        DingTalkConfig
+	Wechat          WechatConfig
+	InternalService InternalServiceConfig
+	RustFS          RustFSConfig
+	Xpyun           XpyunConfig
+	Performance     PerformanceConfig
+}
+
+// InternalServiceConfig 服务间调用配置。
+type InternalServiceConfig struct {
+	Token string
 }
 
 // XpyunConfig 芯烨云打印机配置
@@ -97,14 +103,15 @@ func InitConfig() {
 	loadEnvFile()
 
 	cfg = &Config{
-		App:         loadAppConfig(),
-		Database:    loadDatabaseConfig(),
-		Redis:       loadRedisConfig(),
-		DingTalk:    loadDingTalkConfig(),
-		Wechat:      loadWechatConfig(),
-		RustFS:      loadRustFSConfig(),
-		Xpyun:       loadXpyunConfig(),
-		Performance: loadPerformanceConfig(),
+		App:             loadAppConfig(),
+		Database:        loadDatabaseConfig(),
+		Redis:           loadRedisConfig(),
+		DingTalk:        loadDingTalkConfig(),
+		Wechat:          loadWechatConfig(),
+		InternalService: loadInternalServiceConfig(),
+		RustFS:          loadRustFSConfig(),
+		Xpyun:           loadXpyunConfig(),
+		Performance:     loadPerformanceConfig(),
 	}
 }
 
@@ -273,6 +280,12 @@ func loadWechatConfig() WechatConfig {
 	return WechatConfig{
 		MiniAppID:     getAppString("WECHAT_MINI_APP_ID", ""),
 		MiniAppSecret: getAppString("WECHAT_MINI_APP_SECRET", ""),
+	}
+}
+
+func loadInternalServiceConfig() InternalServiceConfig {
+	return InternalServiceConfig{
+		Token: getAppString("INTERNAL_SERVICE_TOKEN", ""),
 	}
 }
 

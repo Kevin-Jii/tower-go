@@ -52,6 +52,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterThirdPartyAccountRoutes(v1, c)
 	api.RegisterThirdPartyRouteRoutes(v1, c)
 	api.RegisterAuditLogRoutes(v1, c)
+	api.RegisterInternalRoutes(r, c)
 
 	// WebSocket
 	r.GET("/ws", controller.WebSocketHandler)

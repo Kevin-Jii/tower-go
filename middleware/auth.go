@@ -134,6 +134,11 @@ func IsAdmin(c *gin.Context) bool {
 	return roleCode == model.RoleCodeAdmin || roleCode == model.RoleCodeSuperAdmin
 }
 
+// IsStoreManager 判断是否具备门店管理身份。门店管理员只能在后续数据范围校验中操作本店数据。
+func IsStoreManager(c *gin.Context) bool {
+	return IsAdmin(c) || GetRoleCode(c) == model.RoleCodeStoreAdmin
+}
+
 // HQUnboundAdmin 可跨店查看/操作数据的总部身份。
 // super_admin 始终跨店；admin 须 token 中 store_id==0。
 func HQUnboundAdmin(c *gin.Context) bool {

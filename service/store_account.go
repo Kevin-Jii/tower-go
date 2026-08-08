@@ -220,6 +220,18 @@ func isTakeoutChannelValue(value string) bool {
 	return false
 }
 
+func isNumericOrderNo(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 func isTakeoutChannelTokenMatch(value, token string) bool {
 	if token == "" {
 		return false
@@ -408,8 +420,16 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		}
 	}
 
+	channel := strings.TrimSpace(req.Channel)
+	if channel == "" {
+		return nil, apicode.Newf(apicode.MissingParameter, "请选择销售渠道")
+	}
+
 	accountNo := s.storeAccountModule.GenerateAccountNo()
 	orderNo := strings.TrimSpace(req.OrderNo)
+	if err := s.validateTakeoutOrderNo(storeID, 0, channel, orderNo); err != nil {
+		return nil, err
+	}
 	if orderNo == "" {
 		orderNo = fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
 	}
@@ -519,7 +539,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 	}
 
 	if req.IncomeAmount != nil {
-		if !s.isTakeoutChannel(req.Channel) {
+		if !s.isTakeoutChannel(channel) {
 			return nil, apicode.Newf(apicode.ValidationFailed, "仅外卖/商城/团购平台渠道支持自定义收入金额")
 		}
 		totalAmount = *req.IncomeAmount
@@ -551,7 +571,7 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 		StoreID:             storeID,
 		MemberID:            req.MemberID,
 		PaymentStatus:       resolvePaymentStatus(req.PaymentStatus),
-		Channel:             req.Channel,
+		Channel:             channel,
 		OrderNo:             orderNo,
 		TotalAmount:         totalAmount,
 		OtherExpenseAmount:  req.OtherExpenseAmount,
@@ -1025,6 +1045,26 @@ func (s *StoreAccountService) isTakeoutChannel(channel string) bool {
 	return false
 }
 
+func (s *StoreAccountService) validateTakeoutOrderNo(storeID, excludeID uint, channel, orderNo string) error {
+	if !s.isTakeoutChannel(channel) {
+		return nil
+	}
+	if orderNo == "" {
+		return apicode.Newf(apicode.MissingParameter, "请输入外卖订单号")
+	}
+	if !isNumericOrderNo(orderNo) {
+		return apicode.Newf(apicode.ValidationFailed, "外卖订单号只能输入数字")
+	}
+	exists, err := s.storeAccountModule.ExistsByStoreChannelOrderNo(storeID, excludeID, channel, orderNo)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return apicode.New(apicode.StoreAccountOrderNoExists)
+	}
+	return nil
+}
+
 // Get 获取记账详情
 func (s *StoreAccountService) Get(id uint) (*model.StoreAccount, error) {
 	account, err := s.storeAccountModule.GetByID(id)
@@ -1218,6 +1258,7 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 
 	updates := make(map[string]interface{})
 	nextChannel := account.Channel
+	nextOrderNo := account.OrderNo
 	nextTotalAmount := account.TotalAmount
 	nextOtherExpenseAmount := account.OtherExpenseAmount
 	nextRoundAmount := account.RoundAmount
@@ -1237,8 +1278,11 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 	var inventoryOutOrder *model.InventoryOrder
 
 	if req.Channel != "" {
-		updates["channel"] = req.Channel
-		nextChannel = req.Channel
+		nextChannel = strings.TrimSpace(req.Channel)
+		if nextChannel == "" {
+			return apicode.Newf(apicode.MissingParameter, "请选择销售渠道")
+		}
+		updates["channel"] = nextChannel
 	}
 	if req.PaymentStatus != nil {
 		updates["payment_status"] = resolvePaymentStatus(*req.PaymentStatus)
@@ -1256,7 +1300,13 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 		}
 	}
 	if req.OrderNo != "" {
-		updates["order_no"] = strings.TrimSpace(req.OrderNo)
+		nextOrderNo = strings.TrimSpace(req.OrderNo)
+		updates["order_no"] = nextOrderNo
+	}
+	if req.Channel != "" || req.OrderNo != "" {
+		if err := s.validateTakeoutOrderNo(account.StoreID, account.ID, nextChannel, nextOrderNo); err != nil {
+			return err
+		}
 	}
 	if req.TagCode != "" {
 		updates["tag_code"] = req.TagCode

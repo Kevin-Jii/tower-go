@@ -27,7 +27,9 @@ var autoMigrateModels = []interface{}{
 	&model.Supplier{},
 	&model.SupplierCategory{},
 	&model.SupplierProduct{},
+	&model.StoreAccountConsumableProduct{},
 	&model.ProductUnitSpec{},
+	&model.ProductUnitSpecConsumable{},
 	&model.StoreSupplier{},
 	&model.PurchaseOrder{},
 	&model.PurchaseOrderItem{},
@@ -42,7 +44,6 @@ var autoMigrateModels = []interface{}{
 	&model.StoreAccount{},
 	&model.StoreAccountItem{},
 	&model.StoreAccountConsumable{},
-	&model.StoreAccountConsumableProduct{},
 	&model.StoreReturn{},
 	&model.StoreReturnItem{},
 	&model.StoreReturnProduct{},
@@ -189,7 +190,8 @@ func shouldSkipMigration() bool {
 
 	// 商品规格允许同单位编码下配置多个规格名，旧唯一索引需替换。
 	if migrator.HasTable(&model.ProductUnitSpec{}) {
-		if migrator.HasIndex(&model.ProductUnitSpec{}, "uk_product_unit_specs_product_unit") ||
+		if !migrator.HasColumn(&model.ProductUnitSpec{}, "is_saleable") ||
+			migrator.HasIndex(&model.ProductUnitSpec{}, "uk_product_unit_specs_product_unit") ||
 			!migrator.HasIndex(&model.ProductUnitSpec{}, "uk_product_unit_specs_product_unit_name") {
 			return false
 		}

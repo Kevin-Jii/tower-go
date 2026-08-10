@@ -227,10 +227,11 @@ func (m *StatisticsModule) getChannelNameMap() (map[string]string, error) {
 // GetBusinessOverview 获取经营总览统计（按日期）
 func (m *StatisticsModule) GetBusinessOverview(storeID uint, startDate, endDate string) (*model.BusinessOverviewStats, error) {
 	stats := &model.BusinessOverviewStats{
-		StartDate:              startDate,
-		EndDate:                endDate,
-		StoreID:                storeID,
-		StoreExpenseCategories: make([]model.StoreExpenseCategoryAmountItem, 0),
+		StartDate:                startDate,
+		EndDate:                  endDate,
+		StoreID:                  storeID,
+		StoreExpenseCategories:   make([]model.StoreExpenseCategoryAmountItem, 0),
+		ConsumableCostQuantities: make([]model.ConsumableCostQuantityItem, 0),
 	}
 
 	var categoryRows []categoryAmountRow
@@ -300,6 +301,56 @@ WHERE io.created_at >= ? AND io.created_at < DATE_ADD(?, INTERVAL 1 DAY)
 		consumableQuery = consumableQuery.Where("sa.store_id = ?", storeID)
 	}
 	if err := consumableQuery.Select("COALESCE(SUM(sac.amount), 0)").Scan(&stats.ConsumableAmount).Error; err != nil {
+		return nil, err
+	}
+
+	consumableCostQuantitySQL := `
+	SELECT
+		cp.id AS consumable_product_id,
+		cp.name AS name,
+		COALESCE(SUM(sai.quantity * pusc.quantity), 0) AS quantity,
+		COALESCE(SUM(sai.quantity * pusc.quantity * cp.cost_price), 0) AS cost_amount
+	FROM store_account_items sai
+	JOIN store_accounts sa
+		ON sa.id = sai.account_id
+		AND sa.deleted_at IS NULL
+		AND sa.is_canceled = 0
+	JOIN product_unit_specs ps
+		ON ps.id = (
+			SELECT ps_match.id
+			FROM product_unit_specs ps_match
+			WHERE ps_match.product_id = sai.product_id
+				AND ps_match.is_enabled = 1
+				AND (
+					LOWER(TRIM(ps_match.unit_name)) = LOWER(TRIM(sai.unit))
+					OR LOWER(TRIM(ps_match.unit_code)) = LOWER(TRIM(sai.unit))
+				)
+			ORDER BY CASE WHEN LOWER(TRIM(ps_match.unit_name)) = LOWER(TRIM(sai.unit)) THEN 0 ELSE 1 END, ps_match.id ASC
+			LIMIT 1
+		)
+	JOIN product_unit_spec_consumables pusc
+		ON pusc.unit_spec_id = ps.id
+		AND pusc.store_id = sa.store_id
+	JOIN store_account_consumable_products cp
+		ON cp.id = pusc.consumable_product_id
+		AND cp.store_id = sa.store_id
+		AND cp.deleted_at IS NULL
+	WHERE sai.deleted_at IS NULL
+		AND sa.account_date >= ?
+		AND sa.account_date <= ?
+	`
+	consumableCostQuantityArgs := []interface{}{startDate, endDate}
+	if storeID > 0 {
+		consumableCostQuantitySQL += " AND sa.store_id = ?"
+		consumableCostQuantityArgs = append(consumableCostQuantityArgs, storeID)
+	}
+	consumableCostQuantitySQL += `
+	GROUP BY cp.id, cp.name
+	ORDER BY quantity DESC, cp.id ASC
+	LIMIT 10
+	`
+	if err := m.db.Raw(consumableCostQuantitySQL, consumableCostQuantityArgs...).
+		Scan(&stats.ConsumableCostQuantities).Error; err != nil {
 		return nil, err
 	}
 

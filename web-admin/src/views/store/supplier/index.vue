@@ -152,7 +152,7 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="productDlg" title="新增供应商商品（多规格）" max-width="min(1100px, 96vw)">
+    <BaseDialog v-model="productDlg" title="新增供应商商品（多规格）" max-width="min(1240px, 96vw)">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
         <p class="m-0 text-sm text-slate-600">
           供应商：<span class="font-medium">{{ currentSupplierName || '-' }}</span>
@@ -181,6 +181,8 @@
               <span>换算基础量</span>
               <span>成本价</span>
               <span>销售价</span>
+              <span>可售卖</span>
+              <span>消耗品</span>
               <span>操作</span>
             </div>
             <div v-for="(u, idx) in createUnits" :key="idx" class="unit-spec-editor__row">
@@ -189,7 +191,12 @@
               <BaseNumberInput v-model="u.factor_to_base" class="unit-spec-editor__control" :min="0.000001" :step="0.01" />
               <BaseNumberInput v-model="u.cost_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
               <BaseNumberInput v-model="u.sale_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
-              <BaseButton variant="ghost" size="sm" :disabled="createUnits.length <= 1" @click="removeCreateUnit(idx)">移除</BaseButton>
+              <BaseSwitch v-model="u.is_saleable" :active-value="true" :inactive-value="false" />
+              <BaseButton variant="link" size="sm" @click="openUnitConsumables('create', idx)">
+                <IconEdit />编辑消耗品<span v-if="u.consumables.length" class="unit-consumable-count">{{ u.consumables.length }}</span>
+              </BaseButton>
+              <BaseButton variant="ghost" size="sm" :disabled="createUnits.length <= 1" title="移除规格"
+                aria-label="移除规格" @click="removeCreateUnit(idx)"><IconDelete /></BaseButton>
             </div>
           </div>
         </div>
@@ -200,7 +207,7 @@
       </template>
     </BaseDialog>
 
-    <a-drawer :visible="productDrawer" placement="right" width="min(1080px, 96vw)" :mask-closable="true"
+    <a-drawer :visible="productDrawer" placement="right" width="min(1240px, 96vw)" :mask-closable="true"
       @cancel="productDrawer = false">
       <template #title>商品详情与编辑</template>
       <div class="space-y-4">
@@ -236,6 +243,8 @@
               <span>换算基础量</span>
               <span>成本价</span>
               <span>销售价</span>
+              <span>可售卖</span>
+              <span>消耗品</span>
               <span>操作</span>
             </div>
             <div v-for="(u, idx) in editUnits" :key="idx" class="unit-spec-editor__row">
@@ -244,7 +253,12 @@
               <BaseNumberInput v-model="u.factor_to_base" class="unit-spec-editor__control" :min="0.000001" :step="0.01" />
               <BaseNumberInput v-model="u.cost_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
               <BaseNumberInput v-model="u.sale_price" class="unit-spec-editor__control" :min="0" :step="0.01" />
-              <BaseButton variant="ghost" size="sm" :disabled="editUnits.length <= 1" @click="removeEditUnit(idx)">移除</BaseButton>
+              <BaseSwitch v-model="u.is_saleable" :active-value="true" :inactive-value="false" />
+              <BaseButton variant="link" size="sm" @click="openUnitConsumables('edit', idx)">
+                <IconEdit />编辑消耗品<span v-if="u.consumables.length" class="unit-consumable-count">{{ u.consumables.length }}</span>
+              </BaseButton>
+              <BaseButton variant="ghost" size="sm" :disabled="editUnits.length <= 1" title="移除规格"
+                aria-label="移除规格" @click="removeEditUnit(idx)"><IconDelete /></BaseButton>
             </div>
           </div>
         </div>
@@ -256,6 +270,49 @@
         </div>
       </template>
     </a-drawer>
+
+    <BaseDialog v-model="unitConsumableDlg" title="编辑规格消耗品" max-width="min(720px, 96vw)">
+      <div class="unit-consumable-dialog">
+        <div class="unit-consumable-dialog__intro">
+          <strong>{{ activeUnitLabel }}</strong>
+          <span>以下数量均为每售卖 1 件该规格所产生的消耗。</span>
+        </div>
+
+        <div class="unit-consumable-toolbar">
+          <span>已配置 {{ unitConsumableDraft.length }} 项</span>
+          <BaseButton variant="secondary" size="sm" :disabled="!currentStoreId" @click="addUnitConsumable">
+            <IconPlus />添加消耗品
+          </BaseButton>
+        </div>
+
+        <div v-if="unitConsumableDraft.length" class="unit-consumable-list">
+          <div class="unit-consumable-list__head">
+            <span>消耗品</span>
+            <span>单件消耗数量</span>
+            <span>成本小计</span>
+            <span>操作</span>
+          </div>
+          <div v-for="(line, idx) in unitConsumableDraft" :key="idx" class="unit-consumable-list__row">
+            <BaseSelect v-model="line.consumable_product_id" :options="consumableProductOptions" searchable
+              placeholder="选择消耗品" />
+            <BaseNumberInput v-model="line.quantity" :min="0.0001" :step="0.1" />
+            <span class="unit-consumable-cost">{{ formatMoney(unitConsumableCost(line)) }}</span>
+            <BaseButton variant="ghost" size="sm" title="移除消耗品" aria-label="移除消耗品"
+              @click="removeUnitConsumable(idx)"><IconDelete /></BaseButton>
+          </div>
+        </div>
+        <div v-else class="unit-consumable-empty">该规格暂未配置消耗品</div>
+
+        <div class="unit-consumable-total">
+          <span>单件规格消耗品成本</span>
+          <strong>{{ formatMoney(unitConsumableDraftCost) }}</strong>
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="unitConsumableDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" @click="saveUnitConsumables">保存配置</BaseButton>
+      </template>
+    </BaseDialog>
   </div>
 </template>
 
@@ -263,6 +320,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { IconDelete, IconEdit, IconPlus } from '@arco-design/web-vue/es/icon'
 import {
   BaseButton,
   BaseDialog,
@@ -271,6 +329,7 @@ import {
   BaseNumberInput,
   BasePagination,
   BaseSelect,
+  BaseSwitch,
   BaseTable,
   BaseTextarea,
 } from '@/components/base'
@@ -288,9 +347,11 @@ import {
   updateSupplierProduct,
 } from '@/api/supplierProduct'
 import { listDictDataByTypeCode } from '@/api/dict'
-import type { DictData, ProductUnitSpec, StorePurchasableProduct, Supplier } from '@/api/types'
+import { getAllStoreAccountConsumableProducts } from '@/api/storeAccount'
+import type { DictData, ProductUnitSpec, StoreAccountConsumableProduct, StorePurchasableProduct, Supplier } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+import { useUserStore } from '@/store/user'
 
 interface TreeRow {
   id: string | number
@@ -305,6 +366,8 @@ interface TreeRow {
 
 const qc = useQueryClient()
 const router = useRouter()
+const userStore = useUserStore()
+const currentStoreId = computed(() => Number(userStore.currentStoreId || 0) || undefined)
 
 const keyword = ref('')
 const page = ref(1)
@@ -553,6 +616,23 @@ async function submitCategory(): Promise<void> {
 
 const unitDict = ref<DictData[]>([])
 const unitOptions = computed<BaseSelectOption[]>(() => unitDict.value.map((d) => ({ label: d.label, value: d.value })))
+const { data: consumableProductData } = useQuery({
+  queryKey: computed(() => ['store-account-consumable-products-all', currentStoreId.value] as const),
+  queryFn: () => getAllStoreAccountConsumableProducts({ store_id: currentStoreId.value }),
+  enabled: computed(() => Boolean(currentStoreId.value)),
+})
+const consumableProducts = computed(() => consumableProductData.value ?? [])
+const consumableProductOptions = computed<BaseSelectOption[]>(() =>
+  consumableProducts.value.map((item) => ({
+    label: `${item.name}（成本 ${formatMoney(item.cost_price)}）`,
+    value: item.id,
+  })),
+)
+const consumableProductMap = computed(() => {
+  const result = new Map<number, StoreAccountConsumableProduct>()
+  for (const item of consumableProducts.value) result.set(item.id, item)
+  return result
+})
 const categoryOptions = computed<BaseSelectOption[]>(() =>
   categoryRows.value.map((c) => ({
     label: c.name,
@@ -567,6 +647,10 @@ const productForm = reactive({
   name: '',
   spec: '',
 })
+type UnitConsumableLine = {
+  consumable_product_id: number | ''
+  quantity: number
+}
 type UnitFormLine = {
   unit_code: string
   unit_name: string
@@ -574,6 +658,8 @@ type UnitFormLine = {
   precision: number
   cost_price: number
   sale_price: number
+  is_saleable: boolean
+  consumables: UnitConsumableLine[]
 }
 
 function makeUnitLine(overrides: Partial<UnitFormLine> = {}): UnitFormLine {
@@ -584,6 +670,8 @@ function makeUnitLine(overrides: Partial<UnitFormLine> = {}): UnitFormLine {
     precision: 0,
     cost_price: 0,
     sale_price: 0,
+    is_saleable: true,
+    consumables: [],
     ...overrides,
   }
 }
@@ -644,6 +732,11 @@ function normalizeUnitLines(lines: UnitFormLine[]): UnitFormLine[] {
       precision: Number(u.precision || 0),
       cost_price: Number(u.cost_price || 0),
       sale_price: Number(u.sale_price || 0),
+      is_saleable: u.is_saleable !== false,
+      consumables: u.consumables.map((item) => ({
+        consumable_product_id: Number(item.consumable_product_id || 0),
+        quantity: Number(item.quantity || 0),
+      })),
     }))
     .filter((u) => u.unit_code && u.factor_to_base > 0)
 }
@@ -699,6 +792,7 @@ async function submitCreateProduct(): Promise<void> {
 
     await batchUpsertProductUnitSpecs({
       product_id: created.id,
+      store_id: currentStoreId.value,
       units: units.map((u) => ({
         unit_code: u.unit_code,
         unit_name: u.unit_name || unitNameByCode(u.unit_code),
@@ -706,7 +800,9 @@ async function submitCreateProduct(): Promise<void> {
         precision: u.precision,
         cost_price: u.cost_price,
         sale_price: u.sale_price,
+        is_saleable: u.is_saleable,
         is_enabled: true,
+        ...(currentStoreId.value ? { consumables: u.consumables as Array<{ consumable_product_id: number; quantity: number }> } : {}),
       })),
     })
 
@@ -739,7 +835,7 @@ async function openProductDrawer(productId: number): Promise<void> {
   try {
     if (!unitDict.value.length) unitDict.value = await listDictDataByTypeCode('product_unit')
     const p = await getSupplierProduct(productId)
-    const units = await listProductUnitSpecs(productId)
+    const units = await listProductUnitSpecs(productId, currentStoreId.value)
     productEditingId.value = productId
     productEdit.name = p.name ?? ''
     productEdit.spec = p.spec ?? ''
@@ -755,6 +851,11 @@ async function openProductDrawer(productId: number): Promise<void> {
         precision: Number(u.precision),
         cost_price: Number(u.cost_price),
         sale_price: Number(u.sale_price),
+        is_saleable: u.is_saleable !== false,
+        consumables: (u.consumables ?? []).map((item) => ({
+          consumable_product_id: item.consumable_product_id,
+          quantity: Number(item.quantity),
+        })),
       })) ?? []
     if (!editUnits.value.length) {
       editUnits.value = [
@@ -795,6 +896,7 @@ async function submitEditProduct(): Promise<void> {
     })
     await batchUpsertProductUnitSpecs({
       product_id: productEditingId.value,
+      store_id: currentStoreId.value,
       units: units.map((u) => ({
         unit_code: u.unit_code,
         unit_name: u.unit_name || unitNameByCode(u.unit_code),
@@ -802,7 +904,9 @@ async function submitEditProduct(): Promise<void> {
         precision: u.precision,
         cost_price: u.cost_price,
         sale_price: u.sale_price,
+        is_saleable: u.is_saleable,
         is_enabled: true,
+        ...(currentStoreId.value ? { consumables: u.consumables as Array<{ consumable_product_id: number; quantity: number }> } : {}),
       })),
     })
     toast.success('商品已更新')
@@ -813,6 +917,83 @@ async function submitEditProduct(): Promise<void> {
   } finally {
     productEditSaving.value = false
   }
+}
+
+const unitConsumableDlg = ref(false)
+const unitConsumableTarget = ref<{ mode: 'create' | 'edit'; index: number } | null>(null)
+const unitConsumableDraft = ref<UnitConsumableLine[]>([])
+const activeUnit = computed(() => {
+  const target = unitConsumableTarget.value
+  if (!target) return undefined
+  const lines = target.mode === 'create' ? createUnits.value : editUnits.value
+  return lines[target.index]
+})
+const activeUnitLabel = computed(() => {
+  const line = activeUnit.value
+  if (!line) return '当前规格'
+  return line.unit_name.trim() || unitNameByCode(line.unit_code) || '未命名规格'
+})
+
+function formatMoney(value: number): string {
+  return `¥${Number(value || 0).toFixed(2)}`
+}
+
+function openUnitConsumables(mode: 'create' | 'edit', index: number): void {
+  if (!currentStoreId.value) {
+    toast.warning('请先选择门店后再维护规格消耗品')
+    return
+  }
+  const line = (mode === 'create' ? createUnits.value : editUnits.value)[index]
+  if (!line) return
+  unitConsumableTarget.value = { mode, index }
+  unitConsumableDraft.value = line.consumables.map((item) => ({ ...item }))
+  unitConsumableDlg.value = true
+}
+
+function addUnitConsumable(): void {
+  if (!consumableProducts.value.length) {
+    toast.warning('当前门店暂无消耗品档案，请先在门店记账中维护')
+    return
+  }
+  const selected = new Set(unitConsumableDraft.value.map((item) => Number(item.consumable_product_id || 0)))
+  const next = consumableProducts.value.find((item) => !selected.has(item.id))
+  unitConsumableDraft.value.push({ consumable_product_id: next?.id ?? '', quantity: 1 })
+}
+
+function removeUnitConsumable(index: number): void {
+  unitConsumableDraft.value = unitConsumableDraft.value.filter((_, itemIndex) => itemIndex !== index)
+}
+
+function unitConsumableCost(line: UnitConsumableLine): number {
+  const product = consumableProductMap.value.get(Number(line.consumable_product_id || 0))
+  return Number(product?.cost_price || 0) * Number(line.quantity || 0)
+}
+
+const unitConsumableDraftCost = computed(() =>
+  unitConsumableDraft.value.reduce((sum, line) => sum + unitConsumableCost(line), 0),
+)
+
+function saveUnitConsumables(): void {
+  const normalized: UnitConsumableLine[] = []
+  const selected = new Set<number>()
+  for (const line of unitConsumableDraft.value) {
+    const productID = Number(line.consumable_product_id || 0)
+    const quantity = Number(line.quantity || 0)
+    if (!productID || quantity <= 0) {
+      toast.warning('请选择消耗品并填写大于 0 的单件消耗数量')
+      return
+    }
+    if (selected.has(productID)) {
+      toast.warning('同一规格不能重复选择消耗品')
+      return
+    }
+    selected.add(productID)
+    normalized.push({ consumable_product_id: productID, quantity })
+  }
+  const line = activeUnit.value
+  if (!line) return
+  line.consumables = normalized
+  unitConsumableDlg.value = false
 }
 
 async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
@@ -1034,10 +1215,10 @@ async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
 .unit-spec-editor__head,
 .unit-spec-editor__row {
   display: grid;
-  grid-template-columns: minmax(150px, 1.1fr) minmax(150px, 1.1fr) minmax(130px, 0.9fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) 72px;
-  gap: 12px;
+  grid-template-columns: minmax(130px, 1fr) minmax(140px, 1fr) minmax(112px, 0.8fr) minmax(100px, 0.72fr) minmax(100px, 0.72fr) 72px 152px 48px;
+  gap: 10px;
   align-items: center;
-  min-width: 840px;
+  min-width: 1040px;
 }
 
 .unit-spec-editor__head {
@@ -1054,6 +1235,162 @@ async function onDeleteProduct(row: StorePurchasableProduct): Promise<void> {
 .unit-spec-editor__control {
   width: 100%;
   min-width: 0;
+}
+
+.unit-consumable-count {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.unit-consumable-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.unit-consumable-dialog__intro {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+}
+
+.unit-consumable-dialog__intro strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.unit-consumable-toolbar,
+.unit-consumable-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.unit-consumable-toolbar {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.unit-consumable-list {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.unit-consumable-list__head,
+.unit-consumable-list__row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 150px 110px 44px;
+  gap: 10px;
+  align-items: center;
+  min-width: 600px;
+}
+
+.unit-consumable-list__head {
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.unit-consumable-list__row + .unit-consumable-list__row {
+  margin-top: 10px;
+}
+
+.unit-consumable-cost {
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.unit-consumable-empty {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.unit-consumable-total {
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.unit-consumable-total strong {
+  color: #0f172a;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 560px) {
+  .unit-consumable-dialog__intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .unit-consumable-list__head {
+    display: none;
+  }
+
+  .unit-consumable-list__row {
+    grid-template-areas:
+      "product quantity remove"
+      "cost cost cost";
+    grid-template-columns: minmax(0, 1fr) 100px 36px;
+    min-width: 0;
+    padding: 10px 0;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .unit-consumable-list__row > :first-child {
+    grid-area: product;
+    min-width: 0;
+  }
+
+  .unit-consumable-list__row > :nth-child(2) {
+    grid-area: quantity;
+    min-width: 0;
+  }
+
+  .unit-consumable-list__row > :last-child {
+    grid-area: remove;
+  }
+
+  .unit-consumable-cost {
+    grid-area: cost;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .unit-consumable-cost::before {
+    content: "成本小计 ";
+    font-weight: 400;
+  }
+
+  .unit-consumable-list__row + .unit-consumable-list__row {
+    margin-top: 0;
+  }
 }
 
 @media (max-width: 900px) {

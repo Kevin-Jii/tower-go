@@ -54,6 +54,20 @@ func TestIsNumericOrderNo(t *testing.T) {
 	}
 }
 
+func TestResolveUnitPriceFromSpecsSkipsUnsaleableSpecs(t *testing.T) {
+	specs := []*model.ProductUnitSpec{
+		{UnitCode: "bottle", UnitName: "1L", SalePrice: 20, IsEnabled: true, IsSaleable: false},
+		{UnitCode: "case", UnitName: "12L箱", SalePrice: 180, IsEnabled: true, IsSaleable: true},
+	}
+
+	if got := resolveUnitPriceFromSpecs("1L", specs); got != 0 {
+		t.Fatalf("unsaleable spec price = %.2f, want 0", got)
+	}
+	if got := resolveUnitPriceFromSpecs("12L箱", specs); got != 180 {
+		t.Fatalf("saleable spec price = %.2f, want 180", got)
+	}
+}
+
 func TestStoreAccountEditWindow_CurrentBusinessDayOnly(t *testing.T) {
 	svc := &StoreAccountService{}
 	now := time.Now()

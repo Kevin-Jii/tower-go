@@ -58,6 +58,13 @@ export async function listStoreAccountConsumableProducts(params?: {
   return unwrap(res)
 }
 
+export async function getAllStoreAccountConsumableProducts(params?: {
+  store_id?: number
+}): Promise<StoreAccountConsumableProduct[]> {
+  const res = await http.get<import('./types').ApiEnvelope<StoreAccountConsumableProduct[]>>('/store-accounts/consumable-products/all', { params })
+  return unwrap(res)
+}
+
 export async function createStoreAccountConsumableProduct(body: Record<string, unknown>): Promise<StoreAccountConsumableProduct> {
   const res = await http.post<import('./types').ApiEnvelope<StoreAccountConsumableProduct>>('/store-accounts/consumable-products', body)
   return unwrap(res)

@@ -528,6 +528,18 @@ func (m *StoreAccountModule) ListConsumableProducts(req *model.ListStoreAccountC
 	return products, total, nil
 }
 
+func (m *StoreAccountModule) ListAllConsumableProducts(storeID uint) ([]*model.StoreAccountConsumableProduct, error) {
+	products := make([]*model.StoreAccountConsumableProduct, 0)
+	query := m.db.Model(&model.StoreAccountConsumableProduct{}).Preload("Store")
+	if storeID > 0 {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if err := query.Order("name ASC, id ASC").Find(&products).Error; err != nil {
+		return products, err
+	}
+	return products, nil
+}
+
 func (m *StoreAccountModule) UpdateConsumableProduct(product *model.StoreAccountConsumableProduct) error {
 	return m.db.Model(&model.StoreAccountConsumableProduct{}).Where("id = ?", product.ID).Updates(map[string]interface{}{
 		"store_id":   product.StoreID,
@@ -538,9 +550,19 @@ func (m *StoreAccountModule) UpdateConsumableProduct(product *model.StoreAccount
 }
 
 func (m *StoreAccountModule) DeleteConsumableProduct(id, storeID uint, hqUnbound bool) error {
-	query := m.db.Where("id = ?", id)
-	if !hqUnbound {
-		query = query.Where("store_id = ?", storeID)
-	}
-	return query.Delete(&model.StoreAccountConsumableProduct{}).Error
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		query := tx.Where("id = ?", id)
+		if !hqUnbound {
+			query = query.Where("store_id = ?", storeID)
+		}
+		var product model.StoreAccountConsumableProduct
+		if err := query.First(&product).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("consumable_product_id = ? AND store_id = ?", product.ID, product.StoreID).
+			Delete(&model.ProductUnitSpecConsumable{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&product).Error
+	})
 }

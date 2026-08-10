@@ -51,6 +51,7 @@ export async function createSupplierCategory(body: { supplier_id: number; name: 
 
 export async function batchUpsertProductUnitSpecs(body: {
   product_id: number
+  store_id?: number
   units: Array<{
     unit_code: string
     unit_name?: string
@@ -58,24 +59,29 @@ export async function batchUpsertProductUnitSpecs(body: {
     precision: number
     cost_price: number
     sale_price: number
+    is_saleable?: boolean
     is_enabled?: boolean
+    consumables?: Array<{
+      consumable_product_id: number
+      quantity: number
+    }>
   }>
 }): Promise<void> {
   await http.post<import('./types').ApiEnvelope<unknown>>('/product-unit-specs/batch', body)
 }
 
-export async function listProductUnitSpecs(productId: number): Promise<ProductUnitSpec[]> {
+export async function listProductUnitSpecs(productId: number, storeId?: number): Promise<ProductUnitSpec[]> {
   const res = await http.get<import('./types').ApiEnvelope<ProductUnitSpec[]>>('/product-unit-specs', {
-    params: { product_id: productId },
+    params: { product_id: productId, store_id: storeId },
   })
   return unwrap(res)
 }
 
-export async function batchListProductUnitSpecs(productIds: number[]): Promise<ProductUnitSpec[]> {
+export async function batchListProductUnitSpecs(productIds: number[], storeId?: number): Promise<ProductUnitSpec[]> {
   const ids = Array.from(new Set(productIds.filter((id) => Number.isFinite(id) && id > 0)))
   if (!ids.length) return []
   const res = await http.get<import('./types').ApiEnvelope<ProductUnitSpec[]>>('/product-unit-specs/batch', {
-    params: { product_ids: ids.join(',') },
+    params: { product_ids: ids.join(','), store_id: storeId },
   })
   return unwrap(res)
 }

@@ -128,19 +128,19 @@
           <article class="dash-data-panel dash-panel">
             <div class="dash-panel-heading">
               <div>
-                <h2>品类销售 TOP10</h2>
+                <h2>消耗品成本数量</h2>
               </div>
-              <span class="dash-panel-more">{{ categoryRows.length }} 个品类</span>
+              <span class="dash-panel-more">{{ consumableQuantityRows.length }} 个消耗品</span>
             </div>
             <div class="dash-ranking-list">
-              <div v-for="(item, index) in categoryRows" :key="item.key" class="dash-ranking-row">
+              <div v-for="(item, index) in consumableQuantityRows" :key="item.key" class="dash-ranking-row">
                 <span class="dash-ranking-index" :class="{ 'dash-ranking-index--top': index < 3 }">{{ index + 1
                   }}</span>
-                <span class="dash-ranking-name">{{ item.name }}</span>
+                <span class="dash-ranking-name" :title="`${item.name} · 成本 ${formatMoney(item.costAmount)}`">{{ item.name }}</span>
                 <span class="dash-ranking-track"><i :style="{ width: `${item.percent}%` }" /></span>
-                <strong>{{ formatMoney(item.amount) }}</strong>
+                <strong>{{ formatQuantity(item.quantity) }}</strong>
               </div>
-              <p v-if="!categoryRows.length" class="dash-empty">暂无品类数据</p>
+              <p v-if="!consumableQuantityRows.length" class="dash-empty">暂无规格消耗数据</p>
             </div>
           </article>
 
@@ -491,17 +491,19 @@ const channelRows = computed(() => {
     .slice(0, 6)
 })
 
-const categoryRows = computed(() => {
-  const rows = [...(overview.value?.categories ?? [])]
+const consumableQuantityRows = computed(() => {
+  const rows = [...(overview.value?.consumable_cost_quantities ?? [])]
     .map((item, index) => ({
-      key: `${item.category_id}-${index}`,
-      name: item.category_name || '未分类',
-      amount: Math.max(Number(item.in_amount ?? 0), Number(item.out_amount ?? 0), Math.abs(Number(item.net_amount ?? 0))),
+      key: `${item.consumable_product_id}-${index}`,
+      name: item.name || '未命名消耗品',
+      quantity: Number(item.quantity ?? 0),
+      costAmount: Number(item.cost_amount ?? 0),
     }))
-    .sort((a, b) => b.amount - a.amount)
+    .filter((item) => item.quantity > 0)
+    .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 10)
-  const max = Math.max(...rows.map((item) => item.amount), 1)
-  return rows.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.amount / max) * 100)) }))
+  const max = Math.max(...rows.map((item) => item.quantity), 1)
+  return rows.map((item) => ({ ...item, percent: Math.max(8, Math.round((item.quantity / max) * 100)) }))
 })
 
 const memberRows = computed(() => {
@@ -534,6 +536,10 @@ function isCompactScreen(): boolean {
 
 function formatMoney(value: number): string {
   return `¥${Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function formatQuantity(value: number): string {
+  return Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 4 })
 }
 
 function formatTrendDate(value: string): string {
@@ -2173,6 +2179,22 @@ onBeforeUnmount(() => {
     height: auto;
     min-height: 100dvh;
     padding: 12px;
+    overflow: visible;
+  }
+
+  .dash-screen--fullscreen .dash-screen__content {
+    height: 100%;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dash-main {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    min-height: 0;
     overflow: visible;
   }
 

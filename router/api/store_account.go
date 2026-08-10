@@ -15,6 +15,7 @@ func RegisterStoreAccountRoutes(v1 *gin.RouterGroup, c *Controllers) {
 		accounts.GET("/stats", middleware.Permission("store:account:list"), c.StoreAccount.Stats)
 		accounts.GET("/export", middleware.Permission("store:account:list"), c.StoreAccount.Export)
 		accounts.POST("/consumable-products", middleware.Permission("store:account:edit"), c.StoreAccount.CreateConsumableProduct)
+		accounts.GET("/consumable-products/all", middleware.Permission("store:account:list"), c.StoreAccount.ListAllConsumableProducts)
 		accounts.GET("/consumable-products", middleware.Permission("store:account:list"), c.StoreAccount.ListConsumableProducts)
 		accounts.PUT("/consumable-products/:id", middleware.Permission("store:account:edit"), c.StoreAccount.UpdateConsumableProduct)
 		accounts.DELETE("/consumable-products/:id", middleware.Permission("store:account:edit"), c.StoreAccount.DeleteConsumableProduct)

@@ -412,7 +412,18 @@ export interface ProductUnitSpec {
   precision: number
   cost_price: number
   sale_price: number
+  is_saleable: boolean
   is_enabled: boolean
+  consumables?: ProductUnitSpecConsumable[]
+}
+
+export interface ProductUnitSpecConsumable {
+  id: number
+  unit_spec_id: number
+  store_id: number
+  consumable_product_id: number
+  quantity: number
+  consumable_product?: StoreAccountConsumableProduct
 }
 
 export interface B2BCustomer {
@@ -965,6 +976,13 @@ export interface StoreExpenseCategoryAmountItem {
   count: number
 }
 
+export interface ConsumableCostQuantityItem {
+  consumable_product_id: number
+  name: string
+  quantity: number
+  cost_amount: number
+}
+
 export interface BusinessOverviewStats {
   start_date?: string
   end_date?: string
@@ -998,6 +1016,7 @@ export interface BusinessOverviewStats {
   categories?: CategoryAmountItem[]
   member_consumption_rank?: MemberConsumptionRankItem[]
   store_expense_categories?: StoreExpenseCategoryAmountItem[]
+  consumable_cost_quantities?: ConsumableCostQuantityItem[]
 }
 
 export interface SalesTrendItem {

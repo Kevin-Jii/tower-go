@@ -310,6 +310,24 @@ func (c *StoreAccountController) ListConsumableProducts(ctx *gin.Context) {
 	http.SuccessWithPagination(ctx, list, total, req.Page, req.PageSize)
 }
 
+// ListAllConsumableProducts godoc
+// @Summary 获取全部消耗品档案
+// @Tags 门店记账
+// @Produce json
+// @Security Bearer
+// @Param store_id query int false "门店ID"
+// @Success 200 {object} http.Response{data=[]model.StoreAccountConsumableProduct}
+// @Router /store-accounts/consumable-products/all [get]
+func (c *StoreAccountController) ListAllConsumableProducts(ctx *gin.Context) {
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	list, err := c.storeAccountService.ListAllConsumableProducts(ctx.Request.Context(), storeID)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, list)
+}
+
 func (c *StoreAccountController) UpdateConsumableProduct(ctx *gin.Context) {
 	id, ok := http.ParseUintParam(ctx, "id")
 	if !ok {

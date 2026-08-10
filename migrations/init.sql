@@ -1292,6 +1292,7 @@ CREATE TABLE IF NOT EXISTS product_unit_specs (
   `precision` INT NOT NULL DEFAULT 0 COMMENT '数量精度(小数位)',
   cost_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '单位成本价',
   sale_price DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '单位售价',
+  is_saleable TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否为可售卖规格',
   is_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
   created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -1316,6 +1317,38 @@ SET @sql_add_product_unit_precision = (
 PREPARE stmt_add_product_unit_precision FROM @sql_add_product_unit_precision;
 EXECUTE stmt_add_product_unit_precision;
 DEALLOCATE PREPARE stmt_add_product_unit_precision;
+
+SET @sql_add_product_unit_is_saleable = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'product_unit_specs'
+        AND COLUMN_NAME = 'is_saleable'
+    ),
+    'SELECT ''skip add product_unit_specs.is_saleable''',
+    'ALTER TABLE product_unit_specs ADD COLUMN is_saleable TINYINT(1) NOT NULL DEFAULT 1 COMMENT ''是否为可售卖规格'' AFTER sale_price'
+  )
+);
+PREPARE stmt_add_product_unit_is_saleable FROM @sql_add_product_unit_is_saleable;
+EXECUTE stmt_add_product_unit_is_saleable;
+DEALLOCATE PREPARE stmt_add_product_unit_is_saleable;
+
+CREATE TABLE IF NOT EXISTS product_unit_spec_consumables (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  unit_spec_id BIGINT UNSIGNED NOT NULL COMMENT '商品规格ID',
+  store_id BIGINT UNSIGNED NOT NULL COMMENT '门店ID',
+  consumable_product_id BIGINT UNSIGNED NOT NULL COMMENT '消耗品档案ID',
+  quantity DECIMAL(12,4) NOT NULL DEFAULT 1 COMMENT '每售卖一件规格消耗数量',
+  created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_product_unit_spec_consumables_unit_spec_id (unit_spec_id),
+  KEY idx_product_unit_spec_consumables_store_id (store_id),
+  KEY idx_product_unit_spec_consumables_consumable_product_id (consumable_product_id),
+  UNIQUE KEY uk_unit_spec_store_consumable (unit_spec_id, store_id, consumable_product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品规格门店消耗品配置';
 
 -- B2B 客户表
 CREATE TABLE IF NOT EXISTS b2b_customers (

@@ -60,11 +60,14 @@ func resolveUnitPriceFromSpecs(unit string, specs []*model.ProductUnitSpec) floa
 
 	// 1) 精确匹配（unit_code / unit_name）
 	for _, spec := range specs {
-		if spec == nil || !spec.IsEnabled || spec.SalePrice <= 0 {
+		if spec == nil {
 			continue
 		}
 		if normalized == strings.ToLower(strings.TrimSpace(spec.UnitCode)) ||
 			normalized == strings.ToLower(strings.TrimSpace(spec.UnitName)) {
+			if !spec.IsEnabled || !spec.IsSaleable || spec.SalePrice <= 0 {
+				return 0
+			}
 			return spec.SalePrice
 		}
 	}
@@ -72,7 +75,7 @@ func resolveUnitPriceFromSpecs(unit string, specs []*model.ProductUnitSpec) floa
 	// 2) 模糊包含匹配（兼容“L/瓶”“箱/桶”这类展示名）
 	if normalized != "" {
 		for _, spec := range specs {
-			if spec == nil || !spec.IsEnabled || spec.SalePrice <= 0 {
+			if spec == nil || !spec.IsEnabled || !spec.IsSaleable || spec.SalePrice <= 0 {
 				continue
 			}
 			code := strings.ToLower(strings.TrimSpace(spec.UnitCode))
@@ -87,7 +90,7 @@ func resolveUnitPriceFromSpecs(unit string, specs []*model.ProductUnitSpec) floa
 	// 3) 兜底：按小/大规格选择
 	needLarge := isLargePackUnit(unit)
 	for _, spec := range specs {
-		if spec == nil || !spec.IsEnabled || spec.SalePrice <= 0 {
+		if spec == nil || !spec.IsEnabled || !spec.IsSaleable || spec.SalePrice <= 0 {
 			continue
 		}
 		if needLarge && spec.FactorToBase > 1 {
@@ -1886,6 +1889,11 @@ func (s *StoreAccountService) UpdateConsumableProduct(id, storeID uint, req *mod
 func (s *StoreAccountService) ListConsumableProducts(ctx context.Context, req *model.ListStoreAccountConsumableProductReq) ([]*model.StoreAccountConsumableProduct, int64, error) {
 	_ = ctx
 	return s.storeAccountModule.ListConsumableProducts(req)
+}
+
+func (s *StoreAccountService) ListAllConsumableProducts(ctx context.Context, storeID uint) ([]*model.StoreAccountConsumableProduct, error) {
+	_ = ctx
+	return s.storeAccountModule.ListAllConsumableProducts(storeID)
 }
 
 func (s *StoreAccountService) DeleteConsumableProduct(id, storeID uint, hqUnbound bool) error {

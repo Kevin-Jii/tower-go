@@ -580,6 +580,7 @@ import {
   deleteStoreAccountConsumableProduct,
   exportStoreAccounts,
   getStoreAccount,
+  getAllStoreAccountConsumableProducts,
   listStoreAccountConsumableProducts,
   listStoreAccounts,
   updateStoreAccountConsumableProduct,
@@ -681,13 +682,13 @@ const { data: consumableProductPageData, isLoading: consumableProductsLoading } 
   queryKey: computed(() => ['store-account-consumable-products', consumableProductParams.value] as const),
   queryFn: () => listStoreAccountConsumableProducts(consumableProductParams.value),
 })
-const { data: allConsumableProductPageData } = useQuery({
+const { data: allConsumableProductData } = useQuery({
   queryKey: computed(() => ['store-account-consumable-products-all', tenantStoreId.value] as const),
-  queryFn: () => listStoreAccountConsumableProducts({ page: 1, page_size: 500, store_id: tenantStoreId.value }),
+  queryFn: () => getAllStoreAccountConsumableProducts({ store_id: tenantStoreId.value }),
 })
 const consumableProductRows = computed(() => consumableProductPageData.value?.list ?? [])
 const consumableProductTotal = computed(() => consumableProductPageData.value?.total ?? 0)
-const allConsumableProducts = computed(() => allConsumableProductPageData.value?.list ?? [])
+const allConsumableProducts = computed(() => allConsumableProductData.value ?? [])
 const consumableProductOptions = computed(() =>
   allConsumableProducts.value.map((item) => ({ label: `${item.name}（${formatMoney(item.cost_price)}）`, value: item.id })),
 )
@@ -721,14 +722,14 @@ const { data: unitSpecsData } = useQuery({
   queryFn: async () => {
     const ids = productList.value.map((p) => p.id)
     if (!ids.length) return [] as ProductUnitSpec[]
-    return batchListProductUnitSpecs(ids)
+    return batchListProductUnitSpecs(ids, tenantStoreId.value)
   },
   enabled: computed(() => productList.value.length > 0),
 })
 const specsByProduct = computed(() => {
   const map = new Map<number, ProductUnitSpec[]>()
   for (const s of unitSpecsData.value ?? []) {
-    if (!s.is_enabled) continue
+    if (!s.is_enabled || !s.is_saleable) continue
     if (!map.has(s.product_id)) map.set(s.product_id, [])
     map.get(s.product_id)!.push(s)
   }

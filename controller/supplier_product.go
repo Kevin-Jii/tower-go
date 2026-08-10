@@ -286,9 +286,9 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 		return
 	}
 	// 门店账号：仅允许查询本店已绑定供应商下的商品单位，防止凭 product_id 枚举其它供应商商品
-	storeID := middleware.GetStoreID(ctx)
-	if storeID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
-		invalid, err := c.storeSupplierService.ValidateStoreProducts(storeID, []uint{productID})
+	authStoreID := middleware.GetStoreID(ctx)
+	if authStoreID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
+		invalid, err := c.storeSupplierService.ValidateStoreProducts(authStoreID, []uint{productID})
 		if err != nil {
 			http.ErrorFrom(ctx, err)
 			return
@@ -298,7 +298,8 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 			return
 		}
 	}
-	specs, err := c.productService.ListUnitSpecs(productID)
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	specs, err := c.productService.ListUnitSpecs(productID, storeID)
 	if err != nil {
 		http.ErrorFrom(ctx, err)
 		return
@@ -321,9 +322,9 @@ func (c *SupplierProductController) BatchListProductUnitSpecs(ctx *gin.Context) 
 		return
 	}
 
-	storeID := middleware.GetStoreID(ctx)
-	if storeID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
-		invalid, err := c.storeSupplierService.ValidateStoreProducts(storeID, productIDs)
+	authStoreID := middleware.GetStoreID(ctx)
+	if authStoreID > 0 && !middleware.HQUnboundAdmin(ctx) && c.storeSupplierService != nil {
+		invalid, err := c.storeSupplierService.ValidateStoreProducts(authStoreID, productIDs)
 		if err != nil {
 			http.ErrorFrom(ctx, err)
 			return
@@ -334,7 +335,8 @@ func (c *SupplierProductController) BatchListProductUnitSpecs(ctx *gin.Context) 
 		}
 	}
 
-	specs, err := c.productService.ListUnitSpecsByProductIDs(productIDs)
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	specs, err := c.productService.ListUnitSpecsByProductIDs(productIDs, storeID)
 	if err != nil {
 		http.ErrorFrom(ctx, err)
 		return
@@ -439,6 +441,9 @@ func (c *SupplierProductController) BatchUpsertProductUnitSpecs(ctx *gin.Context
 	var req model.BatchUpsertProductUnitSpecsReq
 	if !http.BindJSON(ctx, &req) {
 		return
+	}
+	if !middleware.HQUnboundAdmin(ctx) {
+		req.StoreID = middleware.GetStoreID(ctx)
 	}
 	if err := c.productService.BatchUpsertUnitSpecs(&req); err != nil {
 		http.ErrorFrom(ctx, err)

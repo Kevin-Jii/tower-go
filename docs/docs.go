@@ -1487,7 +1487,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "直接修改库存数量（仅管理员）",
+                "description": "直接修改库存数量（门店管理员仅限本店，总部管理员和超级管理员按数据范围操作）",
                 "consumes": [
                     "application/json"
                 ],
@@ -2179,6 +2179,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/members/{id}/consumptions": {
+            "get": {
+                "description": "按会员查询门店记账消费记录，支持日期筛选与汇总",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "查询会员消费记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始日期(YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期(YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/menus": {
             "get": {
                 "security": [
@@ -2521,7 +2574,8 @@ const docTemplate = `{
                                         "data": {
                                             "type": "object",
                                             "additionalProperties": {
-                                                "type": "integer"
+                                                "type": "integer",
+                                                "format": "int32"
                                             }
                                         }
                                     }
@@ -2698,7 +2752,8 @@ const docTemplate = `{
                                         "data": {
                                             "type": "object",
                                             "additionalProperties": {
-                                                "type": "integer"
+                                                "type": "integer",
+                                                "format": "int32"
                                             }
                                         }
                                     }
@@ -4163,6 +4218,52 @@ const docTemplate = `{
             }
         },
         "/product-unit-specs/batch": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "商品单位配置"
+                ],
+                "summary": "批量查询商品单位配置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "商品ID列表，逗号分隔，如 1,2,3",
+                        "name": "product_ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.ProductUnitSpec"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -5057,7 +5158,7 @@ const docTemplate = `{
         },
         "/roles": {
             "get": {
-                "description": "获取角色列表（排除admin），支持 keyword 模糊查询 name/code/description，status=0|1 过滤",
+                "description": "获取角色列表（排除 admin、super_admin），支持 keyword 模糊查询 name/code/description，status=0|1 过滤",
                 "produces": [
                     "application/json"
                 ],
@@ -5267,7 +5368,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "根据ID删除角色",
+                "description": "根据ID删除角色；超级管理员、总部管理员、门店管理员、普通员工为内置角色不可删",
                 "produces": [
                     "application/json"
                 ],
@@ -5293,6 +5394,15 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "内置角色",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -5715,6 +5825,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "支付状态 1=已支付 2=未支付",
+                        "name": "payment_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "会员搜索（手机号/姓名/会员ID）",
+                        "name": "member_keyword",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "标签编码",
                         "name": "tag_code",
@@ -5775,7 +5897,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "创建记账单，支持多个商品；items.price 不传或传0时，后端按 items.unit 自动选价（单位含“瓶”取 bottle_price，含“箱”取 case_price）；items.amount 不传或传0时自动按 price*quantity 计算",
+                "description": "创建记账单，支持多个商品；items.product_id=0 时为自定义明细，items.product_name 必填且 items.price 必填，不扣库存。系统商品按 items.unit 自动选价；所有明细金额均由后端按最终单价乘数量计算",
                 "consumes": [
                     "application/json"
                 ],
@@ -5819,6 +5941,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/store-accounts/consumable-products/all": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "门店记账"
+                ],
+                "summary": "获取全部消耗品档案",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.StoreAccountConsumableProduct"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/store-accounts/stats": {
             "get": {
                 "security": [
@@ -5850,6 +6019,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "结束日期",
                         "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "支付状态 1=已支付 2=未支付",
+                        "name": "payment_status",
                         "in": "query"
                     }
                 ],
@@ -5913,7 +6088,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "更新记账信息，仅限创建后24小时内可修改（管理员不受限制）",
+                "description": "更新记账信息，仅允许当前营业日内修改",
                 "consumes": [
                     "application/json"
                 ],
@@ -5971,6 +6146,51 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/store-accounts/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "作废记账单，并恢复系统商品库存；自定义商品不影响库存",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "门店记账"
+                ],
+                "summary": "作废记账",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "记账ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "作废备注",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/model.CancelStoreAccountReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -6085,7 +6305,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "获取全部门店列表（不分页）",
+                "description": "获取门店列表（不分页；不含系统总部门店编码 JW9999）",
                 "consumes": [
                     "application/json"
                 ],
@@ -6314,6 +6534,52 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/stores/{id}/third-party-account": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "绑定或解绑门店第三方账号（传 null 表示解绑）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "门店管理"
+                ],
+                "summary": "绑定门店第三方账号",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "绑定信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.BindStoreThirdPartyAccountReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -6961,7 +7227,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "获取用户列表。总部管理员返回全部用户（跨门店，支持分页），门店管理员返回其门店用户（分页）",
+                "description": "获取用户列表。超级管理员或未绑定门店的总部管理员可跨店分页；其余账号仅返回 Token 绑定门店下的用户（分页）",
                 "consumes": [
                     "application/json"
                 ],
@@ -6990,11 +7256,17 @@ const docTemplate = `{
                         "description": "模糊关键字匹配用户名或手机号任意部分，如手机号135",
                         "name": "keyword",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "门店ID，仅未绑定门店的总部管理员或超级管理员有效；\u003e0 时只返回该门店用户",
+                        "name": "store_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "支持 keyword 模糊匹配用户名或手机号；总部管理员查看全部用户，门店管理员仅查看本门店用户",
+                        "description": "支持 keyword 模糊匹配用户名或手机号；未绑定门店的总部管理员与超级管理员可跨店；其余账号仅本店",
                         "schema": {
                             "allOf": [
                                 {
@@ -7449,8 +7721,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "expires_in": {
-                    "description": "过期时间（秒）",
+                    "description": "access token 过期时间（秒）",
                     "type": "integer"
+                },
+                "refresh_expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
                 },
                 "strategy": {
                     "description": "会话策略 single/multi",
@@ -7589,7 +7867,8 @@ const docTemplate = `{
                     "description": "菜单ID -\u003e 权限位映射",
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer"
+                        "type": "integer",
+                        "format": "int32"
                     }
                 },
                 "role_id": {
@@ -7615,7 +7894,8 @@ const docTemplate = `{
                     "description": "菜单ID -\u003e 权限位映射",
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer"
+                        "type": "integer",
+                        "format": "int32"
                     }
                 },
                 "role_id": {
@@ -7685,6 +7965,9 @@ const docTemplate = `{
                 "product_id": {
                     "type": "integer"
                 },
+                "store_id": {
+                    "type": "integer"
+                },
                 "units": {
                     "type": "array",
                     "minItems": 1,
@@ -7733,11 +8016,25 @@ const docTemplate = `{
                 }
             }
         },
+        "model.BindStoreThirdPartyAccountReq": {
+            "type": "object",
+            "properties": {
+                "third_party_account_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.BusinessOverviewStats": {
             "type": "object",
             "properties": {
                 "all_category_amount": {
                     "type": "number"
+                },
+                "b2b_supply_amount": {
+                    "type": "number"
+                },
+                "b2b_supply_order_count": {
+                    "type": "integer"
                 },
                 "categories": {
                     "type": "array",
@@ -7745,8 +8042,23 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.CategoryAmountItem"
                     }
                 },
+                "consumable_amount": {
+                    "type": "number"
+                },
+                "consumable_cost_quantities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ConsumableCostQuantityItem"
+                    }
+                },
                 "end_date": {
                     "type": "string"
+                },
+                "errand_fee_amount": {
+                    "type": "number"
+                },
+                "gift_wine_cost_amount": {
+                    "type": "number"
                 },
                 "gross_profit_amount": {
                     "type": "number"
@@ -7757,8 +8069,26 @@ const docTemplate = `{
                 "inventory_in_count": {
                     "type": "integer"
                 },
+                "inventory_loss_amount": {
+                    "type": "number"
+                },
+                "inventory_loss_count": {
+                    "type": "integer"
+                },
                 "inventory_out_count": {
                     "type": "integer"
+                },
+                "inventory_self_use_amount": {
+                    "type": "number"
+                },
+                "inventory_self_use_count": {
+                    "type": "integer"
+                },
+                "member_consumption_rank": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MemberConsumptionRankItem"
+                    }
                 },
                 "net_profit_amount": {
                     "type": "number"
@@ -7767,6 +8097,15 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "outbound_amount": {
+                    "type": "number"
+                },
+                "return_deposit_amount": {
+                    "type": "number"
+                },
+                "return_logistics_fee": {
+                    "type": "number"
+                },
+                "round_amount": {
                     "type": "number"
                 },
                 "sales_amount": {
@@ -7778,8 +8117,35 @@ const docTemplate = `{
                 "start_date": {
                     "type": "string"
                 },
+                "store_expense_amount": {
+                    "type": "number"
+                },
+                "store_expense_categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StoreExpenseCategoryAmountItem"
+                    }
+                },
                 "store_id": {
                     "type": "integer"
+                },
+                "takeout_promotion_amount": {
+                    "type": "number"
+                },
+                "takeout_promotion_roi": {
+                    "type": "number"
+                },
+                "takeout_sales_amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "model.CancelStoreAccountReq": {
+            "type": "object",
+            "properties": {
+                "remark": {
+                    "type": "string",
+                    "maxLength": 500
                 }
             }
         },
@@ -7819,6 +8185,13 @@ const docTemplate = `{
                 "ChangeTypeRecharge": "充值",
                 "ChangeTypeRefund": "退款"
             },
+            "x-enum-descriptions": [
+                "充值",
+                "消费",
+                "退款",
+                "调增",
+                "调减"
+            ],
             "x-enum-varnames": [
                 "ChangeTypeRecharge",
                 "ChangeTypeConsume",
@@ -7848,6 +8221,23 @@ const docTemplate = `{
                 },
                 "percent": {
                     "description": "占比",
+                    "type": "number"
+                }
+            }
+        },
+        "model.ConsumableCostQuantityItem": {
+            "type": "object",
+            "properties": {
+                "consumable_product_id": {
+                    "type": "integer"
+                },
+                "cost_amount": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "quantity": {
                     "type": "number"
                 }
             }
@@ -7960,6 +8350,9 @@ const docTemplate = `{
                         "webhook",
                         "stream"
                     ]
+                },
+                "card_msg_key": {
+                    "type": "string"
                 },
                 "client_id": {
                     "description": "stream 模式必填",
@@ -8252,6 +8645,9 @@ const docTemplate = `{
                 "is_enabled": {
                     "type": "boolean"
                 },
+                "is_saleable": {
+                    "type": "boolean"
+                },
                 "precision": {
                     "type": "integer",
                     "maximum": 6,
@@ -8281,6 +8677,12 @@ const docTemplate = `{
                 "unit_code"
             ],
             "properties": {
+                "consumables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ProductUnitSpecConsumableItemReq"
+                    }
+                },
                 "cost_price": {
                     "type": "number",
                     "minimum": 0
@@ -8289,6 +8691,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "is_enabled": {
+                    "type": "boolean"
+                },
+                "is_saleable": {
                     "type": "boolean"
                 },
                 "precision": {
@@ -8380,7 +8785,6 @@ const docTemplate = `{
         "model.CreateStoreAccountConsumableReq": {
             "type": "object",
             "required": [
-                "product_id",
                 "quantity"
             ],
             "properties": {
@@ -8388,12 +8792,19 @@ const docTemplate = `{
                     "type": "number",
                     "minimum": 0
                 },
+                "consumable_product_id": {
+                    "type": "integer"
+                },
                 "price": {
                     "type": "number",
                     "minimum": 0
                 },
                 "product_id": {
                     "type": "integer"
+                },
+                "product_name": {
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "quantity": {
                     "type": "number"
@@ -8411,22 +8822,25 @@ const docTemplate = `{
         "model.CreateStoreAccountItemReq": {
             "type": "object",
             "required": [
-                "product_id",
                 "quantity"
             ],
             "properties": {
                 "amount": {
-                    "description": "可选：不传或传0时，后端按 price*quantity 自动计算",
+                    "description": "兼容字段，保存时由后端按最终单价和数量重新计算",
                     "type": "number",
                     "minimum": 0
                 },
                 "price": {
-                    "description": "可选：不传或传0时，后端按单位自动取价（瓶-\u003ebottle_price，箱-\u003ecase_price）",
+                    "description": "自定义明细时必填 \u003e0；系统商品时可由后端按规格取价",
                     "type": "number",
                     "minimum": 0
                 },
                 "product_id": {
                     "type": "integer"
+                },
+                "product_name": {
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "quantity": {
                     "type": "number"
@@ -8440,7 +8854,7 @@ const docTemplate = `{
                     "maxLength": 100
                 },
                 "unit": {
-                    "description": "单位（如“瓶”“箱”），用于自动选价",
+                    "description": "单位（如“瓶”“箱”），用于自动选价；自定义明细时由用户填写",
                     "type": "string",
                     "maxLength": 20
                 }
@@ -8453,6 +8867,9 @@ const docTemplate = `{
                 "items"
             ],
             "properties": {
+                "account_date": {
+                    "type": "string"
+                },
                 "channel": {
                     "type": "string",
                     "maxLength": 50
@@ -8463,6 +8880,50 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.CreateStoreAccountConsumableReq"
                     }
                 },
+                "errand_fee": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "gift_wine_cost_amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "gift_wine_product_id": {
+                    "type": "integer"
+                },
+                "gift_wine_quantity": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "gift_wine_unit": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "income_amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "is_errand_order": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "is_gift_wine": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "is_supplement": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
                 "items": {
                     "type": "array",
                     "minItems": 1,
@@ -8470,17 +8931,35 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.CreateStoreAccountItemReq"
                     }
                 },
+                "member_id": {
+                    "type": "integer"
+                },
                 "notify_image": {
                     "description": "通知图片URL（前端生成）",
                     "type": "string"
+                },
+                "order_no": {
+                    "type": "string",
+                    "maxLength": 100
                 },
                 "other_expense_amount": {
                     "type": "number",
                     "minimum": 0
                 },
+                "payment_status": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2
+                    ]
+                },
                 "remark": {
                     "type": "string",
                     "maxLength": 500
+                },
+                "round_amount": {
+                    "type": "number",
+                    "minimum": 0
                 },
                 "tag_code": {
                     "type": "string",
@@ -8499,6 +8978,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "address": {
+                    "type": "string"
+                },
+                "administrative_unit": {
                     "type": "string"
                 },
                 "business_hours": {
@@ -8773,6 +9255,10 @@ const docTemplate = `{
                     "description": "机器人类型: webhook, stream",
                     "type": "string"
                 },
+                "card_msg_key": {
+                    "description": "卡片模板标识（msgKey）",
+                    "type": "string"
+                },
                 "client_id": {
                     "description": "AppKey/SuiteKey (stream 模式)",
                     "type": "string"
@@ -8792,7 +9278,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "msg_type": {
-                    "description": "消息类型: text, markdown",
+                    "description": "消息类型: text, markdown, card",
                     "type": "string"
                 },
                 "name": {
@@ -9082,13 +9568,39 @@ const docTemplate = `{
                 "points": {
                     "type": "integer"
                 },
+                "store_id": {
+                    "type": "integer"
+                },
                 "uid": {
                     "type": "string"
+                },
+                "unsettled_amount": {
+                    "type": "number"
                 },
                 "updateTime": {
                     "type": "string"
                 },
                 "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.MemberConsumptionRankItem": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "member_id": {
+                    "type": "integer"
+                },
+                "member_name": {
+                    "type": "string"
+                },
+                "member_phone": {
+                    "type": "string"
+                },
+                "orders": {
                     "type": "integer"
                 }
             }
@@ -9214,6 +9726,12 @@ const docTemplate = `{
                 "PayStatusPending": "待支付",
                 "PayStatusRefunded": "已退款"
             },
+            "x-enum-descriptions": [
+                "待支付",
+                "已支付",
+                "已取消",
+                "已退款"
+            ],
             "x-enum-varnames": [
                 "PayStatusPending",
                 "PayStatusPaid",
@@ -9530,6 +10048,10 @@ const docTemplate = `{
                 "PrinterTypeLabel": "标签打印机",
                 "PrinterTypeReceipt": "小票打印机"
             },
+            "x-enum-descriptions": [
+                "小票打印机",
+                "标签打印机"
+            ],
             "x-enum-varnames": [
                 "PrinterTypeReceipt",
                 "PrinterTypeLabel"
@@ -9538,6 +10060,12 @@ const docTemplate = `{
         "model.ProductUnitSpec": {
             "type": "object",
             "properties": {
+                "consumables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.ProductUnitSpecConsumable"
+                    }
+                },
                 "cost_price": {
                     "type": "number"
                 },
@@ -9551,6 +10079,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "is_enabled": {
+                    "type": "boolean"
+                },
+                "is_saleable": {
                     "type": "boolean"
                 },
                 "precision": {
@@ -9570,6 +10101,50 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "model.ProductUnitSpecConsumable": {
+            "type": "object",
+            "properties": {
+                "consumable_product": {
+                    "$ref": "#/definitions/model.StoreAccountConsumableProduct"
+                },
+                "consumable_product_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "unit_spec_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ProductUnitSpecConsumableItemReq": {
+            "type": "object",
+            "required": [
+                "consumable_product_id",
+                "quantity"
+            ],
+            "properties": {
+                "consumable_product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "number"
                 }
             }
         },
@@ -9819,6 +10394,9 @@ const docTemplate = `{
                     "description": "门店地址",
                     "type": "string"
                 },
+                "administrative_unit": {
+                    "type": "string"
+                },
                 "business_hours": {
                     "description": "营业时间",
                     "type": "string"
@@ -9853,6 +10431,12 @@ const docTemplate = `{
                     "description": "门店编码 JWXXXX",
                     "type": "string"
                 },
+                "third_party_account": {
+                    "$ref": "#/definitions/model.ThirdPartyAccount"
+                },
+                "third_party_account_id": {
+                    "type": "integer"
+                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -9867,6 +10451,24 @@ const docTemplate = `{
                 "account_no": {
                     "type": "string"
                 },
+                "can_bind_consumables": {
+                    "type": "boolean"
+                },
+                "can_cancel": {
+                    "type": "boolean"
+                },
+                "can_edit": {
+                    "type": "boolean"
+                },
+                "cancel_remark": {
+                    "type": "string"
+                },
+                "canceled_at": {
+                    "type": "string"
+                },
+                "canceled_by_id": {
+                    "type": "integer"
+                },
                 "channel": {
                     "type": "string"
                 },
@@ -9879,7 +10481,40 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "errand_fee": {
+                    "type": "number"
+                },
+                "gift_wine_cost_amount": {
+                    "type": "number"
+                },
+                "gift_wine_product_id": {
+                    "type": "integer"
+                },
+                "gift_wine_product_name": {
+                    "type": "string"
+                },
+                "gift_wine_quantity": {
+                    "type": "number"
+                },
+                "gift_wine_unit": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "is_canceled": {
+                    "type": "boolean"
+                },
+                "is_errand_order": {
+                    "type": "integer"
+                },
+                "is_gift_wine": {
+                    "type": "integer"
+                },
+                "is_read_only": {
+                    "type": "boolean"
+                },
+                "is_supplement": {
                     "type": "integer"
                 },
                 "item_count": {
@@ -9890,6 +10525,12 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.StoreAccountItem"
                     }
+                },
+                "member": {
+                    "$ref": "#/definitions/model.Member"
+                },
+                "member_id": {
+                    "type": "integer"
                 },
                 "net_income_amount": {
                     "type": "number"
@@ -9906,7 +10547,19 @@ const docTemplate = `{
                 "other_expense_amount": {
                     "type": "number"
                 },
+                "payment_status": {
+                    "type": "integer"
+                },
                 "remark": {
+                    "type": "string"
+                },
+                "round_amount": {
+                    "type": "number"
+                },
+                "source_id": {
+                    "type": "integer"
+                },
+                "source_type": {
                     "type": "string"
                 },
                 "store": {
@@ -9969,6 +10622,35 @@ const docTemplate = `{
                 }
             }
         },
+        "model.StoreAccountConsumableProduct": {
+            "type": "object",
+            "properties": {
+                "cost_price": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "store": {
+                    "$ref": "#/definitions/model.Store"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.StoreAccountItem": {
             "type": "object",
             "properties": {
@@ -10004,6 +10686,23 @@ const docTemplate = `{
                 },
                 "unit": {
                     "type": "string"
+                }
+            }
+        },
+        "model.StoreExpenseCategoryAmountItem": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "category_code": {
+                    "type": "string"
+                },
+                "category_name": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
                 }
             }
         },
@@ -10134,6 +10833,80 @@ const docTemplate = `{
                 }
             }
         },
+        "model.ThirdPartyAccount": {
+            "type": "object",
+            "properties": {
+                "application_key": {
+                    "type": "string"
+                },
+                "channel": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "last_sync_at": {
+                    "type": "string"
+                },
+                "last_sync_count": {
+                    "type": "integer"
+                },
+                "last_sync_msg": {
+                    "type": "string"
+                },
+                "last_test_at": {
+                    "type": "string"
+                },
+                "last_test_msg": {
+                    "type": "string"
+                },
+                "last_test_ok": {
+                    "type": "boolean"
+                },
+                "last_token": {
+                    "type": "string"
+                },
+                "login_name": {
+                    "type": "string"
+                },
+                "login_type": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "platform_name": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "shop_id": {
+                    "type": "string"
+                },
+                "token_valid_time": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.UpdateDictDataReq": {
             "type": "object",
             "properties": {
@@ -10203,6 +10976,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "bot_type": {
+                    "type": "string"
+                },
+                "card_msg_key": {
                     "type": "string"
                 },
                 "client_id": {
@@ -10478,6 +11254,9 @@ const docTemplate = `{
                 "is_enabled": {
                     "type": "boolean"
                 },
+                "is_saleable": {
+                    "type": "boolean"
+                },
                 "precision": {
                     "type": "integer",
                     "maximum": 6,
@@ -10550,6 +11329,53 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 50
                 },
+                "errand_fee": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "gift_wine_cost_amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "gift_wine_product_id": {
+                    "type": "integer"
+                },
+                "gift_wine_quantity": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "gift_wine_unit": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "income_amount": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "is_errand_order": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "is_gift_wine": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/model.CreateStoreAccountItemReq"
+                    }
+                },
+                "member_id": {
+                    "type": "integer"
+                },
                 "order_no": {
                     "type": "string",
                     "maxLength": 100
@@ -10558,9 +11384,20 @@ const docTemplate = `{
                     "type": "number",
                     "minimum": 0
                 },
+                "payment_status": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2
+                    ]
+                },
                 "remark": {
                     "type": "string",
                     "maxLength": 500
+                },
+                "round_amount": {
+                    "type": "number",
+                    "minimum": 0
                 },
                 "tag_code": {
                     "type": "string",
@@ -10577,6 +11414,10 @@ const docTemplate = `{
             "properties": {
                 "address": {
                     "description": "门店地址",
+                    "type": "string"
+                },
+                "administrative_unit": {
+                    "description": "归属区",
                     "type": "string"
                 },
                 "business_hours": {
@@ -10798,7 +11639,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "store": {
-                    "description": "门店关联",
+                    "description": "不建外键，允许 store_id=0",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.Store"
@@ -10813,6 +11654,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                },
+                "wechat_openid": {
                     "type": "string"
                 }
             }

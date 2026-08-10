@@ -1,11 +1,13 @@
 package service
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"gorm.io/gorm"
 )
 
 func (s *SupplierProductService) validateUnitCodeAndGetName(unitCode string) (string, error) {
@@ -180,7 +182,11 @@ func (s *SupplierProductService) CreateUnitSpec(req *model.CreateProductUnitSpec
 		Precision:    req.Precision,
 		CostPrice:    req.CostPrice,
 		SalePrice:    req.SalePrice,
+		IsSaleable:   true,
 		IsEnabled:    true,
+	}
+	if req.IsSaleable != nil {
+		spec.IsSaleable = *req.IsSaleable
 	}
 	if req.IsEnabled != nil {
 		spec.IsEnabled = *req.IsEnabled
@@ -188,15 +194,15 @@ func (s *SupplierProductService) CreateUnitSpec(req *model.CreateProductUnitSpec
 	return s.unitSpecModule.Create(spec)
 }
 
-func (s *SupplierProductService) ListUnitSpecs(productID uint) ([]*model.ProductUnitSpec, error) {
+func (s *SupplierProductService) ListUnitSpecs(productID, storeID uint) ([]*model.ProductUnitSpec, error) {
 	if _, err := s.productModule.GetByID(productID); err != nil {
 		return nil, apicode.New(apicode.ProductNotFound)
 	}
-	return s.unitSpecModule.ListEnabledByProductID(productID)
+	return s.unitSpecModule.ListEnabledByProductIDWithConsumables(productID, storeID)
 }
 
-func (s *SupplierProductService) ListUnitSpecsByProductIDs(productIDs []uint) ([]*model.ProductUnitSpec, error) {
-	return s.unitSpecModule.ListByProductIDs(productIDs)
+func (s *SupplierProductService) ListUnitSpecsByProductIDs(productIDs []uint, storeID uint) ([]*model.ProductUnitSpec, error) {
+	return s.unitSpecModule.ListByProductIDsWithConsumables(productIDs, storeID)
 }
 
 func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProductUnitSpecReq) error {
@@ -231,6 +237,9 @@ func (s *SupplierProductService) UpdateUnitSpec(id uint, req *model.UpdateProduc
 	}
 	if req.SalePrice != nil {
 		updates["sale_price"] = *req.SalePrice
+	}
+	if req.IsSaleable != nil {
+		updates["is_saleable"] = *req.IsSaleable
 	}
 	if req.IsEnabled != nil {
 		updates["is_enabled"] = *req.IsEnabled
@@ -276,13 +285,42 @@ func (s *SupplierProductService) BatchUpsertUnitSpecs(req *model.BatchUpsertProd
 			Precision:    unit.Precision,
 			CostPrice:    unit.CostPrice,
 			SalePrice:    unit.SalePrice,
+			IsSaleable:   true,
 			IsEnabled:    true,
+		}
+		if unit.IsSaleable != nil {
+			spec.IsSaleable = *unit.IsSaleable
 		}
 		if unit.IsEnabled != nil {
 			spec.IsEnabled = *unit.IsEnabled
 		}
 		if err := s.unitSpecModule.UpsertByProductAndUnit(spec); err != nil {
 			return err
+		}
+		if unit.Consumables != nil {
+			if req.StoreID == 0 {
+				return apicode.New(apicode.StoreRequired)
+			}
+			consumableIDs := make(map[uint]struct{}, len(unit.Consumables))
+			for _, consumable := range unit.Consumables {
+				if consumable.ConsumableProductID == 0 || consumable.Quantity <= 0 {
+					return apicode.Newf(apicode.ValidationFailed, "消耗品和每件消耗数量必须有效")
+				}
+				if _, exists := consumableIDs[consumable.ConsumableProductID]; exists {
+					return apicode.Newf(apicode.Conflict, "同一规格不能重复选择消耗品")
+				}
+				consumableIDs[consumable.ConsumableProductID] = struct{}{}
+			}
+			savedSpec, err := s.unitSpecModule.GetByProductAndUnitName(req.ProductID, unit.UnitCode, unitName)
+			if err != nil {
+				return err
+			}
+			if err := s.unitSpecModule.ReplaceConsumables(savedSpec.ID, req.StoreID, unit.Consumables); err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return apicode.Newf(apicode.ItemNotFound, "消耗品档案不存在或不属于当前门店")
+				}
+				return err
+			}
 		}
 	}
 	for _, spec := range existingSpecs {

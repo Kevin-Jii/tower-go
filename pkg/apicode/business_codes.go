@@ -59,7 +59,7 @@ var (
 	WechatAlreadyBound        = Code{40924, "微信已绑定其他账号"}
 	PhoneAlreadyExists        = Code{40925, "手机号已注册"}
 	SupplierAlreadyUsed       = Code{40926, "供应商正在使用中"}
-	StoreAccountOrderNoExists = Code{40927, "当前渠道下的外卖订单号已存在"}
+	StoreAccountOrderNoExists = Code{40927, "当前营业日该渠道的外卖订单号已存在"}
 
 	// 服务与外部依赖 500xx / 502xx
 	ConfigMissing = Code{50002, "服务配置缺失"}

@@ -430,12 +430,6 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 
 	accountNo := s.storeAccountModule.GenerateAccountNo()
 	orderNo := strings.TrimSpace(req.OrderNo)
-	if err := s.validateTakeoutOrderNo(storeID, 0, channel, orderNo); err != nil {
-		return nil, err
-	}
-	if orderNo == "" {
-		orderNo = fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
-	}
 
 	// 记账日期按营业日归属：16:00 到次日 05:00 为同一个营业日。
 	// 只有补记账允许前端传 account_date；普通记账继续由后端生成，避免移动端自行创造业务日期。
@@ -453,6 +447,12 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 			return nil, apicode.Newf(apicode.InvalidDate, "补记账日期不能晚于当前营业日")
 		}
 		accountDate = t
+	}
+	if err := s.validateTakeoutOrderNo(storeID, 0, channel, orderNo, accountDate); err != nil {
+		return nil, err
+	}
+	if orderNo == "" {
+		orderNo = fmt.Sprintf("DD%s%03d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000)
 	}
 
 	// 构建明细
@@ -1048,7 +1048,7 @@ func (s *StoreAccountService) isTakeoutChannel(channel string) bool {
 	return false
 }
 
-func (s *StoreAccountService) validateTakeoutOrderNo(storeID, excludeID uint, channel, orderNo string) error {
+func (s *StoreAccountService) validateTakeoutOrderNo(storeID, excludeID uint, channel, orderNo string, accountDate time.Time) error {
 	if !s.isTakeoutChannel(channel) {
 		return nil
 	}
@@ -1058,7 +1058,7 @@ func (s *StoreAccountService) validateTakeoutOrderNo(storeID, excludeID uint, ch
 	if !isNumericOrderNo(orderNo) {
 		return apicode.Newf(apicode.ValidationFailed, "外卖订单号只能输入数字")
 	}
-	exists, err := s.storeAccountModule.ExistsByStoreChannelOrderNo(storeID, excludeID, channel, orderNo)
+	exists, err := s.storeAccountModule.ExistsByStoreChannelDateOrderNo(storeID, excludeID, channel, orderNo, accountDate)
 	if err != nil {
 		return err
 	}
@@ -1262,6 +1262,7 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 	updates := make(map[string]interface{})
 	nextChannel := account.Channel
 	nextOrderNo := account.OrderNo
+	nextAccountDate := account.AccountDate
 	nextTotalAmount := account.TotalAmount
 	nextOtherExpenseAmount := account.OtherExpenseAmount
 	nextRoundAmount := account.RoundAmount
@@ -1306,8 +1307,14 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 		nextOrderNo = strings.TrimSpace(req.OrderNo)
 		updates["order_no"] = nextOrderNo
 	}
-	if req.Channel != "" || req.OrderNo != "" {
-		if err := s.validateTakeoutOrderNo(account.StoreID, account.ID, nextChannel, nextOrderNo); err != nil {
+	if req.AccountDate != "" {
+		if t, err := time.ParseInLocation("2006-01-02", req.AccountDate, time.Local); err == nil {
+			nextAccountDate = t
+			updates["account_date"] = t
+		}
+	}
+	if req.Channel != "" || req.OrderNo != "" || req.AccountDate != "" {
+		if err := s.validateTakeoutOrderNo(account.StoreID, account.ID, nextChannel, nextOrderNo, nextAccountDate); err != nil {
 			return err
 		}
 	}
@@ -1319,11 +1326,6 @@ func (s *StoreAccountService) updateLoadedAccount(account *model.StoreAccount, s
 	}
 	if req.Remark != "" {
 		updates["remark"] = req.Remark
-	}
-	if req.AccountDate != "" {
-		if t, err := time.Parse("2006-01-02", req.AccountDate); err == nil {
-			updates["account_date"] = t
-		}
 	}
 	if req.OtherExpenseAmount != nil {
 		updates["other_expense_amount"] = *req.OtherExpenseAmount

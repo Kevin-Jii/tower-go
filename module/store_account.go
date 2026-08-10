@@ -123,10 +123,10 @@ func (m *StoreAccountModule) GetByIDScoped(id, storeID uint, hqUnbound bool) (*m
 	return &account, nil
 }
 
-func (m *StoreAccountModule) ExistsByStoreChannelOrderNo(storeID, excludeID uint, channel, orderNo string) (bool, error) {
+func (m *StoreAccountModule) ExistsByStoreChannelDateOrderNo(storeID, excludeID uint, channel, orderNo string, accountDate time.Time) (bool, error) {
 	var count int64
 	query := m.db.Model(&model.StoreAccount{}).
-		Where("store_id = ? AND channel = ? AND order_no = ?", storeID, channel, orderNo)
+		Where("store_id = ? AND channel = ? AND order_no = ? AND account_date = ?", storeID, channel, orderNo, accountDate.Format("2006-01-02"))
 	if excludeID > 0 {
 		query = query.Where("id <> ?", excludeID)
 	}

@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"mime/multipart"
+	stdhttp "net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -10,11 +12,25 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+const (
+	maxGalleryImageSize         int64 = 20 * 1024 * 1024
+	maxGalleryUploadRequestSize int64 = maxGalleryImageSize + 1024*1024
+)
+
+var allowedGalleryImageExts = map[string]struct{}{
+	".gif":  {},
+	".jpeg": {},
+	".jpg":  {},
+	".png":  {},
+	".webp": {},
+}
 
 type GalleryController struct {
 	galleryService *service.GalleryService
@@ -41,28 +57,25 @@ func NewGalleryController(galleryService *service.GalleryService, rustfsService 
 // @Router /galleries/upload [post]
 func (c *GalleryController) Upload(ctx *gin.Context) {
 	if c.rustfsService == nil {
-		http.Error(ctx, 500, "文件服务未启用")
+		http.ErrorApp(ctx, apicode.FileServiceUnavailable)
 		return
 	}
 
+	ctx.Request.Body = stdhttp.MaxBytesReader(ctx.Writer, ctx.Request.Body, maxGalleryUploadRequestSize)
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		http.Error(ctx, 400, "请选择要上传的图片")
+		var maxBytesError *stdhttp.MaxBytesError
+		if errors.As(err, &maxBytesError) || ctx.Request.ContentLength > maxGalleryUploadRequestSize {
+			http.ErrorApp(ctx, apicode.ImageTooLarge)
+			return
+		}
+		http.ErrorApp(ctx, apicode.ImageRequired)
 		return
 	}
 	defer file.Close()
 
-	// 验证文件类型
-	ext := strings.ToLower(filepath.Ext(header.Filename))
-	allowedExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
-	if !allowedExts[ext] {
-		http.Error(ctx, 400, "仅支持jpg/png/gif/webp格式的图片")
-		return
-	}
-
-	// 限制文件大小（20MB）
-	if header.Size > 20*1024*1024 {
-		http.Error(ctx, 400, "图片大小不能超过10MB")
+	if err := validateGalleryImage(header); err != nil {
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -74,7 +87,7 @@ func (c *GalleryController) Upload(ctx *gin.Context) {
 	// 上传到RustFS
 	result, err := c.uploadToRustFS(file, header, category)
 	if err != nil {
-		http.Error(ctx, 500, "上传失败: "+err.Error())
+		http.ErrorApp(ctx, apicode.FileUploadFailed)
 		return
 	}
 
@@ -94,11 +107,25 @@ func (c *GalleryController) Upload(ctx *gin.Context) {
 	}, userID)
 
 	if err != nil {
-		http.Error(ctx, 500, "保存图库记录失败: "+err.Error())
+		_ = c.rustfsService.Delete(result.Path)
+		http.ErrorApp(ctx, apicode.GalleryRecordSaveFailed)
 		return
 	}
 
 	http.Success(ctx, gallery)
+}
+
+func validateGalleryImage(header *multipart.FileHeader) error {
+	if header == nil {
+		return apicode.New(apicode.ImageRequired)
+	}
+	if _, ok := allowedGalleryImageExts[strings.ToLower(filepath.Ext(header.Filename))]; !ok {
+		return apicode.New(apicode.ImageFormatUnsupported)
+	}
+	if header.Size > maxGalleryImageSize {
+		return apicode.New(apicode.ImageTooLarge)
+	}
+	return nil
 }
 
 func (c *GalleryController) uploadToRustFS(file multipart.File, header *multipart.FileHeader, category string) (*service.RustFSUploadResult, error) {

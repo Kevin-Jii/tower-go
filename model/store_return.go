@@ -10,7 +10,7 @@ import (
 type StoreReturn struct {
 	ID           uint              `json:"id" gorm:"primaryKey;autoIncrement"`
 	ReturnNo     string            `json:"return_no" gorm:"type:varchar(50);uniqueIndex;not null;comment:返厂单号"`
-	ClientReqID  string            `json:"client_request_id" gorm:"type:varchar(64);uniqueIndex;comment:前端提交幂等ID"`
+	ClientReqID  *string           `json:"client_request_id" gorm:"type:varchar(64);uniqueIndex;comment:前端提交幂等ID"`
 	StoreID      uint              `json:"store_id" gorm:"not null;index;comment:门店ID"`
 	ReturnDate   time.Time         `json:"return_date" gorm:"type:date;index;comment:返厂日期"`
 	LogisticsFee float64           `json:"logistics_fee" gorm:"type:decimal(10,2);not null;default:0;comment:货拉拉费用"`

@@ -919,7 +919,7 @@ export interface StoreReturnItem {
 export interface StoreReturn {
   id: number
   return_no: string
-  client_request_id?: string
+  client_request_id?: string | null
   store_id: number
   store?: Store
   return_date: string

@@ -24,26 +24,31 @@ func (s *StoreReturnService) Create(storeID, operatorID uint, req *model.CreateS
 	if err != nil {
 		return nil, err
 	}
-	record.ClientReqID = strings.TrimSpace(req.ClientReqID)
-	if existing, err := s.returnModule.GetByClientReqIDScoped(record.ClientReqID, record.StoreID, true); err == nil && existing != nil {
-		record.ID = existing.ID
-		record.ReturnNo = existing.ReturnNo
-		if err := s.returnModule.Update(record); err != nil {
-			return nil, err
+	clientReqID := strings.TrimSpace(req.ClientReqID)
+	record.ClientReqID = optionalStoreReturnClientReqID(clientReqID)
+	if clientReqID != "" {
+		if existing, err := s.returnModule.GetByClientReqIDScoped(clientReqID, record.StoreID, true); err == nil && existing != nil {
+			record.ID = existing.ID
+			record.ReturnNo = existing.ReturnNo
+			if err := s.returnModule.Update(record); err != nil {
+				return nil, err
+			}
+			return s.returnModule.GetByIDScoped(record.ID, record.StoreID, true)
 		}
-		return s.returnModule.GetByIDScoped(record.ID, record.StoreID, true)
 	}
 	for i := 0; i < 3; i++ {
 		record.ReturnNo = s.returnModule.GenerateReturnNo()
 		if err := s.returnModule.Create(record); err != nil {
 			if module.IsDuplicateKeyError(err) {
-				if existing, getErr := s.returnModule.GetByClientReqIDScoped(record.ClientReqID, record.StoreID, true); getErr == nil && existing != nil {
-					record.ID = existing.ID
-					record.ReturnNo = existing.ReturnNo
-					if updateErr := s.returnModule.Update(record); updateErr != nil {
-						return nil, updateErr
+				if clientReqID != "" {
+					if existing, getErr := s.returnModule.GetByClientReqIDScoped(clientReqID, record.StoreID, true); getErr == nil && existing != nil {
+						record.ID = existing.ID
+						record.ReturnNo = existing.ReturnNo
+						if updateErr := s.returnModule.Update(record); updateErr != nil {
+							return nil, updateErr
+						}
+						return s.returnModule.GetByIDScoped(record.ID, record.StoreID, true)
 					}
-					return s.returnModule.GetByIDScoped(record.ID, record.StoreID, true)
 				}
 				continue
 			}
@@ -55,6 +60,14 @@ func (s *StoreReturnService) Create(storeID, operatorID uint, req *model.CreateS
 		return nil, err
 	}
 	return s.returnModule.GetByIDScoped(record.ID, record.StoreID, true)
+}
+
+func optionalStoreReturnClientReqID(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func (s *StoreReturnService) Update(id, storeID, operatorID uint, req *model.UpdateStoreReturnReq, hqUnbound bool) (*model.StoreReturn, error) {
@@ -71,6 +84,7 @@ func (s *StoreReturnService) Update(id, storeID, operatorID uint, req *model.Upd
 	}
 	record.ID = existing.ID
 	record.ReturnNo = existing.ReturnNo
+	record.ClientReqID = existing.ClientReqID
 	if err := s.returnModule.Update(record); err != nil {
 		return nil, err
 	}

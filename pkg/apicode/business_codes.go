@@ -13,10 +13,13 @@ var (
 	InvalidParameter       = Code{40003, "请求参数无效"}
 	MissingParameter       = Code{40004, "缺少必要参数"}
 	InvalidDate            = Code{40005, "日期格式无效"}
+	ImageRequired          = Code{40006, "请选择要上传的图片"}
+	ImageTooLarge          = Code{41301, "图片大小不能超过20MB"}
 	ValidationFailed       = Code{42201, "数据校验失败"}
 	ExpenseCategoryInvalid = Code{42202, "支出分类无效"}
 	ReturnDateInvalid      = Code{42203, "返厂日期格式无效"}
 	PaymentStatusInvalid   = Code{42204, "支付状态无效"}
+	ImageFormatUnsupported = Code{42205, "仅支持jpg/png/gif/webp格式的图片"}
 
 	// 资源 404xx
 	UserNotFound              = Code{40410, "用户不存在"}
@@ -62,7 +65,10 @@ var (
 	StoreAccountOrderNoExists = Code{40927, "当前营业日该渠道的外卖订单号已存在"}
 
 	// 服务与外部依赖 500xx / 502xx
-	ConfigMissing = Code{50002, "服务配置缺失"}
+	ConfigMissing           = Code{50002, "服务配置缺失"}
+	GalleryRecordSaveFailed = Code{50003, "保存图库记录失败"}
 	// 外部服务 502xx
-	ExternalServiceFailed = Code{50201, "外部服务调用失败"}
+	ExternalServiceFailed  = Code{50201, "外部服务调用失败"}
+	FileUploadFailed       = Code{50202, "文件上传失败"}
+	FileServiceUnavailable = Code{50301, "文件服务未启用"}
 )

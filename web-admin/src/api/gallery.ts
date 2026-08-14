@@ -18,9 +18,7 @@ export async function getGallery(id: number): Promise<Gallery> {
 }
 
 export async function uploadGallery(body: FormData): Promise<Gallery> {
-  const res = await http.post<import('./types').ApiEnvelope<Gallery>>('/galleries/upload', body, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const res = await http.post<import('./types').ApiEnvelope<Gallery>>('/galleries/upload', body)
   return unwrap(res)
 }
 

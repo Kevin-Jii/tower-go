@@ -39,7 +39,7 @@
     <BaseDialog v-model="uploadDlg" title="上传图片" max-width="min(520px, 96vw)">
       <div class="space-y-4">
         <BaseFormItem label="图片文件" required>
-          <input type="file" accept="image/*" @change="onPickFile" />
+          <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp" @change="onPickFile" />
           <p v-if="uploadForm.fileName" class="m-0 mt-2 text-xs text-slate-500">{{ uploadForm.fileName }}</p>
         </BaseFormItem>
         <BaseFormItem label="分类">
@@ -92,6 +92,9 @@ import { batchDeleteGallery, deleteGallery, listGalleries, updateGallery, upload
 import type { Gallery } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+
+const MAX_GALLERY_IMAGE_SIZE = 20 * 1024 * 1024
+const ALLOWED_GALLERY_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp'])
 
 const columns: BaseTableColumn[] = [
   { key: 'select', label: '', width: '56px' },
@@ -179,6 +182,23 @@ function openUpload(): void {
 function onPickFile(e: Event): void {
   const t = e.target as HTMLInputElement
   const f = t.files?.[0]
+
+  const extension = f?.name.split('.').pop()?.toLowerCase() ?? ''
+  if (f && !ALLOWED_GALLERY_IMAGE_EXTENSIONS.has(extension)) {
+    toast.warning('仅支持jpg/png/gif/webp格式的图片')
+    t.value = ''
+    uploadForm.file = undefined
+    uploadForm.fileName = ''
+    return
+  }
+  if (f && f.size > MAX_GALLERY_IMAGE_SIZE) {
+    toast.warning('图片大小不能超过20MB')
+    t.value = ''
+    uploadForm.file = undefined
+    uploadForm.fileName = ''
+    return
+  }
+
   uploadForm.file = f
   uploadForm.fileName = f?.name ?? ''
 }

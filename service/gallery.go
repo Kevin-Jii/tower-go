@@ -1,19 +1,29 @@
 package service
 
 import (
+	"time"
+
+	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 )
 
 type GalleryService struct {
-	galleryModule *module.GalleryModule
-	rustfsService *RustFSService
+	galleryModule      *module.GalleryModule
+	rustfsService      *RustFSService
+	multipartChunkSize int64
+	multipartMaxSize   int64
+	uploadSessionTTL   time.Duration
 }
 
 func NewGalleryService(galleryModule *module.GalleryModule, rustfsService *RustFSService) *GalleryService {
+	rustfsConfig := config.GetRustFSConfig()
 	return &GalleryService{
-		galleryModule: galleryModule,
-		rustfsService: rustfsService,
+		galleryModule:      galleryModule,
+		rustfsService:      rustfsService,
+		multipartChunkSize: rustfsConfig.GalleryMultipartChunkSize,
+		multipartMaxSize:   rustfsConfig.GalleryMultipartMaxSize,
+		uploadSessionTTL:   rustfsConfig.GalleryUploadSessionTTL,
 	}
 }
 

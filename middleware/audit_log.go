@@ -51,6 +51,10 @@ func shouldAuditRequest(c *gin.Context) bool {
 	if strings.HasPrefix(path, "/api/v1/audit-logs") {
 		return false
 	}
+	// 分片数量可能达到数百个，逐片写审计日志既无业务价值也会放大数据库写入。
+	if isGalleryMultipartPartPath(path) {
+		return false
+	}
 	if path == "/api/v1/auth/login" {
 		return true
 	}

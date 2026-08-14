@@ -117,6 +117,19 @@ func TestDuplicateRequestLocalLockExpires(t *testing.T) {
 	}
 }
 
+func TestMultipartUploadRequestsSkipDuplicateFingerprint(t *testing.T) {
+	for _, path := range []string{
+		"/api/v1/galleries/multipart/init",
+		"/api/v1/galleries/multipart/session-1/complete",
+		"/api/v1/galleries/multipart/session-1/parts/1",
+	} {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader("data"))
+		if shouldRejectDuplicateRequest(req) {
+			t.Fatalf("multipart request %q should skip duplicate fingerprint", path)
+		}
+	}
+}
+
 func performDuplicateRequest(handler http.Handler, body, authorization string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/orders?store_id=1", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")

@@ -130,12 +130,26 @@ func (m *ProductUnitSpecModule) DeleteByID(id uint) error {
 }
 
 func (m *ProductUnitSpecModule) UpsertByProductAndUnit(spec *model.ProductUnitSpec) error {
+	now := m.db.NowFunc()
+	values := map[string]interface{}{
+		"product_id":     spec.ProductID,
+		"unit_code":      spec.UnitCode,
+		"unit_name":      spec.UnitName,
+		"factor_to_base": spec.FactorToBase,
+		"precision":      spec.Precision,
+		"cost_price":     spec.CostPrice,
+		"sale_price":     spec.SalePrice,
+		"is_saleable":    spec.IsSaleable,
+		"is_enabled":     spec.IsEnabled,
+		"created_at":     now,
+		"updated_at":     now,
+	}
 	return m.db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "product_id"}, {Name: "unit_code"}, {Name: "unit_name"}},
 		DoUpdates: clause.AssignmentColumns([]string{
 			"factor_to_base", "precision", "cost_price", "sale_price", "is_saleable", "is_enabled",
 		}),
-	}).Create(spec).Error
+	}).Model(&model.ProductUnitSpec{}).Create(values).Error
 }
 
 func (m *ProductUnitSpecModule) GetByProductAndUnitName(productID uint, unitCode, unitName string) (*model.ProductUnitSpec, error) {

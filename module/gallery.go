@@ -1,6 +1,8 @@
 package module
 
 import (
+	"time"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
 )
@@ -83,4 +85,80 @@ func (m *GalleryModule) DeleteByPath(path string) error {
 // BatchDelete 批量删除
 func (m *GalleryModule) BatchDelete(ids []uint) error {
 	return m.db.Delete(&model.Gallery{}, ids).Error
+}
+
+func (m *GalleryModule) CreateUploadSession(session *model.GalleryUploadSession) error {
+	return m.db.Create(session).Error
+}
+
+func (m *GalleryModule) FindResumableUploadSession(userID, storeID uint, fingerprint string) (*model.GalleryUploadSession, error) {
+	var session model.GalleryUploadSession
+	err := m.db.Where(
+		"user_id = ? AND store_id = ? AND fingerprint = ? AND status IN ?",
+		userID,
+		storeID,
+		fingerprint,
+		[]string{model.GalleryUploadStatusUploading, model.GalleryUploadStatusCompleting, model.GalleryUploadStatusCompleted},
+	).Order("created_at DESC").First(&session).Error
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (m *GalleryModule) GetUploadSession(sessionID string, userID, storeID uint) (*model.GalleryUploadSession, error) {
+	var session model.GalleryUploadSession
+	if err := m.db.Where("id = ? AND user_id = ? AND store_id = ?", sessionID, userID, storeID).First(&session).Error; err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (m *GalleryModule) UpdateUploadSessionStatus(sessionID, status string) error {
+	return m.db.Model(&model.GalleryUploadSession{}).
+		Where("id = ?", sessionID).
+		Update("status", status).Error
+}
+
+func (m *GalleryModule) MarkUploadSessionCompleting(sessionID string) (bool, error) {
+	result := m.db.Model(&model.GalleryUploadSession{}).
+		Where("id = ? AND status = ?", sessionID, model.GalleryUploadStatusUploading).
+		Update("status", model.GalleryUploadStatusCompleting)
+	return result.RowsAffected == 1, result.Error
+}
+
+func (m *GalleryModule) CompleteUploadSession(session *model.GalleryUploadSession, gallery *model.Gallery) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(gallery).Error; err != nil {
+			return err
+		}
+		now := time.Now()
+		result := tx.Model(&model.GalleryUploadSession{}).
+			Where("id = ? AND status = ?", session.ID, model.GalleryUploadStatusCompleting).
+			Updates(map[string]interface{}{
+				"status":       model.GalleryUploadStatusCompleted,
+				"gallery_id":   gallery.ID,
+				"completed_at": &now,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
+}
+
+func (m *GalleryModule) ListExpiredUploadSessions(now time.Time, limit int) ([]*model.GalleryUploadSession, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	sessions := make([]*model.GalleryUploadSession, 0)
+	err := m.db.Where(
+		"expires_at <= ? AND status IN ?",
+		now,
+		[]string{model.GalleryUploadStatusUploading, model.GalleryUploadStatusCompleting},
+	).Order("expires_at ASC").Limit(limit).Find(&sessions).Error
+	return sessions, err
 }

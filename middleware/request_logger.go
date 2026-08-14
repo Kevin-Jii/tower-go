@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/pkg/clientsource"
@@ -22,7 +23,7 @@ func RequestLoggerMiddleware(maxBody int) gin.HandlerFunc {
 
 		// 读取 Body（仅在可能有内容时）
 		var bodySnippet string
-		if c.Request.Body != nil {
+		if c.Request.Body != nil && shouldReadRequestLogBody(c) {
 			data, _ := io.ReadAll(c.Request.Body)
 			// 还原 Body 供后续使用
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(data))
@@ -42,4 +43,13 @@ func RequestLoggerMiddleware(maxBody int) gin.HandlerFunc {
 		status := c.Writer.Status()
 		log.Printf("[RESP] %d %s %s latency=%s", status, c.Request.Method, c.Request.URL.Path, latency)
 	}
+}
+
+func shouldReadRequestLogBody(c *gin.Context) bool {
+	if isGalleryMultipartPartPath(c.Request.URL.Path) {
+		return false
+	}
+	contentType := strings.ToLower(c.GetHeader("Content-Type"))
+	return !strings.Contains(contentType, "multipart/form-data") &&
+		!strings.Contains(contentType, "application/octet-stream")
 }

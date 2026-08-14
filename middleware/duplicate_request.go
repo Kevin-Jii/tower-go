@@ -81,6 +81,10 @@ func shouldRejectDuplicateRequest(r *http.Request) bool {
 	if r == nil || !strings.HasPrefix(r.URL.Path, "/api/v1/") {
 		return false
 	}
+	// 分片接口自身幂等；读取整个分片计算防重指纹会造成无意义的大内存占用。
+	if isGalleryMultipartPath(r.URL.Path) {
+		return false
+	}
 	switch r.Method {
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 		return true

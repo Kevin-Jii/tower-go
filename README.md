@@ -248,6 +248,9 @@ cd web-admin && npm run build
 | `RUSTFS_PUBLIC_BASE_URL`           | 对外访问根地址                       | `https://example.com`    |
 | `RUSTFS_BUCKET`                    | 默认文件 bucket                      | `images`                 |
 | `RUSTFS_NOTIFY_BUCKET`             | 通知图片 bucket                      | `notify`                 |
+| `GALLERY_MULTIPART_CHUNK_SIZE_MB`  | 图库分片大小，不能低于 5MB           | `5`                      |
+| `GALLERY_MULTIPART_MAX_SIZE_MB`    | 图库分片上传文件上限                 | `2048`                   |
+| `GALLERY_UPLOAD_SESSION_TTL_HOURS` | 断点续传会话保留时间                 | `168`                    |
 | `DINGTALK_CLIENT_ID`               | 钉钉 Stream Client ID                | 可选                     |
 | `DINGTALK_CLIENT_SECRET`           | 钉钉 Stream Client Secret            | 可选                     |
 | `DINGTALK_MENU_REPORT_WEBHOOK_URL` | 钉钉报菜通知 Webhook                 | 可选                     |
@@ -361,10 +364,23 @@ curl http://localhost:10024/api/v1/users/profile \
 
 - 文件上传：`/api/v1/files`
 - 图库管理：`/api/v1/galleries`
+- 图库分片上传：`/api/v1/galleries/multipart`
 - 记账通知图片生成与上传
 - 通知图片独立 bucket
 
 未启用 `RUSTFS_ENABLED` 时，相关控制器可能不会被初始化，文件/图库接口不可用。
+
+分片上传默认每片 5MB、最多 3 片并发，并将会话保留 7 天。Nginx 的 `client_max_body_size`
+必须大于单片大小；建议设置为 `25m`，以同时兼容旧版 20MB 直传接口。暂停或页面刷新后，
+重新选择同一文件会根据文件指纹查询 RustFS 已有分片并继续上传。
+
+分片协议：
+
+- `POST /api/v1/galleries/multipart/init`：初始化或恢复会话
+- `GET /api/v1/galleries/multipart/{session_id}`：查询已上传分片
+- `PUT /api/v1/galleries/multipart/{session_id}/parts/{part_number}`：上传二进制分片
+- `POST /api/v1/galleries/multipart/{session_id}/complete`：校验并合并
+- `DELETE /api/v1/galleries/multipart/{session_id}`：取消并清理会话
 
 ## 性能配置
 

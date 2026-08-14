@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -13,6 +14,11 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.uber.org/zap"
+)
+
+var (
+	ErrRustFSMultipartUploadNotFound = errors.New("rustfs multipart upload not found")
+	ErrRustFSObjectNotFound          = errors.New("rustfs object not found")
 )
 
 // RustFSService RustFS文件服务（S3兼容）
@@ -32,6 +38,12 @@ type RustFSUploadResult struct {
 	Name string `json:"name"`
 	Size int64  `json:"size"`
 	ETag string `json:"etag"`
+}
+
+type RustFSUploadedPart struct {
+	PartNumber int
+	ETag       string
+	Size       int64
 }
 
 // NewRustFSService 创建RustFS服务实例
@@ -169,6 +181,137 @@ func (s *RustFSService) UploadMultipart(folder string, file multipart.File, head
 		contentType = "application/octet-stream"
 	}
 	return s.Upload(folder, header.Filename, file, header.Size, contentType)
+}
+
+func (s *RustFSService) NewMultipartUpload(ctx context.Context, objectName, contentType string) (string, error) {
+	objectName = strings.TrimPrefix(strings.ReplaceAll(objectName, "\\", "/"), "/")
+	core := minio.Core{Client: s.client}
+	uploadID, err := core.NewMultipartUpload(ctx, s.bucketName, objectName, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		logging.LogError("RustFS初始化分片上传失败", zap.Error(err), zap.String("object", objectName))
+		return "", fmt.Errorf("初始化分片上传失败: %w", err)
+	}
+	return uploadID, nil
+}
+
+func (s *RustFSService) UploadPart(
+	ctx context.Context,
+	objectName, uploadID string,
+	partNumber int,
+	reader io.Reader,
+	size int64,
+) (*RustFSUploadedPart, error) {
+	core := minio.Core{Client: s.client}
+	part, err := core.PutObjectPart(
+		ctx,
+		s.bucketName,
+		objectName,
+		uploadID,
+		partNumber,
+		reader,
+		size,
+		minio.PutObjectPartOptions{},
+	)
+	if err != nil {
+		logging.LogError("RustFS上传分片失败", zap.Error(err), zap.String("object", objectName), zap.Int("part", partNumber))
+		return nil, fmt.Errorf("上传分片失败: %w", err)
+	}
+	return &RustFSUploadedPart{PartNumber: part.PartNumber, ETag: part.ETag, Size: part.Size}, nil
+}
+
+func (s *RustFSService) ListUploadedParts(ctx context.Context, objectName, uploadID string) ([]RustFSUploadedPart, error) {
+	core := minio.Core{Client: s.client}
+	parts := make([]RustFSUploadedPart, 0)
+	marker := 0
+	for {
+		result, err := core.ListObjectParts(ctx, s.bucketName, objectName, uploadID, marker, 1000)
+		if err != nil {
+			if minio.ToErrorResponse(err).Code == "NoSuchUpload" {
+				return nil, ErrRustFSMultipartUploadNotFound
+			}
+			return nil, fmt.Errorf("查询上传分片失败: %w", err)
+		}
+		for _, part := range result.ObjectParts {
+			parts = append(parts, RustFSUploadedPart{
+				PartNumber: part.PartNumber,
+				ETag:       part.ETag,
+				Size:       part.Size,
+			})
+		}
+		if !result.IsTruncated {
+			break
+		}
+		marker = result.NextPartNumberMarker
+	}
+	return parts, nil
+}
+
+func (s *RustFSService) StatObject(ctx context.Context, objectName string) (*RustFSUploadResult, error) {
+	info, err := s.client.StatObject(ctx, s.bucketName, objectName, minio.StatObjectOptions{})
+	if err != nil {
+		code := minio.ToErrorResponse(err).Code
+		if code == "NoSuchKey" || code == "NoSuchObject" || code == "NotFound" {
+			return nil, ErrRustFSObjectNotFound
+		}
+		return nil, fmt.Errorf("查询文件状态失败: %w", err)
+	}
+	return &RustFSUploadResult{
+		Path: objectName,
+		URL:  s.GetPublicURL(objectName),
+		Name: filepath.Base(objectName),
+		Size: info.Size,
+		ETag: info.ETag,
+	}, nil
+}
+
+func (s *RustFSService) CompleteMultipartUpload(
+	ctx context.Context,
+	objectName, uploadID, contentType string,
+	parts []RustFSUploadedPart,
+	fileSize int64,
+) (*RustFSUploadResult, error) {
+	completeParts := make([]minio.CompletePart, 0, len(parts))
+	for _, part := range parts {
+		completeParts = append(completeParts, minio.CompletePart{PartNumber: part.PartNumber, ETag: part.ETag})
+	}
+
+	core := minio.Core{Client: s.client}
+	info, err := core.CompleteMultipartUpload(
+		ctx,
+		s.bucketName,
+		objectName,
+		uploadID,
+		completeParts,
+		minio.PutObjectOptions{ContentType: contentType},
+	)
+	if err != nil {
+		logging.LogError("RustFS合并分片失败", zap.Error(err), zap.String("object", objectName))
+		return nil, fmt.Errorf("合并分片失败: %w", err)
+	}
+	if info.Size > 0 {
+		fileSize = info.Size
+	}
+	return &RustFSUploadResult{
+		Path: objectName,
+		URL:  s.GetPublicURL(objectName),
+		Name: filepath.Base(objectName),
+		Size: fileSize,
+		ETag: info.ETag,
+	}, nil
+}
+
+func (s *RustFSService) AbortMultipartUpload(ctx context.Context, objectName, uploadID string) error {
+	core := minio.Core{Client: s.client}
+	if err := core.AbortMultipartUpload(ctx, s.bucketName, objectName, uploadID); err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchUpload" {
+			return nil
+		}
+		logging.LogError("RustFS取消分片上传失败", zap.Error(err), zap.String("object", objectName))
+		return fmt.Errorf("取消分片上传失败: %w", err)
+	}
+	return nil
 }
 
 // GetPublicURL 获取公开访问URL

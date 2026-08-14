@@ -42,6 +42,13 @@
           <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp" @change="onPickFile" />
           <p v-if="uploadForm.fileName" class="m-0 mt-2 text-xs text-slate-500">{{ uploadForm.fileName }}</p>
         </BaseFormItem>
+        <div v-if="uploadStatus" class="space-y-2">
+          <div class="flex items-center justify-between gap-3 text-xs text-slate-500">
+            <span>{{ uploadStatus }}</span>
+            <span class="tabular-nums">{{ uploadProgress }}%</span>
+          </div>
+          <a-progress :percent="uploadProgress / 100" :show-text="false" size="small" />
+        </div>
         <BaseFormItem label="分类">
           <BaseSelect v-model="uploadForm.category" :options="categoryOptions.filter((o) => o.value !== '')" />
         </BaseFormItem>
@@ -50,8 +57,11 @@
         </BaseFormItem>
       </div>
       <template #footer>
-        <BaseButton variant="ghost" @click="uploadDlg = false">取消</BaseButton>
-        <BaseButton variant="primary" :loading="uploading" @click="submitUpload">上传</BaseButton>
+        <BaseButton variant="ghost" @click="closeUpload">关闭</BaseButton>
+        <BaseButton v-if="uploading" variant="secondary" @click="pauseUpload">暂停</BaseButton>
+        <BaseButton variant="primary" :loading="uploading" @click="submitUpload">
+          {{ uploadPaused ? '继续上传' : '上传' }}
+        </BaseButton>
       </template>
     </BaseDialog>
 
@@ -88,12 +98,12 @@ import {
   BaseTextarea,
 } from '@/components/base'
 import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
-import { batchDeleteGallery, deleteGallery, listGalleries, updateGallery, uploadGallery } from '@/api/gallery'
+import { batchDeleteGallery, deleteGallery, listGalleries, updateGallery } from '@/api/gallery'
 import type { Gallery } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+import { isGalleryUploadAbort, uploadGalleryResumable } from '@/utils/galleryUpload'
 
-const MAX_GALLERY_IMAGE_SIZE = 20 * 1024 * 1024
 const ALLOWED_GALLERY_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp'])
 
 const columns: BaseTableColumn[] = [
@@ -164,6 +174,10 @@ function formatSize(size = 0): string {
 
 const uploadDlg = ref(false)
 const uploading = ref(false)
+const uploadPaused = ref(false)
+const uploadProgress = ref(0)
+const uploadStatus = ref('')
+let uploadAbortController: AbortController | undefined
 const uploadForm = reactive<{ file?: File; fileName: string; category: string | number; remark: string }>({
   file: undefined,
   fileName: '',
@@ -172,11 +186,27 @@ const uploadForm = reactive<{ file?: File; fileName: string; category: string | 
 })
 
 function openUpload(): void {
+  uploadAbortController?.abort()
+  uploadAbortController = undefined
   uploadForm.file = undefined
   uploadForm.fileName = ''
   uploadForm.category = 'other'
   uploadForm.remark = ''
+  uploadPaused.value = false
+  uploadProgress.value = 0
+  uploadStatus.value = ''
   uploadDlg.value = true
+}
+
+function closeUpload(): void {
+  uploadAbortController?.abort()
+  uploadDlg.value = false
+}
+
+function pauseUpload(): void {
+  uploadPaused.value = true
+  uploadStatus.value = '正在暂停'
+  uploadAbortController?.abort()
 }
 
 function onPickFile(e: Event): void {
@@ -191,16 +221,12 @@ function onPickFile(e: Event): void {
     uploadForm.fileName = ''
     return
   }
-  if (f && f.size > MAX_GALLERY_IMAGE_SIZE) {
-    toast.warning('图片大小不能超过20MB')
-    t.value = ''
-    uploadForm.file = undefined
-    uploadForm.fileName = ''
-    return
-  }
 
   uploadForm.file = f
   uploadForm.fileName = f?.name ?? ''
+  uploadPaused.value = false
+  uploadProgress.value = 0
+  uploadStatus.value = ''
 }
 
 async function submitUpload(): Promise<void> {
@@ -208,20 +234,44 @@ async function submitUpload(): Promise<void> {
     toast.warning('请选择图片')
     return
   }
-  const fd = new FormData()
-  fd.append('file', uploadForm.file)
-  fd.append('category', String(uploadForm.category || 'other'))
-  fd.append('remark', uploadForm.remark.trim())
+  const controller = new AbortController()
+  uploadAbortController = controller
   uploading.value = true
+  uploadPaused.value = false
+  uploadStatus.value = '正在检查上传进度'
   try {
-    await uploadGallery(fd)
+    await uploadGalleryResumable(uploadForm.file, {
+      category: String(uploadForm.category || 'other'),
+      remark: uploadForm.remark.trim(),
+      signal: controller.signal,
+      onProgress: (progress) => {
+        uploadProgress.value = progress.percent
+        if (progress.phase === 'merging') {
+          uploadStatus.value = '正在合并文件'
+        } else if (progress.resumedParts > 0) {
+          uploadStatus.value = `已恢复进度，上传 ${progress.uploadedParts}/${progress.totalParts} 个分片`
+        } else {
+          uploadStatus.value = `上传 ${progress.uploadedParts}/${progress.totalParts} 个分片`
+        }
+      },
+    })
+    uploadProgress.value = 100
     toast.success('上传成功')
     uploadDlg.value = false
     await load()
   } catch (e: unknown) {
-    toast.error(e instanceof Error ? e.message : '上传失败')
+    if (isGalleryUploadAbort(e)) {
+      if (uploadDlg.value) {
+        uploadPaused.value = true
+        uploadStatus.value = '已暂停，可继续上传'
+      }
+    } else {
+      uploadStatus.value = '上传失败'
+      toast.error(e instanceof Error ? e.message : '上传失败')
+    }
   } finally {
     uploading.value = false
+    if (uploadAbortController === controller) uploadAbortController = undefined
   }
 }
 

@@ -115,6 +115,90 @@ func (c *GalleryController) Upload(ctx *gin.Context) {
 	http.Success(ctx, gallery)
 }
 
+// InitMultipartUpload 初始化或恢复分片上传。
+func (c *GalleryController) InitMultipartUpload(ctx *gin.Context) {
+	var req model.InitGalleryMultipartUploadReq
+	if !http.BindJSON(ctx, &req) {
+		return
+	}
+	status, err := c.galleryService.InitMultipartUpload(
+		ctx.Request.Context(),
+		middleware.GetUserID(ctx),
+		middleware.GetStoreID(ctx),
+		&req,
+	)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, status)
+}
+
+// GetMultipartUploadStatus 查询服务端已保存的分片进度。
+func (c *GalleryController) GetMultipartUploadStatus(ctx *gin.Context) {
+	status, err := c.galleryService.GetMultipartUploadStatus(
+		ctx.Request.Context(),
+		ctx.Param("session_id"),
+		middleware.GetUserID(ctx),
+		middleware.GetStoreID(ctx),
+	)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, status)
+}
+
+// UploadMultipartPart 以原始二进制流上传单个分片。
+func (c *GalleryController) UploadMultipartPart(ctx *gin.Context) {
+	partNumber, err := strconv.Atoi(ctx.Param("part_number"))
+	if err != nil || partNumber <= 0 {
+		http.ErrorApp(ctx, apicode.InvalidUploadPart)
+		return
+	}
+	result, err := c.galleryService.UploadMultipartPart(
+		ctx.Request.Context(),
+		ctx.Param("session_id"),
+		middleware.GetUserID(ctx),
+		middleware.GetStoreID(ctx),
+		partNumber,
+		ctx.Request.ContentLength,
+		ctx.Request.Body,
+	)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, result)
+}
+
+func (c *GalleryController) CompleteMultipartUpload(ctx *gin.Context) {
+	gallery, err := c.galleryService.CompleteMultipartUpload(
+		ctx.Request.Context(),
+		ctx.Param("session_id"),
+		middleware.GetUserID(ctx),
+		middleware.GetStoreID(ctx),
+	)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, gallery)
+}
+
+func (c *GalleryController) AbortMultipartUpload(ctx *gin.Context) {
+	if err := c.galleryService.AbortMultipartUpload(
+		ctx.Request.Context(),
+		ctx.Param("session_id"),
+		middleware.GetUserID(ctx),
+		middleware.GetStoreID(ctx),
+	); err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, nil)
+}
+
 func validateGalleryImage(header *multipart.FileHeader) error {
 	if header == nil {
 		return apicode.New(apicode.ImageRequired)

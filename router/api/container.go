@@ -47,6 +47,7 @@ type Controllers struct {
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 	PrinterService    *service.PrinterService
 	PreOrderService   *service.PreOrderService
+	GalleryService    *service.GalleryService
 }
 
 // BuildControllers 构建所有控制器及其依赖
@@ -173,9 +174,10 @@ func BuildControllers() *Controllers {
 	// 初始化文件和图库控制器（依赖RustFS）
 	var fileController *controller.FileController
 	var galleryController *controller.GalleryController
+	var galleryService *service.GalleryService
 	if rustfsService != nil {
 		fileController = controller.NewFileController(rustfsService)
-		galleryService := service.NewGalleryService(galleryModule, rustfsService)
+		galleryService = service.NewGalleryService(galleryModule, rustfsService)
 		galleryController = controller.NewGalleryController(galleryService, rustfsService)
 	}
 
@@ -211,6 +213,7 @@ func BuildControllers() *Controllers {
 		DingTalkBotModule: dingTalkBotModule,
 		PrinterService:    printerService,
 		PreOrderService:   preOrderService,
+		GalleryService:    galleryService,
 	}
 }
 
@@ -221,6 +224,9 @@ func (c *Controllers) StartCronJobs() error {
 		jobErrors = append(jobErrors, err.Error())
 	}
 	if _, err := cron.StartPreOrderReminders(c.PreOrderService); err != nil {
+		jobErrors = append(jobErrors, err.Error())
+	}
+	if _, err := cron.StartGalleryUploadCleanup(c.GalleryService); err != nil {
 		jobErrors = append(jobErrors, err.Error())
 	}
 	if len(jobErrors) > 0 {

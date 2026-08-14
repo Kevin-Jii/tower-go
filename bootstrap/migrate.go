@@ -13,7 +13,7 @@ import (
 )
 
 const migrationVersionFile = ".migration_version"
-const currentMigrationVersion = "1"
+const currentMigrationVersion = "2"
 
 // autoMigrateModels 与下方 AutoMigrate 顺序一致；shouldSkipMigration 会校验每张表均存在后才允许跳过。
 var autoMigrateModels = []interface{}{
@@ -41,6 +41,7 @@ var autoMigrateModels = []interface{}{
 	&model.InventoryLossOrder{},
 	&model.InventoryLossOrderItem{},
 	&model.Gallery{},
+	&model.GalleryUploadSession{},
 	&model.StoreAccount{},
 	&model.StoreAccountItem{},
 	&model.StoreAccountConsumable{},

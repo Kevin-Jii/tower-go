@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Config 应用配置
@@ -35,14 +36,17 @@ type XpyunConfig struct {
 
 // RustFSConfig RustFS对象存储配置（S3兼容）
 type RustFSConfig struct {
-	Enabled       bool
-	Endpoint      string // SDK 连接地址（可为内网 IP:9000）
-	AccessKey     string
-	SecretKey     string
-	Bucket        string
-	NotifyBucket  string // 通知图片专用bucket（不加密）
-	UseSSL        bool   // SDK 是否 HTTPS 连接 Endpoint
-	PublicBaseURL string // 对外访问根 URL，如 https://tower.usove.online；空则回退为 http(s)://Endpoint
+	Enabled                   bool
+	Endpoint                  string // SDK 连接地址（可为内网 IP:9000）
+	AccessKey                 string
+	SecretKey                 string
+	Bucket                    string
+	NotifyBucket              string // 通知图片专用bucket（不加密）
+	UseSSL                    bool   // SDK 是否 HTTPS 连接 Endpoint
+	PublicBaseURL             string // 对外访问根 URL，如 https://tower.usove.online；空则回退为 http(s)://Endpoint
+	GalleryMultipartChunkSize int64
+	GalleryMultipartMaxSize   int64
+	GalleryUploadSessionTTL   time.Duration
 }
 
 type WechatConfig struct {
@@ -319,15 +323,30 @@ func getAppBool(key string, defaultValue bool) bool {
 
 // loadRustFSConfig 加载RustFS配置
 func loadRustFSConfig() RustFSConfig {
+	chunkSizeMB := getAppInt("GALLERY_MULTIPART_CHUNK_SIZE_MB", 5)
+	if chunkSizeMB < 5 {
+		chunkSizeMB = 5
+	}
+	maxSizeMB := getAppInt("GALLERY_MULTIPART_MAX_SIZE_MB", 2048)
+	if maxSizeMB < chunkSizeMB {
+		maxSizeMB = chunkSizeMB
+	}
+	ttlHours := getAppInt("GALLERY_UPLOAD_SESSION_TTL_HOURS", 168)
+	if ttlHours < 1 {
+		ttlHours = 1
+	}
 	return RustFSConfig{
-		Enabled:       getAppBool("RUSTFS_ENABLED", false),
-		Endpoint:      getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
-		AccessKey:     getAppString("RUSTFS_ACCESS_KEY", ""),
-		SecretKey:     getAppString("RUSTFS_SECRET_KEY", ""),
-		Bucket:        getAppString("RUSTFS_BUCKET", "tower"),
-		NotifyBucket:  getAppString("RUSTFS_NOTIFY_BUCKET", "notify"),
-		UseSSL:        getAppBool("RUSTFS_USE_SSL", false),
-		PublicBaseURL: strings.TrimRight(getAppString("RUSTFS_PUBLIC_BASE_URL", ""), "/"),
+		Enabled:                   getAppBool("RUSTFS_ENABLED", false),
+		Endpoint:                  getAppString("RUSTFS_ENDPOINT", "localhost:9000"),
+		AccessKey:                 getAppString("RUSTFS_ACCESS_KEY", ""),
+		SecretKey:                 getAppString("RUSTFS_SECRET_KEY", ""),
+		Bucket:                    getAppString("RUSTFS_BUCKET", "tower"),
+		NotifyBucket:              getAppString("RUSTFS_NOTIFY_BUCKET", "notify"),
+		UseSSL:                    getAppBool("RUSTFS_USE_SSL", false),
+		PublicBaseURL:             strings.TrimRight(getAppString("RUSTFS_PUBLIC_BASE_URL", ""), "/"),
+		GalleryMultipartChunkSize: int64(chunkSizeMB) * 1024 * 1024,
+		GalleryMultipartMaxSize:   int64(maxSizeMB) * 1024 * 1024,
+		GalleryUploadSessionTTL:   time.Duration(ttlHours) * time.Hour,
 	}
 }
 

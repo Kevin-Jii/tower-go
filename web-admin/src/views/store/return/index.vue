@@ -124,6 +124,22 @@
           <div><span class="text-slate-500">操作人：</span>{{ detail.operator_name || '-' }}</div>
           <div class="md:col-span-3"><span class="text-slate-500">备注：</span>{{ detail.remark || '-' }}</div>
         </div>
+        <div v-if="detail.photos?.length" class="space-y-2">
+          <div class="text-sm font-medium text-slate-700">返厂照片</div>
+          <div class="grid grid-cols-3 gap-3 sm:w-fit">
+            <a-image
+              v-for="(photo, index) in detail.photos"
+              :key="photo"
+              :src="photo"
+              :alt="`返厂照片${index + 1}`"
+              width="112"
+              height="112"
+              fit="cover"
+              :preview="true"
+              class="overflow-hidden rounded"
+            />
+          </div>
+        </div>
         <BaseTable :columns="itemColumns" :data="(detail.items ?? []) as unknown as Record<string, unknown>[]"
           min-width="560px">
           <template #cell-subtotal="{ row }">{{ formatMoney((row as StoreReturnItem).deposit * (row as

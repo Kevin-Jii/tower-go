@@ -926,6 +926,7 @@ export interface StoreReturn {
   logistics_fee: number
   total_deposit: number
   item_count: number
+  photos?: string[]
   remark?: string
   operator_id?: number
   operator_name?: string

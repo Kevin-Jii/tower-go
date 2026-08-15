@@ -13,7 +13,7 @@ import (
 )
 
 const migrationVersionFile = ".migration_version"
-const currentMigrationVersion = "2"
+const currentMigrationVersion = "3"
 
 // autoMigrateModels 与下方 AutoMigrate 顺序一致；shouldSkipMigration 会校验每张表均存在后才允许跳过。
 var autoMigrateModels = []interface{}{
@@ -204,6 +204,10 @@ func shouldSkipMigration() bool {
 	}
 
 	if migrator.HasTable(&model.User{}) && !migrator.HasColumn(&model.User{}, "wechat_open_id") {
+		return false
+	}
+
+	if migrator.HasTable(&model.StoreReturn{}) && !migrator.HasColumn(&model.StoreReturn{}, "photo_urls") {
 		return false
 	}
 

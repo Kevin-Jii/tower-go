@@ -42,7 +42,7 @@ type InitGalleryMultipartUploadReq struct {
 	FileName    string `json:"file_name" binding:"required,max=255"`
 	FileSize    int64  `json:"file_size" binding:"required,gt=0"`
 	ContentType string `json:"content_type" binding:"max=100"`
-	Category    string `json:"category" binding:"omitempty,oneof=product supplier avatar purchase other"`
+	Category    string `json:"category" binding:"omitempty,oneof=product supplier avatar purchase store-return other"`
 	Remark      string `json:"remark" binding:"max=500"`
 	Fingerprint string `json:"fingerprint" binding:"required,len=64,hexadecimal"`
 }

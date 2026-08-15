@@ -123,6 +123,7 @@ const categoryOptions: BaseSelectOption[] = [
   { label: '供应商', value: 'supplier' },
   { label: '头像', value: 'avatar' },
   { label: '采购', value: 'purchase' },
+  { label: '返厂', value: 'store-return' },
   { label: '其他', value: 'other' },
 ]
 

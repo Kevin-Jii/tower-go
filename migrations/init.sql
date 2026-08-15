@@ -365,6 +365,7 @@ CREATE TABLE IF NOT EXISTS `store_returns` (
   `logistics_fee` DECIMAL(10,2) NOT NULL DEFAULT 0,
   `total_deposit` DECIMAL(10,2) NOT NULL DEFAULT 0,
   `item_count` INT NOT NULL DEFAULT 0,
+  `photo_urls` JSON DEFAULT NULL COMMENT '返厂照片URL，最多3张',
   `remark` VARCHAR(500) DEFAULT NULL,
   `operator_id` BIGINT UNSIGNED NOT NULL,
   `operator_name` VARCHAR(50) DEFAULT NULL,

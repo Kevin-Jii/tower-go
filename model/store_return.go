@@ -16,6 +16,7 @@ type StoreReturn struct {
 	LogisticsFee float64           `json:"logistics_fee" gorm:"type:decimal(10,2);not null;default:0;comment:货拉拉费用"`
 	TotalDeposit float64           `json:"total_deposit" gorm:"type:decimal(10,2);not null;default:0;comment:押金总额"`
 	ItemCount    int               `json:"item_count" gorm:"not null;default:0;comment:商品明细数量"`
+	Photos       StringList        `json:"photos" gorm:"column:photo_urls;type:json;comment:返厂照片URL，最多3张"`
 	Remark       string            `json:"remark" gorm:"type:varchar(500);comment:备注"`
 	OperatorID   uint              `json:"operator_id" gorm:"not null;comment:操作人ID"`
 	OperatorName string            `json:"operator_name" gorm:"type:varchar(50);comment:操作人姓名"`
@@ -71,6 +72,7 @@ type CreateStoreReturnReq struct {
 	ClientReqID  string                     `json:"client_request_id" binding:"max=64"`
 	ReturnDate   string                     `json:"return_date" binding:"required"`
 	LogisticsFee float64                    `json:"logistics_fee" binding:"gte=0"`
+	Photos       []string                   `json:"photos" binding:"max=3,dive,max=500"`
 	Remark       string                     `json:"remark" binding:"max=500"`
 	Items        []CreateStoreReturnItemReq `json:"items" binding:"required,min=1,dive"`
 }
@@ -87,6 +89,7 @@ type UpdateStoreReturnReq struct {
 	StoreID      uint                       `json:"store_id"`
 	ReturnDate   string                     `json:"return_date" binding:"required"`
 	LogisticsFee float64                    `json:"logistics_fee" binding:"gte=0"`
+	Photos       []string                   `json:"photos" binding:"max=3,dive,max=500"`
 	Remark       string                     `json:"remark" binding:"max=500"`
 	Items        []CreateStoreReturnItemReq `json:"items" binding:"required,min=1,dive"`
 }

@@ -98,6 +98,7 @@ func (m *StoreReturnModule) Update(record *model.StoreReturn) error {
 			"logistics_fee": record.LogisticsFee,
 			"total_deposit": record.TotalDeposit,
 			"item_count":    record.ItemCount,
+			"photo_urls":    record.Photos,
 			"remark":        record.Remark,
 			"operator_id":   record.OperatorID,
 			"operator_name": record.OperatorName,

@@ -84,6 +84,9 @@ func TestNormalizeGalleryCategory(t *testing.T) {
 	if got, err := normalizeGalleryCategory("product"); err != nil || got != "product" {
 		t.Fatalf("product category = %q, %v", got, err)
 	}
+	if got, err := normalizeGalleryCategory("store-return"); err != nil || got != "store-return" {
+		t.Fatalf("store-return category = %q, %v", got, err)
+	}
 	if _, err := normalizeGalleryCategory("../../escape"); !apicode.Is(err, apicode.InvalidParameter) {
 		t.Fatalf("invalid category error = %v", err)
 	}
@@ -110,6 +113,14 @@ func TestValidateMultipartRequest(t *testing.T) {
 		FileSize: 11 * 1024 * 1024,
 	}); !apicode.Is(err, apicode.MultipartFileTooLarge) {
 		t.Fatalf("oversized file error = %v", err)
+	}
+	service.multipartMaxSize = 30 * 1024 * 1024
+	if _, _, err := service.validateMultipartRequest(&model.InitGalleryMultipartUploadReq{
+		FileName: "photo.png",
+		FileSize: 21 * 1024 * 1024,
+		Category: "store-return",
+	}); !apicode.Is(err, apicode.MultipartFileTooLarge) {
+		t.Fatalf("oversized store-return photo error = %v", err)
 	}
 }
 

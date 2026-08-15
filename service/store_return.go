@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"time"
 
@@ -20,7 +21,7 @@ func NewStoreReturnService(returnModule *module.StoreReturnModule, userModule *m
 }
 
 func (s *StoreReturnService) Create(storeID, operatorID uint, req *model.CreateStoreReturnReq, hqUnbound bool) (*model.StoreReturn, error) {
-	record, err := s.buildRecord(storeID, operatorID, hqUnbound, req.StoreID, req.ReturnDate, req.LogisticsFee, req.Remark, req.Items)
+	record, err := s.buildRecord(storeID, operatorID, hqUnbound, req.StoreID, req.ReturnDate, req.LogisticsFee, req.Photos, req.Remark, req.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func (s *StoreReturnService) Update(id, storeID, operatorID uint, req *model.Upd
 	if !s.IsReturnEditable(existing) {
 		return nil, apicode.Newf(apicode.OrderStateConflict, "返厂记录仅允许在录入当天修改")
 	}
-	record, err := s.buildRecord(storeID, operatorID, hqUnbound, req.StoreID, req.ReturnDate, req.LogisticsFee, req.Remark, req.Items)
+	record, err := s.buildRecord(storeID, operatorID, hqUnbound, req.StoreID, req.ReturnDate, req.LogisticsFee, req.Photos, req.Remark, req.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +98,7 @@ func (s *StoreReturnService) buildRecord(
 	reqStoreID uint,
 	returnDate string,
 	logisticsFee float64,
+	photos []string,
 	remark string,
 	reqItems []model.CreateStoreReturnItemReq,
 ) (*model.StoreReturn, error) {
@@ -111,6 +113,10 @@ func (s *StoreReturnService) buildRecord(
 	parsedDate, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(returnDate), time.Local)
 	if err != nil {
 		return nil, apicode.New(apicode.ReturnDateInvalid)
+	}
+	photoURLs, err := normalizeStoreReturnPhotos(photos)
+	if err != nil {
+		return nil, err
 	}
 
 	operatorName := ""
@@ -175,11 +181,40 @@ func (s *StoreReturnService) buildRecord(
 		LogisticsFee: logisticsFee,
 		TotalDeposit: totalDeposit,
 		ItemCount:    len(items),
+		Photos:       photoURLs,
 		Remark:       strings.TrimSpace(remark),
 		OperatorID:   operatorID,
 		OperatorName: operatorName,
 		Items:        items,
 	}, nil
+}
+
+func normalizeStoreReturnPhotos(photos []string) (model.StringList, error) {
+	if len(photos) > 3 {
+		return nil, apicode.Newf(apicode.ValidationFailed, "返厂照片最多上传3张")
+	}
+
+	result := make(model.StringList, 0, len(photos))
+	seen := make(map[string]struct{}, len(photos))
+	for _, raw := range photos {
+		photoURL := strings.TrimSpace(raw)
+		if photoURL == "" {
+			continue
+		}
+		if len(photoURL) > 500 {
+			return nil, apicode.Newf(apicode.ValidationFailed, "返厂照片地址不能超过500个字符")
+		}
+		parsed, err := url.Parse(photoURL)
+		if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return nil, apicode.Newf(apicode.ValidationFailed, "返厂照片地址无效")
+		}
+		if _, ok := seen[photoURL]; ok {
+			continue
+		}
+		seen[photoURL] = struct{}{}
+		result = append(result, photoURL)
+	}
+	return result, nil
 }
 
 func (s *StoreReturnService) List(ctx context.Context, req *model.ListStoreReturnReq) ([]*model.StoreReturn, int64, error) {

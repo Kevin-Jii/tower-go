@@ -72,6 +72,8 @@
           </div>
         </div>
 
+        <ReturnPhotoUploader ref="photoUploader" v-model="form.photos" :disabled="saving" />
+
         <BaseFormItem label="整单备注">
           <BaseTextarea v-model="form.remark" :rows="3" />
         </BaseFormItem>
@@ -95,6 +97,7 @@ import { createStoreReturn, getStoreReturn, listStoreReturnProducts, updateStore
 import type { StoreReturnProduct } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { useUserStore } from '@/store/user'
+import ReturnPhotoUploader from './components/ReturnPhotoUploader.vue'
 
 type ReturnLine = {
   product_id: number
@@ -102,6 +105,10 @@ type ReturnLine = {
   quantity: number
   deposit: number
   remark: string
+}
+
+type ReturnPhotoUploaderExpose = {
+  uploadPending: () => Promise<string[]>
 }
 
 const route = useRoute()
@@ -112,11 +119,13 @@ const editId = computed(() => Number(route.query.id || 0))
 const isEdit = computed(() => editId.value > 0)
 
 const saving = ref(false)
+const photoUploader = ref<ReturnPhotoUploaderExpose | null>(null)
 const selectedProductIds = ref<number[]>([])
 const form = reactive({
   client_request_id: '',
   return_date: today(),
   logistics_fee: 0,
+  photos: [] as string[],
   remark: '',
   items: [] as ReturnLine[],
 })
@@ -156,6 +165,7 @@ async function loadEditData(): Promise<void> {
     form.client_request_id = row.client_request_id || ''
     form.return_date = normalizeDate(row.return_date)
     form.logistics_fee = Number(row.logistics_fee || 0)
+    form.photos = [...(row.photos ?? [])]
     form.remark = row.remark || ''
     form.items = (row.items ?? [])
       .filter((x) => Number(x.product_id || 0) > 0)
@@ -221,11 +231,13 @@ async function submitForm(): Promise<void> {
 
   saving.value = true
   try {
+    const photos = await photoUploader.value?.uploadPending() ?? form.photos
     const body = {
       store_id: tenantStoreId.value,
       client_request_id: form.client_request_id || undefined,
       return_date: form.return_date,
       logistics_fee: Number(form.logistics_fee || 0),
+      photos,
       remark: form.remark.trim(),
       items,
     }

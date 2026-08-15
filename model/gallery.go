@@ -13,7 +13,7 @@ type Gallery struct {
 	Category    string    `json:"category" gorm:"type:varchar(50);index;comment:分类(product/supplier/avatar/purchase/other)"`
 	StoreID     uint      `json:"store_id" gorm:"index;comment:所属门店ID"`
 	UploadBy    uint      `json:"upload_by" gorm:"comment:上传人ID"`
-	UploadByName string   `json:"upload_by_name" gorm:"-"`
+	UploadByName string    `json:"upload_by_name" gorm:"-"`
 	Remark      string    `json:"remark" gorm:"type:varchar(500);comment:备注"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

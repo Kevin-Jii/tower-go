@@ -22,6 +22,7 @@ const (
 	minS3MultipartChunkSize int64 = 5 * 1024 * 1024
 	maxS3MultipartParts           = 10000
 	multipartRecoveryDelay        = 2 * time.Minute
+	maxStoreReturnPhotoSize int64 = 20 * 1024 * 1024
 )
 
 var galleryImageExtensions = map[string]string{
@@ -322,6 +323,9 @@ func (s *GalleryService) validateMultipartRequest(req *model.InitGalleryMultipar
 			s.multipartMaxSize/(1024*1024),
 		)
 	}
+	if strings.TrimSpace(req.Category) == "store-return" && req.FileSize > maxStoreReturnPhotoSize {
+		return "", "", apicode.New(apicode.MultipartFileTooLarge.WithMessage("单张返厂照片不能超过20MB"))
+	}
 	return fileName, defaultContentType, nil
 }
 
@@ -521,7 +525,7 @@ func normalizeGalleryCategory(category string) (string, error) {
 		return "other", nil
 	}
 	switch category {
-	case "product", "supplier", "avatar", "purchase", "other":
+	case "product", "supplier", "avatar", "purchase", "store-return", "other":
 		return category, nil
 	default:
 		return "", apicode.New(apicode.InvalidParameter.WithMessage("图库分类无效"))

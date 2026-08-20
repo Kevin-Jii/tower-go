@@ -31,6 +31,12 @@ type Member struct {
 	UpdateTime      time.Time       `json:"updateTime" gorm:"autoUpdateTime"`
 }
 
+// MemberUnsettledAccounts 按会员聚合的未结账单。
+type MemberUnsettledAccounts struct {
+	Member
+	UnsettledAccounts []*StoreAccount `json:"unsettled_accounts"`
+}
+
 // TableName 指定表名为 t_member
 func (Member) TableName() string {
 	return "t_member"

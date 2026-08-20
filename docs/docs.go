@@ -1962,6 +1962,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/members/unsettled-accounts": {
+            "get": {
+                "description": "按会员分页查询存在未结账单的会员，并返回当页会员的全部未结账单",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "查询未结账单会员列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键字(模糊匹配手机号/UID/姓名)",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页会员数量",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.MemberUnsettledAccounts"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/members/{id}": {
             "get": {
                 "description": "根据ID获取会员信息",
@@ -9601,6 +9662,53 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "orders": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.MemberUnsettledAccounts": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "number"
+                },
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "integer"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "unsettled_accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.StoreAccount"
+                    }
+                },
+                "unsettled_amount": {
+                    "type": "number"
+                },
+                "updateTime": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "integer"
                 }
             }

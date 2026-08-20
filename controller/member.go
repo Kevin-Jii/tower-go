@@ -162,6 +162,38 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 	http.SuccessWithPagination(ctx, members, total, page, pageSize)
 }
 
+// ListMembersWithUnsettledAccounts 查询有未结账单的会员列表
+// @Summary 查询未结账单会员列表
+// @Description 按会员分页查询存在未结账单的会员，并返回当页会员的全部未结账单
+// @Tags 会员管理
+// @Produce json
+// @Param store_id query int false "门店ID"
+// @Param keyword query string false "关键字(模糊匹配手机号/UID/姓名)"
+// @Param page query int false "页码"
+// @Param page_size query int false "每页会员数量"
+// @Success 200 {object} http.Response{data=[]model.MemberUnsettledAccounts}
+// @Router /members/unsettled-accounts [get]
+func (c *MemberController) ListMembersWithUnsettledAccounts(ctx *gin.Context) {
+	keyword := ctx.Query("keyword")
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	allStores := middleware.HQUnboundAdmin(ctx) && storeID == 0
+	list, total, err := c.service.ListMembersWithUnsettledAccounts(keyword, page, pageSize, storeID, allStores)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.SuccessWithPagination(ctx, list, total, page, pageSize)
+}
+
 // ListPointRules 查询会员积分规则
 func (c *MemberController) ListPointRules(ctx *gin.Context) {
 	var req model.ListMemberPointRuleReq

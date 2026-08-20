@@ -12,6 +12,7 @@ func RegisterMemberRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	{
 		members.POST("", middleware.Permission("store:member:add"), c.Member.CreateMember)
 		members.GET("", middleware.PermissionAny("store:member:list", "preorder:list", "preorder:add", "preorder:edit"), c.Member.ListMembers)
+		members.GET("/unsettled-accounts", middleware.Permission("store:member:list"), c.Member.ListMembersWithUnsettledAccounts)
 		members.GET("/phone", middleware.Permission("store:member:list"), c.Member.GetMemberByPhone)
 		members.GET("/point-rules", middleware.Permission("store:member:list"), c.Member.ListPointRules)
 		members.POST("/point-rules", middleware.Permission("store:member:edit"), c.Member.CreatePointRule)

@@ -195,6 +195,87 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID u
 	return members, total, nil
 }
 
+// ListMembersWithUnsettledAccounts 按会员分页查询未结账单，并为当页会员装载全部未结账单。
+func (m *MemberModule) ListMembersWithUnsettledAccounts(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.MemberUnsettledAccounts, int64, error) {
+	members := make([]model.Member, 0)
+	var total int64
+
+	unsettledAccounts := m.db.Table("store_accounts AS unsettled_accounts").
+		Select("1").
+		Where("unsettled_accounts.member_id = t_member.id").
+		Where("unsettled_accounts.deleted_at IS NULL").
+		Where("unsettled_accounts.is_canceled = 0").
+		Where("unsettled_accounts.payment_status = ?", model.StoreAccountPaymentUnpaid)
+	if !isAdmin {
+		unsettledAccounts = unsettledAccounts.Where("unsettled_accounts.store_id = ?", storeID)
+	}
+
+	query := m.scopedMemberQuery(storeID, isAdmin).Where("EXISTS (?)", unsettledAccounts)
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		like := "%" + kw + "%"
+		query = query.Where("phone LIKE ? OR uid LIKE ? OR name LIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&members).Error; err != nil {
+		return nil, 0, err
+	}
+	if len(members) == 0 {
+		return make([]model.MemberUnsettledAccounts, 0), total, nil
+	}
+
+	memberIDs := make([]uint, 0, len(members))
+	for i := range members {
+		memberIDs = append(memberIDs, members[i].ID)
+	}
+
+	accounts := make([]*model.StoreAccount, 0)
+	accountQuery := m.db.Model(&model.StoreAccount{}).
+		Where("member_id IN ?", memberIDs).
+		Where("payment_status = ?", model.StoreAccountPaymentUnpaid).
+		Where("is_canceled = 0")
+	if !isAdmin {
+		accountQuery = accountQuery.Where("store_id = ?", storeID)
+	}
+	if err := accountQuery.
+		Preload("Items").
+		Preload("Consumables").
+		Preload("Store").
+		Preload("Operator").
+		Order("member_id DESC, account_date DESC, id DESC").
+		Find(&accounts).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return groupMembersWithUnsettledAccounts(members, accounts), total, nil
+}
+
+func groupMembersWithUnsettledAccounts(members []model.Member, accounts []*model.StoreAccount) []model.MemberUnsettledAccounts {
+	result := make([]model.MemberUnsettledAccounts, len(members))
+	memberIndex := make(map[uint]int, len(members))
+	for i := range members {
+		members[i].UnsettledAmount = 0
+		result[i] = model.MemberUnsettledAccounts{
+			Member:            members[i],
+			UnsettledAccounts: make([]*model.StoreAccount, 0),
+		}
+		memberIndex[members[i].ID] = i
+	}
+	for _, account := range accounts {
+		if account == nil || account.MemberID == nil {
+			continue
+		}
+		i, ok := memberIndex[*account.MemberID]
+		if !ok {
+			continue
+		}
+		result[i].UnsettledAccounts = append(result[i].UnsettledAccounts, account)
+		result[i].UnsettledAmount += account.TotalAmount
+	}
+	return result
+}
+
 func (m *MemberModule) fillMemberUnsettledAmounts(members []model.Member, storeID uint, isAdmin bool) error {
 	if len(members) == 0 {
 		return nil

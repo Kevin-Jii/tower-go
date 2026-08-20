@@ -192,11 +192,77 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID u
 	if err := m.fillMemberUnsettledAmounts(members, storeID, isAdmin); err != nil {
 		return nil, 0, err
 	}
+	if err := m.fillMemberConsumptionSummaries(members, storeID, isAdmin); err != nil {
+		return nil, 0, err
+	}
 	return members, total, nil
 }
 
-// ListMembersWithUnsettledAccounts 按会员分页查询未结账单，并为当页会员装载全部未结账单。
-func (m *MemberModule) ListMembersWithUnsettledAccounts(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.MemberUnsettledAccounts, int64, error) {
+func (m *MemberModule) fillMemberConsumptionSummaries(members []model.Member, storeID uint, isAdmin bool) error {
+	if len(members) == 0 {
+		return nil
+	}
+
+	ids := make([]uint, 0, len(members))
+	index := make(map[uint]int, len(members))
+	for i := range members {
+		ids = append(ids, members[i].ID)
+		index[members[i].ID] = i
+	}
+
+	type summaryRow struct {
+		MemberID               uint
+		RecentConsumptionAt    *time.Time
+		ConsumptionCount       int64
+		TotalConsumptionAmount float64
+	}
+	rows := make([]summaryRow, 0, len(members))
+	query := m.db.Table("store_accounts").
+		Select("member_id, MAX(created_at) AS recent_consumption_at, COUNT(*) AS consumption_count, COALESCE(SUM(total_amount), 0) AS total_consumption_amount").
+		Where("deleted_at IS NULL AND is_canceled = 0 AND payment_status = ? AND member_id IN ?", model.StoreAccountPaymentPaid, ids)
+	if !isAdmin {
+		query = query.Where("store_id = ?", storeID)
+	}
+	if err := query.Group("member_id").Scan(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if i, ok := index[row.MemberID]; ok {
+			members[i].RecentConsumptionAt = row.RecentConsumptionAt
+			members[i].ConsumptionCount = row.ConsumptionCount
+			members[i].TotalConsumptionAmount = row.TotalConsumptionAmount
+		}
+	}
+	return nil
+}
+
+// GetMemberStats returns list-level member statistics in the caller's store scope.
+func (m *MemberModule) GetMemberStats(storeID uint, isAdmin bool) (*model.MemberStats, error) {
+	stats := &model.MemberStats{}
+	members := m.scopedMemberQuery(storeID, isAdmin)
+	if err := members.Count(&stats.Total).Error; err != nil {
+		return nil, err
+	}
+	if err := members.Select("COALESCE(SUM(points), 0)").Scan(&stats.TotalPoints).Error; err != nil {
+		return nil, err
+	}
+
+	consumptions := m.db.Model(&model.StoreAccount{}).
+		Where("is_canceled = 0 AND payment_status = ? AND member_id IS NOT NULL", model.StoreAccountPaymentPaid)
+	if !isAdmin {
+		consumptions = consumptions.Where("store_id = ?", storeID)
+	}
+	if err := consumptions.Select("COALESCE(SUM(total_amount), 0)").Scan(&stats.TotalConsumptionAmount).Error; err != nil {
+		return nil, err
+	}
+	if err := consumptions.Where("created_at >= ?", time.Now().AddDate(0, 0, -30)).Distinct("member_id").Count(&stats.Active30Days).Error; err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
+
+// ListMembersWithUnsettledAccounts 查询未结账单会员，并为每位会员装载全部未结账单。
+func (m *MemberModule) ListMembersWithUnsettledAccounts(keyword string, page, pageSize int, needPagination bool, storeID uint, isAdmin bool) ([]model.MemberUnsettledAccounts, int64, error) {
 	members := make([]model.Member, 0)
 	var total int64
 
@@ -218,7 +284,11 @@ func (m *MemberModule) ListMembersWithUnsettledAccounts(keyword string, page, pa
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := query.Order("id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&members).Error; err != nil {
+	query = query.Order("id DESC")
+	if needPagination {
+		query = query.Offset((page - 1) * pageSize).Limit(pageSize)
+	}
+	if err := query.Find(&members).Error; err != nil {
 		return nil, 0, err
 	}
 	if len(members) == 0 {

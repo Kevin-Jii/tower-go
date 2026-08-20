@@ -17,18 +17,29 @@ func DecimalZero() DecimalType {
 
 // Member 会员表
 type Member struct {
-	ID              uint            `json:"id" gorm:"primaryKey"`
-	StoreID         uint            `json:"store_id" gorm:"index;comment:所属门店ID"`
-	UID             string          `json:"uid" gorm:"type:varchar(64);uniqueIndex;comment:用户唯一标识"`
-	Name            string          `json:"name" gorm:"type:varchar(100);comment:会员姓名"`
-	Phone           string          `json:"phone" gorm:"type:varchar(20);uniqueIndex;comment:手机号"`
-	Balance         decimal.Decimal `json:"balance" gorm:"type:decimal(10,2);comment:余额"`
-	Points          int             `json:"points" gorm:"type:int;default:0;comment:积分"`
-	Level           int             `json:"level" gorm:"type:int;default:1;comment:等级"`
-	Version         int             `json:"version" gorm:"type:int;default:0;comment:乐观锁版本号"`
-	UnsettledAmount float64         `json:"unsettled_amount" gorm:"-"`
-	CreateTime      time.Time       `json:"createTime" gorm:"autoCreateTime"`
-	UpdateTime      time.Time       `json:"updateTime" gorm:"autoUpdateTime"`
+	ID                     uint            `json:"id" gorm:"primaryKey"`
+	StoreID                uint            `json:"store_id" gorm:"index;comment:所属门店ID"`
+	UID                    string          `json:"uid" gorm:"type:varchar(64);uniqueIndex;comment:用户唯一标识"`
+	Name                   string          `json:"name" gorm:"type:varchar(100);comment:会员姓名"`
+	Phone                  string          `json:"phone" gorm:"type:varchar(20);uniqueIndex;comment:手机号"`
+	Balance                decimal.Decimal `json:"balance" gorm:"type:decimal(10,2);comment:余额"`
+	Points                 int             `json:"points" gorm:"type:int;default:0;comment:积分"`
+	Level                  int             `json:"level" gorm:"type:int;default:1;comment:等级"`
+	Version                int             `json:"version" gorm:"type:int;default:0;comment:乐观锁版本号"`
+	UnsettledAmount        float64         `json:"unsettled_amount" gorm:"-"`
+	RecentConsumptionAt    *time.Time      `json:"recent_consumption_at" gorm:"-"`
+	ConsumptionCount       int64           `json:"consumption_count" gorm:"-"`
+	TotalConsumptionAmount float64         `json:"total_consumption_amount" gorm:"-"`
+	CreateTime             time.Time       `json:"createTime" gorm:"autoCreateTime"`
+	UpdateTime             time.Time       `json:"updateTime" gorm:"autoUpdateTime"`
+}
+
+// MemberStats 会员列表顶部统计。
+type MemberStats struct {
+	Total                  int64   `json:"total"`
+	TotalConsumptionAmount float64 `json:"total_consumption_amount"`
+	Active30Days           int64   `json:"active_30_days"`
+	TotalPoints            int64   `json:"total_points"`
 }
 
 // MemberUnsettledAccounts 按会员聚合的未结账单。

@@ -141,7 +141,11 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	accounts := make([]*model.StoreAccount, 0) // 初始化为空数组，避免返回null
 	var total int64
 
-	query := datascope.ApplyStoreAccountsList(m.db.Model(&model.StoreAccount{}), req)
+	query := datascope.ApplyStoreAccountsList(m.db.Model(&model.StoreAccount{}), req).
+		Where("is_canceled = ?", false)
+	if req.MemberID > 0 {
+		query = query.Where("member_id = ?", req.MemberID)
+	}
 	if req.Channel != "" {
 		query = query.Where("channel = ?", req.Channel)
 	}
@@ -349,11 +353,11 @@ func (m *StoreAccountModule) GenerateAccountNo() string {
 
 // GetStatsByDateRange 按日期范围统计。
 func (m *StoreAccountModule) GetStatsByDateRange(storeID uint, startDate, endDate string) (float64, float64, int64, error) {
-	return m.GetStatsByDateRangeWithPaymentStatus(storeID, startDate, endDate, 0)
+	return m.GetStatsByDateRangeWithPaymentStatus(storeID, 0, startDate, endDate, 0)
 }
 
 // GetStatsByDateRangeWithPaymentStatus 按日期范围和支付状态统计。
-func (m *StoreAccountModule) GetStatsByDateRangeWithPaymentStatus(storeID uint, startDate, endDate string, paymentStatus int) (float64, float64, int64, error) {
+func (m *StoreAccountModule) GetStatsByDateRangeWithPaymentStatus(storeID, memberID uint, startDate, endDate string, paymentStatus int) (float64, float64, int64, error) {
 	var netIncomeAmount float64
 	var summary struct {
 		TotalAmount float64
@@ -363,6 +367,9 @@ func (m *StoreAccountModule) GetStatsByDateRangeWithPaymentStatus(storeID uint, 
 	query := m.db.Model(&model.StoreAccount{}).Where("is_canceled = ?", false)
 	if storeID > 0 {
 		query = query.Where("store_id = ?", storeID)
+	}
+	if memberID > 0 {
+		query = query.Where("member_id = ?", memberID)
 	}
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)
@@ -392,6 +399,9 @@ func (m *StoreAccountModule) GetStatsByDateRangeWithPaymentStatus(storeID uint, 
 	if storeID > 0 {
 		netQuery = netQuery.Where("store_accounts.store_id = ?", storeID)
 	}
+	if memberID > 0 {
+		netQuery = netQuery.Where("store_accounts.member_id = ?", memberID)
+	}
 	if startDate != "" {
 		netQuery = netQuery.Where("store_accounts.account_date >= ?", startDate)
 	}
@@ -409,13 +419,16 @@ func (m *StoreAccountModule) GetStatsByDateRangeWithPaymentStatus(storeID uint, 
 }
 
 // GetChannelStatsByDateRange 按渠道统计销售额和订单数。
-func (m *StoreAccountModule) GetChannelStatsByDateRange(storeID uint, startDate, endDate string, paymentStatus int) ([]model.ChannelStatsItem, error) {
+func (m *StoreAccountModule) GetChannelStatsByDateRange(storeID, memberID uint, startDate, endDate string, paymentStatus int) ([]model.ChannelStatsItem, error) {
 	results := make([]model.ChannelStatsItem, 0)
 	query := m.db.Model(&model.StoreAccount{}).
 		Select("channel, COALESCE(SUM(total_amount), 0) AS amount, COUNT(*) AS orders").
 		Where("deleted_at IS NULL AND is_canceled = 0")
 	if storeID > 0 {
 		query = query.Where("store_id = ?", storeID)
+	}
+	if memberID > 0 {
+		query = query.Where("member_id = ?", memberID)
 	}
 	if startDate != "" {
 		query = query.Where("account_date >= ?", startDate)

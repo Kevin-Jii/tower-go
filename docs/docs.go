@@ -1962,9 +1962,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/members/stats": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会员管理"
+                ],
+                "summary": "获取会员统计",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "门店ID",
+                        "name": "store_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.MemberStats"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/members/unsettled-accounts": {
             "get": {
-                "description": "按会员分页查询存在未结账单的会员，并返回当页会员的全部未结账单",
+                "description": "默认返回全部未结账会员及账单；need_pagination=true 时按页返回",
                 "produces": [
                     "application/json"
                 ],
@@ -1983,6 +2027,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "关键字(模糊匹配手机号/UID/姓名)",
                         "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否分页，默认false",
+                        "name": "need_pagination",
                         "in": "query"
                     },
                     {
@@ -5874,6 +5924,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "member_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "渠道来源",
                         "name": "channel",
@@ -6068,6 +6124,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "门店ID",
                         "name": "store_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "会员ID",
+                        "name": "member_id",
                         "in": "query"
                     },
                     {
@@ -9611,6 +9673,9 @@ const docTemplate = `{
                 "balance": {
                     "type": "number"
                 },
+                "consumption_count": {
+                    "type": "integer"
+                },
                 "createTime": {
                     "type": "string"
                 },
@@ -9629,8 +9694,14 @@ const docTemplate = `{
                 "points": {
                     "type": "integer"
                 },
+                "recent_consumption_at": {
+                    "type": "string"
+                },
                 "store_id": {
                     "type": "integer"
+                },
+                "total_consumption_amount": {
+                    "type": "number"
                 },
                 "uid": {
                     "type": "string"
@@ -9666,11 +9737,31 @@ const docTemplate = `{
                 }
             }
         },
+        "model.MemberStats": {
+            "type": "object",
+            "properties": {
+                "active_30_days": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_consumption_amount": {
+                    "type": "number"
+                },
+                "total_points": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.MemberUnsettledAccounts": {
             "type": "object",
             "properties": {
                 "balance": {
                     "type": "number"
+                },
+                "consumption_count": {
+                    "type": "integer"
                 },
                 "createTime": {
                     "type": "string"
@@ -9690,8 +9781,14 @@ const docTemplate = `{
                 "points": {
                     "type": "integer"
                 },
+                "recent_consumption_at": {
+                    "type": "string"
+                },
                 "store_id": {
                     "type": "integer"
+                },
+                "total_consumption_amount": {
+                    "type": "number"
                 },
                 "uid": {
                     "type": "string"

@@ -78,6 +78,7 @@ func (c *StoreAccountController) Get(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
+// @Param member_id query int false "会员ID"
 // @Param channel query string false "渠道来源"
 // @Param order_no query string false "订单编号"
 // @Param payment_status query int false "支付状态 1=已支付 2=未支付"
@@ -364,6 +365,7 @@ func (c *StoreAccountController) DeleteConsumableProduct(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param store_id query int false "门店ID"
+// @Param member_id query int false "会员ID"
 // @Param start_date query string false "开始日期"
 // @Param end_date query string false "结束日期"
 // @Param payment_status query int false "支付状态 1=已支付 2=未支付"
@@ -371,11 +373,12 @@ func (c *StoreAccountController) DeleteConsumableProduct(ctx *gin.Context) {
 // @Router /store-accounts/stats [get]
 func (c *StoreAccountController) Stats(ctx *gin.Context) {
 	queryStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	memberID, _ := strconv.ParseUint(ctx.Query("member_id"), 10, 32)
 	startDate := ctx.Query("start_date")
 	endDate := ctx.Query("end_date")
 	paymentStatus, _ := strconv.Atoi(ctx.Query("payment_status"))
 
-	stats, err := c.storeAccountService.GetStats(queryStoreID, startDate, endDate, paymentStatus)
+	stats, err := c.storeAccountService.GetStats(queryStoreID, uint(memberID), startDate, endDate, paymentStatus)
 	if err != nil {
 		http.ErrorFrom(ctx, err)
 		return

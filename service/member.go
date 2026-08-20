@@ -77,9 +77,13 @@ func (s *MemberService) ListMembers(keyword string, page, pageSize int, storeID 
 	return s.module.ListMembers(keyword, page, pageSize, storeID, isAdmin)
 }
 
-// ListMembersWithUnsettledAccounts 按会员分页查询全部未结账单。
-func (s *MemberService) ListMembersWithUnsettledAccounts(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.MemberUnsettledAccounts, int64, error) {
-	return s.module.ListMembersWithUnsettledAccounts(keyword, page, pageSize, storeID, isAdmin)
+func (s *MemberService) GetMemberStats(storeID uint, isAdmin bool) (*model.MemberStats, error) {
+	return s.module.GetMemberStats(storeID, isAdmin)
+}
+
+// ListMembersWithUnsettledAccounts 查询未结账单会员；needPagination 为 false 时返回全部结果。
+func (s *MemberService) ListMembersWithUnsettledAccounts(keyword string, page, pageSize int, needPagination bool, storeID uint, isAdmin bool) ([]model.MemberUnsettledAccounts, int64, error) {
+	return s.module.ListMembersWithUnsettledAccounts(keyword, page, pageSize, needPagination, storeID, isAdmin)
 }
 
 func (s *MemberService) ListPointRules(req *model.ListMemberPointRuleReq, storeID uint, isAdmin bool) ([]model.MemberPointRule, int64, error) {

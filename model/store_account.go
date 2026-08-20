@@ -178,6 +178,7 @@ type BindStoreAccountConsumablesReq struct {
 // ListStoreAccountReq 记账列表查询
 type ListStoreAccountReq struct {
 	StoreID       uint   `form:"store_id"`
+	MemberID      uint   `form:"member_id"`
 	Channel       string `form:"channel"`
 	OrderNo       string `form:"order_no"`
 	PaymentStatus int    `form:"payment_status" binding:"omitempty,oneof=1 2"`

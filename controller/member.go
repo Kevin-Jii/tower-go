@@ -162,19 +162,47 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 	http.SuccessWithPagination(ctx, members, total, page, pageSize)
 }
 
+// MemberStats godoc
+// @Summary 获取会员统计
+// @Tags 会员管理
+// @Produce json
+// @Security Bearer
+// @Param store_id query int false "门店ID"
+// @Success 200 {object} http.Response{data=model.MemberStats}
+// @Router /members/stats [get]
+func (c *MemberController) MemberStats(ctx *gin.Context) {
+	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	stats, err := c.service.GetMemberStats(storeID, middleware.HQUnboundAdmin(ctx) && storeID == 0)
+	if err != nil {
+		http.ErrorFrom(ctx, err)
+		return
+	}
+	http.Success(ctx, stats)
+}
+
 // ListMembersWithUnsettledAccounts 查询有未结账单的会员列表
 // @Summary 查询未结账单会员列表
-// @Description 按会员分页查询存在未结账单的会员，并返回当页会员的全部未结账单
+// @Description 默认返回全部未结账会员及账单；need_pagination=true 时按页返回
 // @Tags 会员管理
 // @Produce json
 // @Param store_id query int false "门店ID"
 // @Param keyword query string false "关键字(模糊匹配手机号/UID/姓名)"
+// @Param need_pagination query bool false "是否分页，默认false"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页会员数量"
 // @Success 200 {object} http.Response{data=[]model.MemberUnsettledAccounts}
 // @Router /members/unsettled-accounts [get]
 func (c *MemberController) ListMembersWithUnsettledAccounts(ctx *gin.Context) {
 	keyword := ctx.Query("keyword")
+	needPagination := false
+	if raw := ctx.Query("need_pagination"); raw != "" {
+		var err error
+		needPagination, err = strconv.ParseBool(raw)
+		if err != nil {
+			http.Error(ctx, 400, "need_pagination must be a boolean")
+			return
+		}
+	}
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "20"))
 	if page < 1 {
@@ -186,10 +214,17 @@ func (c *MemberController) ListMembersWithUnsettledAccounts(ctx *gin.Context) {
 
 	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	allStores := middleware.HQUnboundAdmin(ctx) && storeID == 0
-	list, total, err := c.service.ListMembersWithUnsettledAccounts(keyword, page, pageSize, storeID, allStores)
+	list, total, err := c.service.ListMembersWithUnsettledAccounts(keyword, page, pageSize, needPagination, storeID, allStores)
 	if err != nil {
 		http.ErrorFrom(ctx, err)
 		return
+	}
+	if !needPagination {
+		page = 1
+		pageSize = int(total)
+		if pageSize < 1 {
+			pageSize = 1
+		}
 	}
 	http.SuccessWithPagination(ctx, list, total, page, pageSize)
 }

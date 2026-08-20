@@ -1323,6 +1323,8 @@ definitions:
     properties:
       balance:
         type: number
+      consumption_count:
+        type: integer
       createTime:
         type: string
       id:
@@ -1335,8 +1337,12 @@ definitions:
         type: string
       points:
         type: integer
+      recent_consumption_at:
+        type: string
       store_id:
         type: integer
+      total_consumption_amount:
+        type: number
       uid:
         type: string
       unsettled_amount:
@@ -1359,10 +1365,23 @@ definitions:
       orders:
         type: integer
     type: object
+  model.MemberStats:
+    properties:
+      active_30_days:
+        type: integer
+      total:
+        type: integer
+      total_consumption_amount:
+        type: number
+      total_points:
+        type: integer
+    type: object
   model.MemberUnsettledAccounts:
     properties:
       balance:
         type: number
+      consumption_count:
+        type: integer
       createTime:
         type: string
       id:
@@ -1375,8 +1394,12 @@ definitions:
         type: string
       points:
         type: integer
+      recent_consumption_at:
+        type: string
       store_id:
         type: integer
+      total_consumption_amount:
+        type: number
       uid:
         type: string
       unsettled_accounts:
@@ -4165,9 +4188,33 @@ paths:
       summary: 通过手机号获取会员
       tags:
       - 会员管理
+  /members/stats:
+    get:
+      parameters:
+      - description: 门店ID
+        in: query
+        name: store_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.MemberStats'
+              type: object
+      security:
+      - Bearer: []
+      summary: 获取会员统计
+      tags:
+      - 会员管理
   /members/unsettled-accounts:
     get:
-      description: 按会员分页查询存在未结账单的会员，并返回当页会员的全部未结账单
+      description: 默认返回全部未结账会员及账单；need_pagination=true 时按页返回
       parameters:
       - description: 门店ID
         in: query
@@ -4177,6 +4224,10 @@ paths:
         in: query
         name: keyword
         type: string
+      - description: 是否分页，默认false
+        in: query
+        name: need_pagination
+        type: boolean
       - description: 页码
         in: query
         name: page
@@ -6327,6 +6378,10 @@ paths:
         in: query
         name: store_id
         type: integer
+      - description: 会员ID
+        in: query
+        name: member_id
+        type: integer
       - description: 渠道来源
         in: query
         name: channel
@@ -6571,6 +6626,10 @@ paths:
       - description: 门店ID
         in: query
         name: store_id
+        type: integer
+      - description: 会员ID
+        in: query
+        name: member_id
         type: integer
       - description: 开始日期
         in: query

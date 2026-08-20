@@ -1628,13 +1628,13 @@ func storeAccountEditInventoryOrderNo(accountID uint, orderType int8) string {
 }
 
 // GetStats 获取统计
-func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string, paymentStatus int) (map[string]interface{}, error) {
-	storeAccountTurnoverAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRangeWithPaymentStatus(storeID, startDate, endDate, paymentStatus)
+func (s *StoreAccountService) GetStats(storeID, memberID uint, startDate, endDate string, paymentStatus int) (map[string]interface{}, error) {
+	storeAccountTurnoverAmount, netIncomeAmount, count, err := s.storeAccountModule.GetStatsByDateRangeWithPaymentStatus(storeID, memberID, startDate, endDate, paymentStatus)
 	if err != nil {
 		return nil, err
 	}
 
-	channels, err := s.storeAccountModule.GetChannelStatsByDateRange(storeID, startDate, endDate, paymentStatus)
+	channels, err := s.storeAccountModule.GetChannelStatsByDateRange(storeID, memberID, startDate, endDate, paymentStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -1661,6 +1661,14 @@ func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string, 
 			channels[i].Percent = channels[i].Amount / salesTotalAmount * 100
 		}
 	}
+	paidAmount, _, paidCount, err := s.storeAccountModule.GetStatsByDateRangeWithPaymentStatus(storeID, memberID, startDate, endDate, model.StoreAccountPaymentPaid)
+	if err != nil {
+		return nil, err
+	}
+	unpaidAmount, _, unpaidCount, err := s.storeAccountModule.GetStatsByDateRangeWithPaymentStatus(storeID, memberID, startDate, endDate, model.StoreAccountPaymentUnpaid)
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"total_amount":                  netIncomeAmount,
@@ -1670,6 +1678,10 @@ func (s *StoreAccountService) GetStats(storeID uint, startDate, endDate string, 
 		"total_turnover_amount":         storeAccountTurnoverAmount,
 		"net_income_amount":             netIncomeAmount,
 		"count":                         count,
+		"paid_amount":                   paidAmount,
+		"unpaid_amount":                 unpaidAmount,
+		"paid_count":                    paidCount,
+		"unpaid_count":                  unpaidCount,
 		"channels":                      channels,
 	}, nil
 }

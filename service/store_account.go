@@ -373,9 +373,11 @@ func (s *StoreAccountService) buildStoreAccountItems(requestItems []model.Create
 
 		productUnitSpecs, specsLoaded := specMap[item.ProductID]
 		if !specsLoaded && s.unitSpecModule != nil {
-			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
-				productUnitSpecs = specs
+			specs, err := s.unitSpecModule.ListByProductID(item.ProductID)
+			if err != nil {
+				return nil, 0, 0, nil, fmt.Errorf("查询商品[%d]单位规格失败: %w", item.ProductID, err)
 			}
+			productUnitSpecs = specs
 			specMap[item.ProductID] = productUnitSpecs
 		}
 		if s.unitSpecModule != nil {
@@ -508,9 +510,11 @@ func (s *StoreAccountService) Create(storeID, operatorID uint, req *model.Create
 			}
 		}
 		if s.unitSpecModule != nil {
-			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
-				productUnitSpecs = specs
+			specs, err := s.unitSpecModule.ListByProductID(item.ProductID)
+			if err != nil {
+				return nil, fmt.Errorf("创建记账读取商品[%d]单位规格失败: %w", item.ProductID, err)
 			}
+			productUnitSpecs = specs
 		}
 		if s.unitSpecModule != nil {
 			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)
@@ -1838,9 +1842,11 @@ func (s *StoreAccountService) bindConsumablesToLoadedAccount(account *model.Stor
 			}
 		}
 		if s.unitSpecModule != nil {
-			if specs, err := s.unitSpecModule.ListByProductID(item.ProductID); err == nil {
-				productUnitSpecs = specs
+			specs, err := s.unitSpecModule.ListByProductID(item.ProductID)
+			if err != nil {
+				return fmt.Errorf("绑定消耗品读取商品[%d]单位规格失败: %w", item.ProductID, err)
 			}
+			productUnitSpecs = specs
 		}
 		if s.unitSpecModule != nil {
 			specPrice, matched := tryResolveUnitSpecSalePrice(unit, productUnitSpecs)

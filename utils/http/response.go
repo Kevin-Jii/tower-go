@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
+	"time"
 
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
@@ -25,7 +27,7 @@ func Success(c *gin.Context, data interface{}) {
 	resp := Response{
 		Code:    200,
 		Message: "success",
-		Data:    data,
+		Data:    normalizeResponseData(data),
 	}
 
 	// 打印响应数据到控制台（已禁用）
@@ -147,8 +149,156 @@ func Custom(c *gin.Context, code int, message string, data interface{}) {
 	c.JSON(http.StatusOK, Response{
 		Code:    code,
 		Message: message,
-		Data:    data,
+		Data:    normalizeResponseData(data),
 	})
+}
+
+const (
+	responseDateFormat     = "2006-01-02"
+	responseDateTimeFormat = "2006-01-02 15:04:05"
+)
+
+var (
+	timeType          = reflect.TypeOf(time.Time{})
+	jsonMarshalerType = reflect.TypeOf((*json.Marshaler)(nil)).Elem()
+)
+
+// normalizeResponseData converts time values before Gin serializes the response.
+// This keeps date formatting consistent for nested structs, slices and maps.
+func normalizeResponseData(data interface{}) interface{} {
+	if data == nil {
+		return nil
+	}
+	return normalizeResponseValue(reflect.ValueOf(data), "")
+}
+
+func normalizeResponseValue(value reflect.Value, fieldName string) interface{} {
+	if !value.IsValid() {
+		return nil
+	}
+	if value.Kind() == reflect.Interface {
+		if value.IsNil() {
+			return nil
+		}
+		return normalizeResponseValue(value.Elem(), fieldName)
+	}
+	if value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return nil
+		}
+		return normalizeResponseValue(value.Elem(), fieldName)
+	}
+	if value.Type() == timeType {
+		date := value.Interface().(time.Time)
+		if isResponseDateOnlyField(fieldName) {
+			return date.Format(responseDateFormat)
+		}
+		return date.Format(responseDateTimeFormat)
+	}
+	if value.CanInterface() && (value.Type().Implements(jsonMarshalerType) ||
+		(value.CanAddr() && value.Addr().Type().Implements(jsonMarshalerType))) {
+		return value.Interface()
+	}
+
+	switch value.Kind() {
+	case reflect.Struct:
+		return normalizeResponseStruct(value)
+	case reflect.Slice, reflect.Array:
+		if value.Type().Elem().Kind() == reflect.Uint8 {
+			if value.CanInterface() {
+				return value.Interface()
+			}
+			return nil
+		}
+		items := make([]interface{}, value.Len())
+		for i := 0; i < value.Len(); i++ {
+			items[i] = normalizeResponseValue(value.Index(i), fieldName)
+		}
+		return items
+	case reflect.Map:
+		if value.IsNil() {
+			return nil
+		}
+		if value.Type().Key().Kind() == reflect.String {
+			result := make(map[string]interface{}, value.Len())
+			for _, key := range value.MapKeys() {
+				result[key.String()] = normalizeResponseValue(value.MapIndex(key), key.String())
+			}
+			return result
+		}
+		result := make(map[interface{}]interface{}, value.Len())
+		for _, key := range value.MapKeys() {
+			result[key.Interface()] = normalizeResponseValue(value.MapIndex(key), fmt.Sprint(key.Interface()))
+		}
+		return result
+	default:
+		if value.CanInterface() {
+			return value.Interface()
+		}
+		return nil
+	}
+}
+
+func normalizeResponseStruct(value reflect.Value) map[string]interface{} {
+	result := make(map[string]interface{})
+	typ := value.Type()
+	for i := 0; i < value.NumField(); i++ {
+		field := typ.Field(i)
+		if field.PkgPath != "" {
+			continue
+		}
+		tag := field.Tag.Get("json")
+		parts := strings.Split(tag, ",")
+		name := parts[0]
+		if name == "-" {
+			continue
+		}
+		if name == "" {
+			name = field.Name
+		}
+		fieldValue := value.Field(i)
+		if hasJSONOption(parts[1:], "omitempty") && isResponseEmptyValue(fieldValue) {
+			continue
+		}
+		if field.Anonymous && name == field.Name {
+			if embedded, ok := normalizeResponseValue(fieldValue, fieldNameFromType(fieldValue)).(map[string]interface{}); ok {
+				for key, item := range embedded {
+					result[key] = item
+				}
+			}
+			continue
+		}
+		result[name] = normalizeResponseValue(fieldValue, name)
+	}
+	return result
+}
+
+func hasJSONOption(options []string, target string) bool {
+	for _, option := range options {
+		if option == target {
+			return true
+		}
+	}
+	return false
+}
+
+func isResponseEmptyValue(value reflect.Value) bool {
+	if !value.IsValid() {
+		return true
+	}
+	return value.IsZero()
+}
+
+func fieldNameFromType(value reflect.Value) string {
+	if value.IsValid() {
+		return value.Type().Name()
+	}
+	return ""
+}
+
+func isResponseDateOnlyField(fieldName string) bool {
+	name := strings.ToLower(fieldName)
+	return name == "date" || strings.HasSuffix(name, "_date")
 }
 
 // Paginated 分页响应

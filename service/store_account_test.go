@@ -88,6 +88,36 @@ func TestTryResolveUnitSpecSalePriceByUnitName(t *testing.T) {
 	}
 }
 
+func TestTryResolveUnitSpecSalePriceSkipsDisabledExactNameMatch(t *testing.T) {
+	specs := []*model.ProductUnitSpec{
+		{
+			ID:           200,
+			ProductID:    65,
+			UnitCode:     "legacy_bucket",
+			UnitName:     "1L桶",
+			SalePrice:    0,
+			IsSaleable:   false,
+			IsEnabled:    false,
+			FactorToBase: 1,
+		},
+		{
+			ID:           201,
+			ProductID:    65,
+			UnitCode:     "L",
+			UnitName:     "1L桶",
+			SalePrice:    35,
+			IsSaleable:   true,
+			IsEnabled:    true,
+			FactorToBase: 1,
+		},
+	}
+
+	got, ok := tryResolveUnitSpecSalePrice("1L桶", specs)
+	if !ok || got != 35 {
+		t.Fatalf("tryResolveUnitSpecSalePrice(1L桶) = (%.2f, %v), want (35, true)", got, ok)
+	}
+}
+
 func TestStoreAccountEditWindow_CurrentBusinessDayOnly(t *testing.T) {
 	svc := &StoreAccountService{}
 	now := time.Now()

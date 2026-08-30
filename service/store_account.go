@@ -59,17 +59,22 @@ func resolveUnitPriceFromSpecs(unit string, specs []*model.ProductUnitSpec) floa
 	normalized := strings.ToLower(strings.TrimSpace(unit))
 
 	// 1) 精确匹配（unit_code / unit_name）
+	matchedExact := false
 	for _, spec := range specs {
 		if spec == nil {
 			continue
 		}
 		if normalized == strings.ToLower(strings.TrimSpace(spec.UnitCode)) ||
 			normalized == strings.ToLower(strings.TrimSpace(spec.UnitName)) {
+			matchedExact = true
 			if !spec.IsEnabled || !spec.IsSaleable || spec.SalePrice <= 0 {
-				return 0
+				continue
 			}
 			return spec.SalePrice
 		}
+	}
+	if matchedExact {
+		return 0
 	}
 
 	// 2) 模糊包含匹配（兼容“L/瓶”“箱/桶”这类展示名）

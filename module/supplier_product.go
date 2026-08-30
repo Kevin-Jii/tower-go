@@ -1,8 +1,12 @@
 package module
 
 import (
+	"errors"
+
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -61,7 +65,19 @@ func (m *SupplierProductModule) UpdateByID(id uint, req *model.UpdateSupplierPro
 }
 
 func (m *SupplierProductModule) Delete(id uint) error {
-	return m.db.Delete(&model.SupplierProduct{}, id).Error
+	err := m.db.Delete(&model.SupplierProduct{}, id).Error
+	if isForeignKeyReferenceError(err) {
+		return apicode.Wrap(
+			apicode.ResourceInUse.WithMessage("商品已有库存、单据或其他业务记录，无法删除，请改为停用"),
+			err,
+		)
+	}
+	return err
+}
+
+func isForeignKeyReferenceError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1451
 }
 
 // GetByIDs 批量获取商品

@@ -35,6 +35,7 @@ type Controllers struct {
 	MeituanAI         *controller.MeituanAIController
 	Statistics        *controller.StatisticsController
 	MessageTemplate   *controller.MessageTemplateController
+	SmsCampaign       *controller.SmsCampaignController
 	Member            *controller.MemberController
 	Printer           *controller.PrinterController
 	PriceList         *controller.PriceListController
@@ -47,7 +48,8 @@ type Controllers struct {
 	DingTalkBotModule *userModulePkg.DingTalkBotModule
 	PrinterService    *service.PrinterService
 	PreOrderService   *service.PreOrderService
-	GalleryService    *service.GalleryService
+		GalleryService    *service.GalleryService
+		SmsCampaignService *service.SmsCampaignService
 }
 
 // BuildControllers 构建所有控制器及其依赖
@@ -76,6 +78,7 @@ func BuildControllers() *Controllers {
 	meituanAIModule := userModulePkg.NewMeituanAIModule(database.DB)
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
+	smsCampaignModule := userModulePkg.NewSmsCampaignModule(database.DB)
 	memberModule := userModulePkg.NewMemberModule(database.DB)
 	priceListModule := userModulePkg.NewPriceListModule(database.DB)
 	b2bModule := userModulePkg.NewB2BModule(database.DB)
@@ -130,6 +133,7 @@ func BuildControllers() *Controllers {
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule, storeModule, dingTalkBotModule, dingTalkService)
 	dictService := service.NewDictService(dictModule)
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
+	smsCampaignService := service.NewSmsCampaignService(smsCampaignModule, memberModule)
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule, dictModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, b2bModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
@@ -201,6 +205,7 @@ func BuildControllers() *Controllers {
 		MeituanAI:         controller.NewMeituanAIController(meituanAIService),
 		Statistics:        controller.NewStatisticsController(statisticsService),
 		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
+		SmsCampaign:       controller.NewSmsCampaignController(smsCampaignService),
 		Member:            controller.NewMemberController(memberService),
 		Printer:           controller.NewPrinterController(printerService),
 		PriceList:         controller.NewPriceListController(priceListService),
@@ -213,7 +218,8 @@ func BuildControllers() *Controllers {
 		DingTalkBotModule: dingTalkBotModule,
 		PrinterService:    printerService,
 		PreOrderService:   preOrderService,
-		GalleryService:    galleryService,
+		GalleryService:     galleryService,
+		SmsCampaignService: smsCampaignService,
 	}
 }
 
@@ -227,6 +233,9 @@ func (c *Controllers) StartCronJobs() error {
 		jobErrors = append(jobErrors, err.Error())
 	}
 	if _, err := cron.StartGalleryUploadCleanup(c.GalleryService); err != nil {
+		jobErrors = append(jobErrors, err.Error())
+	}
+	if _, err := cron.StartSmsCampaignScheduler(c.SmsCampaignService); err != nil {
 		jobErrors = append(jobErrors, err.Error())
 	}
 	if len(jobErrors) > 0 {

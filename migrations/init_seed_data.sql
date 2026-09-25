@@ -292,6 +292,25 @@ INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, pe
 SELECT @store_member_wine_id, 'store-member-wine-transactions', '存取流水', '', '', '', 3, 3, 'store:member:list', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_member_wine_id AND name='store-member-wine-transactions' AND type=3);
 
+-- 短信广告推广（门店管理下，对接阿里云短信）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @store_id, 'store-sms-promotion', '广告推广', 'Promotion', '/store/sms-promotion', 'store/sms-promotion/index', 2, 9, 'marketing:sms:list', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='store-sms-promotion' AND type=2);
+SET @sms_promo_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='store-sms-promotion' AND type=2 ORDER BY id LIMIT 1);
+
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @sms_promo_id, 'store-sms-promotion-add', '新建推广', '', '', '', 3, 1, 'marketing:sms:add', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@sms_promo_id AND name='store-sms-promotion-add' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @sms_promo_id, 'store-sms-promotion-edit', '编辑推广', '', '', '', 3, 2, 'marketing:sms:edit', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@sms_promo_id AND name='store-sms-promotion-edit' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @sms_promo_id, 'store-sms-promotion-delete', '删除推广', '', '', '', 3, 3, 'marketing:sms:delete', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@sms_promo_id AND name='store-sms-promotion-delete' AND type=3);
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @sms_promo_id, 'store-sms-promotion-send', '发送短信', '', '', '', 3, 4, 'marketing:sms:send', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@sms_promo_id AND name='store-sms-promotion-send' AND type=3);
+
 -- B2B 供货业务
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @store_id, 'b2b-supply', 'B2B供货', 'apps', '', '', 1, 8, '', 1, 1, NOW(), NOW()

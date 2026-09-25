@@ -44,6 +44,7 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	api.RegisterMeituanAIRoutes(v1, c)
 	api.RegisterStatisticsRoutes(v1, c)
 	api.RegisterMessageTemplateRoutes(v1, c)
+	api.RegisterSmsCampaignRoutes(v1, c)
 	api.RegisterMemberRoutes(v1, c)
 	api.RegisterPrinterRoutes(v1, c)
 	api.RegisterPriceListRoutes(v1, c)

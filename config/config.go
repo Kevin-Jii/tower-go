@@ -19,7 +19,17 @@ type Config struct {
 	InternalService InternalServiceConfig
 	RustFS          RustFSConfig
 	Xpyun           XpyunConfig
+	AliyunSMS       AliyunSMSConfig
 	Performance     PerformanceConfig
+}
+
+// AliyunSMSConfig 阿里云短信配置（对接 dysmsapi）
+type AliyunSMSConfig struct {
+	AccessKeyID     string
+	AccessKeySecret string
+	RegionID        string
+	SignName        string
+	Enabled         bool
 }
 
 // InternalServiceConfig 服务间调用配置。
@@ -115,6 +125,7 @@ func InitConfig() {
 		InternalService: loadInternalServiceConfig(),
 		RustFS:          loadRustFSConfig(),
 		Xpyun:           loadXpyunConfig(),
+		AliyunSMS:       loadAliyunSMSConfig(),
 		Performance:     loadPerformanceConfig(),
 	}
 }
@@ -367,4 +378,19 @@ func loadXpyunConfig() XpyunConfig {
 // GetXpyunConfig 获取芯烨云配置
 func GetXpyunConfig() XpyunConfig {
 	return GetConfig().Xpyun
+}
+
+func loadAliyunSMSConfig() AliyunSMSConfig {
+	return AliyunSMSConfig{
+		AccessKeyID:     getAppString("ALIYUN_SMS_ACCESS_KEY_ID", ""),
+		AccessKeySecret: getAppString("ALIYUN_SMS_ACCESS_KEY_SECRET", ""),
+		RegionID:        getAppString("ALIYUN_SMS_REGION_ID", "cn-hangzhou"),
+		SignName:        getAppString("ALIYUN_SMS_SIGN_NAME", ""),
+		Enabled:         getAppBool("ALIYUN_SMS_ENABLED", false),
+	}
+}
+
+// GetAliyunSMSConfig 获取阿里云短信配置
+func GetAliyunSMSConfig() AliyunSMSConfig {
+	return GetConfig().AliyunSMS
 }

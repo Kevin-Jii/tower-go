@@ -218,6 +218,7 @@ func auditModuleFromPath(path string) (string, string, string) {
 		"meituan-ai":            {"meituan_ai", "美团 AI"},
 		"dingtalk":              {"dingtalk", "钉钉"},
 		"message-templates":     {"message_template", "消息模板"},
+		"sms-campaigns":         {"sms_campaign", "短信推广"},
 		"printers":              {"printer", "打印机"},
 		"third-party-accounts":  {"third_party_account", "第三方账号"},
 		"third-party-routes":    {"third_party_route", "第三方路线"},

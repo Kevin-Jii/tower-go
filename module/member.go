@@ -1045,3 +1045,46 @@ func randomString(n int) string {
 	}
 	return string(b)
 }
+
+// MemberSMSRecipient 短信推广收件人
+type MemberSMSRecipient struct {
+	MemberID uint
+	Phone    string
+	Name     string
+	StoreID  uint
+}
+
+// ListSMSRecipients 按门店范围列出有效手机号
+func (m *MemberModule) ListSMSRecipients(storeIDs []uint, scopedStoreID uint, isAdmin bool) ([]MemberSMSRecipient, error) {
+	q := m.db.Model(&model.Member{}).
+		Select("id, phone, name, store_id").
+		Where("phone <> ''")
+	if len(storeIDs) > 0 {
+		q = q.Where("store_id IN ?", storeIDs)
+	} else if !isAdmin && scopedStoreID > 0 {
+		q = q.Where("store_id = ?", scopedStoreID)
+	}
+	var members []model.Member
+	if err := q.Find(&members).Error; err != nil {
+		return nil, err
+	}
+	out := make([]MemberSMSRecipient, 0, len(members))
+	seen := make(map[string]struct{}, len(members))
+	for _, mem := range members {
+		phone := strings.TrimSpace(mem.Phone)
+		if phone == "" {
+			continue
+		}
+		if _, ok := seen[phone]; ok {
+			continue
+		}
+		seen[phone] = struct{}{}
+		out = append(out, MemberSMSRecipient{
+			MemberID: mem.ID,
+			Phone:    phone,
+			Name:     strings.TrimSpace(mem.Name),
+			StoreID:  mem.StoreID,
+		})
+	}
+	return out, nil
+}

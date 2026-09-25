@@ -73,6 +73,8 @@ var autoMigrateModels = []interface{}{
 	&model.ThirdPartyRouteStore{},
 	&model.ThirdPartyLogisticsSheet{},
 	&model.AuditLog{},
+	&model.SmsCampaign{},
+	&model.SmsSendRecord{},
 }
 
 func AutoMigrateAndSeeds() {
@@ -208,6 +210,10 @@ func shouldSkipMigration() bool {
 	}
 
 	if migrator.HasTable(&model.StoreReturn{}) && !migrator.HasColumn(&model.StoreReturn{}, "photo_urls") {
+		return false
+	}
+
+	if !migrator.HasTable(&model.SmsCampaign{}) || !migrator.HasTable(&model.SmsSendRecord{}) {
 		return false
 	}
 

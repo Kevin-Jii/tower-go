@@ -184,6 +184,50 @@ export interface MessageTemplate {
   updated_at?: string
 }
 
+export interface SmsServiceConfig {
+  enabled: boolean
+  default_sign_name: string
+  region: string
+  configured: boolean
+  help_url: string
+  template_hint: string
+  max_batch_phones: number
+}
+
+export interface SmsCampaign {
+  id: number
+  name: string
+  campaign_type: 'activity' | 'holiday' | string
+  sign_name?: string
+  template_code: string
+  template_param?: string
+  personalize_name?: boolean
+  target_type: 'all_members' | 'stores' | 'custom' | string
+  store_ids?: number[]
+  custom_phones?: string[]
+  scheduled_at?: string | null
+  status: string
+  total_count?: number
+  success_count?: number
+  fail_count?: number
+  last_error?: string
+  sent_at?: string | null
+  created_by?: number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface SmsSendRecord {
+  id: number
+  campaign_id: number
+  phone: string
+  member_id?: number | null
+  biz_id?: string
+  status: string
+  error_message?: string
+  created_at?: string
+}
+
 export interface ThirdPartyAccount {
   id: number
   platform_name: string

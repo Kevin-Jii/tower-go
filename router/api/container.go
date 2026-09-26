@@ -16,40 +16,41 @@ import (
 
 // Controllers 应用控制器容器
 type Controllers struct {
-	User              *controller.UserController
-	Store             *controller.StoreController
-	Menu              *controller.MenuController
-	DingTalkBot       *controller.DingTalkBotController
-	Supplier          *controller.SupplierController
-	SupplierProduct   *controller.SupplierProductController
-	StoreSupplier     *controller.StoreSupplierController
-	PurchaseOrder     *controller.PurchaseOrderController
-	Dict              *controller.DictController
-	Inventory         *controller.InventoryController
-	InventoryLoss     *controller.InventoryLossController
-	File              *controller.FileController
-	Gallery           *controller.GalleryController
-	StoreAccount      *controller.StoreAccountController
-	StoreExpense      *controller.StoreExpenseController
-	StoreReturn       *controller.StoreReturnController
-	MeituanAI         *controller.MeituanAIController
-	Statistics        *controller.StatisticsController
-	MessageTemplate   *controller.MessageTemplateController
-	SmsCampaign       *controller.SmsCampaignController
-	Member            *controller.MemberController
-	Printer           *controller.PrinterController
-	PriceList         *controller.PriceListController
-	B2B               *controller.B2BController
-	PreOrder          *controller.PreOrderController
-	ThirdPartyAccount *controller.ThirdPartyAccountController
-	ThirdPartyRoute   *controller.ThirdPartyRouteController
-	AuditLog          *controller.AuditLogController
-	DailyTurnover     *controller.DailyTurnoverController
-	DingTalkBotModule *userModulePkg.DingTalkBotModule
-	PrinterService    *service.PrinterService
-	PreOrderService   *service.PreOrderService
-		GalleryService    *service.GalleryService
-		SmsCampaignService *service.SmsCampaignService
+	User               *controller.UserController
+	Store              *controller.StoreController
+	Menu               *controller.MenuController
+	DingTalkBot        *controller.DingTalkBotController
+	Supplier           *controller.SupplierController
+	SupplierProduct    *controller.SupplierProductController
+	StoreSupplier      *controller.StoreSupplierController
+	PurchaseOrder      *controller.PurchaseOrderController
+	Dict               *controller.DictController
+	Inventory          *controller.InventoryController
+	InventoryLoss      *controller.InventoryLossController
+	File               *controller.FileController
+	Gallery            *controller.GalleryController
+	StoreAccount       *controller.StoreAccountController
+	StoreExpense       *controller.StoreExpenseController
+	StoreReturn        *controller.StoreReturnController
+	MeituanAI          *controller.MeituanAIController
+	Statistics         *controller.StatisticsController
+	MessageTemplate    *controller.MessageTemplateController
+	SmsCampaign        *controller.SmsCampaignController
+	MemberTag          *controller.MemberTagController
+	Member             *controller.MemberController
+	Printer            *controller.PrinterController
+	PriceList          *controller.PriceListController
+	B2B                *controller.B2BController
+	PreOrder           *controller.PreOrderController
+	ThirdPartyAccount  *controller.ThirdPartyAccountController
+	ThirdPartyRoute    *controller.ThirdPartyRouteController
+	AuditLog           *controller.AuditLogController
+	DailyTurnover      *controller.DailyTurnoverController
+	DingTalkBotModule  *userModulePkg.DingTalkBotModule
+	PrinterService     *service.PrinterService
+	PreOrderService    *service.PreOrderService
+	GalleryService     *service.GalleryService
+	SmsCampaignService *service.SmsCampaignService
 }
 
 // BuildControllers 构建所有控制器及其依赖
@@ -79,6 +80,7 @@ func BuildControllers() *Controllers {
 	statisticsModule := userModulePkg.NewStatisticsModule(database.DB)
 	messageTemplateModule := userModulePkg.NewMessageTemplateModule(database.DB)
 	smsCampaignModule := userModulePkg.NewSmsCampaignModule(database.DB)
+	memberTagModule := userModulePkg.NewMemberTagModule(database.DB)
 	memberModule := userModulePkg.NewMemberModule(database.DB)
 	priceListModule := userModulePkg.NewPriceListModule(database.DB)
 	b2bModule := userModulePkg.NewB2BModule(database.DB)
@@ -133,7 +135,8 @@ func BuildControllers() *Controllers {
 	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderModule, supplierProductModule, storeSupplierModule, storeModule, dingTalkBotModule, dingTalkService)
 	dictService := service.NewDictService(dictModule)
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
-	smsCampaignService := service.NewSmsCampaignService(smsCampaignModule, memberModule)
+	smsCampaignService := service.NewSmsCampaignService(smsCampaignModule, memberModule, memberTagModule)
+	memberTagService := service.NewMemberTagService(memberTagModule)
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule, dictModule)
 	storeAccountService := service.NewStoreAccountService(storeAccountModule, inventoryModule, supplierProductModule, productUnitSpecModule, storeModule, memberModule, userModule, dictModule, b2bModule, dingTalkService, dingTalkBotModule, messageTemplateService, imageGeneratorService)
@@ -186,38 +189,39 @@ func BuildControllers() *Controllers {
 	}
 
 	return &Controllers{
-		User:              controller.NewUserController(userService),
-		Store:             controller.NewStoreController(storeService),
-		Menu:              controller.NewMenuController(menuService),
-		DingTalkBot:       controller.NewDingTalkBotController(dingTalkService),
-		Supplier:          controller.NewSupplierController(supplierService),
-		SupplierProduct:   controller.NewSupplierProductController(supplierProductService, storeSupplierService),
-		StoreSupplier:     controller.NewStoreSupplierController(storeSupplierService),
-		PurchaseOrder:     controller.NewPurchaseOrderController(purchaseOrderService),
-		Dict:              controller.NewDictController(dictService),
-		Inventory:         controller.NewInventoryController(inventoryService),
-		InventoryLoss:     controller.NewInventoryLossController(inventoryLossService),
-		File:              fileController,
-		Gallery:           galleryController,
-		StoreAccount:      controller.NewStoreAccountController(storeAccountService),
-		StoreExpense:      controller.NewStoreExpenseController(storeExpenseService),
-		StoreReturn:       controller.NewStoreReturnController(storeReturnService),
-		MeituanAI:         controller.NewMeituanAIController(meituanAIService),
-		Statistics:        controller.NewStatisticsController(statisticsService),
-		MessageTemplate:   controller.NewMessageTemplateController(messageTemplateService),
-		SmsCampaign:       controller.NewSmsCampaignController(smsCampaignService),
-		Member:            controller.NewMemberController(memberService),
-		Printer:           controller.NewPrinterController(printerService),
-		PriceList:         controller.NewPriceListController(priceListService),
-		B2B:               controller.NewB2BController(b2bService),
-		PreOrder:          controller.NewPreOrderController(preOrderService),
-		ThirdPartyAccount: controller.NewThirdPartyAccountController(thirdPartyAccountService),
-		ThirdPartyRoute:   controller.NewThirdPartyRouteController(thirdPartyRouteService),
-		AuditLog:          controller.NewAuditLogController(auditLogService),
-		DailyTurnover:     controller.NewDailyTurnoverController(dailyTurnoverService),
-		DingTalkBotModule: dingTalkBotModule,
-		PrinterService:    printerService,
-		PreOrderService:   preOrderService,
+		User:               controller.NewUserController(userService),
+		Store:              controller.NewStoreController(storeService),
+		Menu:               controller.NewMenuController(menuService),
+		DingTalkBot:        controller.NewDingTalkBotController(dingTalkService),
+		Supplier:           controller.NewSupplierController(supplierService),
+		SupplierProduct:    controller.NewSupplierProductController(supplierProductService, storeSupplierService),
+		StoreSupplier:      controller.NewStoreSupplierController(storeSupplierService),
+		PurchaseOrder:      controller.NewPurchaseOrderController(purchaseOrderService),
+		Dict:               controller.NewDictController(dictService),
+		Inventory:          controller.NewInventoryController(inventoryService),
+		InventoryLoss:      controller.NewInventoryLossController(inventoryLossService),
+		File:               fileController,
+		Gallery:            galleryController,
+		StoreAccount:       controller.NewStoreAccountController(storeAccountService),
+		StoreExpense:       controller.NewStoreExpenseController(storeExpenseService),
+		StoreReturn:        controller.NewStoreReturnController(storeReturnService),
+		MeituanAI:          controller.NewMeituanAIController(meituanAIService),
+		Statistics:         controller.NewStatisticsController(statisticsService),
+		MessageTemplate:    controller.NewMessageTemplateController(messageTemplateService),
+		SmsCampaign:        controller.NewSmsCampaignController(smsCampaignService),
+		MemberTag:          controller.NewMemberTagController(memberTagService),
+		Member:             controller.NewMemberController(memberService),
+		Printer:            controller.NewPrinterController(printerService),
+		PriceList:          controller.NewPriceListController(priceListService),
+		B2B:                controller.NewB2BController(b2bService),
+		PreOrder:           controller.NewPreOrderController(preOrderService),
+		ThirdPartyAccount:  controller.NewThirdPartyAccountController(thirdPartyAccountService),
+		ThirdPartyRoute:    controller.NewThirdPartyRouteController(thirdPartyRouteService),
+		AuditLog:           controller.NewAuditLogController(auditLogService),
+		DailyTurnover:      controller.NewDailyTurnoverController(dailyTurnoverService),
+		DingTalkBotModule:  dingTalkBotModule,
+		PrinterService:     printerService,
+		PreOrderService:    preOrderService,
 		GalleryService:     galleryService,
 		SmsCampaignService: smsCampaignService,
 	}

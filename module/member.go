@@ -134,7 +134,12 @@ func (m *MemberModule) DeleteMember(id uint, storeID uint, isAdmin bool) error {
 	if err != nil {
 		return err
 	}
-	return m.db.Delete(&model.Member{}, member.ID).Error
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("member_id = ? AND store_id = ?", member.ID, member.StoreID).Delete(&model.MemberTagBinding{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.Member{}, member.ID).Error
+	})
 }
 
 // GetMember 获取会员
@@ -1065,7 +1070,7 @@ func (m *MemberModule) ListSMSRecipients(storeIDs []uint, scopedStoreID uint, is
 		q = q.Where("store_id = ?", scopedStoreID)
 	}
 	var members []model.Member
-	if err := q.Find(&members).Error; err != nil {
+	if err := q.Order("id ASC").Find(&members).Error; err != nil {
 		return nil, err
 	}
 	out := make([]MemberSMSRecipient, 0, len(members))

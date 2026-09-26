@@ -13,7 +13,7 @@ import (
 )
 
 const migrationVersionFile = ".migration_version"
-const currentMigrationVersion = "3"
+const currentMigrationVersion = "4"
 
 // autoMigrateModels 与下方 AutoMigrate 顺序一致；shouldSkipMigration 会校验每张表均存在后才允许跳过。
 var autoMigrateModels = []interface{}{
@@ -55,6 +55,8 @@ var autoMigrateModels = []interface{}{
 	&model.DingTalkUser{},
 	&model.MessageTemplate{},
 	&model.Member{},
+	&model.MemberTag{},
+	&model.MemberTagBinding{},
 	&model.MemberPointRule{},
 	&model.WalletLog{},
 	&model.RechargeOrder{},
@@ -74,6 +76,7 @@ var autoMigrateModels = []interface{}{
 	&model.ThirdPartyLogisticsSheet{},
 	&model.AuditLog{},
 	&model.SmsCampaign{},
+	&model.SmsCampaignSegment{},
 	&model.SmsSendRecord{},
 }
 
@@ -106,6 +109,10 @@ func AutoMigrateAndSeeds() {
 			return
 		}
 	}
+	if err := backfillSmsCampaignOwners(); err != nil {
+		logging.LogError("短信推广归属门店回填失败", zap.Error(err))
+		return
+	}
 	logging.LogInfo("数据表迁移完成")
 
 	if err := database.CreateOptimizedIndexes(database.GetDB()); err != nil {
@@ -116,6 +123,20 @@ func AutoMigrateAndSeeds() {
 	markMigrationComplete()
 
 	logging.LogInfo("数据表迁移完成，种子数据将按初始化版本执行")
+}
+
+// backfillSmsCampaignOwners keeps campaigns created by store-bound users from
+// becoming HQ-global when owner_store_id is introduced. Campaigns created by
+// unbound HQ users intentionally remain owner_store_id=0.
+func backfillSmsCampaignOwners() error {
+	db := database.GetDB()
+	if db == nil || !db.Migrator().HasTable(&model.SmsCampaign{}) || !db.Migrator().HasColumn(&model.SmsCampaign{}, "owner_store_id") {
+		return nil
+	}
+	return db.Exec(`UPDATE sms_campaigns AS c
+		INNER JOIN users AS u ON u.id = c.created_by
+		SET c.owner_store_id = u.store_id
+		WHERE c.owner_store_id = 0 AND u.store_id > 0`).Error
 }
 
 func ensureStoreAccountCompatibilityColumns() error {
@@ -213,7 +234,16 @@ func shouldSkipMigration() bool {
 		return false
 	}
 
-	if !migrator.HasTable(&model.SmsCampaign{}) || !migrator.HasTable(&model.SmsSendRecord{}) {
+	if !migrator.HasTable(&model.MemberTag{}) || !migrator.HasTable(&model.MemberTagBinding{}) ||
+		!migrator.HasTable(&model.SmsCampaign{}) || !migrator.HasTable(&model.SmsCampaignSegment{}) ||
+		!migrator.HasTable(&model.SmsSendRecord{}) ||
+		!migrator.HasColumn(&model.MemberTag{}, "store_id") ||
+		!migrator.HasColumn(&model.MemberTagBinding{}, "member_id") ||
+		!migrator.HasColumn(&model.MemberTagBinding{}, "tag_id") ||
+		!migrator.HasColumn(&model.SmsCampaign{}, "owner_store_id") ||
+		!migrator.HasColumn(&model.SmsCampaignSegment{}, "tag_ids") ||
+		!migrator.HasColumn(&model.SmsCampaignSegment{}, "template_code") ||
+		!migrator.HasColumn(&model.SmsSendRecord{}, "segment_id") {
 		return false
 	}
 

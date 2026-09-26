@@ -7,7 +7,7 @@ import (
 
 func RegisterSmsCampaignRoutes(r *gin.RouterGroup, c *Controllers) {
 	group := r.Group("/sms-campaigns")
-	group.Use(middleware.AuthMiddleware())
+	group.Use(middleware.AuthMiddleware(), middleware.StoreBusinessGuard())
 	{
 		group.GET("/config", middleware.Permission("marketing:sms:list"), c.SmsCampaign.Config)
 		group.GET("", middleware.Permission("marketing:sms:list"), c.SmsCampaign.List)

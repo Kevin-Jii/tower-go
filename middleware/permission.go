@@ -8,6 +8,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// HasPermission checks one permission using the same rules/cache as the route middleware.
+func HasPermission(c *gin.Context, code string) (bool, error) {
+	if GetRoleCode(c) == model.RoleCodeSuperAdmin || HQUnboundAdmin(c) {
+		return true, nil
+	}
+	userID, storeID, roleID, roleCode := GetUserID(c), GetStoreID(c), GetRoleID(c), GetRoleCode(c)
+	if userID == 0 || roleID == 0 {
+		return false, nil
+	}
+	perms, err := service.GetUserPermissionCodes(userID, storeID, roleID, roleCode)
+	if err != nil {
+		return false, err
+	}
+	for _, permission := range perms {
+		if permission == code {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // Permission 按权限码进行接口鉴权
 func Permission(code string) gin.HandlerFunc {
 	return func(c *gin.Context) {

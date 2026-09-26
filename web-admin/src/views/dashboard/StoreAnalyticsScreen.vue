@@ -923,6 +923,7 @@ onBeforeUnmount(() => {
 .dash-periods,
 .dash-range-control,
 .dash-icon-button,
+.dash-admin-button,
 .dash-export-button,
 .dash-live-status,
 .dash-panel-heading,
@@ -935,6 +936,9 @@ onBeforeUnmount(() => {
 }
 
 .dash-header {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
   justify-content: space-between;
   gap: 18px;
   min-height: 42px;
@@ -1101,6 +1105,8 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   color: #d8e6fa;
   background: rgba(8, 24, 50, 0.84);
+  flex-shrink: 0;
+  white-space: nowrap;
   transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
 }
 
@@ -2175,10 +2181,14 @@ onBeforeUnmount(() => {
     overflow: visible;
   }
 
+  .dash-screen--fullscreen {
+    height: 100dvh;
+  }
+
   .dash-screen__content {
     height: auto;
     min-height: 100dvh;
-    padding: 12px;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
     overflow: visible;
   }
 

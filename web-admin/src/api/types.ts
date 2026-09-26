@@ -192,10 +192,29 @@ export interface SmsServiceConfig {
   help_url: string
   template_hint: string
   max_batch_phones: number
+  timezone: string
+  send_window_start: string
+  send_window_end: string
+  send_window_end_exclusive: boolean
+}
+
+export interface SmsCampaignSegment {
+  id?: number
+  campaign_id?: number
+  position?: number
+  tag_ids: number[]
+  sign: string
+  template: string
+  params: string
+  personalize: boolean
+  default: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface SmsCampaign {
   id: number
+  owner_store_id: number
   name: string
   campaign_type: 'activity' | 'holiday' | string
   sign_name?: string
@@ -215,16 +234,53 @@ export interface SmsCampaign {
   created_by?: number
   created_at?: string
   updated_at?: string
+  segments?: SmsCampaignSegment[]
+}
+
+export interface SmsCampaignPayload {
+  owner_store_id?: number
+  name: string
+  campaign_type: 'activity' | 'holiday'
+  sign_name?: string
+  template_code?: string
+  template_param?: string
+  personalize_name?: boolean
+  target_type: 'all_members' | 'stores' | 'custom'
+  store_ids: number[]
+  custom_phones: string[]
+  scheduled_at?: string | null
+  clear_scheduled_at?: boolean
+  segments: Array<Pick<SmsCampaignSegment, 'tag_ids' | 'sign' | 'template' | 'params' | 'personalize' | 'default'>>
 }
 
 export interface SmsSendRecord {
   id: number
   campaign_id: number
+  segment_id?: number | null
   phone: string
   member_id?: number | null
   biz_id?: string
   status: string
   error_message?: string
+  created_at?: string
+}
+
+export interface MemberTag {
+  id: number
+  store_id: number
+  name: string
+  color?: string
+  description?: string
+  member_count: number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface MemberTagBinding {
+  id: number
+  store_id: number
+  member_id: number
+  tag_id: number
   created_at?: string
 }
 

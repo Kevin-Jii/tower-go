@@ -68,7 +68,7 @@ func (s *StoreSmsConfigService) Upsert(storeID uint, req *model.UpsertStoreSmsCo
 	return s.toResp(row, false), nil
 }
 
-// TestConnection 用提供的密钥（不写库）发起一次阿里云模板查询，验证可用性。
+// TestConnection 用提供的密钥（不写库）查询签名列表，验证认证与短信 API 权限。
 func (s *StoreSmsConfigService) TestConnection(req *model.StoreSmsConfigTestReq) (string, error) {
 	if strings.TrimSpace(req.AccessKeyID) == "" || strings.TrimSpace(req.AccessKeySecret) == "" {
 		return "", errors.New("请填写 AccessKey ID 与 Secret")
@@ -86,13 +86,10 @@ func (s *StoreSmsConfigService) TestConnection(req *model.StoreSmsConfigTestReq)
 	if err != nil {
 		return "", err
 	}
-	// 用 QuerySmsTemplateList 查询任意模板（拉取一页即可），错误包含阿里云侧原因。
-	snap, err := client.GetTemplate("")
-	if err == nil && snap != nil {
-		// GetTemplate 找不到模板会返回 TemplateCode 空，不视为失败。
-		return "OK：AccessKey 已通过阿里云认证。", nil
+	if _, err := client.ListSignatures(); err != nil {
+		return "", err
 	}
-	return "连通性测试：" + err.Error(), nil
+	return "OK：AccessKey 已通过阿里云认证并具备短信签名查询权限。", nil
 }
 
 func (s *StoreSmsConfigService) toResp(row *model.StoreSmsConfig, includePlainSecret bool) *model.StoreSmsConfigResp {

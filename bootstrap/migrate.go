@@ -13,7 +13,7 @@ import (
 )
 
 const migrationVersionFile = ".migration_version"
-const currentMigrationVersion = "4"
+const currentMigrationVersion = "5"
 
 // autoMigrateModels 与下方 AutoMigrate 顺序一致；shouldSkipMigration 会校验每张表均存在后才允许跳过。
 var autoMigrateModels = []interface{}{
@@ -78,6 +78,8 @@ var autoMigrateModels = []interface{}{
 	&model.SmsCampaign{},
 	&model.SmsCampaignSegment{},
 	&model.SmsSendRecord{},
+	&model.AliyunSmsTemplate{},
+	&model.StoreSmsConfig{},
 }
 
 func AutoMigrateAndSeeds() {
@@ -113,8 +115,16 @@ func AutoMigrateAndSeeds() {
 		logging.LogError("短信推广归属门店回填失败", zap.Error(err))
 		return
 	}
+	if err := backfillAliyunSmsTemplateOwners(); err != nil {
+		logging.LogError("阿里云短信模板归属门店回填失败", zap.Error(err))
+		return
+	}
 	if err := ensureStoreSmsConfigCompatibilityColumns(); err != nil {
 		logging.LogError("门店短信配置兼容列补齐失败", zap.Error(err))
+		return
+	}
+	if err := ensureAliyunSmsTemplateIndexes(); err != nil {
+		logging.LogError("阿里云短信模板索引迁移失败", zap.Error(err))
 		return
 	}
 	logging.LogInfo("数据表迁移完成")
@@ -143,7 +153,44 @@ func backfillSmsCampaignOwners() error {
 		WHERE c.owner_store_id = 0 AND u.store_id > 0`).Error
 }
 
-// ensureStoreSmsConfigCompatibilityColumns 为 store_sms_configs 补齐历史环境下缺失的列。
+// backfillAliyunSmsTemplateOwners assigns legacy rows to the creator's store
+// when that creator was store-bound. Templates created by HQ remain global.
+func backfillAliyunSmsTemplateOwners() error {
+	db := database.GetDB()
+	if db == nil || !db.Migrator().HasTable(&model.AliyunSmsTemplate{}) || !db.Migrator().HasColumn(&model.AliyunSmsTemplate{}, "owner_store_id") {
+		return nil
+	}
+	return db.Exec(`UPDATE aliyun_sms_templates AS t
+		INNER JOIN users AS u ON u.id = t.source_created_by
+		SET t.owner_store_id = u.store_id
+		WHERE t.owner_store_id = 0 AND u.store_id > 0`).Error
+}
+
+func ensureAliyunSmsTemplateIndexes() error {
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+	migrator := db.Migrator()
+	row := &model.AliyunSmsTemplate{}
+	if !migrator.HasTable(row) {
+		return nil
+	}
+	// The old schema made template_code globally unique. Codes belong to an
+	// Aliyun account, so uniqueness must include the owning store/account.
+	if migrator.HasIndex(row, "idx_aliyun_sms_templates_template_code") {
+		if err := migrator.DropIndex(row, "idx_aliyun_sms_templates_template_code"); err != nil {
+			return fmt.Errorf("drop legacy template code index: %w", err)
+		}
+	}
+	if !migrator.HasIndex(row, "uk_aliyun_sms_templates_store_code") {
+		if err := migrator.CreateIndex(row, "uk_aliyun_sms_templates_store_code"); err != nil {
+			return fmt.Errorf("create store template code index: %w", err)
+		}
+	}
+	return nil
+}
+
 func ensureStoreSmsConfigCompatibilityColumns() error {
 	db := database.GetDB()
 	if db == nil {
@@ -271,6 +318,8 @@ func shouldSkipMigration() bool {
 		!migrator.HasTable(&model.SmsCampaign{}) || !migrator.HasTable(&model.SmsCampaignSegment{}) ||
 		!migrator.HasTable(&model.SmsSendRecord{}) ||
 		!migrator.HasTable(&model.AliyunSmsTemplate{}) ||
+		!migrator.HasColumn(&model.AliyunSmsTemplate{}, "owner_store_id") ||
+		!migrator.HasIndex(&model.AliyunSmsTemplate{}, "uk_aliyun_sms_templates_store_code") ||
 		!migrator.HasTable(&model.StoreSmsConfig{}) ||
 		!migrator.HasColumn(&model.StoreSmsConfig{}, "access_key_secret_cipher") ||
 		!migrator.HasColumn(&model.MemberTag{}, "store_id") ||

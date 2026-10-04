@@ -282,8 +282,19 @@ export interface UpsertStoreSmsConfigReq {
   send_window_end?: string
 }
 
+export interface AliyunSmsSignature {
+  sign_name: string
+  audit_status: string
+  business_type?: string
+  order_id?: string
+  reason?: string
+  authorization_letter_id?: string
+  create_date?: string
+}
+
 export interface AliyunSmsTemplate {
   id: number
+  owner_store_id: number
   template_code: string
   name: string
   content: string

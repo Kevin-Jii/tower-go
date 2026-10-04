@@ -6,7 +6,8 @@ import "time"
 // 实际审核状态以阿里云为准；本表缓存 TemplateCode、Name、Content、Type、最近一次拉取的审核结果。
 type AliyunSmsTemplate struct {
 	ID              uint      `json:"id" gorm:"primaryKey;autoIncrement"`
-	TemplateCode    string    `json:"template_code" gorm:"type:varchar(64);uniqueIndex;not null"`
+	OwnerStoreID    uint      `json:"owner_store_id" gorm:"not null;default:0;index;uniqueIndex:uk_aliyun_sms_templates_store_code;comment:归属门店，0=总部全局账号"`
+	TemplateCode    string    `json:"template_code" gorm:"type:varchar(64);not null;uniqueIndex:uk_aliyun_sms_templates_store_code"`
 	Name            string    `json:"name" gorm:"type:varchar(120);not null"`
 	Content         string    `json:"content" gorm:"type:text;not null"`
 	TemplateType    int32     `json:"template_type" gorm:"not null;default:1;comment:0=验证码 1=通知 2=推广 3=国际"`
@@ -41,11 +42,6 @@ type CreateAliyunSmsTemplateReq struct {
 	RelatedSign  string `json:"related_sign" binding:"max=64"`
 	Remark       string `json:"remark" binding:"max=500"`
 	OwnerStoreID uint   `json:"owner_store_id"`
-}
-
-type ListAliyunSmsTemplateReq struct {
-	Keyword     string `form:"keyword"`
-	AuditStatus string `form:"audit_status"`
 }
 
 type RefreshAliyunSmsTemplateReq struct {

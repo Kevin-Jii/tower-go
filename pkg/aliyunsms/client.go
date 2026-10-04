@@ -108,7 +108,70 @@ func (c *Client) Send(phones []string, signName, templateCode, templateParam str
 	return teaStringValue(resp.Body.BizId), nil
 }
 
-// TemplateSnapshot describes an Aliyun SMS template as returned by GetSmsTemplate.
+// SignatureSnapshot describes an Aliyun SMS signature entry.
+type SignatureSnapshot struct {
+	SignName              string `json:"sign_name"`
+	AuditStatus           string `json:"audit_status"` // AUDIT_STATE_INIT / AUDIT_STATE_PASS / AUDIT_STATE_NOT_PASS / AUDIT_STATE_CANCEL
+	BusinessType          string `json:"business_type"`
+	OrderID               string `json:"order_id"`
+	Reason                string `json:"reason"`
+	AuthorizationLetterID string `json:"authorization_letter_id"`
+	CreateDate            string `json:"create_date"`
+}
+
+// ListSignatures pages through Aliyun's QuerySmsSignList. PageSize is capped at 50 by Aliyun.
+func (c *Client) ListSignatures() ([]SignatureSnapshot, error) {
+	if !c.Enabled() {
+		return nil, fmt.Errorf("阿里云短信未配置或未启用")
+	}
+	pageSize := int32(50)
+	page := int32(1)
+	out := make([]SignatureSnapshot, 0, 32)
+	for {
+		resp, err := c.inner.QuerySmsSignList(&dysmsapi.QuerySmsSignListRequest{PageIndex: &page, PageSize: &pageSize})
+		if err != nil {
+			return nil, fmt.Errorf("查询签名列表失败: %w", err)
+		}
+		if resp == nil || resp.Body == nil {
+			return nil, fmt.Errorf("查询签名列表接口无响应")
+		}
+		if code := teaStringValue(resp.Body.Code); code != "OK" {
+			return nil, fmt.Errorf("查询签名列表失败: %s (%s)", teaStringValue(resp.Body.Message), code)
+		}
+		for _, row := range resp.Body.SmsSignList {
+			if row == nil {
+				continue
+			}
+			snap := SignatureSnapshot{
+				SignName:     teaStringValue(row.SignName),
+				AuditStatus:  teaStringValue(row.AuditStatus),
+				BusinessType: teaStringValue(row.BusinessType),
+				OrderID:      teaStringValue(row.OrderId),
+				CreateDate:   teaStringValue(row.CreateDate),
+			}
+			if row.Reason != nil {
+				snap.Reason = teaStringValue(row.Reason.RejectInfo)
+			}
+			if row.AuthorizationLetterId != nil {
+				snap.AuthorizationLetterID = teaStringValue(row.AuthorizationLetterId)
+			}
+			out = append(out, snap)
+		}
+		count := len(resp.Body.SmsSignList)
+		total := int64(0)
+		if resp.Body.TotalCount != nil {
+			total = *resp.Body.TotalCount
+		}
+		// A short page always terminates the scan. TotalCount is used only when
+		// it is positive, avoiding an unnecessary extra request at exact page boundaries.
+		if count < int(pageSize) || (total > 0 && int64(page)*int64(pageSize) >= total) {
+			break
+		}
+		page++
+	}
+	return out, nil
+}
+
 type TemplateSnapshot struct {
 	TemplateCode    string
 	TemplateName    string

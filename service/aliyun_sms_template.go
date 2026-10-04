@@ -4,58 +4,103 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/model"
-	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/aliyunsms"
 )
 
-type AliyunSmsTemplateService struct {
-	module         *module.AliyunSmsTemplateModule
-	client         *aliyunsms.Client
-	storeSmsConfig *StoreSmsConfigService
+// AliyunSmsClient is the narrow provider contract needed by template management.
+// Keeping the generated Aliyun SDK behind this interface makes the business service testable.
+type AliyunSmsClient interface {
+	CreateTemplate(name, content, relatedSign, remark string, templateType int32) (string, error)
+	GetTemplate(templateCode string) (*aliyunsms.TemplateSnapshot, error)
+	DeleteTemplate(templateCode string) error
+	ListSignatures() ([]aliyunsms.SignatureSnapshot, error)
 }
 
-func NewAliyunSmsTemplateService(m *module.AliyunSmsTemplateModule) *AliyunSmsTemplateService {
-	cfg := config.GetAliyunSMSConfig()
-	client, err := aliyunsms.NewClient(aliyunsms.Config{
-		AccessKeyID:     cfg.AccessKeyID,
-		AccessKeySecret: cfg.AccessKeySecret,
-		RegionID:        cfg.RegionID,
-		SignName:        cfg.SignName,
-		Enabled:         cfg.Enabled,
-	})
-	if err != nil {
-		client = nil
-	}
-	return &AliyunSmsTemplateService{module: m, client: client, storeSmsConfig: nil}
+type AliyunSmsClientResolver interface {
+	Resolve(storeID uint) (AliyunSmsClient, error)
 }
 
-// SetStoreSmsConfigService 注入门店独立 SMS 配置服务，用于按门店客户端调用模板 API。
-func (s *AliyunSmsTemplateService) SetStoreSmsConfigService(svc *StoreSmsConfigService) {
-	s.storeSmsConfig = svc
+type effectiveAliyunSmsClientResolver struct {
+	storeConfig *StoreSmsConfigService
+	fallback    *aliyunsms.Client
 }
 
-func (s *AliyunSmsTemplateService) resolveClient(storeID uint) (*aliyunsms.Client, error) {
-	if s.storeSmsConfig != nil {
-		ctx, err := s.storeSmsConfig.ResolveEffectiveContext(storeID)
-		if err == nil && ctx != nil && ctx.Client != nil {
+func NewAliyunSmsClientResolver(storeConfig *StoreSmsConfigService, fallback *aliyunsms.Client) AliyunSmsClientResolver {
+	return &effectiveAliyunSmsClientResolver{storeConfig: storeConfig, fallback: fallback}
+}
+
+func (r *effectiveAliyunSmsClientResolver) Resolve(storeID uint) (AliyunSmsClient, error) {
+	if r.storeConfig != nil && storeID > 0 {
+		ctx, err := r.storeConfig.ResolveEffectiveContext(storeID)
+		if err != nil {
+			return nil, err
+		}
+		if ctx != nil && ctx.Client != nil {
 			return ctx.Client, nil
 		}
 	}
-	if s.client != nil && s.client.Enabled() {
-		return s.client, nil
+	if r.fallback != nil && r.fallback.Enabled() {
+		return r.fallback, nil
 	}
 	return nil, errors.New("未配置可用的阿里云短信凭证：请在会员推广 → 基础设置 中为本门店配置")
 }
 
-func (s *AliyunSmsTemplateService) List(keyword, auditStatus string) ([]model.AliyunSmsTemplate, error) {
-	return s.module.List(keyword, auditStatus)
+type AliyunSmsTemplateRepository interface {
+	List(storeID uint, allStores bool, keyword, auditStatus string) ([]model.AliyunSmsTemplate, error)
+	GetByCode(code string, storeID uint, allStores bool) (*model.AliyunSmsTemplate, error)
+	ExistsByName(name string, storeID uint) (bool, error)
+	Upsert(row *model.AliyunSmsTemplate) error
+	Delete(row *model.AliyunSmsTemplate) error
 }
 
-func (s *AliyunSmsTemplateService) Create(req *model.CreateAliyunSmsTemplateReq, createdBy uint) (*model.AliyunSmsTemplate, error) {
-	storeID := req.OwnerStoreID
+type AliyunSmsTemplateService struct {
+	repository AliyunSmsTemplateRepository
+	resolver   AliyunSmsClientResolver
+}
+
+func NewAliyunSmsTemplateService(repository AliyunSmsTemplateRepository, resolver AliyunSmsClientResolver) *AliyunSmsTemplateService {
+	return &AliyunSmsTemplateService{repository: repository, resolver: resolver}
+}
+
+func (s *AliyunSmsTemplateService) resolveClient(storeID uint) (AliyunSmsClient, error) {
+	if s.resolver == nil {
+		return nil, errors.New("阿里云短信客户端解析器未配置")
+	}
+	return s.resolver.Resolve(storeID)
+}
+
+func (s *AliyunSmsTemplateService) List(storeID uint, allStores bool, keyword, auditStatus string) ([]model.AliyunSmsTemplate, error) {
+	return s.repository.List(storeID, allStores, keyword, auditStatus)
+}
+
+func (s *AliyunSmsTemplateService) ListApproved(storeID uint, allStores bool) ([]model.AliyunSmsTemplate, error) {
+	return s.repository.List(storeID, allStores, "", model.SmsTemplateAuditApproved)
+}
+
+func (s *AliyunSmsTemplateService) ListSignatures(storeID uint, approvedOnly bool) ([]aliyunsms.SignatureSnapshot, error) {
 	client, err := s.resolveClient(storeID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := client.ListSignatures()
+	if err != nil {
+		return nil, err
+	}
+	if !approvedOnly {
+		return rows, nil
+	}
+	approved := make([]aliyunsms.SignatureSnapshot, 0, len(rows))
+	for _, row := range rows {
+		if row.AuditStatus == "AUDIT_STATE_PASS" || row.AuditStatus == "1" {
+			approved = append(approved, row)
+		}
+	}
+	return approved, nil
+}
+
+func (s *AliyunSmsTemplateService) Create(req *model.CreateAliyunSmsTemplateReq, ownerStoreID, createdBy uint) (*model.AliyunSmsTemplate, error) {
+	client, err := s.resolveClient(ownerStoreID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +111,19 @@ func (s *AliyunSmsTemplateService) Create(req *model.CreateAliyunSmsTemplateReq,
 	if name == "" || content == "" || req.TemplateType == nil {
 		return nil, errors.New("请填写模板名称、内容与类型")
 	}
-	if existing, _ := s.module.GetByCode(""); existing != nil && existing.Name == name {
-		return nil, errors.New("已存在同名模板")
+	exists, err := s.repository.ExistsByName(name, ownerStoreID)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, errors.New("当前门店已存在同名模板")
 	}
 	templateCode, err := client.CreateTemplate(name, content, relatedSign, remark, *req.TemplateType)
 	if err != nil {
 		return nil, err
 	}
 	row := &model.AliyunSmsTemplate{
+		OwnerStoreID:    ownerStoreID,
 		TemplateCode:    templateCode,
 		Name:            name,
 		Content:         content,
@@ -83,18 +133,18 @@ func (s *AliyunSmsTemplateService) Create(req *model.CreateAliyunSmsTemplateReq,
 		AuditStatus:     model.SmsTemplateAuditPending,
 		SourceCreatedBy: createdBy,
 	}
-	if err := s.module.Upsert(row); err != nil {
+	if err := s.repository.Upsert(row); err != nil {
 		return nil, err
 	}
 	return row, nil
 }
 
-func (s *AliyunSmsTemplateService) Refresh(templateCode string) (*model.AliyunSmsTemplate, error) {
-	client, err := s.resolveClient(0)
+func (s *AliyunSmsTemplateService) Refresh(templateCode string, storeID uint, allStores bool) (*model.AliyunSmsTemplate, error) {
+	row, err := s.repository.GetByCode(templateCode, storeID, allStores)
 	if err != nil {
 		return nil, err
 	}
-	row, err := s.module.GetByCode(templateCode)
+	client, err := s.resolveClient(row.OwnerStoreID)
 	if err != nil {
 		return nil, err
 	}
@@ -107,28 +157,27 @@ func (s *AliyunSmsTemplateService) Refresh(templateCode string) (*model.AliyunSm
 	if snap.TemplateContent != "" {
 		row.Content = snap.TemplateContent
 	}
-	if err := s.module.Upsert(row); err != nil {
+	if err := s.repository.Upsert(row); err != nil {
 		return nil, err
 	}
 	return row, nil
 }
 
-func (s *AliyunSmsTemplateService) Delete(templateCode string) error {
-	client, err := s.resolveClient(0)
+func (s *AliyunSmsTemplateService) Delete(templateCode string, storeID uint, allStores bool) error {
+	row, err := s.repository.GetByCode(templateCode, storeID, allStores)
+	if err != nil {
+		return err
+	}
+	client, err := s.resolveClient(row.OwnerStoreID)
 	if err != nil {
 		return err
 	}
 	if err := client.DeleteTemplate(templateCode); err != nil {
 		return err
 	}
-	return s.module.DeleteByCode(templateCode)
+	return s.repository.Delete(row)
 }
 
-func (s *AliyunSmsTemplateService) ListApproved() ([]model.AliyunSmsTemplate, error) {
-	return s.module.List("", model.SmsTemplateAuditApproved)
-}
-
-// mapAliyunAuditStatus converts the Aliyun TemplateStatus string to our local enum.
 func mapAliyunAuditStatus(raw string) string {
 	switch raw {
 	case "0", "AUDIT_STATE_INIT":

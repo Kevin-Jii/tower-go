@@ -9,6 +9,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/controller"
 	"github.com/Kevin-Jii/tower-go/cron"
 	userModulePkg "github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/aliyunsms"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
@@ -140,10 +141,19 @@ func BuildControllers() *Controllers {
 	messageTemplateService := service.NewMessageTemplateService(messageTemplateModule)
 	smsCampaignService := service.NewSmsCampaignService(smsCampaignModule, memberModule, memberTagModule)
 	smsCampaignService.SetStoreModule(storeModule)
-	aliyunSmsTemplateService := service.NewAliyunSmsTemplateService(userModulePkg.NewAliyunSmsTemplateModule(database.DB))
 	storeSmsConfigService := service.NewStoreSmsConfigService(userModulePkg.NewStoreSmsConfigModule(database.DB), storeModule)
+	globalSmsCfg := config.GetAliyunSMSConfig()
+	globalSmsClient, err := aliyunsms.NewClient(aliyunsms.Config{
+		AccessKeyID: globalSmsCfg.AccessKeyID, AccessKeySecret: globalSmsCfg.AccessKeySecret,
+		RegionID: globalSmsCfg.RegionID, SignName: globalSmsCfg.SignName, Enabled: globalSmsCfg.Enabled,
+	})
+	if err != nil {
+		logging.LogWarn("初始化全局阿里云短信客户端失败: " + err.Error())
+		globalSmsClient = nil
+	}
+	aliyunSmsResolver := service.NewAliyunSmsClientResolver(storeSmsConfigService, globalSmsClient)
+	aliyunSmsTemplateService := service.NewAliyunSmsTemplateService(userModulePkg.NewAliyunSmsTemplateModule(database.DB), aliyunSmsResolver)
 	smsCampaignService.SetStoreSmsConfigService(storeSmsConfigService)
-	aliyunSmsTemplateService.SetStoreSmsConfigService(storeSmsConfigService)
 	memberTagService := service.NewMemberTagService(memberTagModule)
 	inventoryService := service.NewInventoryService(inventoryModule, productUnitSpecModule, userModule, storeModule, supplierProductModule, dingTalkService, dingTalkBotModule, messageTemplateService)
 	inventoryLossService := service.NewInventoryLossService(inventoryLossModule, supplierProductModule, productUnitSpecModule, memberModule, userModule, dictModule)

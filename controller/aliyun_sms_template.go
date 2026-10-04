@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"strings"
+
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/service"
@@ -16,8 +18,27 @@ func NewAliyunSmsTemplateController(s *service.AliyunSmsTemplateService) *Aliyun
 	return &AliyunSmsTemplateController{svc: s}
 }
 
+func templateScope(ctx *gin.Context) (storeID uint, allStores bool) {
+	storeID = middleware.ResolveQueryStoreID(ctx, "store_id")
+	return storeID, middleware.HQUnboundAdmin(ctx) && storeID == 0
+}
+
+// Template codes are unique only inside one Aliyun account. HQ mutations must
+// therefore carry the row owner explicitly, including owner_store_id=0.
+func templateMutationScope(ctx *gin.Context) (storeID uint, ok bool) {
+	if !middleware.HQUnboundAdmin(ctx) {
+		return middleware.GetStoreID(ctx), true
+	}
+	if _, exists := ctx.GetQuery("owner_store_id"); !exists {
+		httpPkg.Error(ctx, 400, "总部操作模板时必须指定 owner_store_id")
+		return 0, false
+	}
+	return middleware.ResolveQueryStoreID(ctx, "owner_store_id"), true
+}
+
 func (c *AliyunSmsTemplateController) List(ctx *gin.Context) {
-	rows, err := c.svc.List(ctx.Query("keyword"), ctx.Query("audit_status"))
+	storeID, allStores := templateScope(ctx)
+	rows, err := c.svc.List(storeID, allStores, ctx.Query("keyword"), ctx.Query("audit_status"))
 	if err != nil {
 		httpPkg.ErrorFrom(ctx, err)
 		return
@@ -26,7 +47,19 @@ func (c *AliyunSmsTemplateController) List(ctx *gin.Context) {
 }
 
 func (c *AliyunSmsTemplateController) ListApproved(ctx *gin.Context) {
-	rows, err := c.svc.ListApproved()
+	storeID, allStores := templateScope(ctx)
+	rows, err := c.svc.ListApproved(storeID, allStores)
+	if err != nil {
+		httpPkg.ErrorFrom(ctx, err)
+		return
+	}
+	httpPkg.Success(ctx, rows)
+}
+
+func (c *AliyunSmsTemplateController) ListSignatures(ctx *gin.Context) {
+	storeID, _ := templateScope(ctx)
+	approvedOnly := strings.TrimSpace(ctx.Query("approved_only")) != "false"
+	rows, err := c.svc.ListSignatures(storeID, approvedOnly)
 	if err != nil {
 		httpPkg.ErrorFrom(ctx, err)
 		return
@@ -39,7 +72,11 @@ func (c *AliyunSmsTemplateController) Create(ctx *gin.Context) {
 	if !httpPkg.BindJSON(ctx, &req) {
 		return
 	}
-	row, err := c.svc.Create(&req, middleware.GetUserID(ctx))
+	ownerStoreID := middleware.ResolveQueryStoreID(ctx, "store_id")
+	if middleware.HQUnboundAdmin(ctx) && req.OwnerStoreID > 0 {
+		ownerStoreID = req.OwnerStoreID
+	}
+	row, err := c.svc.Create(&req, ownerStoreID, middleware.GetUserID(ctx))
 	if err != nil {
 		httpPkg.ErrorFrom(ctx, err)
 		return
@@ -52,7 +89,11 @@ func (c *AliyunSmsTemplateController) Refresh(ctx *gin.Context) {
 	if !httpPkg.BindJSON(ctx, &req) {
 		return
 	}
-	row, err := c.svc.Refresh(req.TemplateCode)
+	storeID, ok := templateMutationScope(ctx)
+	if !ok {
+		return
+	}
+	row, err := c.svc.Refresh(req.TemplateCode, storeID, false)
 	if err != nil {
 		httpPkg.ErrorFrom(ctx, err)
 		return
@@ -66,7 +107,11 @@ func (c *AliyunSmsTemplateController) Delete(ctx *gin.Context) {
 		httpPkg.Error(ctx, 400, "缺少模板 CODE")
 		return
 	}
-	if err := c.svc.Delete(code); err != nil {
+	storeID, ok := templateMutationScope(ctx)
+	if !ok {
+		return
+	}
+	if err := c.svc.Delete(code, storeID, false); err != nil {
 		httpPkg.ErrorFrom(ctx, err)
 		return
 	}

@@ -294,6 +294,9 @@
             提交后阿里云会返回 TemplateCode 并进入审核队列（通常 2 小时内）。审核通过后，模板即可在下方“已审核模板”下拉框中选择使用。
             每个账号每天最多提交 100 次，每次间隔 30 秒。需企业认证后才能创建“推广”类模板。
           </p>
+          <BaseFormItem v-if="!templateEditCode && canChooseOwner" label="所属门店 / 阿里云账号" required>
+            <BaseSelect v-model="templateForm.owner_store_id" :options="ownerStoreOptions" searchable @update:model-value="reloadSignatures" />
+          </BaseFormItem>
           <BaseFormItem v-if="!templateEditCode" label="模板名称" required>
             <BaseInput v-model="templateForm.name" placeholder="如：双十一会员关怀" maxlength="120" />
           </BaseFormItem>
@@ -303,8 +306,15 @@
           <BaseFormItem v-if="!templateEditCode" label="模板内容" required hint="变量用 ${name} 表示，例如：您的会员${name}，${activity}专属福利已上线">
             <BaseTextarea v-model="templateForm.content" :rows="5" maxlength="500" />
           </BaseFormItem>
-          <BaseFormItem v-if="!templateEditCode" label="关联签名（可选）" hint="可不填；关联后阿里云审核更快">
-            <BaseInput v-model="templateForm.related_sign" placeholder="如：您的店铺签名" maxlength="64" />
+          <BaseFormItem v-if="!templateEditCode" label="关联签名（可选）" hint="直接读取当前门店阿里云账号中审核通过的签名；可不填">
+            <BaseSelect
+              v-model="templateForm.related_sign"
+              :options="signatureOptions"
+              :disabled="signatureLoading"
+              :placeholder="signatureLoading ? '正在读取阿里云签名…' : '请选择审核通过的签名'"
+              searchable
+            />
+            <div v-if="signatureError" class="text-xs text-red-500 mt-1">{{ signatureError }}</div>
           </BaseFormItem>
           <BaseFormItem v-if="!templateEditCode" label="申请说明（可选）" hint="建议描述业务场景与示例，审核更快">
             <BaseTextarea v-model="templateForm.remark" :rows="2" maxlength="500" />
@@ -445,6 +455,7 @@ import {
   getSmsCampaign,
   getSmsServiceConfig,
   getStoreSmsConfig,
+  listAliyunSmsSignatures,
   listApprovedSmsTemplates,
   listMemberTagMembers,
   listMemberTags,
@@ -462,6 +473,7 @@ import {
 } from '@/api/smsPromotion'
 import { listAllStores } from '@/api/store'
 import type {
+  AliyunSmsSignature,
   AliyunSmsTemplate,
   MemberRow,
   MemberTag,
@@ -505,8 +517,8 @@ const { data: tagData, isLoading: tagLoading } = useQuery({
   queryFn: () => listMemberTags(currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined),
 })
 const { data: approvedTemplateData } = useQuery({
-  queryKey: ['sms-templates-approved'],
-  queryFn: listApprovedSmsTemplates,
+  queryKey: computed(() => ['sms-templates-approved', currentStoreId.value] as const),
+  queryFn: () => listApprovedSmsTemplates(currentStoreId.value || undefined),
 })
 const approvedTemplates = computed(() => approvedTemplateData.value ?? [])
 const hasApproved = computed(() => approvedTemplates.value.length > 0)
@@ -934,9 +946,18 @@ const templates = ref<AliyunSmsTemplate[]>([])
 const templateKeyword = ref('')
 const templateAuditFilter = ref<'' | 'pending' | 'approved' | 'rejected' | 'cancelled' | 'unknown'>('')
 const templateEditCode = ref('')
+const templateEditStoreID = ref(0)
 const savingTemplate = ref(false)
 const refreshing = ref(false)
+const signatures = ref<AliyunSmsSignature[]>([])
+const signatureLoading = ref(false)
+const signatureError = ref('')
+const signatureOptions = computed<BaseSelectOption[]>(() => signatures.value.map((row) => ({
+  label: row.sign_name,
+  value: row.sign_name,
+})))
 const templateForm = reactive({
+  owner_store_id: 0,
   name: '',
   template_type: 1 as number,
   content: '',
@@ -977,11 +998,30 @@ const templateTypeLabel = (t: number): string => templateTypeOptions.find((o) =>
 
 function resetTemplateForm(): void {
   templateEditCode.value = ''
+  templateEditStoreID.value = 0
+  templateForm.owner_store_id = currentStoreId.value
   templateForm.name = ''
   templateForm.template_type = 1
   templateForm.content = ''
   templateForm.related_sign = config.value?.default_sign_name || ''
   templateForm.remark = ''
+  signatureError.value = ''
+}
+
+async function reloadSignatures(): Promise<void> {
+  signatureLoading.value = true
+  signatureError.value = ''
+  try {
+    signatures.value = await listAliyunSmsSignatures(templateForm.owner_store_id || undefined)
+    if (templateForm.related_sign && !signatures.value.some((row) => row.sign_name === templateForm.related_sign)) {
+      templateForm.related_sign = ''
+    }
+  } catch (error: unknown) {
+    signatures.value = []
+    signatureError.value = error instanceof Error ? error.message : '读取阿里云签名失败'
+  } finally {
+    signatureLoading.value = false
+  }
 }
 
 function openTemplateManager(): void {
@@ -989,13 +1029,14 @@ function openTemplateManager(): void {
   templateKeyword.value = ''
   templateAuditFilter.value = ''
   templateDlg.value = true
-  void reloadTemplates()
+  void Promise.all([reloadTemplates(), reloadSignatures()])
 }
 
 async function reloadTemplates(): Promise<void> {
   templateLoading.value = true
   try {
     templates.value = await listSmsTemplates({
+      store_id: currentStoreId.value || undefined,
       keyword: templateKeyword.value.trim() || undefined,
       audit_status: templateAuditFilter.value || undefined,
     })
@@ -1015,12 +1056,13 @@ async function submitTemplate(): Promise<void> {
   savingTemplate.value = true
   try {
     const row = await createSmsTemplate({
+      owner_store_id: templateForm.owner_store_id || undefined,
       name: templateForm.name.trim(),
       content: templateForm.content.trim(),
       template_type: Number(templateForm.template_type),
       related_sign: templateForm.related_sign.trim() || undefined,
       remark: templateForm.remark.trim() || undefined,
-    })
+    }, templateForm.owner_store_id || undefined)
     toast.success(`已提交阿里云审核，TemplateCode：${row.template_code}`)
     resetTemplateForm()
     await reloadTemplates()
@@ -1036,7 +1078,7 @@ async function refreshTemplate(): Promise<void> {
   if (!templateEditCode.value) return
   refreshing.value = true
   try {
-    await refreshSmsTemplate(templateEditCode.value)
+    await refreshSmsTemplate(templateEditCode.value, templateEditStoreID.value)
     toast.success('已查询阿里云最新审核状态')
     await reloadTemplates()
     await qc.invalidateQueries({ queryKey: ['sms-templates-approved'] })
@@ -1051,7 +1093,7 @@ async function removeTemplate(row: AliyunSmsTemplate): Promise<void> {
   const ok = await confirmDialog({ message: `确认删除模板「${row.name}」（${row.template_code}）？已审核通过的模板阿里云侧可能无法删除。` })
   if (!ok) return
   try {
-    await deleteSmsTemplate(row.template_code)
+    await deleteSmsTemplate(row.template_code, row.owner_store_id)
     toast.success('已删除')
     if (templateEditCode.value === row.template_code) resetTemplateForm()
     await reloadTemplates()
@@ -1063,7 +1105,7 @@ async function removeTemplate(row: AliyunSmsTemplate): Promise<void> {
 
 function templateActions(row: AliyunSmsTemplate): TableRowAction[] {
   return [
-    { label: '查询状态', permission: 'marketing:sms:edit', onClick: () => { templateEditCode.value = row.template_code; templateForm.template_type = row.template_type || 1; templateForm.content = row.content } },
+    { label: '查询状态', permission: 'marketing:sms:edit', onClick: () => { templateEditCode.value = row.template_code; templateEditStoreID.value = row.owner_store_id; templateForm.template_type = row.template_type || 1; templateForm.content = row.content } },
     { label: '删除', permission: 'marketing:sms:delete', danger: true, onClick: () => void removeTemplate(row) },
   ]
 }

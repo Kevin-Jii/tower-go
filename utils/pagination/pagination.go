@@ -61,7 +61,7 @@ type PageInfo struct {
 // NewPageInfo 创建分页信息
 func NewPageInfo(list interface{}, total int64, page, pageSize int) *PageInfo {
 	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
-	
+
 	if page < 1 {
 		page = 1
 	}

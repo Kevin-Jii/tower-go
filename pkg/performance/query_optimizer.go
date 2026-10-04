@@ -1,4 +1,4 @@
-﻿package performance
+package performance
 
 import (
 	"fmt"
@@ -11,21 +11,21 @@ import (
 
 // QueryOptimizer 查询优化器
 type QueryOptimizer struct {
-	db             *gorm.DB
-	indexAnalyzer  *IndexAnalyzer
+	db               *gorm.DB
+	indexAnalyzer    *IndexAnalyzer
 	joinDeduplicator *JoinDeduplicator
-	mu             sync.RWMutex
+	mu               sync.RWMutex
 }
 
 // QueryAnalysisResult 查询分析结果
 type QueryAnalysisResult struct {
-	Query            string
-	Issues           []QueryIssue
-	Recommendations  []string
-	EstimatedCost    float64
-	IndexUsage       IndexUsage
-	JoinCount        int
-	WhereClauses     []string
+	Query           string
+	Issues          []QueryIssue
+	Recommendations []string
+	EstimatedCost   float64
+	IndexUsage      IndexUsage
+	JoinCount       int
+	WhereClauses    []string
 }
 
 // QueryIssue 查询问题
@@ -42,13 +42,13 @@ type IssueType string
 
 const (
 	IssueTypeMissingIndex     IssueType = "missing_index"
-	IssueTypeNoWhereClause   IssueType = "no_where_clause"
-	IssueTypeSelectAll       IssueType = "select_all"
-	IssueTypeNPlusOne        IssueType = "n_plus_one"
-	IssueTypeDuplicateJoin   IssueType = "duplicate_join"
+	IssueTypeNoWhereClause    IssueType = "no_where_clause"
+	IssueTypeSelectAll        IssueType = "select_all"
+	IssueTypeNPlusOne         IssueType = "n_plus_one"
+	IssueTypeDuplicateJoin    IssueType = "duplicate_join"
 	IssueTypeOffsetPagination IssueType = "offset_pagination"
-	IssueTypeFullTableScan   IssueType = "full_table_scan"
-	IssueTypeLikePrefix      IssueType = "like_prefix"
+	IssueTypeFullTableScan    IssueType = "full_table_scan"
+	IssueTypeLikePrefix       IssueType = "like_prefix"
 )
 
 // Severity 严重程度
@@ -56,9 +56,9 @@ type Severity string
 
 const (
 	SeverityCritical Severity = "critical"
-	SeverityHigh      Severity = "high"
-	SeverityMedium    Severity = "medium"
-	SeverityLow       Severity = "low"
+	SeverityHigh     Severity = "high"
+	SeverityMedium   Severity = "medium"
+	SeverityLow      Severity = "low"
 )
 
 // IndexUsage 索引使用情况
@@ -114,10 +114,10 @@ func (ia *IndexAnalyzer) AnalyzeIndexUsage(table string, whereColumns []string) 
 	}
 
 	commonPatterns := map[string][]string{
-		"store_id":    {"idx_store_id", "store_id"},
-		"created_at":  {"idx_created_at", "created_at"},
+		"store_id":     {"idx_store_id", "store_id"},
+		"created_at":   {"idx_created_at", "created_at"},
 		"account_date": {"idx_account_date", "account_date"},
-		"product_id":  {"idx_product_id", "product_id"},
+		"product_id":   {"idx_product_id", "product_id"},
 	}
 
 	for _, col := range whereColumns {
@@ -135,8 +135,8 @@ func (ia *IndexAnalyzer) AnalyzeIndexUsage(table string, whereColumns []string) 
 // NewQueryOptimizer 创建查询优化器
 func NewQueryOptimizer(db *gorm.DB) *QueryOptimizer {
 	return &QueryOptimizer{
-		db:              db,
-		indexAnalyzer:   NewIndexAnalyzer(db),
+		db:               db,
+		indexAnalyzer:    NewIndexAnalyzer(db),
 		joinDeduplicator: NewJoinDeduplicator(),
 	}
 }

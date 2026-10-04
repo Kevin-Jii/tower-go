@@ -669,6 +669,16 @@ INSERT INTO role_menus (role_id, menu_id, permissions)
 SELECT 3, menu_id, permissions FROM role_menus WHERE role_id = 2
 ON DUPLICATE KEY UPDATE permissions = VALUES(permissions);
 
+-- 为现有定制门店权限（store_role_menus）补齐新菜单（会员推广）；未定制门店权限时仍走 role_menus 默认值。
+INSERT INTO store_role_menus (store_id, role_id, menu_id, permissions)
+SELECT srm.store_id, srm.role_id, m.id, 15
+FROM store_role_menus srm
+INNER JOIN menus m
+  ON m.parent_id = (SELECT id FROM menus WHERE parent_id=0 AND name='store' AND type=1 ORDER BY id LIMIT 1)
+ AND m.name = 'store-sms-promotion'
+WHERE NOT EXISTS (SELECT 1 FROM store_role_menus srm2 WHERE srm2.store_id = srm.store_id AND srm2.role_id = srm.role_id AND srm2.menu_id = m.id)
+ON DUPLICATE KEY UPDATE permissions = 15;
+
 -- ============================================
 -- 演示模拟数据（供应商 / 分类 / 商品 / 门店绑定 / 库存 / 会员）
 -- 依赖：stores 已有 id=1、2；与业务种子独立，按编码/手机号幂等

@@ -13,15 +13,15 @@ const (
 // Printer 打印机表
 type Printer struct {
 	ID            uint        `json:"id" gorm:"primarykey"`
-	StoreID       uint        `json:"store_id" gorm:"index;not null"`                  // 关联门店ID
-	Sn            string      `json:"sn" gorm:"uniqueIndex;type:varchar(32)"`         // 打印机SN号
-	Name          string      `json:"name" gorm:"type:varchar(100)"`                  // 打印机名称
-	Type          PrinterType `json:"type" gorm:"default:1"`                          // 打印机类型：1=小票，2=标签
-	Status        int         `json:"status" gorm:"default:1"`                        // 状态：1=正常，2=停用
-	IsDefault     int         `json:"is_default" gorm:"default:0"`                    // 是否为默认打印机：0=否，1=是
-	Online        int         `json:"online" gorm:"default:0"`                        // 在线状态：0=离线，1=在线，2=异常
-	LastHeartbeat *time.Time  `json:"last_heartbeat,omitempty" gorm:"type:datetime"`  // 最后心跳时间（可为空）
-	Remark        string      `json:"remark" gorm:"type:text"`                        // 备注
+	StoreID       uint        `json:"store_id" gorm:"index;not null"`                // 关联门店ID
+	Sn            string      `json:"sn" gorm:"uniqueIndex;type:varchar(32)"`        // 打印机SN号
+	Name          string      `json:"name" gorm:"type:varchar(100)"`                 // 打印机名称
+	Type          PrinterType `json:"type" gorm:"default:1"`                         // 打印机类型：1=小票，2=标签
+	Status        int         `json:"status" gorm:"default:1"`                       // 状态：1=正常，2=停用
+	IsDefault     int         `json:"is_default" gorm:"default:0"`                   // 是否为默认打印机：0=否，1=是
+	Online        int         `json:"online" gorm:"default:0"`                       // 在线状态：0=离线，1=在线，2=异常
+	LastHeartbeat *time.Time  `json:"last_heartbeat,omitempty" gorm:"type:datetime"` // 最后心跳时间（可为空）
+	Remark        string      `json:"remark" gorm:"type:text"`                       // 备注
 	CreatedAt     time.Time   `json:"created_at"`
 	UpdatedAt     time.Time   `json:"updated_at"`
 }
@@ -72,7 +72,7 @@ type PrinterResp struct {
 	Status        int        `json:"status"`
 	StatusName    string     `json:"status_name"`
 	IsDefault     int        `json:"is_default"`
-	Online        int        `json:"online"`               // 在线状态：0=离线，1=在线，2=异常
+	Online        int        `json:"online"`                   // 在线状态：0=离线，1=在线，2=异常
 	LastHeartbeat *time.Time `json:"last_heartbeat,omitempty"` // 最后心跳时间
 	Remark        string     `json:"remark"`
 	CreatedAt     time.Time  `json:"created_at"`

@@ -26,7 +26,7 @@ func validatePhone(fl validator.FieldLevel) bool {
 	if len(phone) != 11 {
 		return false
 	}
-	
+
 	// 中国手机号正则
 	pattern := `^1[3-9]\d{9}$`
 	matched, _ := regexp.MatchString(pattern, phone)
@@ -36,27 +36,27 @@ func validatePhone(fl validator.FieldLevel) bool {
 // validatePassword 验证密码强度
 func validatePassword(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
-	
+
 	if len(password) < 6 {
 		return false
 	}
-	
+
 	// 至少包含字母和数字
 	hasLetter := regexp.MustCompile(`[a-zA-Z]`).MatchString(password)
 	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
-	
+
 	return hasLetter && hasNumber
 }
 
 // validateEmployeeNo 验证工号
 func validateEmployeeNo(fl validator.FieldLevel) bool {
 	no := fl.Field().String()
-	
+
 	// 工号必须是6位数字
 	if len(no) != 6 {
 		return false
 	}
-	
+
 	_, err := strconv.Atoi(no)
 	return err == nil
 }
@@ -74,7 +74,7 @@ func FormatValidationErrors(err error) ValidationErrors {
 		for _, fieldError := range validationErrors {
 			fieldName := fieldError.Field()
 			tag := fieldError.Tag()
-			
+
 			switch tag {
 			case "required":
 				errors[fieldName] = fieldName + "是必填的"
@@ -103,10 +103,10 @@ func FormatValidationErrors(err error) ValidationErrors {
 func SanitizeInput(input string) string {
 	// 移除首尾空格
 	input = strings.TrimSpace(input)
-	
+
 	// 移除特殊字符（防止 SQL 注入和 XSS）
 	input = regexp.MustCompile(`[<>""'\\]`).ReplaceAllString(input, "")
-	
+
 	return input
 }
 
@@ -115,7 +115,7 @@ func ValidatePhone(phone string) bool {
 	if len(phone) != 11 {
 		return false
 	}
-	
+
 	pattern := `^1[3-9]\d{9}$`
 	matched, _ := regexp.MatchString(pattern, phone)
 	return matched
@@ -133,25 +133,33 @@ func ValidatePasswordStrength(password string) (bool, string) {
 	if len(password) < 6 {
 		return false, "密码长度不能小于6位"
 	}
-	
+
 	if len(password) > 32 {
 		return false, "密码长度不能大于32位"
 	}
-	
+
 	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
 	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)
 	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
 	hasSpecial := regexp.MustCompile(`[!@#$%^&*(),.?":{}|<>]`).MatchString(password)
-	
+
 	strength := 0
-	if hasUpper { strength++ }
-	if hasLower { strength++ }
-	if hasNumber { strength++ }
-	if hasSpecial { strength++ }
-	
+	if hasUpper {
+		strength++
+	}
+	if hasLower {
+		strength++
+	}
+	if hasNumber {
+		strength++
+	}
+	if hasSpecial {
+		strength++
+	}
+
 	if strength < 2 {
 		return false, "密码必须包含字母和数字，建议包含特殊字符"
 	}
-	
+
 	return true, ""
 }

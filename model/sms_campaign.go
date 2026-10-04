@@ -177,4 +177,5 @@ type SmsServiceConfigResp struct {
 	SendWindowStart        string `json:"send_window_start"`
 	SendWindowEnd          string `json:"send_window_end"`
 	SendWindowEndExclusive bool   `json:"send_window_end_exclusive"`
+	QualificationHint      string `json:"qualification_hint,omitempty"`
 }

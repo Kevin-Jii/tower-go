@@ -1,8 +1,8 @@
 package model
 
 import (
-	"strconv"
 	"github.com/Kevin-Jii/tower-go/pkg/xpyun/util"
+	"strconv"
 )
 
 // RestRequest 基础请求结构

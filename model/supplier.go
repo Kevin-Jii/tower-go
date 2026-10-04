@@ -29,12 +29,12 @@ func (Supplier) TableName() string {
 
 // CreateSupplierReq 创建供应商请求
 type CreateSupplierReq struct {
-	SupplierName    string `json:"supplier_name" binding:"required,max=200"`         // 供应商名称
-	ContactPerson   string `json:"contact_person" binding:"max=100"`                 // 联系人
-	ContactPhone    string `json:"contact_phone" binding:"max=20"`                   // 联系电话
-	ContactEmail    string `json:"contact_email" binding:"omitempty,max=100,email"`  // 联系邮箱
-	SupplierAddress string `json:"supplier_address" binding:"max=500"`               // 地址
-	Remark          string `json:"remark"`                                           // 备注
+	SupplierName    string `json:"supplier_name" binding:"required,max=200"`        // 供应商名称
+	ContactPerson   string `json:"contact_person" binding:"max=100"`                // 联系人
+	ContactPhone    string `json:"contact_phone" binding:"max=20"`                  // 联系电话
+	ContactEmail    string `json:"contact_email" binding:"omitempty,max=100,email"` // 联系邮箱
+	SupplierAddress string `json:"supplier_address" binding:"max=500"`              // 地址
+	Remark          string `json:"remark"`                                          // 备注
 }
 
 // UpdateSupplierReq 更新供应商请求

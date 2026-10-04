@@ -57,6 +57,7 @@ export interface Store {
   remark?: string
   third_party_account_id?: number | null
   third_party_account?: ThirdPartyAccount
+  sms_sign_name?: string
   status?: number
   created_at?: string
   updated_at?: string
@@ -196,6 +197,7 @@ export interface SmsServiceConfig {
   send_window_start: string
   send_window_end: string
   send_window_end_exclusive: boolean
+  qualification_hint?: string
 }
 
 export interface SmsCampaignSegment {
@@ -251,6 +253,48 @@ export interface SmsCampaignPayload {
   scheduled_at?: string | null
   clear_scheduled_at?: boolean
   segments: Array<Pick<SmsCampaignSegment, 'tag_ids' | 'sign' | 'template' | 'params' | 'personalize' | 'default'>>
+}
+
+export interface StoreSmsConfig {
+  id: number
+  store_id: number
+  access_key_id: string
+  /** 仅返回掩码，如 LTAI****23AB */
+  access_key_secret: string
+  region_id: string
+  sign_name: string
+  enabled: boolean
+  send_window_start: string
+  send_window_end: string
+  last_tested_at?: string | null
+  last_test_message?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface UpsertStoreSmsConfigReq {
+  access_key_id?: string
+  access_key_secret?: string
+  region_id?: string
+  sign_name?: string
+  enabled?: boolean
+  send_window_start?: string
+  send_window_end?: string
+}
+
+export interface AliyunSmsTemplate {
+  id: number
+  template_code: string
+  name: string
+  content: string
+  template_type: number
+  related_sign?: string
+  remark?: string
+  audit_status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'unknown' | string
+  audit_reason?: string
+  source_created_by?: number
+  created_at?: string
+  updated_at?: string
 }
 
 export interface SmsSendRecord {

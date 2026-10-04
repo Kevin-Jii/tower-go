@@ -1,9 +1,9 @@
 package search
 
 import (
+	"github.com/Kevin-Jii/tower-go/utils/database"
 	"regexp"
 	"strings"
-	"github.com/Kevin-Jii/tower-go/utils/database"
 )
 
 // ApplyMultiTermFuzzy 将原始关键字按空格拆分为多个 term；每个 term 生成一组 (字段 LIKE %term% OR ... OR numericField = term[数字]) 条件，

@@ -2,8 +2,8 @@ package bootstrap
 
 import (
 	"github.com/Kevin-Jii/tower-go/config"
-	"github.com/Kevin-Jii/tower-go/utils/redis"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"github.com/Kevin-Jii/tower-go/utils/redis"
 
 	"go.uber.org/zap"
 )

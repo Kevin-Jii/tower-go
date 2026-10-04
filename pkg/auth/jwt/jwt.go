@@ -10,10 +10,10 @@ import (
 
 // Config JWT配置
 type Config struct {
-	Secret           string        `yaml:"secret" json:"secret"`
-	Expiration       time.Duration `yaml:"expiration" json:"expiration"`
-	Issuer           string        `yaml:"issuer" json:"issuer"`
-	RefreshTokenExp  time.Duration `yaml:"refresh_token_exp" json:"refresh_token_exp"`
+	Secret          string        `yaml:"secret" json:"secret"`
+	Expiration      time.Duration `yaml:"expiration" json:"expiration"`
+	Issuer          string        `yaml:"issuer" json:"issuer"`
+	RefreshTokenExp time.Duration `yaml:"refresh_token_exp" json:"refresh_token_exp"`
 }
 
 // DefaultConfig 返回默认配置
@@ -48,7 +48,7 @@ type Claims struct {
 	RoleCode  string                 `json:"role_code,omitempty"`
 	RoleID    uint                   `json:"role_id,omitempty"`
 	TokenType string                 `json:"token_type,omitempty"` // access, refresh
-	Custom    map[string]interface{} `json:"custom,omitempty"`      // 自定义字段
+	Custom    map[string]interface{} `json:"custom,omitempty"`     // 自定义字段
 	jwt.RegisteredClaims
 }
 

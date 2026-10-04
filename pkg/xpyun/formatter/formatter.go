@@ -2,8 +2,8 @@ package formatter
 
 import (
 	"fmt"
-	"strconv"
 	"github.com/Kevin-Jii/tower-go/pkg/xpyun/util"
+	"strconv"
 )
 
 const ROW_MAX_CHAR_LEN = 32

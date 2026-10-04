@@ -2,10 +2,10 @@ package bootstrap
 
 import (
 	"bytes"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"os"
 	"os/exec"
 	"strings"
-	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"go.uber.org/zap"
 )

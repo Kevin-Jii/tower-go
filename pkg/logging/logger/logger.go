@@ -83,21 +83,21 @@ const (
 
 // Config 日志配置
 type Config struct {
-	Level              Level    `yaml:"level" json:"level"`
-	Encoder            Encoder  `yaml:"encoder" json:"encoder"`
-	FilePath           string   `yaml:"file_path" json:"file_path"`
-	MaxSize            int      `yaml:"max_size" json:"max_size"`
-	MaxBackups         int      `yaml:"max_backups" json:"max_backups"`
-	MaxAge             int      `yaml:"max_age" json:"max_age"`
-	Compress           bool     `yaml:"compress" json:"compress"`
-	Console            bool     `yaml:"console" json:"console"`
-	EnableCaller       bool     `yaml:"enable_caller" json:"enable_caller"`
-	EnableStackTrace   bool     `yaml:"enable_stack_trace" json:"enable_stack_trace"`
-	CallerSkip         int      `yaml:"caller_skip" json:"caller_skip"`
-	TimeFormat         string   `yaml:"time_format" json:"time_format"`
-	OutputPaths        []string `yaml:"output_paths" json:"output_paths"`
-	ErrorOutputPaths   []string `yaml:"error_output_paths" json:"error_output_paths"`
-	InitialFields      map[string]interface{} `yaml:"initial_fields" json:"initial_fields"`
+	Level            Level                  `yaml:"level" json:"level"`
+	Encoder          Encoder                `yaml:"encoder" json:"encoder"`
+	FilePath         string                 `yaml:"file_path" json:"file_path"`
+	MaxSize          int                    `yaml:"max_size" json:"max_size"`
+	MaxBackups       int                    `yaml:"max_backups" json:"max_backups"`
+	MaxAge           int                    `yaml:"max_age" json:"max_age"`
+	Compress         bool                   `yaml:"compress" json:"compress"`
+	Console          bool                   `yaml:"console" json:"console"`
+	EnableCaller     bool                   `yaml:"enable_caller" json:"enable_caller"`
+	EnableStackTrace bool                   `yaml:"enable_stack_trace" json:"enable_stack_trace"`
+	CallerSkip       int                    `yaml:"caller_skip" json:"caller_skip"`
+	TimeFormat       string                 `yaml:"time_format" json:"time_format"`
+	OutputPaths      []string               `yaml:"output_paths" json:"output_paths"`
+	ErrorOutputPaths []string               `yaml:"error_output_paths" json:"error_output_paths"`
+	InitialFields    map[string]interface{} `yaml:"initial_fields" json:"initial_fields"`
 }
 
 // DefaultConfig 返回默认配置
@@ -149,8 +149,8 @@ type ErrorCode struct {
 
 // Logger 日志管理器
 type Logger struct {
-	config       *Config
-	zapLogger    *zap.Logger
+	config        *Config
+	zapLogger     *zap.Logger
 	sugaredLogger *zap.SugaredLogger
 }
 
@@ -450,9 +450,9 @@ func (l *Logger) SetLevel(level Level) {
 func (l *Logger) With(fields ...zap.Field) *Logger {
 	newZapLogger := l.zapLogger.With(fields...)
 	return &Logger{
-		config:         l.config,
-		zapLogger:      newZapLogger,
-		sugaredLogger:  newZapLogger.Sugar(),
+		config:        l.config,
+		zapLogger:     newZapLogger,
+		sugaredLogger: newZapLogger.Sugar(),
 	}
 }
 
@@ -460,9 +460,9 @@ func (l *Logger) With(fields ...zap.Field) *Logger {
 func (l *Logger) Named(name string) *Logger {
 	newZapLogger := l.zapLogger.Named(name)
 	return &Logger{
-		config:         l.config,
-		zapLogger:      newZapLogger,
-		sugaredLogger:  newZapLogger.Sugar(),
+		config:        l.config,
+		zapLogger:     newZapLogger,
+		sugaredLogger: newZapLogger.Sugar(),
 	}
 }
 

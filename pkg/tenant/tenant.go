@@ -3,9 +3,6 @@ package tenant
 import (
 	"context"
 	"errors"
-
-
-
 )
 
 // 上下文 key

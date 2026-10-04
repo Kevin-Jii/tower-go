@@ -2,6 +2,7 @@ package aliyunsms
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
@@ -106,6 +107,103 @@ func (c *Client) Send(phones []string, signName, templateCode, templateParam str
 	}
 	return teaStringValue(resp.Body.BizId), nil
 }
+
+// TemplateSnapshot describes an Aliyun SMS template as returned by GetSmsTemplate.
+type TemplateSnapshot struct {
+	TemplateCode    string
+	TemplateName    string
+	TemplateContent string
+	TemplateType    int32
+	TemplateStatus  string // 0=pending, 1=approved, 2=rejected, 10=cancelled
+	Reason          string
+	CreateDate      string
+}
+
+// CreateTemplate submits a new template to Aliyun and returns its TemplateCode.
+func (c *Client) CreateTemplate(name, content, relatedSign, remark string, templateType int32) (string, error) {
+	if !c.Enabled() {
+		return "", fmt.Errorf("阿里云短信未配置或未启用，请设置 ALIYUN_SMS_ACCESS_KEY_ID、ALIYUN_SMS_ACCESS_KEY_SECRET 与 ALIYUN_SMS_ENABLED=true")
+	}
+	req := &dysmsapi.CreateSmsTemplateRequest{
+		TemplateName:    teaString(name),
+		TemplateContent: teaString(content),
+		TemplateType:    teaInt32(templateType),
+	}
+	if relatedSign = strings.TrimSpace(relatedSign); relatedSign != "" {
+		req.RelatedSignName = teaString(relatedSign)
+	}
+	if remark = strings.TrimSpace(remark); remark != "" {
+		req.Remark = teaString(remark)
+	}
+	resp, err := c.inner.CreateSmsTemplate(req)
+	if err != nil {
+		return "", fmt.Errorf("提交模板失败: %w", err)
+	}
+	if resp == nil || resp.Body == nil {
+		return "", fmt.Errorf("创建模板接口无响应")
+	}
+	if code := teaStringValue(resp.Body.Code); code != "OK" {
+		return "", fmt.Errorf("创建模板失败: %s (%s)", teaStringValue(resp.Body.Message), code)
+	}
+	return teaStringValue(resp.Body.TemplateCode), nil
+}
+
+// GetTemplate queries Aliyun for the current audit status of a template.
+func (c *Client) GetTemplate(templateCode string) (*TemplateSnapshot, error) {
+	if !c.Enabled() {
+		return nil, fmt.Errorf("阿里云短信未配置或未启用")
+	}
+	resp, err := c.inner.GetSmsTemplate(&dysmsapi.GetSmsTemplateRequest{TemplateCode: teaString(templateCode)})
+	if err != nil {
+		return nil, fmt.Errorf("查询模板失败: %w", err)
+	}
+	if resp == nil || resp.Body == nil {
+		return nil, fmt.Errorf("查询模板接口无响应")
+	}
+	if code := teaStringValue(resp.Body.Code); code != "OK" {
+		return nil, fmt.Errorf("查询模板失败: %s (%s)", teaStringValue(resp.Body.Message), code)
+	}
+	snap := &TemplateSnapshot{
+		TemplateCode:    teaStringValue(resp.Body.TemplateCode),
+		TemplateName:    teaStringValue(resp.Body.TemplateName),
+		TemplateContent: teaStringValue(resp.Body.TemplateContent),
+		TemplateStatus:  teaStringValue(resp.Body.TemplateStatus),
+		CreateDate:      teaStringValue(resp.Body.CreateDate),
+	}
+	if resp.Body.TemplateType != nil {
+		if v, err := strconv.Atoi(*resp.Body.TemplateType); err == nil {
+			snap.TemplateType = int32(v)
+		}
+	}
+	if resp.Body.AuditInfo != nil && resp.Body.AuditInfo.RejectInfo != nil {
+		snap.Reason = teaStringValue(resp.Body.AuditInfo.RejectInfo)
+	}
+	if snap.TemplateCode == "" {
+		snap.TemplateCode = templateCode
+	}
+	return snap, nil
+}
+
+// DeleteTemplate removes a template on Aliyun. Approved templates are typically not deletable
+// until the audit period allows; caller should surface the error if it occurs.
+func (c *Client) DeleteTemplate(templateCode string) error {
+	if !c.Enabled() {
+		return fmt.Errorf("阿里云短信未配置或未启用")
+	}
+	resp, err := c.inner.DeleteSmsTemplate(&dysmsapi.DeleteSmsTemplateRequest{TemplateCode: teaString(templateCode)})
+	if err != nil {
+		return fmt.Errorf("删除模板失败: %w", err)
+	}
+	if resp == nil || resp.Body == nil {
+		return fmt.Errorf("删除模板接口无响应")
+	}
+	if code := teaStringValue(resp.Body.Code); code != "OK" {
+		return fmt.Errorf("删除模板失败: %s (%s)", teaStringValue(resp.Body.Message), code)
+	}
+	return nil
+}
+
+func teaInt32(v int32) *int32 { return &v }
 
 func normalizePhones(phones []string) []string {
 	out := make([]string, 0, len(phones))

@@ -33,7 +33,7 @@ const (
 	PermCreate uint8 = 1 << 2 // 0100 = 4  新增权限
 	PermUpdate uint8 = 1 << 1 // 0010 = 2  修改权限
 	PermDelete uint8 = 1 << 0 // 0001 = 1  删除权限
-	PermAll    uint8 = 15      // 1111 = 15 所有权限
+	PermAll    uint8 = 15     // 1111 = 15 所有权限
 )
 
 // HasPermission 检查是否有指定权限

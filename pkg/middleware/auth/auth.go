@@ -5,23 +5,23 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Kevin-Jii/tower-go/pkg/auth/jwt"
 	"github.com/Kevin-Jii/tower-go/pkg/http/response"
+	"github.com/gin-gonic/gin"
 )
 
 // Config 认证中间件配置
 type Config struct {
-	SecretKey              string        `yaml:"secret_key" json:"secret_key"`
-	TokenLookup            string        `yaml:"token_lookup" json:"token_lookup"`             // "header:Authorization", "query:token", "cookie:token"
-	AuthScheme             string        `yaml:"auth_scheme" json:"auth_scheme"`               // "Bearer"
-	TimeFunc               func() time.Time `yaml:"-" json:"-"`                              // 时间函数，便于测试
-	Timeout                time.Duration `yaml:"timeout" json:"timeout"`                     // 请求超时时间
-	MaxRefresh             time.Duration `yaml:"max_refresh" json:"max_refresh"`             // 最大刷新时间
-	IdentityKey            string        `yaml:"identity_key" json:"identity_key"`           // 身份键名
-	IdentityHeaders        []string      `yaml:"identity_headers" json:"identity_headers"`   // 从HTTP头中提取的身份字段
-	SendUnauthorizedHeader bool          `yaml:"send_unauthorized_header" json:"send_unauthorized_header"`
-	UnauthorizedStatusCode int           `yaml:"unauthorized_status_code" json:"unauthorized_status_code"`
+	SecretKey              string           `yaml:"secret_key" json:"secret_key"`
+	TokenLookup            string           `yaml:"token_lookup" json:"token_lookup"`         // "header:Authorization", "query:token", "cookie:token"
+	AuthScheme             string           `yaml:"auth_scheme" json:"auth_scheme"`           // "Bearer"
+	TimeFunc               func() time.Time `yaml:"-" json:"-"`                               // 时间函数，便于测试
+	Timeout                time.Duration    `yaml:"timeout" json:"timeout"`                   // 请求超时时间
+	MaxRefresh             time.Duration    `yaml:"max_refresh" json:"max_refresh"`           // 最大刷新时间
+	IdentityKey            string           `yaml:"identity_key" json:"identity_key"`         // 身份键名
+	IdentityHeaders        []string         `yaml:"identity_headers" json:"identity_headers"` // 从HTTP头中提取的身份字段
+	SendUnauthorizedHeader bool             `yaml:"send_unauthorized_header" json:"send_unauthorized_header"`
+	UnauthorizedStatusCode int              `yaml:"unauthorized_status_code" json:"unauthorized_status_code"`
 }
 
 // DefaultConfig 返回默认配置
@@ -61,9 +61,9 @@ func (c *Config) Validate() error {
 
 // JWTMiddleware JWT认证中间件
 type JWTMiddleware struct {
-	config      *Config
-	jwtManager  *jwt.JWT
-	extractor   TokenExtractor
+	config     *Config
+	jwtManager *jwt.JWT
+	extractor  TokenExtractor
 }
 
 // New 创建JWT认证中间件

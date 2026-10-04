@@ -2,8 +2,8 @@ package batch
 
 import (
 	"fmt"
-	"reflect"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"reflect"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"

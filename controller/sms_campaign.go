@@ -18,7 +18,11 @@ func campaignScope(ctx *gin.Context) (uint, bool) {
 	sid := middleware.ResolveQueryStoreID(ctx, "store_id")
 	return sid, middleware.HQUnboundAdmin(ctx) && sid == 0
 }
-func (c *SmsCampaignController) Config(ctx *gin.Context) { httpPkg.Success(ctx, c.svc.GetConfig()) }
+func (c *SmsCampaignController) Config(ctx *gin.Context) {
+	sid := middleware.ResolveQueryStoreID(ctx, "store_id")
+	fallback := c.svc.GetStoreSignName(sid)
+	httpPkg.Success(ctx, c.svc.GetConfig(sid, fallback))
+}
 func (c *SmsCampaignController) List(ctx *gin.Context) {
 	sid, all := campaignScope(ctx)
 	rows, err := c.svc.List(sid, all)

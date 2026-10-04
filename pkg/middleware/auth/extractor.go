@@ -212,9 +212,9 @@ func (e *ConditionalExtractor) ExtractToken(c *gin.Context) (string, error) {
 
 // FallbackExtractor 回退token提取器
 type FallbackExtractor struct {
-	primary    TokenExtractor
-	secondary  TokenExtractor
-	fallback   TokenExtractor
+	primary   TokenExtractor
+	secondary TokenExtractor
+	fallback  TokenExtractor
 }
 
 // NewFallbackExtractor 创建回退token提取器

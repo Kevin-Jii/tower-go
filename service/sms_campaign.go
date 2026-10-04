@@ -18,10 +18,12 @@ import (
 const smsTimezone = "Asia/Shanghai"
 
 type SmsCampaignService struct {
-	campaignModule *module.SmsCampaignModule
-	memberModule   *module.MemberModule
-	tagModule      *module.MemberTagModule
-	smsClient      *aliyunsms.Client
+	campaignModule    *module.SmsCampaignModule
+	memberModule      *module.MemberModule
+	tagModule         *module.MemberTagModule
+	storeModule       *module.StoreModule
+	storeSmsConfigSvc *StoreSmsConfigService
+	smsClient         *aliyunsms.Client // 全局兑底客户端；多门店时以 storeSmsConfigSvc.ResolveEffectiveContext 为准。
 }
 
 func NewSmsCampaignService(campaignModule *module.SmsCampaignModule, memberModule *module.MemberModule, tagModules ...*module.MemberTagModule) *SmsCampaignService {
@@ -34,13 +36,136 @@ func NewSmsCampaignService(campaignModule *module.SmsCampaignModule, memberModul
 	if len(tagModules) > 0 {
 		tags = tagModules[0]
 	}
-	return &SmsCampaignService{campaignModule: campaignModule, memberModule: memberModule, tagModule: tags, smsClient: client}
+	return &SmsCampaignService{campaignModule: campaignModule, memberModule: memberModule, tagModule: tags, storeModule: nil, storeSmsConfigSvc: nil, smsClient: client}
 }
 
-func (s *SmsCampaignService) GetConfig() model.SmsServiceConfigResp {
-	cfg := config.GetAliyunSMSConfig()
+// SetStoreModule 注入门店模块以读取每个门店的默认短信签名。
+func (s *SmsCampaignService) SetStoreModule(m *module.StoreModule) { s.storeModule = m }
+
+// SetStoreSmsConfigService 注入门店独立 SMS 配置服务。
+func (s *SmsCampaignService) SetStoreSmsConfigService(svc *StoreSmsConfigService) {
+	s.storeSmsConfigSvc = svc
+}
+
+func (s *SmsCampaignService) GetStoreSignName(storeID uint) string {
+	if storeID == 0 || s.storeModule == nil {
+		return ""
+	}
+	store, err := s.storeModule.GetByID(storeID)
+	if err != nil || store == nil {
+		return ""
+	}
+	return strings.TrimSpace(store.SmsSignName)
+}
+
+func (s *SmsCampaignService) GetConfig(storeID uint, fallbackSign string) model.SmsServiceConfigResp {
 	start, end := smsSendWindow()
-	return model.SmsServiceConfigResp{Enabled: s.smsClient != nil && s.smsClient.Enabled(), DefaultSign: cfg.SignName, Region: cfg.RegionID, Configured: cfg.AccessKeyID != "" && cfg.AccessKeySecret != "", HelpURL: "https://help.aliyun.com/zh/sms/getting-started/sms-skill-guide", TemplateHint: "请填写审核通过的阿里云 TemplateCode；变量使用 JSON。排期按中国标准时间执行。", MaxBatchPhones: aliyunsms.MaxPhonesPerRequest, Timezone: smsTimezone, SendWindowStart: start, SendWindowEnd: end, SendWindowEndExclusive: true}
+	region, configured, enabled, accessKeyID, signName := "", false, false, "", strings.TrimSpace(fallbackSign)
+	if s.storeSmsConfigSvc != nil {
+		ctx, _ := s.storeSmsConfigSvc.ResolveEffectiveContext(storeID)
+		if ctx != nil {
+			configured = ctx.AccessKeyID != "" && ctx.AccessKeySecret != ""
+			enabled = configured && ctx.Enabled
+			region = ctx.RegionID
+			accessKeyID = ctx.AccessKeyID
+			if signName == "" {
+				signName = ctx.SignName
+			}
+			if ctx.WindowConfigured {
+				start = ctx.SendWindowStart
+				end = ctx.SendWindowEnd
+			}
+		}
+	}
+	if region == "" {
+		region = config.GetAliyunSMSConfig().RegionID
+	}
+	if !configured {
+		cfg := config.GetAliyunSMSConfig()
+		if region == "" {
+			region = cfg.RegionID
+		}
+		configured = cfg.AccessKeyID != "" && cfg.AccessKeySecret != ""
+		if accessKeyID == "" {
+			accessKeyID = cfg.AccessKeyID
+		}
+		if signName == "" {
+			signName = cfg.SignName
+		}
+	}
+	_ = accessKeyID
+	return model.SmsServiceConfigResp{Enabled: enabled, DefaultSign: signName, Region: region, Configured: configured, HelpURL: "https://help.aliyun.com/zh/sms/getting-started/sms-skill-guide", TemplateHint: "请填写审核通过的阿里云 TemplateCode；变量使用 JSON。排期按中国标准时间执行。", MaxBatchPhones: aliyunsms.MaxPhonesPerRequest, Timezone: smsTimezone, SendWindowStart: start, SendWindowEnd: end, SendWindowEndExclusive: true, QualificationHint: "门店短信资质 ID（阿里云账号级）不会透传；调用 CreateSmsTemplate / SendSms 时阿里云会以你账号下已审核通过的资质为依据。"}
+}
+
+// resolveClient 返回活动归属门店的独立 aliyunsms.Client（创建时不依赖全局兑底）。
+func (s *SmsCampaignService) resolveClient(storeID uint) (*aliyunsms.Client, error) {
+	if s.storeSmsConfigSvc != nil {
+		ctx, err := s.storeSmsConfigSvc.ResolveEffectiveContext(storeID)
+		if err != nil {
+			return nil, err
+		}
+		if ctx.Client != nil {
+			return ctx.Client, nil
+		}
+	}
+	if s.smsClient != nil && s.smsClient.Enabled() {
+		return s.smsClient, nil
+	}
+	return nil, errors.New("未配置可用的阿里云短信凭证：请在会员推广 → 基础设置 中为本门店配置，或在 .env 中保留 ALIYUN_SMS_* 全局兑底")
+}
+
+// resolveWindow 返回当前活动应使用的发送窗口（分钟）。
+func (s *SmsCampaignService) resolveWindow(storeID uint) (startMinute, endMinute int, windowConfigured bool) {
+	if s.storeSmsConfigSvc != nil {
+		ctx, _ := s.storeSmsConfigSvc.ResolveEffectiveContext(storeID)
+		if ctx != nil && ctx.WindowConfigured {
+			if s, e := parseClock(ctx.SendWindowStart); e == nil {
+				startMinute = s
+			}
+			if e, e2 := parseClock(ctx.SendWindowEnd); e2 == nil {
+				endMinute = e
+			}
+			windowConfigured = true
+			return
+		}
+	}
+	start, end := smsSendWindow()
+	if s, e := parseClock(start); e == nil {
+		startMinute = s
+	}
+	if e, e2 := parseClock(end); e2 == nil {
+		endMinute = e
+	}
+	return
+}
+
+// resolveSign returns the SMS signature to use for a campaign's group execution in this order:
+// 1. Segment-level sign_name (per-template override)
+// 2. Campaign-level sign_name (legacy default)
+// 3. Owner store's sms_sign_name (per-store default)
+// 4. Global env default ALIYUN_SMS_SIGN_NAME
+func (s *SmsCampaignService) resolveSign(row *model.SmsCampaign, groupSign string) string {
+	if v := strings.TrimSpace(groupSign); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(row.SignName); v != "" {
+		return v
+	}
+	if row.OwnerStoreID > 0 && s.storeSmsConfigSvc != nil {
+		ctx, _ := s.storeSmsConfigSvc.ResolveEffectiveContext(row.OwnerStoreID)
+		if ctx != nil && strings.TrimSpace(ctx.SignName) != "" {
+			return strings.TrimSpace(ctx.SignName)
+		}
+	}
+	if row.OwnerStoreID > 0 {
+		if store, err := s.storeModule.GetByID(row.OwnerStoreID); err == nil && store != nil && strings.TrimSpace(store.SmsSignName) != "" {
+			return strings.TrimSpace(store.SmsSignName)
+		}
+	}
+	if s.smsClient != nil {
+		return strings.TrimSpace(s.smsClient.DefaultSignName())
+	}
+	return ""
 }
 
 func (s *SmsCampaignService) List(storeID uint, allStores bool) ([]*model.SmsCampaign, error) {
@@ -202,8 +327,8 @@ func (s *SmsCampaignService) SendNow(id, storeID uint, allStores bool) error {
 	if err := s.ensureSendable(row); err != nil {
 		return err
 	}
-	if !s.inSendWindow(time.Now()) {
-		start, end := smsSendWindow()
+	if !s.inSendWindow(row.OwnerStoreID, time.Now()) {
+		start, end := s.windowFor(row.OwnerStoreID)
 		return fmt.Errorf("当前不在短信发送时段（中国时间 %s–%s，结束时间不含）", start, end)
 	}
 	return s.executeCampaign(row)
@@ -215,7 +340,7 @@ func (s *SmsCampaignService) ProcessDueScheduled(now time.Time) error {
 		return err
 	}
 	for _, row := range rows {
-		if !s.inSendWindow(now) {
+		if !s.inSendWindow(row.OwnerStoreID, now) {
 			continue
 		}
 		if err := s.executeCampaign(row); err != nil {
@@ -225,9 +350,27 @@ func (s *SmsCampaignService) ProcessDueScheduled(now time.Time) error {
 	return nil
 }
 
+func (s *SmsCampaignService) windowFor(storeID uint) (string, string) {
+	start, end, custom := s.resolveWindow(storeID)
+	if !custom {
+		return smsSendWindow()
+	}
+	return formatClock(start), formatClock(end)
+}
+
+func formatClock(total int) string {
+	h := total / 60
+	m := total % 60
+	return fmt.Sprintf("%02d:%02d", h, m)
+}
+
 func (s *SmsCampaignService) ensureSendable(row *model.SmsCampaign) error {
-	if s.smsClient == nil || !s.smsClient.Enabled() {
-		return errors.New("阿里云短信未配置，请在环境变量中设置 ALIYUN_SMS_*")
+	client, err := s.resolveClient(row.OwnerStoreID)
+	if err != nil {
+		return err
+	}
+	if !client.Enabled() {
+		return errors.New("阿里云短信未配置，请在会员推广 → 基础设置 中配置门店 SMS 凭证")
 	}
 	switch row.Status {
 	case model.SmsCampaignStatusDraft, model.SmsCampaignStatusScheduled:
@@ -264,20 +407,24 @@ func (s *SmsCampaignService) executeCampaign(row *model.SmsCampaign) error {
 	if err := s.campaignModule.Update(row.ID, map[string]interface{}{"total_count": len(recipients)}, nil); err != nil {
 		return err
 	}
+	client, err := s.resolveClient(row.OwnerStoreID)
+	if err != nil {
+		return err
+	}
 	success, fail, lastErr := 0, 0, ""
 	groups := groupRecipients(recipients)
 	for _, group := range groups {
 		cfg := group.Config
-		sign := cfg.SignName
+		sign := s.resolveSign(row, cfg.SignName)
 		if sign == "" {
-			sign = s.smsClient.DefaultSignName()
+			return errors.New("短信签名为空，请在活动分组、所属门店或 基础设置 中至少配置一个")
 		}
 		if cfg.PersonalizeName {
 			for _, r := range group.Recipients {
 				param, e := mergeTemplateParam(cfg.TemplateParam, map[string]string{"name": displayMemberName(r.Name)})
 				if e == nil {
 					var biz string
-					biz, e = s.smsClient.Send([]string{r.Phone}, sign, cfg.TemplateCode, param)
+					biz, e = client.Send([]string{r.Phone}, sign, cfg.TemplateCode, param)
 					if e == nil {
 						success++
 						s.saveRecord(row.ID, r, biz, model.SmsSendRecordSuccess, "")
@@ -304,7 +451,7 @@ func (s *SmsCampaignService) executeCampaign(row *model.SmsCampaign) error {
 			for j := range chunk {
 				phones[j] = chunk[j].Phone
 			}
-			biz, e := s.smsClient.Send(phones, sign, cfg.TemplateCode, param)
+			biz, e := client.Send(phones, sign, cfg.TemplateCode, param)
 			if e != nil {
 				fail += len(chunk)
 				lastErr = e.Error()
@@ -552,21 +699,19 @@ func (s *SmsCampaignService) normalizeAndValidateSchedule(value, now time.Time) 
 	if !china.After(now.In(loc)) {
 		return time.Time{}, errors.New("计划发送时间必须晚于当前时间")
 	}
-	if !s.inSendWindow(china) {
+	if !s.inSendWindow(0, china) {
 		start, end := smsSendWindow()
 		return time.Time{}, fmt.Errorf("计划发送时间必须在中国时间 %s–%s 之间（结束时间不含）", start, end)
 	}
 	return china.UTC(), nil
 }
-func (s *SmsCampaignService) inSendWindow(value time.Time) bool {
+func (s *SmsCampaignService) inSendWindow(storeID uint, value time.Time) bool {
 	loc, err := time.LoadLocation(smsTimezone)
 	if err != nil {
 		return false
 	}
-	windowStart, windowEnd := smsSendWindow()
-	start, e1 := parseClock(windowStart)
-	end, e2 := parseClock(windowEnd)
-	if e1 != nil || e2 != nil {
+	start, end, custom := s.resolveWindow(storeID)
+	if !custom {
 		start, end = 8*60, 22*60
 	}
 	local := value.In(loc)

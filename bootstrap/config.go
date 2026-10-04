@@ -1,9 +1,9 @@
 package bootstrap
 
 import (
-	"os"
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"os"
 
 	"go.uber.org/zap"
 )

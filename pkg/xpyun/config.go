@@ -86,7 +86,7 @@ func (c *Client) PrintReceipt(sn, content string, copies int) *model.XPYunResp {
 	request.Sn = sn
 	request.Content = content
 	request.Copies = copies
-	request.Mode = 1 // 不检查打印机是否在线
+	request.Mode = 1  // 不检查打印机是否在线
 	request.Voice = 2 // 来单播放模式
 	return service.XpYunPrintWithURL(&request, c.config.BaseURL)
 }

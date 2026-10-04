@@ -36,6 +36,7 @@ func (s *StoreService) CreateStore(req *model.CreateStoreReq) error {
 		ContactPerson:      req.ContactPerson,
 		Remark:             req.Remark,
 		Status:             1, // 默认正常
+		SmsSignName:        req.SmsSignName,
 	}
 	return s.storeModule.Create(store)
 }

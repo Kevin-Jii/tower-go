@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Kevin-Jii/tower-go/service"
+	"github.com/Kevin-Jii/tower-go/utils/cache"
 	"github.com/Kevin-Jii/tower-go/utils/database"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 
@@ -66,6 +68,9 @@ func RunSeedSQL() {
 		logging.LogWarn("种子数据存在失败语句，不写入初始化标记，下次启动将重试")
 		return
 	}
+	// 菜单结构变更后，清除菜单树 + 各角色缓存，避免侧边栏仍看不到新菜单。
+	cache.InvalidateMenuCache()
+	service.InvalidateAllPermissionCache()
 	if err := markInitializationComplete(markerPath, seedDataVersion); err != nil {
 		logging.LogWarn("无法写入种子数据初始化标记", zap.Error(err))
 	}

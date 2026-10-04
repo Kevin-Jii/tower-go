@@ -44,4 +44,3 @@ func StoreBusinessGuard() gin.HandlerFunc {
 		c.Next()
 	}
 }
-

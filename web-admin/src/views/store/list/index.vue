@@ -36,6 +36,7 @@
             <p class="m-0"><span class="text-slate-500"><b>地址：</b></span>{{ row.address || '-' }}</p>
             <p class="m-0"><span class="text-slate-500"><b>第三方账号：</b></span>{{ row.third_party_account?.name || '-' }}
             </p>
+            <p class="m-0"><span class="text-slate-500"><b>默认短信签名：</b></span>{{ row.sms_sign_name || '（未配置）' }}</p>
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
@@ -102,6 +103,9 @@
         </BaseFormItem>
         <BaseFormItem label="备注">
           <BaseTextarea v-model="form.remark" :rows="2" placeholder="可选" />
+        </BaseFormItem>
+        <BaseFormItem label="默认短信签名" hint="阿里云控制台审核通过的签名；活动未填时使用">
+          <BaseInput v-model="form.sms_sign_name" placeholder="如：泰山原浆啤酒浙大紫金港店" maxlength="64" />
         </BaseFormItem>
         <BaseFormItem v-if="isEdit" label="状态">
           <BaseSelect v-model="form.status" :options="[
@@ -282,6 +286,7 @@ const form = reactive({
   business_hours: '',
   contact_person: '',
   remark: '',
+  sms_sign_name: '',
   status: 1,
 })
 
@@ -302,6 +307,7 @@ function openCreate(): void {
   form.business_hours = ''
   form.contact_person = ''
   form.remark = ''
+  form.sms_sign_name = ''
   form.status = 1
   codeDisplay.value = ''
   dlg.value = true
@@ -317,6 +323,7 @@ function openEdit(row: Store): void {
   form.business_hours = row.business_hours ?? ''
   form.contact_person = row.contact_person ?? ''
   form.remark = row.remark ?? ''
+  form.sms_sign_name = row.sms_sign_name ?? ''
   form.status = row.status === 2 ? 2 : 1
   codeDisplay.value = row.store_code != null && String(row.store_code) !== '' ? String(row.store_code) : '-'
   dlg.value = true
@@ -338,6 +345,7 @@ async function save(): Promise<void> {
         business_hours: form.business_hours.trim(),
         contact_person: form.contact_person.trim(),
         remark: form.remark.trim(),
+        sms_sign_name: form.sms_sign_name.trim(),
         status: form.status,
       })
     } else {
@@ -349,6 +357,7 @@ async function save(): Promise<void> {
         business_hours: form.business_hours.trim(),
         contact_person: form.contact_person.trim(),
         remark: form.remark.trim(),
+        sms_sign_name: form.sms_sign_name.trim(),
       })
     }
     toast.success('已保存')

@@ -1,5 +1,8 @@
 import { http, unwrap } from './http'
 import type {
+  StoreSmsConfig,
+  UpsertStoreSmsConfigReq,
+  AliyunSmsTemplate,
   MemberRow,
   MemberTag,
   MemberTagBinding,
@@ -14,6 +17,51 @@ type ApiEnvelope<T> = import('./types').ApiEnvelope<T>
 export async function getSmsServiceConfig(): Promise<SmsServiceConfig> {
   const res = await http.get<ApiEnvelope<SmsServiceConfig>>('/sms-campaigns/config')
   return unwrap(res)
+}
+
+export async function getStoreSmsConfig(storeId?: number): Promise<StoreSmsConfig | null> {
+  const res = await http.get<ApiEnvelope<StoreSmsConfig | null>>('/store-sms-configs', { params: storeId ? { store_id: storeId } : undefined })
+  return unwrap(res)
+}
+
+export async function upsertStoreSmsConfig(body: UpsertStoreSmsConfigReq, storeId?: number): Promise<StoreSmsConfig> {
+  const res = await http.put<ApiEnvelope<StoreSmsConfig>>('/store-sms-configs', body, { params: storeId ? { store_id: storeId } : undefined })
+  return unwrap(res)
+}
+
+export async function testStoreSmsConfig(body: { access_key_id: string; access_key_secret: string; region_id: string }): Promise<{ message: string }> {
+  const res = await http.post<ApiEnvelope<{ message: string }>>('/store-sms-configs/test', body)
+  return unwrap(res)
+}
+
+export async function listSmsTemplates(params?: { keyword?: string; audit_status?: string }): Promise<AliyunSmsTemplate[]> {
+  const res = await http.get<ApiEnvelope<AliyunSmsTemplate[]>>('/sms-templates', { params })
+  return unwrap(res)
+}
+
+export async function listApprovedSmsTemplates(): Promise<AliyunSmsTemplate[]> {
+  const res = await http.get<ApiEnvelope<AliyunSmsTemplate[]>>('/sms-templates/approved')
+  return unwrap(res)
+}
+
+export async function createSmsTemplate(body: {
+  name: string
+  content: string
+  template_type: number
+  related_sign?: string
+  remark?: string
+}): Promise<AliyunSmsTemplate> {
+  const res = await http.post<ApiEnvelope<AliyunSmsTemplate>>('/sms-templates', body)
+  return unwrap(res)
+}
+
+export async function refreshSmsTemplate(templateCode: string): Promise<AliyunSmsTemplate> {
+  const res = await http.post<ApiEnvelope<AliyunSmsTemplate>>('/sms-templates/refresh', { template_code: templateCode })
+  return unwrap(res)
+}
+
+export async function deleteSmsTemplate(templateCode: string): Promise<void> {
+  await http.delete<ApiEnvelope<unknown>>(`/sms-templates/${encodeURIComponent(templateCode)}`)
 }
 
 export async function listSmsCampaigns(params?: { store_id?: number }): Promise<SmsCampaign[]> {

@@ -3,8 +3,8 @@ package context
 import (
 	"time"
 
-	"go.uber.org/zap"
 	"github.com/Kevin-Jii/tower-go/pkg/logging/logger"
+	"go.uber.org/zap"
 )
 
 // LogRequest 记录 HTTP 请求日志

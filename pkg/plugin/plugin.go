@@ -44,10 +44,10 @@ func (c *Context) AddError(err error) {
 
 // Kernel 微内核
 type Kernel struct {
-	plugins  map[string]Plugin
-	order    []string
-	mu       sync.RWMutex
-	started  bool
+	plugins map[string]Plugin
+	order   []string
+	mu      sync.RWMutex
+	started bool
 }
 
 // NewKernel 创建内核

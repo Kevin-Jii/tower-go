@@ -13,24 +13,33 @@
     </div>
 
     <template v-if="tab === 'customers'">
-      <div class="flex flex-wrap items-center gap-2">
-        <BaseInput v-model="customerKeyword" class="w-56" placeholder="客户 / 电话 / 联系人" clearable @enter="reloadCustomers" />
-        <BaseSelect v-model="customerStatus" class="w-32" :options="customerStatusOptions" />
-        <BaseButton variant="primary" @click="reloadCustomers">查询</BaseButton>
-        <BaseButton variant="primary" @click="openCustomerCreate">新增客户</BaseButton>
-      </div>
-      <BaseTable :columns="customerColumns" :data="(customers as unknown) as Record<string, unknown>[]" :loading="customerLoading" min-width="1080px">
-        <template #cell-settlement="{ row }">{{ settlementLabel((row as B2BCustomer).settlement) }}</template>
-        <template #cell-status="{ row }">
-          <a-tag :color="(row as B2BCustomer).status === 1 ? 'green' : 'gray'">{{ (row as B2BCustomer).status === 1 ? '启用' : '停用' }}</a-tag>
-        </template>
-        <template #cell-receivable="{ row }">{{ money((row as B2BCustomer).receivable) }}</template>
-        <template #cell-actions="{ row }">
-          <BaseTableRowActions :actions="customerActions(row as B2BCustomer)" />
-        </template>
-      </BaseTable>
-      <div class="flex justify-end">
-        <BasePagination :page="customerPage" :page-size="customerPageSize" :total="customerTotal" @update:page="(p) => (customerPage = p)" @update:page-size="(s) => (customerPageSize = s)" />
+      <div class="flex min-h-0 flex-1 flex-col gap-3 b2b-tab-pane">
+        <div class="flex flex-wrap items-center gap-2">
+          <BaseInput v-model="customerKeyword" class="w-56" placeholder="客户 / 电话 / 联系人" clearable @enter="reloadCustomers" />
+          <BaseSelect v-model="customerStatus" class="w-32" :options="customerStatusOptions" />
+          <BaseButton variant="primary" @click="reloadCustomers">查询</BaseButton>
+          <BaseButton variant="primary" @click="openCustomerCreate">新增客户</BaseButton>
+        </div>
+        <BaseTable
+          :columns="customerColumns"
+          :data="(customers as unknown) as Record<string, unknown>[]"
+          :loading="customerLoading"
+          min-width="1080px"
+          height="100%"
+          class="min-h-0 flex-1"
+        >
+          <template #cell-settlement="{ row }">{{ settlementLabel((row as B2BCustomer).settlement) }}</template>
+          <template #cell-status="{ row }">
+            <a-tag :color="(row as B2BCustomer).status === 1 ? 'green' : 'gray'">{{ (row as B2BCustomer).status === 1 ? '启用' : '停用' }}</a-tag>
+          </template>
+          <template #cell-receivable="{ row }">{{ money((row as B2BCustomer).receivable) }}</template>
+          <template #cell-actions="{ row }">
+            <BaseTableRowActions :actions="customerActions(row as B2BCustomer)" />
+          </template>
+        </BaseTable>
+        <div class="flex shrink-0 justify-end">
+          <BasePagination :page="customerPage" :page-size="customerPageSize" :total="customerTotal" @update:page="(p) => (customerPage = p)" @update:page-size="(s) => (customerPageSize = s)" />
+        </div>
       </div>
     </template>
 
@@ -151,34 +160,43 @@
     </template>
 
     <template v-else>
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div v-for="item in orderSummary" :key="item.label" class="rounded border border-slate-200 bg-white px-4 py-3">
-          <div class="text-xs font-medium text-slate-500">{{ item.label }}</div>
-          <div class="mt-1 text-lg font-semibold text-slate-900">{{ item.value }}</div>
+      <div class="flex min-h-0 flex-1 flex-col gap-3 b2b-tab-pane">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div v-for="item in orderSummary" :key="item.label" class="rounded border border-slate-200 bg-white px-4 py-3">
+            <div class="text-xs font-medium text-slate-500">{{ item.label }}</div>
+            <div class="mt-1 text-lg font-semibold text-slate-900">{{ item.value }}</div>
+          </div>
         </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <BaseInput v-model="orderKeyword" class="w-52" placeholder="单号 / 客户" clearable @enter="reloadOrders" />
-        <BaseSelect v-model="paymentStatus" class="w-32" :options="paymentStatusOptions" />
-        <BaseInput v-model="startDate" class="w-36" type="date" />
-        <BaseInput v-model="endDate" class="w-36" type="date" />
-        <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
-        <BaseButton variant="secondary" @click="openOrderExportDlg">导出Excel</BaseButton>
-        <BaseButton variant="primary" @click="openOrderCreate">新增供货单</BaseButton>
-      </div>
-      <BaseTable :columns="orderColumns" :data="(orders as unknown) as Record<string, unknown>[]" :loading="orderLoading" min-width="1180px">
-        <template #cell-total_amount="{ row }">{{ money((row as B2BSupplyOrder).total_amount) }}</template>
-        <template #cell-paid_amount="{ row }">{{ money((row as B2BSupplyOrder).paid_amount) }}</template>
-        <template #cell-unpaid_amount="{ row }">{{ money((row as B2BSupplyOrder).unpaid_amount) }}</template>
-        <template #cell-profit_amount="{ row }">{{ money((row as B2BSupplyOrder).profit_amount) }}</template>
-        <template #cell-payment_status="{ row }">{{ paymentStatusLabel((row as B2BSupplyOrder).payment_status) }}</template>
-        <template #cell-delivery_status="{ row }">{{ deliveryStatusLabel((row as B2BSupplyOrder).delivery_status) }}</template>
-        <template #cell-actions="{ row }">
-          <BaseTableRowActions :actions="orderActions(row as B2BSupplyOrder)" :max-inline="3" />
-        </template>
-      </BaseTable>
-      <div class="flex justify-end">
-        <BasePagination :page="orderPage" :page-size="orderPageSize" :total="orderTotal" @update:page="(p) => (orderPage = p)" @update:page-size="(s) => (orderPageSize = s)" />
+        <div class="flex flex-wrap items-center gap-2">
+          <BaseInput v-model="orderKeyword" class="w-52" placeholder="单号 / 客户" clearable @enter="reloadOrders" />
+          <BaseSelect v-model="paymentStatus" class="w-32" :options="paymentStatusOptions" />
+          <BaseInput v-model="startDate" class="w-36" type="date" />
+          <BaseInput v-model="endDate" class="w-36" type="date" />
+          <BaseButton variant="primary" @click="reloadOrders">查询</BaseButton>
+          <BaseButton variant="secondary" @click="openOrderExportDlg">导出Excel</BaseButton>
+          <BaseButton variant="primary" @click="openOrderCreate">新增供货单</BaseButton>
+        </div>
+        <BaseTable
+          :columns="orderColumns"
+          :data="(orders as unknown) as Record<string, unknown>[]"
+          :loading="orderLoading"
+          min-width="1180px"
+          height="100%"
+          class="min-h-0 flex-1"
+        >
+          <template #cell-total_amount="{ row }">{{ money((row as B2BSupplyOrder).total_amount) }}</template>
+          <template #cell-paid_amount="{ row }">{{ money((row as B2BSupplyOrder).paid_amount) }}</template>
+          <template #cell-unpaid_amount="{ row }">{{ money((row as B2BSupplyOrder).unpaid_amount) }}</template>
+          <template #cell-profit_amount="{ row }">{{ money((row as B2BSupplyOrder).profit_amount) }}</template>
+          <template #cell-payment_status="{ row }">{{ paymentStatusLabel((row as B2BSupplyOrder).payment_status) }}</template>
+          <template #cell-delivery_status="{ row }">{{ deliveryStatusLabel((row as B2BSupplyOrder).delivery_status) }}</template>
+          <template #cell-actions="{ row }">
+            <BaseTableRowActions :actions="orderActions(row as B2BSupplyOrder)" :max-inline="3" />
+          </template>
+        </BaseTable>
+        <div class="flex shrink-0 justify-end">
+          <BasePagination :page="orderPage" :page-size="orderPageSize" :total="orderTotal" @update:page="(p) => (orderPage = p)" @update:page-size="(s) => (orderPageSize = s)" />
+        </div>
       </div>
     </template>
 
@@ -1153,7 +1171,8 @@ watch(tab, () => {
 .price-workspace {
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr);
-  min-height: 520px;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--color-border-2);
   border-radius: 8px;
@@ -1161,7 +1180,10 @@ watch(tab, () => {
 }
 
 .price-customer-panel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding: 14px 12px;
   border-right: 1px solid var(--color-border-2);
   background: var(--color-fill-1);
@@ -1171,6 +1193,7 @@ watch(tab, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   min-height: 28px;
   padding: 0 4px;
 }
@@ -1198,15 +1221,17 @@ watch(tab, () => {
 }
 
 .price-customer-search {
+  flex-shrink: 0;
   margin-top: 10px;
 }
 
 .price-customer-list,
 .price-customer-loading {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 3px;
-  max-height: 438px;
+  min-height: 0;
   margin-top: 10px;
   overflow-y: auto;
 }
@@ -1303,12 +1328,16 @@ watch(tab, () => {
 }
 
 .price-config-panel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding: 0 18px 18px;
 }
 
 .price-config-header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -1329,8 +1358,10 @@ watch(tab, () => {
 }
 
 .price-table-scroll {
+  flex: 1;
   min-width: 0;
-  overflow-x: auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .price-table-shell {

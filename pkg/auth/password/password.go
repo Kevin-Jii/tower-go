@@ -49,9 +49,9 @@ type Strength int
 
 const (
 	StrengthWeak   Strength = iota // 弱密码
-	StrengthFair                  // 一般密码
-	StrengthGood                  // 良好密码
-	StrengthStrong                // 强密码
+	StrengthFair                   // 一般密码
+	StrengthGood                   // 良好密码
+	StrengthStrong                 // 强密码
 )
 
 // String 返回强度字符串

@@ -9,6 +9,12 @@
         <BaseButton v-permission="['marketing:sms:add', 'marketing:sms:edit']" variant="secondary" @click="openTagManager">
           标签管理
         </BaseButton>
+        <BaseButton v-permission="['marketing:sms:list', 'marketing:sms:edit']" variant="secondary" @click="openTemplateManager">
+          模板管理
+        </BaseButton>
+        <BaseButton v-permission="['marketing:sms:list', 'marketing:sms:edit']" variant="secondary" @click="openSettings">
+          基础设置
+        </BaseButton>
         <BaseButton v-permission="'marketing:sms:add'" variant="primary" @click="openCreate">
           新建推广
         </BaseButton>
@@ -27,6 +33,7 @@
       时区 {{ config.timezone || 'Asia/Shanghai' }}（UTC+8），允许发送窗口为
       {{ config.send_window_start }}–{{ config.send_window_end }}，结束时刻{{ config.send_window_end_exclusive ? '不包含' : '包含' }}。
       阿里云接口不负责排期，系统将在计划时间到达后执行；请使用审核通过的签名和模板 CODE。
+      当前默认签名：<b>{{ config.default_sign_name || '（未配置，请到门店管理配置 sms_sign_name）' }}</b>。
     </a-alert>
 
     <div class="stats-grid">
@@ -159,7 +166,15 @@
                   <BaseInput v-model="segment.sign" :placeholder="config?.default_sign_name || '系统默认签名'" maxlength="64" />
                 </BaseFormItem>
                 <BaseFormItem label="模板 CODE" required>
-                  <BaseInput v-model="segment.template" placeholder="SMS_123456789" maxlength="64" />
+                  <BaseSelect
+                    v-model="segment.template"
+                    :options="approvedTemplateOption()"
+                    :allow-search="true"
+                    placeholder="可粘贴 CODE 或选择已审核模板"
+                    filterable
+                    allow-create
+                    @update:model-value="(value) => onSegmentTemplatePicked(segment, value)"
+                  />
                 </BaseFormItem>
               </div>
               <BaseFormItem label="模板变量 JSON" hint='例如 {"activity":"会员日"}；变量须与阿里云模板一致'>
@@ -228,6 +243,107 @@
         <template #cell-created_at="{ row }">{{ formatChinaTime((row as SmsSendRecord).created_at) }}</template>
       </BaseTable>
       <template #footer><BaseButton variant="ghost" @click="recordsDlg = false">关闭</BaseButton></template>
+    </BaseDialog>
+
+    <BaseDialog v-model="settingsDlg" title="阿里云短信基础设置" max-width="min(640px, 96vw)">
+      <div class="settings-form">
+        <a-alert v-if="config && !config.configured" type="warning" show-icon class="mb-3">
+          本门店尚未配置阿里云短信凭证。保存后才会调用阿云 API；未配置则发送 / 模板提交都会报错。
+        </a-alert>
+        <a-alert v-else-if="settingsError" type="error" show-icon class="mb-3">
+          {{ settingsError }}
+        </a-alert>
+        <BaseFormItem label="启用短信服务" required>
+          <a-switch v-model="settingsForm.enabled" />
+        </BaseFormItem>
+        <BaseFormItem label="AccessKey ID" required hint="使用阿里云 RAM 子账号 AccessKey（只授予 dysmsapi:SendSms / CreateSmsTemplate 权限）">
+          <BaseInput v-model="settingsForm.access_key_id" placeholder="LTAIxxxxxxxxxxxxxxxx" maxlength="64" />
+        </BaseFormItem>
+        <BaseFormItem label="AccessKey Secret" hint="留空表示不修改现有密钥；只有后端需要，原值不返回前端">
+          <BaseInput v-model="settingsForm.access_key_secret" type="password" placeholder="留空不修改" maxlength="64" />
+        </BaseFormItem>
+        <BaseFormItem label="地域" required>
+          <BaseSelect v-model="settingsForm.region_id" :options="smsRegionOptions" />
+        </BaseFormItem>
+        <BaseFormItem label="默认短信签名" hint="阿里云侧已审核通过的签名名称；活动未填时使用">
+          <BaseInput v-model="settingsForm.sign_name" placeholder="如：泰山原浆啤酒浙大紫金港店" maxlength="64" />
+        </BaseFormItem>
+        <BaseFormItem label="发送窗口（中国时间，可选）" hint="留空用全局 08:00–22:00；结束时间不含">
+          <div class="window-row">
+            <BaseInput v-model="settingsForm.send_window_start" placeholder="08:00" maxlength="5" class="w-24" />
+            <span class="window-dash">–</span>
+            <BaseInput v-model="settingsForm.send_window_end" placeholder="22:00" maxlength="5" class="w-24" />
+          </div>
+        </BaseFormItem>
+        <div v-if="settingsConfig?.last_test_message" class="rounded bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          最近测试：{{ settingsConfig.last_test_message }}
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" :loading="testingConfig" @click="testCurrentConfig">连通性测试</BaseButton>
+        <BaseButton variant="ghost" @click="settingsDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="savingSettings" @click="saveSettings">保存</BaseButton>
+      </template>
+    </BaseDialog>
+
+    <BaseDialog v-model="templateDlg" title="阿里云短信模板管理" max-width="min(1080px, 96vw)">
+      <div class="template-manager">
+        <aside class="template-editor">
+          <h3>{{ templateEditCode ? '查询审核状态' : '新建并提交阿里云审核' }}</h3>
+          <p class="template-hint">
+            提交后阿里云会返回 TemplateCode 并进入审核队列（通常 2 小时内）。审核通过后，模板即可在下方“已审核模板”下拉框中选择使用。
+            每个账号每天最多提交 100 次，每次间隔 30 秒。需企业认证后才能创建“推广”类模板。
+          </p>
+          <BaseFormItem v-if="!templateEditCode" label="模板名称" required>
+            <BaseInput v-model="templateForm.name" placeholder="如：双十一会员关怀" maxlength="120" />
+          </BaseFormItem>
+          <BaseFormItem label="模板类型" required>
+            <BaseSelect v-model="templateForm.template_type" :options="templateTypeOptions" :disabled="Boolean(templateEditCode)" />
+          </BaseFormItem>
+          <BaseFormItem v-if="!templateEditCode" label="模板内容" required hint="变量用 ${name} 表示，例如：您的会员${name}，${activity}专属福利已上线">
+            <BaseTextarea v-model="templateForm.content" :rows="5" maxlength="500" />
+          </BaseFormItem>
+          <BaseFormItem v-if="!templateEditCode" label="关联签名（可选）" hint="可不填；关联后阿里云审核更快">
+            <BaseInput v-model="templateForm.related_sign" placeholder="如：您的店铺签名" maxlength="64" />
+          </BaseFormItem>
+          <BaseFormItem v-if="!templateEditCode" label="申请说明（可选）" hint="建议描述业务场景与示例，审核更快">
+            <BaseTextarea v-model="templateForm.remark" :rows="2" maxlength="500" />
+          </BaseFormItem>
+          <div v-if="templateEditCode" class="editor-actions">
+            <BaseButton variant="ghost" @click="resetTemplateForm">返回新建</BaseButton>
+            <BaseButton v-permission="'marketing:sms:edit'" variant="primary" :loading="refreshing" @click="refreshTemplate">查询审核状态</BaseButton>
+          </div>
+          <div v-else class="editor-actions">
+            <BaseButton variant="ghost" @click="resetTemplateForm">重置</BaseButton>
+            <BaseButton v-permission="'marketing:sms:add'" variant="primary" :loading="savingTemplate" @click="submitTemplate">提交阿里云</BaseButton>
+          </div>
+        </aside>
+
+        <div class="template-list-wrap">
+          <div class="template-list-toolbar">
+            <BaseInput v-model="templateKeyword" placeholder="搜索 名称 / CODE / 内容" clearable @enter="reloadTemplates" />
+            <BaseSelect v-model="templateAuditFilter" :options="templateAuditFilterOptions" class="w-32" />
+            <BaseButton variant="secondary" size="sm" @click="reloadTemplates">查询</BaseButton>
+            <span v-if="!hasApproved" class="text-xs text-[var(--color-text-3)]">尚无审核通过的模板，新建并等待审核通过后可在活动里使用。</span>
+          </div>
+          <BaseTable :columns="templateColumns" :data="(templates as unknown) as Record<string, unknown>[]" :loading="templateLoading" min-width="760px">
+            <template #cell-name="{ row }">
+              <div class="font-medium">{{ (row as AliyunSmsTemplate).name }}</div>
+              <div class="cell-secondary">{{ (row as AliyunSmsTemplate).template_code }}</div>
+            </template>
+            <template #cell-template_type="{ row }">{{ templateTypeLabel((row as AliyunSmsTemplate).template_type) }}</template>
+            <template #cell-audit_status="{ row }">
+              <BaseTag :variant="templateAuditMeta((row as AliyunSmsTemplate).audit_status).variant">
+                {{ templateAuditMeta((row as AliyunSmsTemplate).audit_status).label }}
+              </BaseTag>
+            </template>
+            <template #cell-actions="{ row }">
+              <BaseTableRowActions :actions="templateActions(row as AliyunSmsTemplate)" :max-inline="3" />
+            </template>
+          </BaseTable>
+        </div>
+      </div>
+      <template #footer><BaseButton variant="ghost" @click="templateDlg = false">关闭</BaseButton></template>
     </BaseDialog>
 
     <BaseDialog v-model="tagDlg" title="会员标签管理" max-width="min(980px, 96vw)">
@@ -316,28 +432,37 @@ import {
   BaseTag,
   BaseTextarea,
 } from '@/components/base'
-import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
+import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import {
   bindMemberTag,
   cancelSmsCampaign,
   createMemberTag,
   createSmsCampaign,
+  createSmsTemplate,
   deleteMemberTag,
   deleteSmsCampaign,
+  deleteSmsTemplate,
   getSmsCampaign,
   getSmsServiceConfig,
+  getStoreSmsConfig,
+  listApprovedSmsTemplates,
   listMemberTagMembers,
   listMemberTags,
   listSmsCampaignRecords,
   listSmsCampaigns,
-  sendSmsCampaign,
+  listSmsTemplates,
+  refreshSmsTemplate,
   searchSmsMembers,
+  sendSmsCampaign,
+  testStoreSmsConfig,
   unbindMemberTag,
   updateMemberTag,
   updateSmsCampaign,
+  upsertStoreSmsConfig,
 } from '@/api/smsPromotion'
 import { listAllStores } from '@/api/store'
 import type {
+  AliyunSmsTemplate,
   MemberRow,
   MemberTag,
   SmsCampaign,
@@ -345,6 +470,7 @@ import type {
   SmsCampaignSegment,
   SmsSendRecord,
   Store,
+  StoreSmsConfig,
 } from '@/api/types'
 import { useUserStore } from '@/store/user'
 import { usePermission } from '@/hooks/usePermission'
@@ -377,6 +503,26 @@ const { data: campaignData, isLoading: campaignLoading } = useQuery({
 const { data: tagData, isLoading: tagLoading } = useQuery({
   queryKey: computed(() => ['member-tags', currentStoreId.value] as const),
   queryFn: () => listMemberTags(currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined),
+})
+const { data: approvedTemplateData } = useQuery({
+  queryKey: ['sms-templates-approved'],
+  queryFn: listApprovedSmsTemplates,
+})
+const approvedTemplates = computed(() => approvedTemplateData.value ?? [])
+const hasApproved = computed(() => approvedTemplates.value.length > 0)
+function approvedTemplateOption(): BaseSelectOption[] {
+  return approvedTemplates.value.map((tpl) => ({
+    label: `${tpl.name}（${tpl.template_code}）`,
+    value: tpl.template_code,
+  }))
+}
+
+const storeDefaultSign = computed(() => {
+  const sid = Number(currentStoreId.value || 0)
+  if (!sid) return config.value?.default_sign_name || ''
+  const own = stores.value.find((s) => s.id === sid)
+  if (own && own.sms_sign_name) return own.sms_sign_name
+  return config.value?.default_sign_name || ''
 })
 const { data: storeData } = useQuery({
   queryKey: ['stores', 'sms-promotion'],
@@ -521,6 +667,11 @@ watch(() => form.owner_store_id, (id) => {
   else form.store_ids = form.store_ids.filter((storeId) => stores.value.some((s) => s.id === storeId))
   const valid = new Set(campaignTags.value.map((t) => t.id))
   form.segments.forEach((segment) => { segment.tag_ids = segment.tag_ids.filter((tagId) => valid.has(tagId)) })
+  const own = id > 0 ? stores.value.find((s) => s.id === id) : null
+  const fallback = (own && own.sms_sign_name) || config.value?.default_sign_name || ''
+  if (fallback) {
+    form.segments.forEach((segment) => { if (!segment.sign.trim()) segment.sign = fallback })
+  }
 })
 
 function resetCampaignForm(): void {
@@ -533,7 +684,10 @@ function resetCampaignForm(): void {
   form.custom_phones = ''
   form.send_mode = canSendNow.value ? 'now' : 'draft'
   form.scheduled_at = defaultScheduleTime()
-  form.segments = [emptySegment(true)]
+  form.segments = [{
+    ...emptySegment(true),
+    sign: storeDefaultSign.value || '',
+  }]
 }
 function defaultScheduleTime(): string {
   const now = new Date(Date.now() + 60 * 60 * 1000)
@@ -576,7 +730,7 @@ async function openEdit(row: SmsCampaign): Promise<void> {
       ? sourceSegments.map(toSegmentForm)
       : [{
           ...emptySegment(true),
-          sign: full.sign_name || '',
+          sign: full.sign_name || storeDefaultSign.value || '',
           template: full.template_code || '',
           params: full.template_param || '{}',
           personalize: Boolean(full.personalize_name),
@@ -747,6 +901,261 @@ async function removeCampaign(row: SmsCampaign): Promise<void> {
     toast.error(error instanceof Error ? error.message : '删除失败')
   }
 }
+function onSegmentTemplatePicked(segment: SegmentForm, value: string | number | undefined): void {
+  if (value === undefined || value === null) return
+  const code = String(value)
+  segment.template = code
+  const tpl = approvedTemplates.value.find((item) => item.template_code === code)
+  if (tpl) {
+    const vars = extractTemplateVariables(tpl.content)
+    if (vars.length && !segment.params.trim()) {
+      const obj: Record<string, string> = {}
+      for (const key of vars) obj[key] = segment.personalize && key === 'name' ? '示例' : '示例'
+      segment.params = JSON.stringify(obj, null, 2)
+    }
+    if (!segment.sign.trim() && tpl.related_sign) segment.sign = tpl.related_sign
+  }
+}
+
+function extractTemplateVariables(content: string): string[] {
+  const out = new Set<string>()
+  const regex = /\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g
+  let match = regex.exec(content)
+  while (match) {
+    out.add(match[1])
+    match = regex.exec(content)
+  }
+  return Array.from(out)
+}
+
+const templateDlg = ref(false)
+const templateLoading = ref(false)
+const templates = ref<AliyunSmsTemplate[]>([])
+const templateKeyword = ref('')
+const templateAuditFilter = ref<'' | 'pending' | 'approved' | 'rejected' | 'cancelled' | 'unknown'>('')
+const templateEditCode = ref('')
+const savingTemplate = ref(false)
+const refreshing = ref(false)
+const templateForm = reactive({
+  name: '',
+  template_type: 1 as number,
+  content: '',
+  related_sign: '',
+  remark: '',
+})
+const templateAuditFilterOptions: BaseSelectOption[] = [
+  { label: '全部状态', value: '' },
+  { label: '待审核', value: 'pending' },
+  { label: '已通过', value: 'approved' },
+  { label: '已驳回', value: 'rejected' },
+  { label: '已撤销', value: 'cancelled' },
+]
+const templateTypeOptions: BaseSelectOption[] = [
+  { label: '验证码', value: 0 },
+  { label: '短信通知', value: 1 },
+  { label: '推广短信', value: 2 },
+  { label: '国际/港澳台', value: 3 },
+]
+const templateColumns: BaseTableColumn[] = [
+  { key: 'name', label: '名称 / CODE', minWidth: '200px' },
+  { key: 'template_type', label: '类型', width: '110px' },
+  { key: 'audit_status', label: '审核状态', width: '100px' },
+  { key: 'content', label: '内容预览', prop: 'content', minWidth: '220px', ellipsis: true },
+  { key: 'actions', label: '操作', width: '230px', align: 'right' },
+]
+const templateAuditMeta = (status: string): { label: string; variant: 'success' | 'warning' | 'info' | 'danger' | 'neutral' } => {
+  const map: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'danger' | 'neutral' }> = {
+    approved: { label: '已通过', variant: 'success' },
+    pending: { label: '待审核', variant: 'warning' },
+    rejected: { label: '已驳回', variant: 'danger' },
+    cancelled: { label: '已撤销', variant: 'neutral' },
+    unknown: { label: '未知', variant: 'neutral' },
+  }
+  return map[status] || { label: status || '未知', variant: 'neutral' }
+}
+const templateTypeLabel = (t: number): string => templateTypeOptions.find((o) => o.value === t)?.label || '-'
+
+function resetTemplateForm(): void {
+  templateEditCode.value = ''
+  templateForm.name = ''
+  templateForm.template_type = 1
+  templateForm.content = ''
+  templateForm.related_sign = config.value?.default_sign_name || ''
+  templateForm.remark = ''
+}
+
+function openTemplateManager(): void {
+  resetTemplateForm()
+  templateKeyword.value = ''
+  templateAuditFilter.value = ''
+  templateDlg.value = true
+  void reloadTemplates()
+}
+
+async function reloadTemplates(): Promise<void> {
+  templateLoading.value = true
+  try {
+    templates.value = await listSmsTemplates({
+      keyword: templateKeyword.value.trim() || undefined,
+      audit_status: templateAuditFilter.value || undefined,
+    })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '加载模板失败')
+  } finally {
+    templateLoading.value = false
+  }
+}
+
+async function submitTemplate(): Promise<void> {
+  if (!templateForm.name.trim()) return toast.warning('请填写模板名称')
+  if (!templateForm.content.trim()) return toast.warning('请填写模板内容')
+  if (config.value && !config.value.configured) {
+    return toast.warning('尚未配置阿里云 AccessKey，请先在环境变量中配置')
+  }
+  savingTemplate.value = true
+  try {
+    const row = await createSmsTemplate({
+      name: templateForm.name.trim(),
+      content: templateForm.content.trim(),
+      template_type: Number(templateForm.template_type),
+      related_sign: templateForm.related_sign.trim() || undefined,
+      remark: templateForm.remark.trim() || undefined,
+    })
+    toast.success(`已提交阿里云审核，TemplateCode：${row.template_code}`)
+    resetTemplateForm()
+    await reloadTemplates()
+    await qc.invalidateQueries({ queryKey: ['sms-templates-approved'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '提交模板失败')
+  } finally {
+    savingTemplate.value = false
+  }
+}
+
+async function refreshTemplate(): Promise<void> {
+  if (!templateEditCode.value) return
+  refreshing.value = true
+  try {
+    await refreshSmsTemplate(templateEditCode.value)
+    toast.success('已查询阿里云最新审核状态')
+    await reloadTemplates()
+    await qc.invalidateQueries({ queryKey: ['sms-templates-approved'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '查询审核状态失败')
+  } finally {
+    refreshing.value = false
+  }
+}
+
+async function removeTemplate(row: AliyunSmsTemplate): Promise<void> {
+  const ok = await confirmDialog({ message: `确认删除模板「${row.name}」（${row.template_code}）？已审核通过的模板阿里云侧可能无法删除。` })
+  if (!ok) return
+  try {
+    await deleteSmsTemplate(row.template_code)
+    toast.success('已删除')
+    if (templateEditCode.value === row.template_code) resetTemplateForm()
+    await reloadTemplates()
+    await qc.invalidateQueries({ queryKey: ['sms-templates-approved'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '删除失败')
+  }
+}
+
+function templateActions(row: AliyunSmsTemplate): TableRowAction[] {
+  return [
+    { label: '查询状态', permission: 'marketing:sms:edit', onClick: () => { templateEditCode.value = row.template_code; templateForm.template_type = row.template_type || 1; templateForm.content = row.content } },
+    { label: '删除', permission: 'marketing:sms:delete', danger: true, onClick: () => void removeTemplate(row) },
+  ]
+}
+
+const settingsDlg = ref(false)
+const savingSettings = ref(false)
+const testingConfig = ref(false)
+const settingsError = ref('')
+const settingsConfig = ref<StoreSmsConfig | null>(null)
+const settingsForm = reactive({
+  enabled: false,
+  access_key_id: '',
+  access_key_secret: '',
+  region_id: 'cn-hangzhou',
+  sign_name: '',
+  send_window_start: '',
+  send_window_end: '',
+})
+const smsRegionOptions: BaseSelectOption[] = [
+ { label: 'cn-hangzhou（杭州）', value: 'cn-hangzhou' },
+  { label: 'cn-beijing（北京）', value: 'cn-beijing' },
+  { label: 'cn-shanghai（上海）', value: 'cn-shanghai' },
+  { label: 'cn-shenzhen（深圳）', value: 'cn-shenzhen' },
+  { label: 'ap-southeast-1（香港）', value: 'ap-southeast-1' },
+  { label: 'ap-southeast-5（新加坡）', value: 'ap-southeast-5' },
+]
+
+async function openSettings(): Promise<void> {
+  settingsError.value = ''
+  settingsForm.access_key_secret = ''
+  settingsDlg.value = true
+  try {
+    settingsConfig.value = await getStoreSmsConfig(currentStoreId.value || undefined)
+    settingsForm.enabled = settingsConfig.value?.enabled ?? false
+    settingsForm.access_key_id = settingsConfig.value?.access_key_id ?? ''
+    settingsForm.region_id = settingsConfig.value?.region_id || 'cn-hangzhou'
+    settingsForm.sign_name = settingsConfig.value?.sign_name ?? storeDefaultSign.value
+    settingsForm.send_window_start = settingsConfig.value?.send_window_start ?? ''
+    settingsForm.send_window_end = settingsConfig.value?.send_window_end ?? ''
+  } catch (error: unknown) {
+    settingsError.value = error instanceof Error ? error.message : '加载配置失败'
+  }
+}
+
+async function saveSettings(): Promise<void> {
+  if (settingsForm.enabled) {
+    if (!settingsForm.access_key_id.trim()) return toast.warning('请填写 AccessKey ID')
+    if (!settingsConfig.value && !settingsForm.access_key_secret.trim()) return toast.warning('请填写 AccessKey Secret')
+  }
+  if (settingsForm.send_window_start && !/^\d{2}:\d{2}$/.test(settingsForm.send_window_start)) return toast.warning('发送窗口起点格式为 HH:MM')
+  if (settingsForm.send_window_end && !/^\d{2}:\d{2}$/.test(settingsForm.send_window_end)) return toast.warning('发送窗口终点格式为 HH:MM')
+  savingSettings.value = true
+  try {
+    settingsConfig.value = await upsertStoreSmsConfig({
+      enabled: settingsForm.enabled,
+      access_key_id: settingsForm.access_key_id.trim(),
+      access_key_secret: settingsForm.access_key_secret.trim() || undefined,
+      region_id: settingsForm.region_id,
+      sign_name: settingsForm.sign_name.trim(),
+      send_window_start: settingsForm.send_window_start.trim() || undefined,
+      send_window_end: settingsForm.send_window_end.trim() || undefined,
+    }, currentStoreId.value || undefined)
+    settingsForm.access_key_secret = ''
+    toast.success('已保存')
+    await qc.invalidateQueries({ queryKey: ['sms-config'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '保存失败')
+  } finally {
+    savingSettings.value = false
+  }
+}
+
+async function testCurrentConfig(): Promise<void> {
+  if (!settingsForm.access_key_id.trim()) return toast.warning('请先填写 AccessKey ID')
+  const secret = settingsForm.access_key_secret.trim() || (settingsConfig.value && settingsConfig.value.access_key_secret)
+  if (!secret) return toast.warning('请填写 AccessKey Secret（或先保存一次以便重读现有密文）')
+  testingConfig.value = true
+  try {
+    const result = await testStoreSmsConfig({
+      access_key_id: settingsForm.access_key_id.trim(),
+      access_key_secret: secret,
+      region_id: settingsForm.region_id,
+    })
+    toast.success(result.message || '连通性测试通过')
+    settingsError.value = ''
+  } catch (error: unknown) {
+    settingsError.value = error instanceof Error ? error.message : '连通性测试失败'
+  } finally {
+    testingConfig.value = false
+  }
+}
+
 function campaignActions(row: SmsCampaign): TableRowAction[] {
   const editable = ['draft', 'scheduled'].includes(row.status)
   const sendable = ['draft', 'scheduled'].includes(row.status)
@@ -963,11 +1372,21 @@ async function removeMemberFromTag(member: MemberRow): Promise<void> {
 .member-line:last-child { border-bottom: 0; }
 .member-line small { margin-left: 10px; color: var(--color-text-3); }
 .assigned-head { margin-top: 4px; font-weight: 600; }
+.template-manager { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; max-height: 70vh; overflow-y: auto; }
+.template-editor { padding: 14px; border: 1px solid var(--color-border-2); border-radius: 9px; align-self: start; }
+.template-editor h3 { margin: 0 0 8px; font-size: 15px; }
+.template-hint { margin: 0 0 12px; color: var(--color-text-3); font-size: 12px; line-height: 18px; }
+.template-list-wrap { min-width: 0; }
+.template-list-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.settings-form { display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; padding-right: 4px; }
+.window-row { display: flex; align-items: center; gap: 8px; }
+.window-dash { color: var(--color-text-3); }
+.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 @media (max-width: 760px) {
   .page-head { align-items: stretch; flex-direction: column; }
   .head-actions > * { flex: 1; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .form-grid, .segment-grid, .tag-manager { grid-template-columns: 1fr; }
+  .form-grid, .segment-grid, .tag-manager, .template-manager { grid-template-columns: 1fr; }
   .section-head, .segment-head { flex-direction: column; align-items: stretch; }
   .segment-actions { flex-wrap: wrap; }
   .member-search { grid-template-columns: 1fr; }

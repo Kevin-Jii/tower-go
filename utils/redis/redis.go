@@ -128,21 +128,23 @@ const CachePrefix = "tower:"
 
 // UserCacheKeys 用户相关缓存键
 var UserCacheKeys = struct {
-	UserByID      func(id uint) string
-	UserByPhone   func(phone string) string
-	UserList      func(storeID uint, page int) string
-	StoreByID     func(id uint) string
-	StoreList     string
-	DictByType    func(typeCode string) string
-	MenuByRoleID  func(roleID uint) string
+	UserByID     func(id uint) string
+	UserByPhone  func(phone string) string
+	UserList     func(storeID uint, page int) string
+	StoreByID    func(id uint) string
+	StoreList    string
+	DictByType   func(typeCode string) string
+	MenuByRoleID func(roleID uint) string
 }{
-	UserByID:      func(id uint) string { return fmt.Sprintf("%suser:%d", CachePrefix, id) },
-	UserByPhone:   func(phone string) string { return fmt.Sprintf("%suser:phone:%s", CachePrefix, phone) },
-	UserList:      func(storeID uint, page int) string { return fmt.Sprintf("%suser:list:%d:%d", CachePrefix, storeID, page) },
-	StoreByID:     func(id uint) string { return fmt.Sprintf("%sstore:%d", CachePrefix, id) },
-	StoreList:     fmt.Sprintf("%sstore:list", CachePrefix),
-	DictByType:    func(typeCode string) string { return fmt.Sprintf("%sdict:%s", CachePrefix, typeCode) },
-	MenuByRoleID:  func(roleID uint) string { return fmt.Sprintf("%smenu:%d", CachePrefix, roleID) },
+	UserByID:    func(id uint) string { return fmt.Sprintf("%suser:%d", CachePrefix, id) },
+	UserByPhone: func(phone string) string { return fmt.Sprintf("%suser:phone:%s", CachePrefix, phone) },
+	UserList: func(storeID uint, page int) string {
+		return fmt.Sprintf("%suser:list:%d:%d", CachePrefix, storeID, page)
+	},
+	StoreByID:    func(id uint) string { return fmt.Sprintf("%sstore:%d", CachePrefix, id) },
+	StoreList:    fmt.Sprintf("%sstore:list", CachePrefix),
+	DictByType:   func(typeCode string) string { return fmt.Sprintf("%sdict:%s", CachePrefix, typeCode) },
+	MenuByRoleID: func(roleID uint) string { return fmt.Sprintf("%smenu:%d", CachePrefix, roleID) },
 }
 
 // CacheUser 缓存用户信息

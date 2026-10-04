@@ -1,11 +1,12 @@
 // Package clientsource 约定请求头 X-Client-Source，用于区分调用端（小程序 / H5 / RN / 管理后台等）。
 //
 // 与小程序（Taro）工程约定一致时，典型取值：
-//   weapp   — 微信小程序（TARO_ENV=weapp）
-//   web     — H5（TARO_ENV=h5）
-//   app     — React Native 独立 App（TARO_ENV=rn）
-//   其他    — 其他 Taro 平台可透传 TARO_ENV 字符串
-//   unknown — 未传或空
+//
+//	weapp   — 微信小程序（TARO_ENV=weapp）
+//	web     — H5（TARO_ENV=h5）
+//	app     — React Native 独立 App（TARO_ENV=rn）
+//	其他    — 其他 Taro 平台可透传 TARO_ENV 字符串
+//	unknown — 未传或空
 //
 // 本仓库 web-admin（Vite 浏览器端）默认发送 web-admin，可通过环境变量 VITE_CLIENT_SOURCE 覆盖。
 package clientsource

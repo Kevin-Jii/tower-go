@@ -12,11 +12,11 @@ import (
 type SearchType int
 
 const (
-	SearchTypeExact SearchType = iota // 精确匹配
-	SearchTypePrefix                  // 前缀匹配
-	SearchTypeSuffix                  // 后缀匹配
-	SearchTypeFull                    // 全文匹配
-	SearchTypeRegex                   // 正则匹配
+	SearchTypeExact  SearchType = iota // 精确匹配
+	SearchTypePrefix                   // 前缀匹配
+	SearchTypeSuffix                   // 后缀匹配
+	SearchTypeFull                     // 全文匹配
+	SearchTypeRegex                    // 正则匹配
 )
 
 // String 返回搜索类型的字符串表示
@@ -42,9 +42,9 @@ type Condition struct {
 	Field      string      `json:"field"`
 	Value      interface{} `json:"value"`
 	SearchType SearchType  `json:"search_type"`
-	Weight     float64     `json:"weight"`     // 权重，用于相关性排序
-	Boost      float64     `json:"boost"`      // 提升因子
-	Negated    bool        `json:"negated"`    // 是否取反
+	Weight     float64     `json:"weight"`  // 权重，用于相关性排序
+	Boost      float64     `json:"boost"`   // 提升因子
+	Negated    bool        `json:"negated"` // 是否取反
 }
 
 // Config 搜索优化配置

@@ -113,6 +113,10 @@ func AutoMigrateAndSeeds() {
 		logging.LogError("短信推广归属门店回填失败", zap.Error(err))
 		return
 	}
+	if err := ensureStoreSmsConfigCompatibilityColumns(); err != nil {
+		logging.LogError("门店短信配置兼容列补齐失败", zap.Error(err))
+		return
+	}
 	logging.LogInfo("数据表迁移完成")
 
 	if err := database.CreateOptimizedIndexes(database.GetDB()); err != nil {
@@ -137,6 +141,30 @@ func backfillSmsCampaignOwners() error {
 		INNER JOIN users AS u ON u.id = c.created_by
 		SET c.owner_store_id = u.store_id
 		WHERE c.owner_store_id = 0 AND u.store_id > 0`).Error
+}
+
+// ensureStoreSmsConfigCompatibilityColumns 为 store_sms_configs 补齐历史环境下缺失的列。
+func ensureStoreSmsConfigCompatibilityColumns() error {
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+	migrator := db.Migrator()
+	cfg := &model.StoreSmsConfig{}
+	if !migrator.HasTable(cfg) {
+		return nil
+	}
+	if !migrator.HasColumn(cfg, "send_window_start") {
+		if err := migrator.AddColumn(cfg, "send_window_start"); err != nil {
+			return fmt.Errorf("add store_sms_configs send_window_start: %w", err)
+		}
+	}
+	if !migrator.HasColumn(cfg, "send_window_end") {
+		if err := migrator.AddColumn(cfg, "send_window_end"); err != nil {
+			return fmt.Errorf("add store_sms_configs send_window_end: %w", err)
+		}
+	}
+	return nil
 }
 
 func ensureStoreAccountCompatibilityColumns() error {
@@ -234,9 +262,17 @@ func shouldSkipMigration() bool {
 		return false
 	}
 
+	// stores 表增 sms_sign_name 列
+	if migrator.HasTable(&model.Store{}) && !migrator.HasColumn(&model.Store{}, "sms_sign_name") {
+		return false
+	}
+
 	if !migrator.HasTable(&model.MemberTag{}) || !migrator.HasTable(&model.MemberTagBinding{}) ||
 		!migrator.HasTable(&model.SmsCampaign{}) || !migrator.HasTable(&model.SmsCampaignSegment{}) ||
 		!migrator.HasTable(&model.SmsSendRecord{}) ||
+		!migrator.HasTable(&model.AliyunSmsTemplate{}) ||
+		!migrator.HasTable(&model.StoreSmsConfig{}) ||
+		!migrator.HasColumn(&model.StoreSmsConfig{}, "access_key_secret_cipher") ||
 		!migrator.HasColumn(&model.MemberTag{}, "store_id") ||
 		!migrator.HasColumn(&model.MemberTagBinding{}, "member_id") ||
 		!migrator.HasColumn(&model.MemberTagBinding{}, "tag_id") ||

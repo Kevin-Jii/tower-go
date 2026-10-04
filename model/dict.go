@@ -19,19 +19,19 @@ func (DictType) TableName() string {
 
 // DictData 字典数据
 type DictData struct {
-	ID         uint      `json:"id" gorm:"primaryKey;autoIncrement"`
-	TypeID     uint      `json:"type_id" gorm:"not null;index;comment:字典类型ID"`
-	TypeCode   string    `json:"type_code" gorm:"type:varchar(100);index;not null;comment:字典类型编码"`
-	Label      string    `json:"label" gorm:"type:varchar(100);not null;comment:字典标签"`
-	Value      string    `json:"value" gorm:"type:varchar(100);not null;comment:字典值"`
-	Sort       int       `json:"sort" gorm:"default:0;comment:排序"`
-	CssClass   string    `json:"css_class" gorm:"type:varchar(100);comment:样式类名"`
-	ListClass  string    `json:"list_class" gorm:"type:varchar(100);comment:列表样式(success/info/warning/danger)"`
-	IsDefault  bool      `json:"is_default" gorm:"default:false;comment:是否默认"`
-	Remark     string    `json:"remark" gorm:"type:varchar(500);comment:备注"`
-	Status     int8      `json:"status" gorm:"default:1;comment:状态 1=启用 0=禁用"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+	TypeID    uint      `json:"type_id" gorm:"not null;index;comment:字典类型ID"`
+	TypeCode  string    `json:"type_code" gorm:"type:varchar(100);index;not null;comment:字典类型编码"`
+	Label     string    `json:"label" gorm:"type:varchar(100);not null;comment:字典标签"`
+	Value     string    `json:"value" gorm:"type:varchar(100);not null;comment:字典值"`
+	Sort      int       `json:"sort" gorm:"default:0;comment:排序"`
+	CssClass  string    `json:"css_class" gorm:"type:varchar(100);comment:样式类名"`
+	ListClass string    `json:"list_class" gorm:"type:varchar(100);comment:列表样式(success/info/warning/danger)"`
+	IsDefault bool      `json:"is_default" gorm:"default:false;comment:是否默认"`
+	Remark    string    `json:"remark" gorm:"type:varchar(500);comment:备注"`
+	Status    int8      `json:"status" gorm:"default:1;comment:状态 1=启用 0=禁用"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (DictData) TableName() string {

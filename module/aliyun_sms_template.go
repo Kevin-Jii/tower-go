@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AliyunSmsTemplateModule struct{ db *gorm.DB }
@@ -55,6 +56,17 @@ func (m *AliyunSmsTemplateModule) ExistsByName(name string, storeID uint) (bool,
 
 func (m *AliyunSmsTemplateModule) Upsert(row *model.AliyunSmsTemplate) error {
 	return m.db.Save(row).Error
+}
+
+// SyncFromAliyun refreshes provider-owned fields while preserving local metadata
+// such as related_sign, remark and source_created_by.
+func (m *AliyunSmsTemplateModule) SyncFromAliyun(row *model.AliyunSmsTemplate) error {
+	return m.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "owner_store_id"}, {Name: "template_code"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"name", "content", "template_type", "audit_status", "audit_reason", "updated_at",
+		}),
+	}).Create(row).Error
 }
 
 func (m *AliyunSmsTemplateModule) Delete(row *model.AliyunSmsTemplate) error {

@@ -60,3 +60,22 @@ func TestSmsCampaignClaimUsesSingleConditionalUpdate(t *testing.T) {
 	require.Contains(t, vars, model.SmsCampaignStatusScheduled)
 	require.Contains(t, vars, model.SmsCampaignStatusSending)
 }
+
+func TestClaimFailedSendRecordIsScopedAndAtomic(t *testing.T) {
+	db := newSMSCampaignDryRunDB(t)
+	var sql string
+	var vars []interface{}
+	require.NoError(t, db.Callback().Update().After("gorm:update").Register("test:capture_sms_retry_claim", func(tx *gorm.DB) {
+		sql = tx.Statement.SQL.String()
+		vars = append([]interface{}(nil), tx.Statement.Vars...)
+	}))
+
+	claimed, err := NewSmsCampaignModule(db).ClaimFailedSendRecord(12, 34)
+	require.NoError(t, err)
+	require.False(t, claimed, "dry-run statements do not report an affected row")
+	require.Contains(t, sql, "campaign_id = ? AND id = ? AND status = ?")
+	require.Contains(t, vars, uint(12))
+	require.Contains(t, vars, uint(34))
+	require.Contains(t, vars, model.SmsSendRecordFailed)
+	require.Contains(t, vars, model.SmsSendRecordRetrying)
+}

@@ -145,3 +145,22 @@ func (c *SmsCampaignController) Records(ctx *gin.Context) {
 	}
 	httpPkg.Success(ctx, rows)
 }
+
+func (c *SmsCampaignController) RetryRecord(ctx *gin.Context) {
+	campaignID, ok := httpPkg.ParseUintParam(ctx, "id")
+	if !ok {
+		return
+	}
+	recordID, ok := httpPkg.ParseUintParam(ctx, "record_id")
+	if !ok {
+		return
+	}
+	sid, all := campaignScope(ctx)
+	if err := c.svc.RetryFailedRecord(campaignID, recordID, sid, all); err != nil {
+		// Retry errors are actionable SMS/provider messages and must be visible to
+		// the operator as well as persisted on the failed send record.
+		httpPkg.Error(ctx, apicode.InvalidParameter.Num, err.Error())
+		return
+	}
+	httpPkg.Success(ctx, gin.H{"message": "resent"})
+}

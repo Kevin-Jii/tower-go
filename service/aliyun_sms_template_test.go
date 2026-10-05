@@ -11,6 +11,7 @@ import (
 
 type fakeAliyunSmsClient struct {
 	signatures  []aliyunsms.SignatureSnapshot
+	templates   []aliyunsms.TemplateSnapshot
 	template    *aliyunsms.TemplateSnapshot
 	deletedCode string
 }
@@ -27,6 +28,9 @@ func (f *fakeAliyunSmsClient) GetTemplate(string) (*aliyunsms.TemplateSnapshot, 
 func (f *fakeAliyunSmsClient) DeleteTemplate(code string) error {
 	f.deletedCode = code
 	return nil
+}
+func (f *fakeAliyunSmsClient) ListTemplates() ([]aliyunsms.TemplateSnapshot, error) {
+	return f.templates, nil
 }
 func (f *fakeAliyunSmsClient) ListSignatures() ([]aliyunsms.SignatureSnapshot, error) {
 	return f.signatures, nil
@@ -51,6 +55,7 @@ type fakeAliyunTemplateRepository struct {
 	getStoreID   uint
 	getAllStores bool
 	upserted     *model.AliyunSmsTemplate
+	synced       []*model.AliyunSmsTemplate
 	deleted      *model.AliyunSmsTemplate
 	exists       bool
 }
@@ -73,9 +78,30 @@ func (f *fakeAliyunTemplateRepository) Upsert(row *model.AliyunSmsTemplate) erro
 	f.upserted = row
 	return nil
 }
+func (f *fakeAliyunTemplateRepository) SyncFromAliyun(row *model.AliyunSmsTemplate) error {
+	f.synced = append(f.synced, row)
+	return nil
+}
 func (f *fakeAliyunTemplateRepository) Delete(row *model.AliyunSmsTemplate) error {
 	f.deleted = row
 	return nil
+}
+
+func TestAliyunSmsTemplateListSynchronizesAliyunAccount(t *testing.T) {
+	client := &fakeAliyunSmsClient{templates: []aliyunsms.TemplateSnapshot{{
+		TemplateCode: "SMS_REMOTE", TemplateName: "remote", TemplateContent: "content",
+		TemplateType: 2, TemplateStatus: "AUDIT_STATE_PASS",
+	}}}
+	resolver := &fakeAliyunResolver{clients: map[uint]AliyunSmsClient{7: client}}
+	repo := &fakeAliyunTemplateRepository{}
+	svc := NewAliyunSmsTemplateService(repo, resolver)
+
+	_, err := svc.List(7, false, "", "")
+	require.NoError(t, err)
+	require.Len(t, repo.synced, 1)
+	require.Equal(t, uint(7), repo.synced[0].OwnerStoreID)
+	require.Equal(t, "SMS_REMOTE", repo.synced[0].TemplateCode)
+	require.Equal(t, model.SmsTemplateAuditApproved, repo.synced[0].AuditStatus)
 }
 
 func TestAliyunSmsTemplateListSignaturesFiltersApproved(t *testing.T) {

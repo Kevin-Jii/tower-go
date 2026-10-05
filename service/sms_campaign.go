@@ -13,6 +13,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/aliyunsms"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 )
 
 const smsTimezone = "Asia/Shanghai"
@@ -181,6 +182,99 @@ func (s *SmsCampaignService) ListSendRecords(campaignID, storeID uint, allStores
 	return s.campaignModule.ListSendRecords(campaignID, 500)
 }
 
+func (s *SmsCampaignService) RetryFailedRecord(campaignID, recordID, storeID uint, allStores bool) error {
+	row, err := s.campaignModule.GetByID(campaignID, storeID, allStores)
+	if err != nil {
+		return err
+	}
+	record, err := s.campaignModule.GetSendRecord(campaignID, recordID)
+	if err != nil {
+		return errors.New("发送记录不存在")
+	}
+	if record.Status != model.SmsSendRecordFailed {
+		return errors.New("只有发送失败的记录可以重新发送")
+	}
+	if !s.inSendWindow(row.OwnerStoreID, time.Now()) {
+		start, end := s.windowFor(row.OwnerStoreID)
+		return fmt.Errorf("当前不在短信发送时段（中国时间 %s–%s，结束时间不含）", start, end)
+	}
+	client, err := s.resolveClient(row.OwnerStoreID)
+	if err != nil {
+		return err
+	}
+
+	recipient, err := s.retryRecipient(row, record)
+	if err != nil {
+		return err
+	}
+	sign := s.resolveSign(row, recipient.Config.SignName)
+	if sign == "" {
+		return errors.New("短信签名为空，请在活动分组、所属门店或基础设置中至少配置一个")
+	}
+	param := recipient.Config.TemplateParam
+	if strings.TrimSpace(param) == "" {
+		param = "{}"
+	}
+	if recipient.Config.PersonalizeName {
+		param, err = mergeTemplateParam(param, map[string]string{"name": displayMemberName(recipient.Name)})
+		if err != nil {
+			return err
+		}
+	}
+
+	claimed, err := s.campaignModule.ClaimFailedSendRecord(campaignID, recordID)
+	if err != nil {
+		return err
+	}
+	if !claimed {
+		return errors.New("该失败记录正在重发或已重发，请刷新发送记录")
+	}
+	bizID, sendErr := client.Send([]string{record.Phone}, sign, recipient.Config.TemplateCode, param)
+	if sendErr != nil {
+		message := truncateErr(sendErr.Error())
+		if finishErr := s.campaignModule.FinishSendRecord(campaignID, recordID, model.SmsSendRecordFailed, "", message); finishErr != nil {
+			return fmt.Errorf("短信重发失败：%s；保存失败日志时发生错误：%v", message, finishErr)
+		}
+		return fmt.Errorf("短信重发失败：%s", message)
+	}
+	if err := s.campaignModule.MarkRetrySuccess(campaignID, recordID, bizID); err != nil {
+		return fmt.Errorf("短信已提交至阿里云，但更新发送记录失败：%w", err)
+	}
+	return nil
+}
+
+func (s *SmsCampaignService) retryRecipient(row *model.SmsCampaign, record *model.SmsSendRecord) (smsRecipient, error) {
+	config := smsTemplate{SignName: row.SignName, TemplateCode: row.TemplateCode, TemplateParam: row.TemplateParam, PersonalizeName: row.PersonalizeName}
+	if record.SegmentID != nil {
+		found := false
+		for i := range row.Segments {
+			segment := &row.Segments[i]
+			if segment.ID != *record.SegmentID {
+				continue
+			}
+			id := segment.ID
+			config = smsTemplate{SegmentID: &id, SignName: segment.SignName, TemplateCode: segment.TemplateCode, TemplateParam: segment.TemplateParam, PersonalizeName: segment.PersonalizeName}
+			found = true
+			break
+		}
+		if !found {
+			return smsRecipient{}, errors.New("原发送分组不存在，无法重新发送")
+		}
+	}
+	if strings.TrimSpace(config.TemplateCode) == "" {
+		return smsRecipient{}, errors.New("短信模板 CODE 为空，无法重新发送")
+	}
+	recipient := smsRecipient{Phone: record.Phone, MemberID: record.MemberID, Config: config}
+	if config.PersonalizeName && record.MemberID != nil {
+		member, err := s.memberModule.GetMember(*record.MemberID, row.OwnerStoreID, row.OwnerStoreID == 0)
+		if err != nil {
+			return smsRecipient{}, errors.New("无法读取会员姓名，无法重新发送")
+		}
+		recipient.Name = member.Name
+	}
+	return recipient, nil
+}
+
 func (s *SmsCampaignService) Create(req *model.CreateSmsCampaignReq, createdBy, effectiveStoreID uint, hqUnbound bool) (*model.SmsCampaign, error) {
 	owner := effectiveStoreID
 	if hqUnbound && owner == 0 {
@@ -325,13 +419,20 @@ func (s *SmsCampaignService) SendNow(id, storeID uint, allStores bool) error {
 		return err
 	}
 	if err := s.ensureSendable(row); err != nil {
-		return err
+		return apicode.Newf(apicode.InvalidParameter, "%s", err.Error())
 	}
 	if !s.inSendWindow(row.OwnerStoreID, time.Now()) {
 		start, end := s.windowFor(row.OwnerStoreID)
-		return fmt.Errorf("当前不在短信发送时段（中国时间 %s–%s，结束时间不含）", start, end)
+		return apicode.Newf(apicode.InvalidParameter, "当前不在短信发送时段（中国时间 %s–%s，结束时间不含）", start, end)
 	}
-	return s.executeCampaign(row)
+	err = s.executeCampaign(row)
+	if err == nil {
+		return nil
+	}
+	if _, recognized := apicode.Resolve(err); recognized {
+		return err
+	}
+	return apicode.Newf(apicode.InvalidParameter, "%s", err.Error())
 }
 
 func (s *SmsCampaignService) ProcessDueScheduled(now time.Time) error {
@@ -381,6 +482,11 @@ func (s *SmsCampaignService) ensureSendable(row *model.SmsCampaign) error {
 		return errors.New("活动已发送完成")
 	case model.SmsCampaignStatusCancelled:
 		return errors.New("活动已取消")
+	case model.SmsCampaignStatusFailed:
+		if message := strings.TrimSpace(row.LastError); message != "" {
+			return fmt.Errorf("活动上次发送失败：%s；请在发送记录中对失败号码重新发送", message)
+		}
+		return errors.New("活动上次发送失败，请在发送记录中对失败号码重新发送")
 	default:
 		return errors.New("活动状态不可发送")
 	}
@@ -471,7 +577,17 @@ func (s *SmsCampaignService) executeCampaign(row *model.SmsCampaign) error {
 	if fail > 0 && success == 0 {
 		status = model.SmsCampaignStatusFailed
 	}
-	return s.campaignModule.Update(row.ID, map[string]interface{}{"status": status, "success_count": success, "fail_count": fail, "last_error": truncateErr(lastErr), "sent_at": &now}, nil)
+	if err := s.campaignModule.Update(row.ID, map[string]interface{}{"status": status, "success_count": success, "fail_count": fail, "last_error": truncateErr(lastErr), "sent_at": &now}, nil); err != nil {
+		return err
+	}
+	if fail > 0 {
+		message := strings.TrimSpace(lastErr)
+		if message == "" {
+			message = "阿里云未返回具体错误信息"
+		}
+		return apicode.Newf(apicode.InvalidParameter, "短信发送完成：成功 %d 条，失败 %d 条；阿里云错误：%s", success, fail, message)
+	}
+	return nil
 }
 
 type smsTemplate struct {

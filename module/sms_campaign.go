@@ -6,6 +6,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type SmsCampaignModule struct{ db *gorm.DB }
@@ -167,4 +168,58 @@ func (m *SmsCampaignModule) ListSendRecords(campaignID uint, limit int) ([]*mode
 		return nil, err
 	}
 	return rows, nil
+}
+
+func (m *SmsCampaignModule) GetSendRecord(campaignID, recordID uint) (*model.SmsSendRecord, error) {
+	var row model.SmsSendRecord
+	if err := m.db.Where("campaign_id = ? AND id = ?", campaignID, recordID).First(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+// ClaimFailedSendRecord prevents concurrent clicks from sending the same failed
+// record more than once. A failed retry must call FinishSendRecord to release it.
+func (m *SmsCampaignModule) ClaimFailedSendRecord(campaignID, recordID uint) (bool, error) {
+	res := m.db.Model(&model.SmsSendRecord{}).
+		Where("campaign_id = ? AND id = ? AND status = ?", campaignID, recordID, model.SmsSendRecordFailed).
+		Updates(map[string]interface{}{"status": model.SmsSendRecordRetrying, "error_message": ""})
+	return res.RowsAffected == 1, res.Error
+}
+
+func (m *SmsCampaignModule) FinishSendRecord(campaignID, recordID uint, status, bizID, errorMessage string) error {
+	return m.db.Model(&model.SmsSendRecord{}).
+		Where("campaign_id = ? AND id = ? AND status = ?", campaignID, recordID, model.SmsSendRecordRetrying).
+		Updates(map[string]interface{}{"status": status, "biz_id": bizID, "error_message": errorMessage, "created_at": time.Now().UTC()}).Error
+}
+
+func (m *SmsCampaignModule) MarkRetrySuccess(campaignID, recordID uint, bizID string) error {
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&model.SmsSendRecord{}).
+			Where("campaign_id = ? AND id = ? AND status = ?", campaignID, recordID, model.SmsSendRecordRetrying).
+			Updates(map[string]interface{}{"status": model.SmsSendRecordSuccess, "biz_id": bizID, "error_message": "", "created_at": time.Now().UTC()})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected != 1 {
+			return fmt.Errorf("send record retry state changed")
+		}
+		var campaign model.SmsCampaign
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id", "status", "success_count", "fail_count", "last_error").First(&campaign, campaignID).Error; err != nil {
+			return err
+		}
+		campaign.SuccessCount++
+		if campaign.FailCount > 0 {
+			campaign.FailCount--
+		}
+		updates := map[string]interface{}{
+			"success_count": campaign.SuccessCount,
+			"fail_count":    campaign.FailCount,
+		}
+		if campaign.FailCount == 0 {
+			updates["last_error"] = ""
+			updates["status"] = model.SmsCampaignStatusSent
+		}
+		return tx.Model(&model.SmsCampaign{}).Where("id = ?", campaignID).Updates(updates).Error
+	})
 }

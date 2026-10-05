@@ -35,7 +35,7 @@ export async function testStoreSmsConfig(body: { access_key_id: string; access_k
   return unwrap(res)
 }
 
-export async function listSmsTemplates(params?: { store_id?: number; keyword?: string; audit_status?: string }): Promise<AliyunSmsTemplate[]> {
+export async function listSmsTemplates(params?: { owner_store_id?: number; keyword?: string; audit_status?: string }): Promise<AliyunSmsTemplate[]> {
   const res = await http.get<ApiEnvelope<AliyunSmsTemplate[]>>('/sms-templates', { params })
   return unwrap(res)
 }
@@ -114,6 +114,12 @@ export async function cancelSmsCampaign(id: number, storeId?: number): Promise<v
 export async function listSmsCampaignRecords(id: number, storeId?: number): Promise<SmsSendRecord[]> {
   const res = await http.get<ApiEnvelope<SmsSendRecord[]>>(`/sms-campaigns/${id}/records`, { params: storeId ? { store_id: storeId } : undefined })
   return unwrap(res)
+}
+
+export async function retrySmsCampaignRecord(campaignId: number, recordId: number, storeId?: number): Promise<void> {
+  await http.post<ApiEnvelope<unknown>>(`/sms-campaigns/${campaignId}/records/${recordId}/retry`, undefined, {
+    params: storeId ? { store_id: storeId } : undefined,
+  })
 }
 
 export async function listMemberTags(params?: { store_id?: number }): Promise<MemberTag[]> {

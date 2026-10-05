@@ -930,6 +930,9 @@ export interface MemberRow {
   level: number
   version: number
   unsettled_amount?: string | number
+  recent_consumption_at?: string
+  consumption_count?: number
+  total_consumption_amount?: string | number
   createTime?: string
 }
 

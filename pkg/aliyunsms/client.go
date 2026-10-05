@@ -177,9 +177,81 @@ type TemplateSnapshot struct {
 	TemplateName    string
 	TemplateContent string
 	TemplateType    int32
-	TemplateStatus  string // 0=pending, 1=approved, 2=rejected, 10=cancelled
+	TemplateStatus  string // 0/pending or AUDIT_STATE_* depending on the Aliyun endpoint
 	Reason          string
 	CreateDate      string
+}
+
+// ListTemplates returns every SMS template under the current Aliyun account.
+func (c *Client) ListTemplates() ([]TemplateSnapshot, error) {
+	if !c.Enabled() {
+		return nil, fmt.Errorf("阿里云短信未配置或未启用")
+	}
+	pageSize := int32(50)
+	page := int32(1)
+	out := make([]TemplateSnapshot, 0, 64)
+	for {
+		resp, err := c.inner.QuerySmsTemplateList(&dysmsapi.QuerySmsTemplateListRequest{PageIndex: &page, PageSize: &pageSize})
+		if err != nil {
+			return nil, fmt.Errorf("查询模板列表失败: %w", err)
+		}
+		if resp == nil || resp.Body == nil {
+			return nil, fmt.Errorf("查询模板列表接口无响应")
+		}
+		if code := teaStringValue(resp.Body.Code); code != "OK" {
+			return nil, fmt.Errorf("查询模板列表失败: %s (%s)", teaStringValue(resp.Body.Message), code)
+		}
+		for _, row := range resp.Body.SmsTemplateList {
+			if row == nil {
+				continue
+			}
+			templateType := int32(0)
+			// OuterTemplateType uses the same 0/1/2/3 values as CreateSmsTemplate.
+			if row.OuterTemplateType != nil {
+				templateType = *row.OuterTemplateType
+			} else if row.TemplateType != nil {
+				templateType = mapAliyunListTemplateType(*row.TemplateType)
+			}
+			snap := TemplateSnapshot{
+				TemplateCode:    teaStringValue(row.TemplateCode),
+				TemplateName:    teaStringValue(row.TemplateName),
+				TemplateContent: teaStringValue(row.TemplateContent),
+				TemplateType:    templateType,
+				TemplateStatus:  teaStringValue(row.AuditStatus),
+				CreateDate:      teaStringValue(row.CreateDate),
+			}
+			if row.Reason != nil {
+				snap.Reason = teaStringValue(row.Reason.RejectInfo)
+			}
+			out = append(out, snap)
+		}
+		count := len(resp.Body.SmsTemplateList)
+		total := int64(0)
+		if resp.Body.TotalCount != nil {
+			total = *resp.Body.TotalCount
+		}
+		if count < int(pageSize) || (total > 0 && int64(page)*int64(pageSize) >= total) {
+			break
+		}
+		page++
+	}
+	return out, nil
+}
+
+// TemplateType in QuerySmsTemplateList is a legacy numbering scheme.
+func mapAliyunListTemplateType(v int32) int32 {
+	switch v {
+	case 0:
+		return 1 // notification
+	case 1:
+		return 2 // promotion
+	case 2:
+		return 0 // verification
+	case 6:
+		return 3 // international
+	default:
+		return v
+	}
 }
 
 // CreateTemplate submits a new template to Aliyun and returns its TemplateCode.

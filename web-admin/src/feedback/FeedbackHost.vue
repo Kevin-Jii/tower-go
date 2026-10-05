@@ -19,7 +19,7 @@
   <Teleport to="body">
     <div
       v-if="confirmState.open"
-      class="fixed inset-0 z-[99] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]"
+      class="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       @click.self="onCancel"

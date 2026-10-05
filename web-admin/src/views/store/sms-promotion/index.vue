@@ -6,13 +6,12 @@
         <p class="page-subtitle">按会员标签分组发送阿里云短信，支持立即发送与定时排期。</p>
       </div>
       <div class="head-actions">
-        <BaseButton v-permission="['marketing:sms:add', 'marketing:sms:edit']" variant="secondary" @click="openTagManager">
-          标签管理
-        </BaseButton>
-        <BaseButton v-permission="['marketing:sms:list', 'marketing:sms:edit']" variant="secondary" @click="openTemplateManager">
+        <BaseButton v-permission="['marketing:sms:list', 'marketing:sms:edit']" variant="secondary"
+          @click="openTemplateManager">
           模板管理
         </BaseButton>
-        <BaseButton v-permission="['marketing:sms:list', 'marketing:sms:edit']" variant="secondary" @click="openSettings">
+        <BaseButton v-permission="['marketing:sms:list', 'marketing:sms:edit']" variant="secondary"
+          @click="openSettings">
           基础设置
         </BaseButton>
         <BaseButton v-permission="'marketing:sms:add'" variant="primary" @click="openCreate">
@@ -31,7 +30,8 @@
     <a-alert v-else-if="config" type="info" show-icon>
       <template #title>发送时间以中国标准时间为准</template>
       时区 {{ config.timezone || 'Asia/Shanghai' }}（UTC+8），允许发送窗口为
-      {{ config.send_window_start }}–{{ config.send_window_end }}，结束时刻{{ config.send_window_end_exclusive ? '不包含' : '包含' }}。
+      {{ config.send_window_start }}–{{ config.send_window_end }}，结束时刻{{ config.send_window_end_exclusive ? '不包含' : '包含'
+      }}。
       阿里云接口不负责排期，系统将在计划时间到达后执行；请使用审核通过的签名和模板 CODE。
       当前默认签名：<b>{{ config.default_sign_name || '（未配置，请到门店管理配置 sms_sign_name）' }}</b>。
     </a-alert>
@@ -44,12 +44,8 @@
     </div>
 
     <BaseCard title="推广活动" body-padding="0">
-      <BaseTable
-        :columns="campaignColumns"
-        :data="(campaigns as unknown) as Record<string, unknown>[]"
-        :loading="campaignLoading"
-        min-width="1180px"
-      >
+      <BaseTable :columns="campaignColumns" :data="(campaigns as unknown) as Record<string, unknown>[]"
+        :loading="campaignLoading" min-width="1180px">
         <template #cell-name="{ row }">
           <div class="font-medium">{{ (row as SmsCampaign).name }}</div>
           <div class="cell-secondary">{{ campaignTypeText((row as SmsCampaign).campaign_type) }}</div>
@@ -138,9 +134,12 @@
                   <strong>{{ segment.default ? '默认分组' : '标签分组' }}</strong>
                 </div>
                 <div class="segment-actions">
-                  <BaseButton variant="ghost" size="sm" :disabled="index === 0" @click="moveSegment(index, -1)">上移</BaseButton>
-                  <BaseButton variant="ghost" size="sm" :disabled="index === form.segments.length - 1" @click="moveSegment(index, 1)">下移</BaseButton>
-                  <BaseButton variant="danger" size="sm" :disabled="form.segments.length === 1" @click="removeSegment(index)">删除</BaseButton>
+                  <BaseButton variant="ghost" size="sm" :disabled="index === 0" @click="moveSegment(index, -1)">上移
+                  </BaseButton>
+                  <BaseButton variant="ghost" size="sm" :disabled="index === form.segments.length - 1"
+                    @click="moveSegment(index, 1)">下移</BaseButton>
+                  <BaseButton variant="danger" size="sm" :disabled="form.segments.length === 1"
+                    @click="removeSegment(index)">删除</BaseButton>
                 </div>
               </div>
 
@@ -156,34 +155,43 @@
                     <span>{{ tag.name }}（{{ tag.member_count || 0 }}）</span>
                   </label>
                   <span v-if="!campaignTags.length" class="cell-secondary">
-                    当前归属门店暂无标签，请先打开“标签管理”创建。
+                    当前归属门店暂无标签，请先前往“会员管理 → 标签管理”创建。
                   </span>
                 </div>
               </BaseFormItem>
 
               <div class="segment-grid">
                 <BaseFormItem label="签名" hint="留空使用系统默认签名">
-                  <BaseInput v-model="segment.sign" :placeholder="config?.default_sign_name || '系统默认签名'" maxlength="64" />
+                  <BaseInput v-model="segment.sign" :placeholder="config?.default_sign_name || '系统默认签名'"
+                    maxlength="64" />
                 </BaseFormItem>
                 <BaseFormItem label="模板 CODE" required>
-                  <BaseSelect
-                    v-model="segment.template"
-                    :options="approvedTemplateOption()"
-                    :allow-search="true"
-                    placeholder="可粘贴 CODE 或选择已审核模板"
-                    filterable
-                    allow-create
-                    @update:model-value="(value) => onSegmentTemplatePicked(segment, value)"
-                  />
+                  <BaseSelect v-model="segment.template" :options="approvedTemplateOption()" :allow-search="true"
+                    placeholder="可粘贴 CODE 或选择已审核模板" filterable allow-create
+                    @update:model-value="(value) => onSegmentTemplatePicked(segment, value)" />
                 </BaseFormItem>
               </div>
-              <BaseFormItem label="模板变量 JSON" hint='例如 {"activity":"会员日"}；变量须与阿里云模板一致'>
-                <BaseTextarea v-model="segment.params" :rows="3" placeholder='{"activity":"会员日"}' />
-              </BaseFormItem>
-              <label class="default-switch">
-                <a-switch v-model="segment.personalize" />
-                <span>姓名个性化（自动写入 name 变量；姓名为空时使用“会员”）</span>
-              </label>
+              <div v-if="segment.templateContent" class="template-preview">
+                <strong>模板内容</strong>
+                <p>{{ segment.templateContent }}</p>
+              </div>
+              <div v-if="segment.variables.length" class="template-variable-list">
+                <div v-for="variable in segment.variables" :key="variable.name" class="template-variable-row">
+                  <strong>${{ '{' }}{{ variable.name }}{{ '}' }}</strong>
+                  <select v-model="variable.source" @change="onSegmentVariableChanged(segment)">
+                    <option value="fixed">固定值</option>
+                    <option v-if="variable.name === 'name'" value="member_name">会员姓名</option>
+                  </select>
+                  <BaseInput v-if="variable.source === 'fixed'" v-model="variable.value"
+                    :placeholder="`请输入 ${variable.name} 的固定值`" @update:model-value="onSegmentVariableChanged(segment)" />
+                  <span v-else class="cell-secondary">自动使用会员姓名，姓名为空时使用“会员”</span>
+                </div>
+              </div>
+              <details class="advanced-params">
+                <summary>高级：直接编辑变量 JSON</summary>
+                <BaseTextarea :model-value="segment.params" :rows="3" placeholder='{"activity":"会员日"}'
+                  @update:model-value="(value) => onSegmentParamsEdited(segment, String(value ?? ''))" />
+              </details>
             </article>
           </div>
         </section>
@@ -196,21 +204,11 @@
             <a-radio value="scheduled" :disabled="!canSendNow">定时发送</a-radio>
           </a-radio-group>
           <p v-if="!canSendNow" class="permission-hint">当前账号没有短信发送权限，仅可保存草稿。</p>
-          <BaseFormItem
-            v-if="form.send_mode === 'scheduled'"
-            label="计划发送时间（中国标准时间 UTC+8）"
-            required
+          <BaseFormItem v-if="form.send_mode === 'scheduled'" label="计划发送时间（中国标准时间 UTC+8）" required
             :hint="`只允许 ${config?.send_window_start || '08:00'}–${config?.send_window_end || '22:00'}，结束时刻不含`"
-            class="schedule-field"
-          >
-            <a-date-picker
-              v-model="form.scheduled_at"
-              show-time
-              value-format="YYYY-MM-DD HH:mm"
-              format="YYYY-MM-DD HH:mm"
-              :allow-clear="false"
-              class="w-full"
-            />
+            class="schedule-field">
+            <a-date-picker v-model="form.scheduled_at" show-time value-format="YYYY-MM-DD HH:mm"
+              format="YYYY-MM-DD HH:mm" :allow-clear="false" class="w-full" />
           </BaseFormItem>
         </section>
       </div>
@@ -222,27 +220,37 @@
       </template>
     </BaseDialog>
 
-    <BaseDialog v-model="recordsDlg" :title="`发送记录${recordsCampaign ? ` · ${recordsCampaign.name}` : ''}`" max-width="min(980px, 96vw)">
+    <BaseDialog v-model="recordsDlg" :title="`发送记录${recordsCampaign ? ` · ${recordsCampaign.name}` : ''}`"
+      max-width="min(980px, 96vw)">
       <div class="records-summary">
         <span>总计 {{ recordsCampaign?.total_count || records.length }}</span>
         <span class="text-emerald-600">成功 {{ recordsCampaign?.success_count || 0 }}</span>
         <span class="text-red-600">失败 {{ recordsCampaign?.fail_count || 0 }}</span>
       </div>
-      <BaseTable
-        :columns="recordColumns"
-        :data="(records as unknown) as Record<string, unknown>[]"
-        :loading="recordsLoading"
-        min-width="780px"
-      >
+      <BaseTable :columns="recordColumns" :data="(records as unknown) as Record<string, unknown>[]"
+        :loading="recordsLoading" min-width="980px">
         <template #cell-segment_id="{ row }">{{ recordSegmentName(row as SmsSendRecord) }}</template>
         <template #cell-status="{ row }">
-          <BaseTag :variant="(row as SmsSendRecord).status === 'success' ? 'success' : 'danger'">
-            {{ (row as SmsSendRecord).status === 'success' ? '成功' : '失败' }}
+          <BaseTag :variant="(row as SmsSendRecord).status === 'success' ? 'success' : (row as SmsSendRecord).status === 'retrying' ? 'warning' : 'danger'">
+            {{ (row as SmsSendRecord).status === 'success' ? '成功' : (row as SmsSendRecord).status === 'retrying' ? '重发中' : '失败' }}
           </BaseTag>
         </template>
+        <template #cell-error_message="{ row }">
+          <div v-if="(row as SmsSendRecord).error_message" class="record-error">
+            {{ (row as SmsSendRecord).error_message }}
+          </div>
+          <span v-else>—</span>
+        </template>
         <template #cell-created_at="{ row }">{{ formatChinaTime((row as SmsSendRecord).created_at) }}</template>
+        <template #cell-actions="{ row }">
+          <BaseButton v-if="(row as SmsSendRecord).status === 'failed'" v-permission="'marketing:sms:send'"
+            variant="link" size="sm" :loading="retryingRecordId === (row as SmsSendRecord).id"
+            @click="retryRecord(row as SmsSendRecord)">重新发送</BaseButton>
+        </template>
       </BaseTable>
-      <template #footer><BaseButton variant="ghost" @click="recordsDlg = false">关闭</BaseButton></template>
+      <template #footer>
+        <BaseButton variant="ghost" @click="recordsDlg = false">关闭</BaseButton>
+      </template>
     </BaseDialog>
 
     <BaseDialog v-model="settingsDlg" title="阿里云短信基础设置" max-width="min(640px, 96vw)">
@@ -256,7 +264,8 @@
         <BaseFormItem label="启用短信服务" required>
           <a-switch v-model="settingsForm.enabled" />
         </BaseFormItem>
-        <BaseFormItem label="AccessKey ID" required hint="使用阿里云 RAM 子账号 AccessKey（只授予 dysmsapi:SendSms / CreateSmsTemplate 权限）">
+        <BaseFormItem label="AccessKey ID" required
+          hint="使用阿里云 RAM 子账号 AccessKey（只授予 dysmsapi:SendSms / CreateSmsTemplate 权限）">
           <BaseInput v-model="settingsForm.access_key_id" placeholder="LTAIxxxxxxxxxxxxxxxx" maxlength="64" />
         </BaseFormItem>
         <BaseFormItem label="AccessKey Secret" hint="留空表示不修改现有密钥；只有后端需要，原值不返回前端">
@@ -265,8 +274,11 @@
         <BaseFormItem label="地域" required>
           <BaseSelect v-model="settingsForm.region_id" :options="smsRegionOptions" />
         </BaseFormItem>
-        <BaseFormItem label="默认短信签名" hint="阿里云侧已审核通过的签名名称；活动未填时使用">
-          <BaseInput v-model="settingsForm.sign_name" placeholder="如：泰山原浆啤酒浙大紫金港店" maxlength="64" />
+        <BaseFormItem label="默认短信签名" hint="从当前门店阿里云账号中读取已审核通过的签名；活动未填写签名时使用">
+          <BaseSelect v-model="settingsForm.sign_name" :options="signatureOptions"
+            :loading="settingsSignatureLoading" :disabled="settingsSignatureLoading"
+            :placeholder="settingsSignatureLoading ? '正在读取阿里云签名…' : '请选择审核通过的签名'" searchable />
+          <div v-if="settingsSignatureError" class="text-xs text-red-500 mt-1">{{ settingsSignatureError }}</div>
         </BaseFormItem>
         <BaseFormItem label="发送窗口（中国时间，可选）" hint="留空用全局 08:00–22:00；结束时间不含">
           <div class="window-row">
@@ -295,25 +307,23 @@
             每个账号每天最多提交 100 次，每次间隔 30 秒。需企业认证后才能创建“推广”类模板。
           </p>
           <BaseFormItem v-if="!templateEditCode && canChooseOwner" label="所属门店 / 阿里云账号" required>
-            <BaseSelect v-model="templateForm.owner_store_id" :options="ownerStoreOptions" searchable @update:model-value="reloadSignatures" />
+            <BaseSelect v-model="templateForm.owner_store_id" :options="ownerStoreOptions" searchable
+              @update:model-value="reloadTemplateAccount" />
           </BaseFormItem>
           <BaseFormItem v-if="!templateEditCode" label="模板名称" required>
             <BaseInput v-model="templateForm.name" placeholder="如：双十一会员关怀" maxlength="120" />
           </BaseFormItem>
           <BaseFormItem label="模板类型" required>
-            <BaseSelect v-model="templateForm.template_type" :options="templateTypeOptions" :disabled="Boolean(templateEditCode)" />
+            <BaseSelect v-model="templateForm.template_type" :options="templateTypeOptions"
+              :disabled="Boolean(templateEditCode)" />
           </BaseFormItem>
-          <BaseFormItem v-if="!templateEditCode" label="模板内容" required hint="变量用 ${name} 表示，例如：您的会员${name}，${activity}专属福利已上线">
+          <BaseFormItem v-if="!templateEditCode" label="模板内容" required
+            hint="变量用 ${name} 表示，例如：您的会员${name}，${activity}专属福利已上线">
             <BaseTextarea v-model="templateForm.content" :rows="5" maxlength="500" />
           </BaseFormItem>
           <BaseFormItem v-if="!templateEditCode" label="关联签名（可选）" hint="直接读取当前门店阿里云账号中审核通过的签名；可不填">
-            <BaseSelect
-              v-model="templateForm.related_sign"
-              :options="signatureOptions"
-              :disabled="signatureLoading"
-              :placeholder="signatureLoading ? '正在读取阿里云签名…' : '请选择审核通过的签名'"
-              searchable
-            />
+            <BaseSelect v-model="templateForm.related_sign" :options="signatureOptions" :disabled="signatureLoading"
+              :placeholder="signatureLoading ? '正在读取阿里云签名…' : '请选择审核通过的签名'" searchable />
             <div v-if="signatureError" class="text-xs text-red-500 mt-1">{{ signatureError }}</div>
           </BaseFormItem>
           <BaseFormItem v-if="!templateEditCode" label="申请说明（可选）" hint="建议描述业务场景与示例，审核更快">
@@ -321,11 +331,13 @@
           </BaseFormItem>
           <div v-if="templateEditCode" class="editor-actions">
             <BaseButton variant="ghost" @click="resetTemplateForm">返回新建</BaseButton>
-            <BaseButton v-permission="'marketing:sms:edit'" variant="primary" :loading="refreshing" @click="refreshTemplate">查询审核状态</BaseButton>
+            <BaseButton v-permission="'marketing:sms:edit'" variant="primary" :loading="refreshing"
+              @click="refreshTemplate">查询审核状态</BaseButton>
           </div>
           <div v-else class="editor-actions">
             <BaseButton variant="ghost" @click="resetTemplateForm">重置</BaseButton>
-            <BaseButton v-permission="'marketing:sms:add'" variant="primary" :loading="savingTemplate" @click="submitTemplate">提交阿里云</BaseButton>
+            <BaseButton v-permission="'marketing:sms:add'" variant="primary" :loading="savingTemplate"
+              @click="submitTemplate">提交阿里云</BaseButton>
           </div>
         </aside>
 
@@ -336,12 +348,14 @@
             <BaseButton variant="secondary" size="sm" @click="reloadTemplates">查询</BaseButton>
             <span v-if="!hasApproved" class="text-xs text-[var(--color-text-3)]">尚无审核通过的模板，新建并等待审核通过后可在活动里使用。</span>
           </div>
-          <BaseTable :columns="templateColumns" :data="(templates as unknown) as Record<string, unknown>[]" :loading="templateLoading" min-width="760px">
+          <BaseTable :columns="templateColumns" :data="(templates as unknown) as Record<string, unknown>[]"
+            :loading="templateLoading" min-width="760px">
             <template #cell-name="{ row }">
               <div class="font-medium">{{ (row as AliyunSmsTemplate).name }}</div>
               <div class="cell-secondary">{{ (row as AliyunSmsTemplate).template_code }}</div>
             </template>
-            <template #cell-template_type="{ row }">{{ templateTypeLabel((row as AliyunSmsTemplate).template_type) }}</template>
+            <template #cell-template_type="{ row }">{{ templateTypeLabel((row as AliyunSmsTemplate).template_type)
+            }}</template>
             <template #cell-audit_status="{ row }">
               <BaseTag :variant="templateAuditMeta((row as AliyunSmsTemplate).audit_status).variant">
                 {{ templateAuditMeta((row as AliyunSmsTemplate).audit_status).label }}
@@ -353,77 +367,11 @@
           </BaseTable>
         </div>
       </div>
-      <template #footer><BaseButton variant="ghost" @click="templateDlg = false">关闭</BaseButton></template>
+      <template #footer>
+        <BaseButton variant="ghost" @click="templateDlg = false">关闭</BaseButton>
+      </template>
     </BaseDialog>
 
-    <BaseDialog v-model="tagDlg" title="会员标签管理" max-width="min(980px, 96vw)">
-      <div class="tag-manager">
-        <aside class="tag-editor">
-          <h3>{{ tagEditId ? '编辑标签' : '新建标签' }}</h3>
-          <BaseFormItem v-if="canChooseOwner" label="所属门店" required>
-            <BaseSelect v-model="tagForm.store_id" :options="storeOnlyOptions" searchable :disabled="Boolean(tagEditId)" />
-          </BaseFormItem>
-          <BaseFormItem label="标签名称" required>
-            <BaseInput v-model="tagForm.name" placeholder="如：高频消费" maxlength="80" />
-          </BaseFormItem>
-          <BaseFormItem label="标识颜色">
-            <div class="color-field">
-              <input v-model="tagForm.color" type="color" />
-              <BaseInput v-model="tagForm.color" placeholder="#4f46e5" />
-            </div>
-          </BaseFormItem>
-          <BaseFormItem label="说明">
-            <BaseTextarea v-model="tagForm.description" :rows="3" maxlength="255" />
-          </BaseFormItem>
-          <div class="editor-actions">
-            <BaseButton variant="ghost" @click="resetTagForm">重置</BaseButton>
-            <BaseButton v-permission="tagEditId ? 'marketing:sms:edit' : 'marketing:sms:add'" variant="primary" :loading="savingTag" @click="saveTag">保存</BaseButton>
-          </div>
-        </aside>
-
-        <div class="tag-list-wrap">
-          <BaseTable :columns="tagColumns" :data="(visibleTags as unknown) as Record<string, unknown>[]" :loading="tagLoading" min-width="640px">
-            <template #cell-name="{ row }">
-              <span class="color-dot" :style="{ backgroundColor: (row as MemberTag).color || '#64748b' }"></span>
-              {{ (row as MemberTag).name }}
-            </template>
-            <template #cell-store_id="{ row }">{{ storeName((row as MemberTag).store_id) }}</template>
-            <template #cell-actions="{ row }">
-              <BaseTableRowActions :actions="tagActions(row as MemberTag)" :max-inline="3" />
-            </template>
-          </BaseTable>
-        </div>
-      </div>
-      <template #footer><BaseButton variant="ghost" @click="tagDlg = false">关闭</BaseButton></template>
-    </BaseDialog>
-
-    <BaseDialog v-model="membersDlg" :title="`标签成员 · ${activeTag?.name || ''}`" max-width="min(900px, 96vw)">
-      <div class="member-assignment">
-        <div class="member-search">
-          <BaseInput v-model="memberKeyword" placeholder="手机号 / UID" clearable @enter="searchMembers" />
-          <BaseButton variant="primary" :loading="memberSearchLoading" @click="searchMembers">查找会员</BaseButton>
-        </div>
-        <div v-if="memberCandidates.length" class="candidate-list">
-          <div v-for="member in memberCandidates" :key="member.id" class="member-line">
-            <span>{{ member.phone }}<small>{{ member.name || member.uid || '未填写姓名' }}</small></span>
-            <BaseButton
-              v-permission="'marketing:sms:edit'"
-              variant="link"
-              size="sm"
-              :disabled="taggedMemberIds.has(member.id)"
-              @click="addMemberToTag(member)"
-            >{{ taggedMemberIds.has(member.id) ? '已在标签中' : '加入' }}</BaseButton>
-          </div>
-        </div>
-        <div class="assigned-head">已分配会员（{{ tagMembers.length }}）</div>
-        <BaseTable :columns="memberColumns" :data="(tagMembers as unknown) as Record<string, unknown>[]" :loading="tagMembersLoading" min-width="620px">
-          <template #cell-actions="{ row }">
-            <BaseButton v-permission="'marketing:sms:edit'" variant="link" size="sm" @click="removeMemberFromTag(row as MemberRow)">移除</BaseButton>
-          </template>
-        </BaseTable>
-      </div>
-      <template #footer><BaseButton variant="ghost" @click="membersDlg = false">关闭</BaseButton></template>
-    </BaseDialog>
   </div>
 </template>
 
@@ -444,12 +392,9 @@ import {
 } from '@/components/base'
 import type { BaseSelectOption, BaseTableColumn, TableRowAction } from '@/components/base/types'
 import {
-  bindMemberTag,
   cancelSmsCampaign,
-  createMemberTag,
   createSmsCampaign,
   createSmsTemplate,
-  deleteMemberTag,
   deleteSmsCampaign,
   deleteSmsTemplate,
   getSmsCampaign,
@@ -457,17 +402,14 @@ import {
   getStoreSmsConfig,
   listAliyunSmsSignatures,
   listApprovedSmsTemplates,
-  listMemberTagMembers,
   listMemberTags,
   listSmsCampaignRecords,
   listSmsCampaigns,
+  retrySmsCampaignRecord,
   listSmsTemplates,
   refreshSmsTemplate,
-  searchSmsMembers,
   sendSmsCampaign,
   testStoreSmsConfig,
-  unbindMemberTag,
-  updateMemberTag,
   updateSmsCampaign,
   upsertStoreSmsConfig,
 } from '@/api/smsPromotion'
@@ -475,7 +417,6 @@ import { listAllStores } from '@/api/store'
 import type {
   AliyunSmsSignature,
   AliyunSmsTemplate,
-  MemberRow,
   MemberTag,
   SmsCampaign,
   SmsCampaignPayload,
@@ -496,8 +437,16 @@ interface SegmentForm {
   sign: string
   template: string
   params: string
+  templateContent: string
+  variables: TemplateVariable[]
   personalize: boolean
   default: boolean
+}
+
+interface TemplateVariable {
+  name: string
+  source: 'fixed' | 'member_name'
+  value: string
 }
 
 const qc = useQueryClient()
@@ -512,7 +461,7 @@ const { data: campaignData, isLoading: campaignLoading } = useQuery({
   queryKey: computed(() => ['sms-campaigns', currentStoreId.value] as const),
   queryFn: () => listSmsCampaigns(currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined),
 })
-const { data: tagData, isLoading: tagLoading } = useQuery({
+const { data: tagData } = useQuery({
   queryKey: computed(() => ['member-tags', currentStoreId.value] as const),
   queryFn: () => listMemberTags(currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined),
 })
@@ -522,6 +471,9 @@ const { data: approvedTemplateData } = useQuery({
 })
 const approvedTemplates = computed(() => approvedTemplateData.value ?? [])
 const hasApproved = computed(() => approvedTemplates.value.length > 0)
+watch(approvedTemplates, () => {
+  if (campaignDlg.value) form.segments.forEach(hydrateSegmentTemplate)
+})
 function approvedTemplateOption(): BaseSelectOption[] {
   return approvedTemplates.value.map((tpl) => ({
     label: `${tpl.name}（${tpl.template_code}）`,
@@ -585,23 +537,10 @@ const recordColumns: BaseTableColumn[] = [
   { key: 'segment_id', label: '分组', minWidth: '130px' },
   { key: 'status', label: '状态', width: '90px' },
   { key: 'biz_id', label: '阿里云 BizID', prop: 'biz_id', minWidth: '150px', ellipsis: true },
-  { key: 'error_message', label: '错误信息', prop: 'error_message', minWidth: '200px', ellipsis: true },
+  { key: 'error_message', label: '后端失败日志', minWidth: '260px' },
   { key: 'created_at', label: '发送时间', width: '180px' },
+  { key: 'actions', label: '操作', width: '110px', align: 'right' },
 ]
-const tagColumns: BaseTableColumn[] = [
-  { key: 'name', label: '标签', minWidth: '150px' },
-  { key: 'store_id', label: '门店', width: '120px' },
-  { key: 'member_count', label: '会员数', prop: 'member_count', width: '90px' },
-  { key: 'description', label: '说明', prop: 'description', minWidth: '160px', ellipsis: true },
-  { key: 'actions', label: '操作', width: '210px', align: 'right' },
-]
-const memberColumns: BaseTableColumn[] = [
-  { key: 'phone', label: '手机号', prop: 'phone', width: '150px' },
-  { key: 'name', label: '姓名', prop: 'name', minWidth: '120px' },
-  { key: 'uid', label: 'UID', prop: 'uid', minWidth: '130px' },
-  { key: 'actions', label: '操作', width: '90px', align: 'right' },
-]
-
 const campaignTypeOptions = [
   { label: '活动推广', value: 'activity' },
   { label: '节日关怀', value: 'holiday' },
@@ -647,7 +586,7 @@ function formatChinaTime(value?: string | null): string {
 
 let segmentKey = 0
 function emptySegment(isDefault: boolean): SegmentForm {
-  return { key: ++segmentKey, tag_ids: [], sign: '', template: '', params: '{}', personalize: false, default: isDefault }
+  return { key: ++segmentKey, tag_ids: [], sign: '', template: '', params: '{}', templateContent: '', variables: [], personalize: false, default: isDefault }
 }
 
 const campaignDlg = ref(false)
@@ -741,12 +680,13 @@ async function openEdit(row: SmsCampaign): Promise<void> {
     form.segments = sourceSegments.length
       ? sourceSegments.map(toSegmentForm)
       : [{
-          ...emptySegment(true),
-          sign: full.sign_name || storeDefaultSign.value || '',
-          template: full.template_code || '',
-          params: full.template_param || '{}',
-          personalize: Boolean(full.personalize_name),
-        }]
+        ...emptySegment(true),
+        sign: full.sign_name || storeDefaultSign.value || '',
+        template: full.template_code || '',
+        params: full.template_param || '{}',
+        personalize: Boolean(full.personalize_name),
+      }]
+    form.segments.forEach(hydrateSegmentTemplate)
     campaignDlg.value = true
   } catch (error: unknown) {
     toast.error(error instanceof Error ? error.message : '加载活动失败')
@@ -760,6 +700,8 @@ function toSegmentForm(segment: SmsCampaignSegment): SegmentForm {
     sign: segment.sign || '',
     template: segment.template || '',
     params: segment.params || '{}',
+    templateContent: '',
+    variables: [],
     personalize: Boolean(segment.personalize),
     default: Boolean(segment.default),
   }
@@ -803,6 +745,11 @@ function validateSegments(): string | null {
     const segment = form.segments[i]
     if (!segment.default && !segment.tag_ids.length) return `第 ${i + 1} 个分组请选择至少一个标签`
     if (!segment.template.trim()) return `第 ${i + 1} 个分组请填写模板 CODE`
+    if (segment.variables.length) {
+      for (const variable of segment.variables) {
+        if (variable.source === 'fixed' && !variable.value.trim()) return `第 ${i + 1} 个分组请填写模板变量 ${variable.name}`
+      }
+    }
     if (segment.params.trim()) {
       try {
         const parsed: unknown = JSON.parse(segment.params)
@@ -915,18 +862,50 @@ async function removeCampaign(row: SmsCampaign): Promise<void> {
 }
 function onSegmentTemplatePicked(segment: SegmentForm, value: string | number | undefined): void {
   if (value === undefined || value === null) return
-  const code = String(value)
-  segment.template = code
-  const tpl = approvedTemplates.value.find((item) => item.template_code === code)
-  if (tpl) {
-    const vars = extractTemplateVariables(tpl.content)
-    if (vars.length && !segment.params.trim()) {
-      const obj: Record<string, string> = {}
-      for (const key of vars) obj[key] = segment.personalize && key === 'name' ? '示例' : '示例'
-      segment.params = JSON.stringify(obj, null, 2)
-    }
-    if (!segment.sign.trim() && tpl.related_sign) segment.sign = tpl.related_sign
+  segment.template = String(value)
+  hydrateSegmentTemplate(segment)
+}
+
+function hydrateSegmentTemplate(segment: SegmentForm): void {
+  const tpl = approvedTemplates.value.find((item) => item.template_code === segment.template)
+  if (!tpl) return
+  segment.templateContent = tpl.content
+  const values = parseParams(segment.params)
+  const hasConfiguredValues = Object.keys(values).length > 0
+  segment.variables = extractTemplateVariables(tpl.content).map((name) => ({
+    name,
+    source: name === 'name' && (segment.personalize || !hasConfiguredValues) ? 'member_name' : 'fixed',
+    value: String(values[name] ?? ''),
+  }))
+  segment.personalize = segment.variables.some((variable) => variable.name === 'name' && variable.source === 'member_name')
+  if (!hasConfiguredValues) onSegmentVariableChanged(segment)
+  if (!segment.sign.trim() && tpl.related_sign) segment.sign = tpl.related_sign
+}
+
+function parseParams(raw: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}
+  } catch {
+    return {}
   }
+}
+
+function onSegmentVariableChanged(segment: SegmentForm): void {
+  const params: Record<string, string> = {}
+  segment.personalize = segment.variables.some((variable) => variable.name === 'name' && variable.source === 'member_name')
+  for (const variable of segment.variables) {
+    if (variable.source === 'fixed' || variable.name === 'name') params[variable.name] = variable.value
+  }
+  segment.params = JSON.stringify(params, null, 2)
+}
+
+function onSegmentParamsEdited(segment: SegmentForm, raw: string): void {
+  segment.params = raw
+  const values = parseParams(raw)
+  segment.variables.forEach((variable) => {
+    if (Object.prototype.hasOwnProperty.call(values, variable.name)) variable.value = String(values[variable.name] ?? '')
+  })
 }
 
 function extractTemplateVariables(content: string): string[] {
@@ -1008,6 +987,10 @@ function resetTemplateForm(): void {
   signatureError.value = ''
 }
 
+async function reloadTemplateAccount(): Promise<void> {
+  await Promise.all([reloadTemplates(), reloadSignatures()])
+}
+
 async function reloadSignatures(): Promise<void> {
   signatureLoading.value = true
   signatureError.value = ''
@@ -1036,7 +1019,7 @@ async function reloadTemplates(): Promise<void> {
   templateLoading.value = true
   try {
     templates.value = await listSmsTemplates({
-      store_id: currentStoreId.value || undefined,
+      owner_store_id: templateForm.owner_store_id,
       keyword: templateKeyword.value.trim() || undefined,
       audit_status: templateAuditFilter.value || undefined,
     })
@@ -1114,6 +1097,8 @@ const settingsDlg = ref(false)
 const savingSettings = ref(false)
 const testingConfig = ref(false)
 const settingsError = ref('')
+const settingsSignatureLoading = ref(false)
+const settingsSignatureError = ref('')
 const settingsConfig = ref<StoreSmsConfig | null>(null)
 const settingsForm = reactive({
   enabled: false,
@@ -1125,7 +1110,7 @@ const settingsForm = reactive({
   send_window_end: '',
 })
 const smsRegionOptions: BaseSelectOption[] = [
- { label: 'cn-hangzhou（杭州）', value: 'cn-hangzhou' },
+  { label: 'cn-hangzhou（杭州）', value: 'cn-hangzhou' },
   { label: 'cn-beijing（北京）', value: 'cn-beijing' },
   { label: 'cn-shanghai（上海）', value: 'cn-shanghai' },
   { label: 'cn-shenzhen（深圳）', value: 'cn-shenzhen' },
@@ -1135,6 +1120,7 @@ const smsRegionOptions: BaseSelectOption[] = [
 
 async function openSettings(): Promise<void> {
   settingsError.value = ''
+  settingsSignatureError.value = ''
   settingsForm.access_key_secret = ''
   settingsDlg.value = true
   try {
@@ -1142,11 +1128,32 @@ async function openSettings(): Promise<void> {
     settingsForm.enabled = settingsConfig.value?.enabled ?? false
     settingsForm.access_key_id = settingsConfig.value?.access_key_id ?? ''
     settingsForm.region_id = settingsConfig.value?.region_id || 'cn-hangzhou'
-    settingsForm.sign_name = settingsConfig.value?.sign_name ?? storeDefaultSign.value
+    settingsForm.sign_name = settingsConfig.value?.sign_name ?? ''
     settingsForm.send_window_start = settingsConfig.value?.send_window_start ?? ''
     settingsForm.send_window_end = settingsConfig.value?.send_window_end ?? ''
+    await loadSettingsSignatures()
   } catch (error: unknown) {
     settingsError.value = error instanceof Error ? error.message : '加载配置失败'
+  }
+}
+
+async function loadSettingsSignatures(): Promise<void> {
+  settingsSignatureLoading.value = true
+  settingsSignatureError.value = ''
+  try {
+    const rows = await listAliyunSmsSignatures(currentStoreId.value || undefined)
+    signatures.value = rows
+    const configured = settingsForm.sign_name.trim()
+    if (configured && rows.some((row) => row.sign_name === configured)) {
+      settingsForm.sign_name = configured
+    } else {
+      settingsForm.sign_name = rows[0]?.sign_name || configured || storeDefaultSign.value
+    }
+  } catch (error: unknown) {
+    settingsSignatureError.value = error instanceof Error ? error.message : '读取阿里云签名失败'
+    if (!settingsForm.sign_name.trim()) settingsForm.sign_name = storeDefaultSign.value
+  } finally {
+    settingsSignatureLoading.value = false
   }
 }
 
@@ -1175,6 +1182,7 @@ async function saveSettings(): Promise<void> {
     toast.error(error instanceof Error ? error.message : '保存失败')
   } finally {
     savingSettings.value = false
+    settingsDlg.value = false
   }
 }
 
@@ -1215,6 +1223,7 @@ const recordsDlg = ref(false)
 const recordsLoading = ref(false)
 const records = ref<SmsSendRecord[]>([])
 const recordsCampaign = ref<SmsCampaign | null>(null)
+const retryingRecordId = ref(0)
 async function openRecords(row: SmsCampaign): Promise<void> {
   recordsCampaign.value = row
   records.value = []
@@ -1228,6 +1237,25 @@ async function openRecords(row: SmsCampaign): Promise<void> {
     recordsLoading.value = false
   }
 }
+async function retryRecord(record: SmsSendRecord): Promise<void> {
+  const campaign = recordsCampaign.value
+  if (!campaign || record.status !== 'failed') return
+  const ok = await confirmDialog({ message: `重新向 ${record.phone} 发送短信？此操作会产生短信费用。` })
+  if (!ok) return
+  retryingRecordId.value = record.id
+  try {
+    await retrySmsCampaignRecord(campaign.id, record.id, currentStoreId.value)
+    toast.success('重新发送成功')
+    records.value = await listSmsCampaignRecords(campaign.id, currentStoreId.value)
+    recordsCampaign.value = await getSmsCampaign(campaign.id, currentStoreId.value)
+    await qc.invalidateQueries({ queryKey: ['sms-campaigns'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '重新发送失败')
+    records.value = await listSmsCampaignRecords(campaign.id, currentStoreId.value).catch(() => records.value)
+  } finally {
+    retryingRecordId.value = 0
+  }
+}
 function recordSegmentName(record: SmsSendRecord): string {
   if (!record.segment_id) return '活动默认模板'
   const segment = recordsCampaign.value?.segments?.find((item) => item.id === record.segment_id)
@@ -1237,200 +1265,376 @@ function recordSegmentName(record: SmsSendRecord): string {
   return names.join(' / ') || `分组 #${record.segment_id}`
 }
 
-const tagDlg = ref(false)
-const tagEditId = ref(0)
-const savingTag = ref(false)
-const tagForm = reactive({ store_id: 0, name: '', color: '#4f46e5', description: '' })
-const visibleTags = computed(() => {
-  if (!tagForm.store_id) return allTags.value
-  return allTags.value.filter((tag) => tag.store_id === tagForm.store_id)
-})
-function resetTagForm(): void {
-  tagEditId.value = 0
-  tagForm.store_id = currentStoreId.value || stores.value[0]?.id || 0
-  tagForm.name = ''
-  tagForm.color = '#4f46e5'
-  tagForm.description = ''
-}
-function openTagManager(): void {
-  resetTagForm()
-  tagDlg.value = true
-}
-function editTag(tag: MemberTag): void {
-  tagEditId.value = tag.id
-  tagForm.store_id = tag.store_id
-  tagForm.name = tag.name
-  tagForm.color = tag.color || '#4f46e5'
-  tagForm.description = tag.description || ''
-}
-async function saveTag(): Promise<void> {
-  if (!tagForm.store_id) return toast.warning('请选择标签所属门店')
-  if (!tagForm.name.trim()) return toast.warning('请填写标签名称')
-  savingTag.value = true
-  try {
-    const body = { name: tagForm.name.trim(), color: tagForm.color.trim(), description: tagForm.description.trim() }
-    if (tagEditId.value) await updateMemberTag(tagEditId.value, body, tagForm.store_id)
-    else await createMemberTag({ store_id: tagForm.store_id, ...body })
-    toast.success('标签已保存')
-    resetTagForm()
-    await qc.invalidateQueries({ queryKey: ['member-tags'] })
-  } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : '保存标签失败')
-  } finally {
-    savingTag.value = false
-  }
-}
-async function removeTag(tag: MemberTag): Promise<void> {
-  const ok = await confirmDialog({ message: `删除标签「${tag.name}」？会员绑定关系也会被清除。` })
-  if (!ok) return
-  try {
-    await deleteMemberTag(tag.id, tag.store_id)
-    toast.success('已删除')
-    if (tagEditId.value === tag.id) resetTagForm()
-    await qc.invalidateQueries({ queryKey: ['member-tags'] })
-  } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : '删除标签失败')
-  }
-}
-function tagActions(tag: MemberTag): TableRowAction[] {
-  return [
-    { label: '成员', permission: 'marketing:sms:list', onClick: () => void openTagMembers(tag), place: 'inline' },
-    { label: '编辑', permission: 'marketing:sms:edit', onClick: () => editTag(tag), place: 'inline' },
-    { label: '删除', permission: 'marketing:sms:delete', danger: true, onClick: () => void removeTag(tag), place: 'inline' },
-  ]
-}
 function tagCheckStyle(tag: MemberTag): Record<string, string> {
   return { '--tag-color': tag.color || '#64748b' }
 }
 
-const membersDlg = ref(false)
-const activeTag = ref<MemberTag | null>(null)
-const tagMembers = ref<MemberRow[]>([])
-const tagMembersLoading = ref(false)
-const memberKeyword = ref('')
-const memberCandidates = ref<MemberRow[]>([])
-const memberSearchLoading = ref(false)
-const taggedMemberIds = computed(() => new Set(tagMembers.value.map((member) => member.id)))
-async function loadTagMembers(): Promise<void> {
-  if (!activeTag.value) return
-  tagMembersLoading.value = true
-  try {
-    tagMembers.value = await listMemberTagMembers(activeTag.value.id, activeTag.value.store_id)
-  } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : '加载标签成员失败')
-  } finally {
-    tagMembersLoading.value = false
-  }
-}
-async function openTagMembers(tag: MemberTag): Promise<void> {
-  activeTag.value = tag
-  memberKeyword.value = ''
-  memberCandidates.value = []
-  tagMembers.value = []
-  membersDlg.value = true
-  await loadTagMembers()
-}
-async function searchMembers(): Promise<void> {
-  if (!activeTag.value) return
-  memberSearchLoading.value = true
-  try {
-    memberCandidates.value = await searchSmsMembers({
-      store_id: activeTag.value.store_id,
-      keyword: memberKeyword.value.trim() || undefined,
-      limit: 20,
-    })
-  } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : '查找会员失败')
-  } finally {
-    memberSearchLoading.value = false
-  }
-}
-async function addMemberToTag(member: MemberRow): Promise<void> {
-  if (!activeTag.value) return
-  try {
-    await bindMemberTag(activeTag.value.id, member.id, activeTag.value.store_id)
-    toast.success('已加入标签')
-    await loadTagMembers()
-    await qc.invalidateQueries({ queryKey: ['member-tags'] })
-  } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : '分配标签失败')
-  }
-}
-async function removeMemberFromTag(member: MemberRow): Promise<void> {
-  if (!activeTag.value) return
-  try {
-    await unbindMemberTag(activeTag.value.id, member.id, activeTag.value.store_id)
-    toast.success('已移除')
-    await loadTagMembers()
-    await qc.invalidateQueries({ queryKey: ['member-tags'] })
-  } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : '移除失败')
-  }
-}
 </script>
 
 <style scoped>
-.sms-page { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
-.page-title { margin: 0; }
-.page-subtitle { margin: 6px 0 0; color: var(--color-text-3); font-size: 14px; }
-.head-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
-.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.stat-label { color: var(--color-text-3); font-size: 13px; }
-.stat-value { margin-top: 4px; font-size: 27px; font-weight: 700; line-height: 1.2; }
-.cell-secondary { color: var(--color-text-3); font-size: 12px; margin-top: 2px; }
-.campaign-form { display: flex; flex-direction: column; gap: 16px; max-height: 72vh; overflow-y: auto; padding-right: 4px; }
-.form-section { padding: 16px; border: 1px solid var(--color-border-2); border-radius: 10px; background: var(--color-fill-1); }
-.form-section h3, .tag-editor h3 { margin: 0 0 14px; font-size: 16px; }
-.form-grid, .segment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
-.section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.section-head h3 { margin-bottom: 5px; }
-.section-head p { margin: 0 0 14px; color: var(--color-text-3); font-size: 13px; }
-.choice-box, .tag-choice-box { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px; border: 1px solid var(--color-border-2); border-radius: 6px; background: var(--color-bg-2); }
-.check-item, .tag-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.tag-check { padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--tag-color) 38%, var(--color-border-2)); border-radius: 999px; }
-.tag-check input { accent-color: var(--tag-color); }
-.segment-list { display: flex; flex-direction: column; gap: 12px; }
-.segment-card { padding: 14px; border: 1px solid var(--color-border-2); border-radius: 9px; background: var(--color-bg-2); }
-.segment-head, .segment-title, .segment-actions, .default-switch { display: flex; align-items: center; }
-.segment-head { justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.segment-title, .segment-actions, .default-switch { gap: 8px; }
-.segment-index { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: white; background: rgb(var(--primary-6)); font-size: 12px; font-weight: 700; }
-.default-switch { margin-bottom: 12px; font-size: 13px; color: var(--color-text-2); }
-.schedule-field { max-width: 480px; margin-top: 14px; }
-.permission-hint { margin: 9px 0 0; color: var(--color-text-3); font-size: 12px; }
-.records-summary { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 12px; font-weight: 600; }
-.tag-manager { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; max-height: 68vh; overflow-y: auto; }
-.tag-editor { padding: 14px; border: 1px solid var(--color-border-2); border-radius: 9px; align-self: start; }
-.tag-list-wrap { min-width: 0; }
-.color-field { display: grid; grid-template-columns: 42px 1fr; gap: 8px; align-items: center; }
-.color-field input[type='color'] { width: 42px; height: 32px; padding: 2px; border: 1px solid var(--color-border-2); border-radius: 5px; background: transparent; }
-.editor-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.color-dot { display: inline-block; width: 10px; height: 10px; margin-right: 7px; border-radius: 50%; }
-.member-assignment { display: flex; flex-direction: column; gap: 12px; max-height: 68vh; overflow-y: auto; }
-.member-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.candidate-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--color-border-2); border-radius: 7px; }
-.member-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--color-border-2); }
-.member-line:last-child { border-bottom: 0; }
-.member-line small { margin-left: 10px; color: var(--color-text-3); }
-.assigned-head { margin-top: 4px; font-weight: 600; }
-.template-manager { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; max-height: 70vh; overflow-y: auto; }
-.template-editor { padding: 14px; border: 1px solid var(--color-border-2); border-radius: 9px; align-self: start; }
-.template-editor h3 { margin: 0 0 8px; font-size: 15px; }
-.template-hint { margin: 0 0 12px; color: var(--color-text-3); font-size: 12px; line-height: 18px; }
-.template-list-wrap { min-width: 0; }
-.template-list-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-.settings-form { display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; padding-right: 4px; }
-.window-row { display: flex; align-items: center; gap: 8px; }
-.window-dash { color: var(--color-text-3); }
-.editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.sms-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-title {
+  margin: 0;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  color: var(--color-text-3);
+  font-size: 14px;
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat-label {
+  color: var(--color-text-3);
+  font-size: 13px;
+}
+
+.stat-value {
+  margin-top: 4px;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cell-secondary {
+  color: var(--color-text-3);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.campaign-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.form-section {
+  padding: 16px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 10px;
+  background: var(--color-fill-1);
+}
+
+.form-section h3 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.form-grid,
+.segment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.section-head h3 {
+  margin-bottom: 5px;
+}
+
+.section-head p {
+  margin: 0 0 14px;
+  color: var(--color-text-3);
+  font-size: 13px;
+}
+
+.choice-box,
+.tag-choice-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  background: var(--color-bg-2);
+}
+
+.check-item,
+.tag-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.tag-check {
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--tag-color) 38%, var(--color-border-2));
+  border-radius: 999px;
+}
+
+.tag-check input {
+  accent-color: var(--tag-color);
+}
+
+.segment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.segment-card {
+  padding: 14px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 9px;
+  background: var(--color-bg-2);
+}
+
+.segment-head,
+.segment-title,
+.segment-actions,
+.default-switch {
+  display: flex;
+  align-items: center;
+}
+
+.record-error {
+  max-width: 420px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: rgb(var(--danger-6));
+  line-height: 1.5;
+}
+
+.template-preview {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid rgb(var(--primary-6));
+  background: var(--color-fill-2);
+}
+
+.template-preview strong {
+  font-size: 13px;
+}
+
+.template-preview p {
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-2);
+}
+
+.template-variable-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.template-variable-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.7fr) minmax(130px, 0.8fr) minmax(180px, 2fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.template-variable-row select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 4px;
+  background: var(--color-bg-2);
+  color: var(--color-text-1);
+}
+
+.advanced-params {
+  margin-bottom: 12px;
+}
+
+.advanced-params summary {
+  margin-bottom: 8px;
+  color: var(--color-text-3);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.segment-head {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.segment-title,
+.segment-actions,
+.default-switch {
+  gap: 8px;
+}
+
+.segment-index {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: white;
+  background: rgb(var(--primary-6));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.default-switch {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--color-text-2);
+}
+
+.schedule-field {
+  max-width: 480px;
+  margin-top: 14px;
+}
+
+.permission-hint {
+  margin: 9px 0 0;
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.records-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.template-manager {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 18px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.template-editor {
+  padding: 14px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 9px;
+  align-self: start;
+}
+
+.template-editor h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.template-hint {
+  margin: 0 0 12px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.template-list-wrap {
+  min-width: 0;
+}
+
+.template-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.window-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.window-dash {
+  color: var(--color-text-3);
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 @media (max-width: 760px) {
-  .page-head { align-items: stretch; flex-direction: column; }
-  .head-actions > * { flex: 1; }
-  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .form-grid, .segment-grid, .tag-manager, .template-manager { grid-template-columns: 1fr; }
-  .section-head, .segment-head { flex-direction: column; align-items: stretch; }
-  .segment-actions { flex-wrap: wrap; }
-  .member-search { grid-template-columns: 1fr; }
+  .page-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .head-actions>* {
+    flex: 1;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid,
+  .segment-grid,
+  .template-variable-row,
+  .template-manager {
+    grid-template-columns: 1fr;
+  }
+
+  .section-head,
+  .segment-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .segment-actions {
+    flex-wrap: wrap;
+  }
+
+  .member-search {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

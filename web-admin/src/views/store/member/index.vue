@@ -5,6 +5,7 @@
       <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
         <BaseInput v-model="keyword" class="w-full sm:w-48" placeholder="手机 / UID" clearable @enter="reload" />
         <BaseButton variant="primary" @click="reload">查询</BaseButton>
+        <BaseButton v-permission="'marketing:sms:list'" variant="secondary" @click="openTagManager">标签管理</BaseButton>
         <BaseButton v-permission="'store:member:edit'" variant="secondary" @click="openRuleDialog">会员规则</BaseButton>
         <BaseButton v-permission="'store:member:add'" variant="primary" @click="openCreate">新增会员</BaseButton>
       </div>
@@ -14,6 +15,9 @@
       min-width="1000px">
       <template #cell-balance="{ row }">
         {{ fmtMoney((row as MemberRow).balance) }}
+      </template>
+      <template #cell-total_consumption_amount="{ row }">
+        <span class="font-semibold text-emerald-700">{{ fmtMoney((row as MemberRow).total_consumption_amount ?? 0) }}</span>
       </template>
       <template #cell-unsettled_amount="{ row }">
         <span class="font-semibold text-red-600">{{ fmtMoney((row as MemberRow).unsettled_amount ?? 0) }}</span>
@@ -49,6 +53,78 @@
       <template #footer>
         <BaseButton variant="ghost" @click="dlg = false">取消</BaseButton>
         <BaseButton variant="primary" :loading="saving" @click="save">保存</BaseButton>
+      </template>
+    </BaseDialog>
+
+    <BaseDialog v-model="tagManagerDlg" title="会员标签管理" max-width="min(980px, 96vw)">
+      <div class="grid max-h-[68vh] grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside class="self-start rounded border border-[var(--color-border-2)] p-4">
+          <h3 class="mt-0 text-base">{{ tagEditId ? '编辑标签' : '新建标签' }}</h3>
+          <BaseFormItem v-if="canChooseTagStore" label="所属门店" required>
+            <BaseSelect v-model="tagForm.store_id" :options="tagStoreOptions" searchable :disabled="Boolean(tagEditId)" />
+          </BaseFormItem>
+          <BaseFormItem label="标签名称" required>
+            <BaseInput v-model="tagForm.name" placeholder="如：高频消费" maxlength="80" />
+          </BaseFormItem>
+          <BaseFormItem label="标识颜色">
+            <div class="grid grid-cols-[42px_1fr] items-center gap-2">
+              <input v-model="tagForm.color" class="h-8 w-[42px] rounded border border-[var(--color-border-2)] bg-transparent p-0.5" type="color" />
+              <BaseInput v-model="tagForm.color" placeholder="#4f46e5" />
+            </div>
+          </BaseFormItem>
+          <BaseFormItem label="说明">
+            <BaseTextarea v-model="tagForm.description" :rows="3" maxlength="255" />
+          </BaseFormItem>
+          <div class="flex justify-end gap-2">
+            <BaseButton variant="ghost" @click="resetTagForm">重置</BaseButton>
+            <BaseButton v-permission="tagEditId ? 'marketing:sms:edit' : 'marketing:sms:add'" variant="primary" :loading="savingTag" @click="saveTag">保存</BaseButton>
+          </div>
+        </aside>
+
+        <div class="min-w-0">
+          <div v-if="tagListError" class="flex items-center justify-between gap-3 py-4 text-sm text-red-600">
+            <span>{{ tagListError }}</span>
+            <BaseButton variant="secondary" size="sm" @click="loadManagedTags">重试</BaseButton>
+          </div>
+          <BaseTable v-else :columns="tagColumns" :data="(managedTags as unknown) as Record<string, unknown>[]" :loading="tagListLoading" min-width="620px">
+            <template #cell-name="{ row }">
+              <span class="mr-2 inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: (row as MemberTag).color || '#64748b' }"></span>
+              {{ (row as MemberTag).name }}
+            </template>
+            <template #cell-store_id="{ row }">{{ tagStoreName((row as MemberTag).store_id) }}</template>
+            <template #cell-actions="{ row }">
+              <BaseTableRowActions :actions="tagActions(row as MemberTag)" :max-inline="2" />
+            </template>
+          </BaseTable>
+        </div>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="tagManagerDlg = false">关闭</BaseButton>
+      </template>
+    </BaseDialog>
+
+    <BaseDialog v-model="tagDlg" :title="`设置标签 · ${tagMember?.phone || ''}`" max-width="min(520px, 96vw)">
+      <div class="space-y-3">
+        <div v-if="tagLoading" class="py-6 text-center text-sm text-[var(--color-text-3)]">正在加载标签...</div>
+        <div v-else-if="tagError" class="flex items-center justify-between gap-3 py-4 text-sm text-red-600">
+          <span>{{ tagError }}</span>
+          <BaseButton variant="secondary" size="sm" @click="openMemberTags(tagMember!)">重试</BaseButton>
+        </div>
+        <div v-else-if="!availableTags.length" class="py-6 text-center text-sm text-[var(--color-text-3)]">当前门店暂无可用标签</div>
+        <template v-else>
+          <div class="max-h-72 space-y-2 overflow-y-auto">
+            <label v-for="tag in availableTags" :key="tag.id" class="flex cursor-pointer items-center gap-2 rounded border border-[var(--color-border-2)] px-3 py-2">
+              <input v-model="selectedTagIds" type="checkbox" :value="tag.id" />
+              <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: tag.color || '#64748b' }"></span>
+              <span>{{ tag.name }}</span>
+            </label>
+          </div>
+          <p v-if="!selectedTagIds.length" class="m-0 text-xs text-[var(--color-text-3)]">未选择标签，保存后将清除该会员的全部标签。</p>
+        </template>
+      </div>
+      <template #footer>
+        <BaseButton variant="ghost" @click="tagDlg = false">取消</BaseButton>
+        <BaseButton variant="primary" :loading="tagSaving" :disabled="tagLoading || Boolean(tagError) || !tagMember" @click="saveMemberTags">保存</BaseButton>
       </template>
     </BaseDialog>
 
@@ -247,8 +323,17 @@ import {
   BaseSelect,
   BaseTable,
   BaseTableRowActions,
+  BaseTextarea,
 } from '@/components/base'
 import type { BaseTableColumn, TableRowAction } from '@/components/base/types'
+import {
+  assignMemberTags,
+  createMemberTag,
+  deleteMemberTag,
+  listMemberTags,
+  listMemberTagsForMember,
+  updateMemberTag,
+} from '@/api/smsPromotion'
 import {
   adjustMemberBalance,
   createMember,
@@ -263,11 +348,18 @@ import {
   updateMember,
   updateMemberPointRule,
 } from '@/api/member'
-import type { MemberConsumptionRecord, MemberGiftRecord, MemberPointRule, MemberRow } from '@/api/types'
+import type { MemberConsumptionRecord, MemberGiftRecord, MemberPointRule, MemberRow, MemberTag, Store } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+import { usePermission } from '@/hooks/usePermission'
+import { listAllStores } from '@/api/store'
+import { useUserStore } from '@/store/user'
 
 const qc = useQueryClient()
+const { hasPerm } = usePermission()
+const userStore = useUserStore()
+const currentStoreId = computed(() => Number(userStore.currentStoreId || 0))
+const canChooseTagStore = computed(() => currentStoreId.value === 0)
 const keyword = ref('')
 const page = ref(1)
 const pageSize = ref(10)
@@ -300,6 +392,7 @@ const columns: BaseTableColumn[] = [
   { key: 'phone', label: '手机', prop: 'phone', width: '140px' },
   { key: 'name', label: '姓名', prop: 'name', width: '100px' },
   { key: 'balance', label: '余额', width: '100px' },
+  { key: 'total_consumption_amount', label: '累计消费', width: '120px' },
   { key: 'unsettled_amount', label: '未结算', width: '110px' },
   { key: 'points', label: '积分', prop: 'points', width: '72px' },
   { key: 'level', label: '等级', prop: 'level', width: '72px' },
@@ -323,6 +416,13 @@ const giftColumns: BaseTableColumn[] = [
   { key: 'cost_amount', label: '成本金额', width: '110px' },
   { key: 'reason', label: '原因', prop: 'reason', minWidth: '180px', ellipsis: true },
   { key: 'operator_name', label: '操作人', prop: 'operator_name', width: '100px' },
+]
+const tagColumns: BaseTableColumn[] = [
+  { key: 'name', label: '标签', minWidth: '150px' },
+  { key: 'store_id', label: '门店', width: '130px' },
+  { key: 'member_count', label: '会员数', prop: 'member_count', width: '90px' },
+  { key: 'description', label: '说明', prop: 'description', minWidth: '160px', ellipsis: true },
+  { key: 'actions', label: '操作', width: '150px', align: 'right' },
 ]
 const ruleColumns: BaseTableColumn[] = [
   { key: 'name', label: '规则名称', prop: 'name', minWidth: '140px', ellipsis: true },
@@ -460,13 +560,167 @@ async function onDelete(row: MemberRow): Promise<void> {
 }
 
 function memberRowActions(row: MemberRow): TableRowAction[] {
-  return [
+  const actions: TableRowAction[] = [
     { label: '消费记录', permission: 'store:member:list', onClick: () => openConsumptions(row) },
     { label: '赠品记录', permission: 'store:member:list', onClick: () => openGifts(row) },
     { label: '编辑', permission: 'store:member:edit', onClick: () => openEdit(row) },
     { label: '调余额', permission: 'store:member:balance', onClick: () => openAdjust(row) },
     { label: '删除', permission: 'store:member:delete', danger: true, onClick: () => void onDelete(row) },
   ]
+  if (hasPerm('marketing:sms:list') && hasPerm('marketing:sms:edit')) {
+    actions.splice(2, 0, { label: '设置标签', permission: 'marketing:sms:edit', onClick: () => void openMemberTags(row) })
+  }
+  return actions
+}
+
+const { data: tagStoreData } = useQuery({
+  queryKey: ['stores', 'member-tags'],
+  queryFn: async () => {
+    try {
+      return await listAllStores()
+    } catch {
+      return [] as Store[]
+    }
+  },
+})
+const tagStores = computed(() => {
+  const rows = [...(tagStoreData.value ?? [])]
+  const own = userStore.userInfo?.store
+  if (currentStoreId.value > 0 && !rows.some((store) => store.id === currentStoreId.value)) {
+    rows.push({ id: currentStoreId.value, name: own?.name || `当前门店 #${currentStoreId.value}` })
+  }
+  return rows
+})
+const tagStoreOptions = computed(() => tagStores.value.map((store) => ({ label: store.name, value: store.id })))
+
+const tagManagerDlg = ref(false)
+const tagListLoading = ref(false)
+const tagListError = ref('')
+const managedTags = ref<MemberTag[]>([])
+const tagEditId = ref(0)
+const savingTag = ref(false)
+const tagForm = reactive({ store_id: 0, name: '', color: '#4f46e5', description: '' })
+
+function tagStoreName(id: number): string {
+  return tagStores.value.find((store) => store.id === id)?.name || `门店 #${id}`
+}
+
+function resetTagForm(): void {
+  tagEditId.value = 0
+  tagForm.store_id = currentStoreId.value || tagStores.value[0]?.id || 0
+  tagForm.name = ''
+  tagForm.color = '#4f46e5'
+  tagForm.description = ''
+}
+
+async function loadManagedTags(): Promise<void> {
+  tagListLoading.value = true
+  tagListError.value = ''
+  try {
+    managedTags.value = await listMemberTags(currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined)
+  } catch (error: unknown) {
+    tagListError.value = error instanceof Error ? error.message : '加载标签失败，请重试'
+  } finally {
+    tagListLoading.value = false
+  }
+}
+
+function openTagManager(): void {
+  resetTagForm()
+  tagManagerDlg.value = true
+  void loadManagedTags()
+}
+
+function editTag(tag: MemberTag): void {
+  tagEditId.value = tag.id
+  tagForm.store_id = tag.store_id
+  tagForm.name = tag.name
+  tagForm.color = tag.color || '#4f46e5'
+  tagForm.description = tag.description || ''
+}
+
+async function saveTag(): Promise<void> {
+  if (!tagForm.store_id) return toast.warning('请选择标签所属门店')
+  if (!tagForm.name.trim()) return toast.warning('请填写标签名称')
+  savingTag.value = true
+  try {
+    const body = { name: tagForm.name.trim(), color: tagForm.color.trim(), description: tagForm.description.trim() }
+    if (tagEditId.value) await updateMemberTag(tagEditId.value, body, tagForm.store_id)
+    else await createMemberTag({ store_id: tagForm.store_id, ...body })
+    toast.success('标签已保存')
+    resetTagForm()
+    await loadManagedTags()
+    await qc.invalidateQueries({ queryKey: ['member-tags'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '保存标签失败')
+  } finally {
+    savingTag.value = false
+  }
+}
+
+async function removeTag(tag: MemberTag): Promise<void> {
+  const ok = await confirmDialog({ message: `删除标签「${tag.name}」？会员绑定关系也会被清除。` })
+  if (!ok) return
+  try {
+    await deleteMemberTag(tag.id, tag.store_id)
+    toast.success('已删除')
+    if (tagEditId.value === tag.id) resetTagForm()
+    await loadManagedTags()
+    await qc.invalidateQueries({ queryKey: ['member-tags'] })
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '删除标签失败')
+  }
+}
+
+function tagActions(tag: MemberTag): TableRowAction[] {
+  return [
+    { label: '编辑', permission: 'marketing:sms:edit', onClick: () => editTag(tag), place: 'inline' },
+    { label: '删除', permission: 'marketing:sms:delete', danger: true, onClick: () => void removeTag(tag), place: 'inline' },
+  ]
+}
+
+const tagDlg = ref(false)
+const tagLoading = ref(false)
+const tagSaving = ref(false)
+const tagError = ref('')
+const tagMember = ref<MemberRow | null>(null)
+const availableTags = ref<MemberTag[]>([])
+const selectedTagIds = ref<number[]>([])
+
+async function openMemberTags(row: MemberRow): Promise<void> {
+  tagMember.value = row
+  availableTags.value = []
+  selectedTagIds.value = []
+  tagError.value = ''
+  tagDlg.value = true
+  tagLoading.value = true
+  try {
+    const [tags, assigned] = await Promise.all([
+      listMemberTags(row.store_id ? { store_id: row.store_id } : currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined),
+      listMemberTagsForMember(row.id),
+    ])
+    availableTags.value = tags
+    const availableIds = new Set(tags.map((tag) => tag.id))
+    selectedTagIds.value = assigned.map((tag) => tag.id).filter((id) => availableIds.has(id))
+  } catch (error: unknown) {
+    tagError.value = error instanceof Error ? error.message : '加载标签失败，请重试'
+  } finally {
+    tagLoading.value = false
+  }
+}
+
+async function saveMemberTags(): Promise<void> {
+  if (!tagMember.value || tagLoading.value || tagError.value) return
+  tagSaving.value = true
+  try {
+    await assignMemberTags(tagMember.value.id, selectedTagIds.value)
+    toast.success('标签已更新')
+    tagDlg.value = false
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : '保存标签失败')
+  } finally {
+    tagSaving.value = false
+  }
 }
 
 const consDlg = ref(false)

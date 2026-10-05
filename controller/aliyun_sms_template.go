@@ -38,6 +38,12 @@ func templateMutationScope(ctx *gin.Context) (storeID uint, ok bool) {
 
 func (c *AliyunSmsTemplateController) List(ctx *gin.Context) {
 	storeID, allStores := templateScope(ctx)
+	if middleware.HQUnboundAdmin(ctx) {
+		if _, exists := ctx.GetQuery("owner_store_id"); exists {
+			storeID = middleware.ResolveQueryStoreID(ctx, "owner_store_id")
+			allStores = false
+		}
+	}
 	rows, err := c.svc.List(storeID, allStores, ctx.Query("keyword"), ctx.Query("audit_status"))
 	if err != nil {
 		httpPkg.ErrorFrom(ctx, err)

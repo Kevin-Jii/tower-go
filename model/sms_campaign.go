@@ -22,8 +22,9 @@ const (
 	SmsCampaignStatusFailed    = "failed"
 	SmsCampaignStatusCancelled = "cancelled"
 
-	SmsSendRecordSuccess = "success"
-	SmsSendRecordFailed  = "failed"
+	SmsSendRecordSuccess  = "success"
+	SmsSendRecordFailed   = "failed"
+	SmsSendRecordRetrying = "retrying"
 )
 
 // SmsCampaign is a store-owned SMS promotion. Legacy template fields remain as

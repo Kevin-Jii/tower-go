@@ -14,6 +14,7 @@ type AliyunSmsClient interface {
 	CreateTemplate(name, content, relatedSign, remark string, templateType int32) (string, error)
 	GetTemplate(templateCode string) (*aliyunsms.TemplateSnapshot, error)
 	DeleteTemplate(templateCode string) error
+	ListTemplates() ([]aliyunsms.TemplateSnapshot, error)
 	ListSignatures() ([]aliyunsms.SignatureSnapshot, error)
 }
 
@@ -51,6 +52,7 @@ type AliyunSmsTemplateRepository interface {
 	GetByCode(code string, storeID uint, allStores bool) (*model.AliyunSmsTemplate, error)
 	ExistsByName(name string, storeID uint) (bool, error)
 	Upsert(row *model.AliyunSmsTemplate) error
+	SyncFromAliyun(row *model.AliyunSmsTemplate) error
 	Delete(row *model.AliyunSmsTemplate) error
 }
 
@@ -71,11 +73,59 @@ func (s *AliyunSmsTemplateService) resolveClient(storeID uint) (AliyunSmsClient,
 }
 
 func (s *AliyunSmsTemplateService) List(storeID uint, allStores bool, keyword, auditStatus string) ([]model.AliyunSmsTemplate, error) {
-	return s.repository.List(storeID, allStores, keyword, auditStatus)
+	// A specific store maps to one Aliyun account, so its list is read directly
+	// from Aliyun. HQ's unfiltered cross-account view reads the synchronized cache.
+	if allStores {
+		return s.repository.List(storeID, true, keyword, auditStatus)
+	}
+	rows, err := s.SyncTemplates(storeID)
+	if err != nil {
+		return nil, err
+	}
+	keyword = strings.ToLower(strings.TrimSpace(keyword))
+	auditStatus = strings.TrimSpace(auditStatus)
+	filtered := make([]model.AliyunSmsTemplate, 0, len(rows))
+	for _, row := range rows {
+		if auditStatus != "" && row.AuditStatus != auditStatus {
+			continue
+		}
+		if keyword != "" && !strings.Contains(strings.ToLower(row.Name+"\n"+row.TemplateCode+"\n"+row.Content), keyword) {
+			continue
+		}
+		filtered = append(filtered, row)
+	}
+	return filtered, nil
+}
+
+func (s *AliyunSmsTemplateService) SyncTemplates(storeID uint) ([]model.AliyunSmsTemplate, error) {
+	client, err := s.resolveClient(storeID)
+	if err != nil {
+		return nil, err
+	}
+	snapshots, err := client.ListTemplates()
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]model.AliyunSmsTemplate, 0, len(snapshots))
+	for _, snap := range snapshots {
+		if strings.TrimSpace(snap.TemplateCode) == "" {
+			continue
+		}
+		row := model.AliyunSmsTemplate{
+			OwnerStoreID: storeID, TemplateCode: snap.TemplateCode,
+			Name: snap.TemplateName, Content: snap.TemplateContent, TemplateType: snap.TemplateType,
+			AuditStatus: mapAliyunAuditStatus(snap.TemplateStatus), AuditReason: snap.Reason,
+		}
+		if err := s.repository.SyncFromAliyun(&row); err != nil {
+			return nil, err
+		}
+		rows = append(rows, row)
+	}
+	return rows, nil
 }
 
 func (s *AliyunSmsTemplateService) ListApproved(storeID uint, allStores bool) ([]model.AliyunSmsTemplate, error) {
-	return s.repository.List(storeID, allStores, "", model.SmsTemplateAuditApproved)
+	return s.List(storeID, allStores, "", model.SmsTemplateAuditApproved)
 }
 
 func (s *AliyunSmsTemplateService) ListSignatures(storeID uint, approvedOnly bool) ([]aliyunsms.SignatureSnapshot, error) {

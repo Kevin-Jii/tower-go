@@ -230,7 +230,10 @@
 <script setup lang="ts">
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import * as echarts from 'echarts'
+import { LineChart, PieChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { graphic, init, use, type ECharts } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
 import {
   IconApps,
   IconCalendar,
@@ -258,6 +261,8 @@ import {
   DashboardRoundIcon,
   DashboardSalesIcon,
 } from './components/icons'
+
+use([LineChart, PieChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 defineProps<{
   fullscreen?: boolean
@@ -522,9 +527,9 @@ const memberRows = computed(() => {
 const lineRef = ref<HTMLElement | null>(null)
 const pieRef = ref<HTMLElement | null>(null)
 const heroChartRef = ref<HTMLElement | null>(null)
-let lineChart: echarts.ECharts | null = null
-let pieChart: echarts.ECharts | null = null
-let heroChart: echarts.ECharts | null = null
+let lineChart: ECharts | null = null
+let pieChart: ECharts | null = null
+let heroChart: ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 
 const axisText = '#aebdd7'
@@ -582,9 +587,9 @@ function disposeCharts(): void {
 }
 
 function ensureCharts(): void {
-  if (lineRef.value && !lineChart) lineChart = echarts.init(lineRef.value)
-  if (pieRef.value && !pieChart) pieChart = echarts.init(pieRef.value)
-  if (heroChartRef.value && !heroChart) heroChart = echarts.init(heroChartRef.value)
+  if (lineRef.value && !lineChart) lineChart = init(lineRef.value)
+  if (pieRef.value && !pieChart) pieChart = init(pieRef.value)
+  if (heroChartRef.value && !heroChart) heroChart = init(heroChartRef.value)
 }
 
 function applyChartOptions(hc: HomeChartsStats): void {
@@ -648,7 +653,7 @@ function applyChartOptions(hc: HomeChartsStats): void {
           yAxisIndex: 0,
           lineStyle: { width: 2.5, color: '#2f9bff' },
           itemStyle: { color: '#2f9bff', borderColor: '#d1eaff', borderWidth: 1 },
-          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(47, 155, 255, 0.24)' }, { offset: 1, color: 'rgba(47, 155, 255, 0.01)' }]) },
+          areaStyle: { color: new graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(47, 155, 255, 0.24)' }, { offset: 1, color: 'rgba(47, 155, 255, 0.01)' }]) },
           data: line.map((item) => item.amount),
         },
         {
@@ -697,7 +702,7 @@ function applyChartOptions(hc: HomeChartsStats): void {
         smooth: 0.42,
         symbol: 'none',
         lineStyle: { width: 2.5, color: '#6955e7' },
-        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(105, 85, 231, 0.35)' }, { offset: 1, color: 'rgba(105, 85, 231, 0)' }]) },
+        areaStyle: { color: new graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(105, 85, 231, 0.35)' }, { offset: 1, color: 'rgba(105, 85, 231, 0)' }]) },
         data: line.map((item) => item.amount),
       }],
     })

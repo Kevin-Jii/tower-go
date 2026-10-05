@@ -32,12 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from 'vue'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import * as ArcoIcons from '@arco-design/web-vue/es/icon'
 import type { Menu } from '@/api/types'
 import ArcoProMenu from './ArcoProMenu.vue'
+import { resolveMenuIcon } from './menuIcons'
 
 withDefaults(
   defineProps<{
@@ -58,31 +57,7 @@ const selectedKeys = computed(() => {
   return p && p !== '/' ? [p] : []
 })
 
-const iconComponents = ArcoIcons as Record<string, Component>
-const legacyIconMap: Record<string, string> = {
-  setting: 'IconSettings',
-  user: 'IconUser',
-  usergroup: 'IconUserGroup',
-  read: 'IconBook',
-  picture: 'IconImage',
-  document: 'IconFile',
-  apps: 'IconApps',
-}
-
-function iconCmp(name?: string): Component | undefined {
-  if (!name) return undefined
-  const exportName = legacyIconMap[name] ?? iconValueToExport(name)
-  return iconComponents[exportName] ?? iconComponents.IconFile
-}
-
-function iconValueToExport(value: string): string {
-  if (value.startsWith('Icon')) return value
-  return `Icon${value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('')}`
-}
+const iconCmp = resolveMenuIcon
 
 function visibleChildren(node: Menu): Menu[] {
   return (node.children ?? []).filter((c) => c.visible !== 0 && c.status !== 0)

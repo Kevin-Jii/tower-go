@@ -5,9 +5,10 @@ import { createPinia } from 'pinia'
 import { createApp, nextTick } from 'vue'
 import App from './App.vue'
 import { permissionDirective } from './permission/directive'
-import router from './router'
+import router, { resetDynamicRoutes } from './router'
 import { setupRouterGuard } from './permission'
-import { useUserStore } from './store/user'
+import { setLogoutNavigationHandler, useUserStore } from './store/user'
+import { setAuthExpiredHandler } from './api/http'
 import 'virtual:uno.css'
 import './styles/global.css'
 
@@ -24,7 +25,22 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
-useUserStore(pinia).hydrateFromStorage()
+const userStore = useUserStore(pinia)
+userStore.hydrateFromStorage()
+setLogoutNavigationHandler(async (options) => {
+  resetDynamicRoutes(router)
+  const redirect = options?.redirect
+  await router.replace({
+    name: 'Login',
+    query: redirect && redirect !== '/login' ? { redirect } : undefined,
+  })
+})
+setAuthExpiredHandler(async () => {
+  await userStore.logout({
+    redirect: router.currentRoute.value.fullPath,
+    message: '登录已过期，请重新登录',
+  })
+})
 app.use(router)
 app.use(ArcoVue)
 app.use(VueQueryPlugin, { queryClient })

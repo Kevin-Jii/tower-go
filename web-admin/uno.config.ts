@@ -5,6 +5,7 @@ export default defineConfig({
     presetUno(),
     presetAttributify(),
     presetIcons({
+      prefix: 'i-',
       scale: 1.15,
       warn: true,
       extraProperties: {

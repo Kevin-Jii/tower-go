@@ -11,6 +11,16 @@ import {
 } from "@/utils/storage";
 import { isTenantSwitchableUser, resolveCurrentStoreId } from "@/utils/currentStore";
 
+let logoutNavigationHandler:
+  | ((options?: { redirect?: string; message?: string }) => Promise<void>)
+  | undefined;
+
+export function setLogoutNavigationHandler(
+  handler: (options?: { redirect?: string; message?: string }) => Promise<void>,
+): void {
+  logoutNavigationHandler = handler;
+}
+
 export const useUserStore = defineStore("user", () => {
   function hasInventoryLossMenu(list: Menu[] | undefined): boolean {
     if (!list?.length) return false;
@@ -108,8 +118,6 @@ export const useUserStore = defineStore("user", () => {
   }
 
   async function logout(options?: { redirect?: string; message?: string }): Promise<void> {
-    const { default: router, resetDynamicRoutes } = await import("@/router");
-    resetDynamicRoutes(router);
     token.value = "";
     userInfo.value = null;
     permissions.value = [];
@@ -121,11 +129,7 @@ export const useUserStore = defineStore("user", () => {
     if (options?.message) {
       toast.warning(options.message);
     }
-    const redirect = options?.redirect;
-    await router.replace({
-      name: "Login",
-      query: redirect && redirect !== "/login" ? { redirect } : undefined,
-    });
+    await logoutNavigationHandler?.(options);
   }
 
   function markDynamicRoutes(ready: boolean): void {

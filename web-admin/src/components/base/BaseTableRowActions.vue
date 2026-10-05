@@ -2,7 +2,7 @@
   <div class="table-row-actions inline-flex min-w-max items-center justify-end gap-2 whitespace-nowrap" @click.stop>
     <BaseButton
       v-for="(a, i) in inlineActions"
-      :key="'i-' + i"
+      :key="'inline-action-' + i"
       variant="link"
       size="sm"
       :class="a.danger ? '!text-rose-600' : undefined"

@@ -30,7 +30,15 @@ import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { HotTable } from '@handsontable/vue3'
-import { registerAllModules } from 'handsontable/registry'
+import { registerPlugin } from 'handsontable/plugins'
+import { AutoColumnSize } from 'handsontable/plugins/autoColumnSize'
+import { Autofill } from 'handsontable/plugins/autofill'
+import { ContextMenu } from 'handsontable/plugins/contextMenu'
+import { CopyPaste } from 'handsontable/plugins/copyPaste'
+import { ManualColumnResize } from 'handsontable/plugins/manualColumnResize'
+import { ManualRowResize } from 'handsontable/plugins/manualRowResize'
+import { StretchColumns } from 'handsontable/plugins/stretchColumns'
+import { UndoRedo } from 'handsontable/plugins/undoRedo'
 import 'handsontable/styles/handsontable.min.css'
 import 'handsontable/styles/ht-theme-main.min.css'
 import { BaseButton, BaseInput, BaseSelect } from '@/components/base'
@@ -39,7 +47,14 @@ import { listThirdPartyRoutes, importThirdPartyRouteByDateRange, saveThirdPartyL
 import type { ThirdPartyRoute } from '@/api/types'
 import { toast } from '@/feedback/toast'
 
-registerAllModules()
+registerPlugin(AutoColumnSize)
+registerPlugin(Autofill)
+registerPlugin(ContextMenu)
+registerPlugin(CopyPaste)
+registerPlugin(ManualColumnResize)
+registerPlugin(ManualRowResize)
+registerPlugin(StretchColumns)
+registerPlugin(UndoRedo)
 
 const router = useRouter()
 const route = useRoute()

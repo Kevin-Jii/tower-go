@@ -15,24 +15,24 @@ export const http = axios.create({
 })
 
 let authRedirecting = false
+let authExpiredHandler: (() => Promise<void>) | undefined
+
+export function setAuthExpiredHandler(handler: () => Promise<void>): void {
+  authExpiredHandler = handler
+}
 
 function isAuthExpiredCode(code: unknown): boolean {
   return code === 40101 || code === 40102 || code === 40103
 }
 
 async function redirectToLogin(): Promise<void> {
-  if (authRedirecting) return
+  if (authRedirecting || !authExpiredHandler) return
   authRedirecting = true
-  const [{ useUserStore }, { default: router }] = await Promise.all([
-    import('@/store/user'),
-    import('@/router'),
-  ])
-  const userStore = useUserStore()
-  await userStore.logout({
-    redirect: router.currentRoute.value.fullPath,
-    message: '登录已过期，请重新登录',
-  })
-  authRedirecting = false
+  try {
+    await authExpiredHandler()
+  } finally {
+    authRedirecting = false
+  }
 }
 
 http.interceptors.request.use((config) => {

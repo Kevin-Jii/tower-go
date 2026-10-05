@@ -98,10 +98,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from 'vue'
 import { computed, reactive, ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
-import * as ArcoIcons from '@arco-design/web-vue/es/icon'
 import {
   BaseButton,
   BaseDialog,
@@ -119,6 +117,7 @@ import { createMenu, deleteMenu, fetchMenuTree, updateMenu } from '@/api/menu'
 import type { Menu } from '@/api/types'
 import { toast } from '@/feedback/toast'
 import { confirmDialog } from '@/feedback/confirm'
+import { menuIconOptions } from '@/layout/menuIcons'
 
 const qc = useQueryClient()
 const { data: treeData, isLoading: loading } = useQuery({
@@ -132,12 +131,6 @@ interface CascaderOption {
   label: string
   value: string
   children?: CascaderOption[]
-}
-
-interface IconOption {
-  label: string
-  value: string
-  component: Component
 }
 
 const columns: BaseTableColumn[] = [
@@ -179,17 +172,7 @@ const viewPathOptions = computed<CascaderOption[]>(() => {
   return root
 })
 
-const iconComponents = ArcoIcons as Record<string, Component>
-const iconOptions = computed<IconOption[]>(() =>
-  Object.entries(iconComponents)
-    .filter(([name, cmp]) => name.startsWith('Icon') && Boolean(cmp))
-    .map(([name, component]) => ({
-      label: iconExportToValue(name),
-      value: iconExportToValue(name),
-      component,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label)),
-)
+const iconOptions = menuIconOptions
 
 interface ParentTreeOption {
   id: number
@@ -297,14 +280,6 @@ function onComponentPathChange(value: unknown): void {
     return
   }
   form.component = value ? String(value) : ''
-}
-
-function iconExportToValue(exportName: string): string {
-  const raw = exportName.replace(/^Icon/, '')
-  return raw
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase()
 }
 
 function filterIconOption(input: string, option: unknown): boolean {

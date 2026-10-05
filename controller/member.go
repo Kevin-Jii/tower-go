@@ -130,16 +130,19 @@ func (c *MemberController) GetMember(ctx *gin.Context) {
 
 // ListMembers 获取会员列表
 // @Summary 获取会员列表
-// @Description 获取会员列表，支持关键字模糊查询手机号/UID，支持分页
+// @Description 获取会员列表，支持关键字模糊查询手机号/UID/姓名、会员标签筛选和分页
 // @Tags 会员管理
 // @Produce json
-// @Param keyword query string false "关键字(模糊匹配手机号/UID)"
+// @Param keyword query string false "关键字(模糊匹配手机号/UID/姓名)"
+// @Param tag_id query int false "会员标签ID"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} http.Response{data=[]model.Member}
 // @Router /members [get]
 func (c *MemberController) ListMembers(ctx *gin.Context) {
 	keyword := ctx.Query("keyword")
+	tagID64, _ := strconv.ParseUint(ctx.Query("tag_id"), 10, 32)
+	tagID := uint(tagID64)
 	pageStr := ctx.DefaultQuery("page", "1")
 	pageSizeStr := ctx.DefaultQuery("page_size", "20")
 
@@ -154,7 +157,7 @@ func (c *MemberController) ListMembers(ctx *gin.Context) {
 
 	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	allStores := middleware.HQUnboundAdmin(ctx) && storeID == 0
-	members, total, err := c.service.ListMembers(keyword, page, pageSize, storeID, allStores)
+	members, total, err := c.service.ListMembers(keyword, tagID, page, pageSize, storeID, allStores)
 	if err != nil {
 		http.ErrorFrom(ctx, err)
 		return

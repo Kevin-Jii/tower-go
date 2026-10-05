@@ -73,8 +73,8 @@ func (s *MemberService) GetMemberByUID(uid string) (*model.Member, error) {
 }
 
 // ListMembers 获取会员列表
-func (s *MemberService) ListMembers(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.Member, int64, error) {
-	return s.module.ListMembers(keyword, page, pageSize, storeID, isAdmin)
+func (s *MemberService) ListMembers(keyword string, tagID uint, page, pageSize int, storeID uint, isAdmin bool) ([]model.Member, int64, error) {
+	return s.module.ListMembers(keyword, tagID, page, pageSize, storeID, isAdmin)
 }
 
 func (s *MemberService) GetMemberStats(storeID uint, isAdmin bool) (*model.MemberStats, error) {

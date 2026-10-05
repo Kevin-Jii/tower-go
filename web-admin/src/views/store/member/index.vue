@@ -3,7 +3,8 @@
     <div class="flex flex-col md:flex-row md:items-end gap-3 justify-between">
       <h2 class="page-title">会员管理</h2>
       <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-        <BaseInput v-model="keyword" class="w-full sm:w-48" placeholder="手机 / UID" clearable @enter="reload" />
+        <BaseInput v-model="keyword" class="w-full sm:w-48" placeholder="姓名 / 手机 / UID" clearable @enter="reload" />
+        <BaseSelect v-if="hasPerm('marketing:sms:list')" v-model="tagFilterId" class="w-full sm:w-44" :options="tagFilterOptions" placeholder="全部标签" clearable searchable />
         <BaseButton variant="primary" @click="reload">查询</BaseButton>
         <BaseButton v-permission="'marketing:sms:list'" variant="secondary" @click="openTagManager">标签管理</BaseButton>
         <BaseButton v-permission="'store:member:edit'" variant="secondary" @click="openRuleDialog">会员规则</BaseButton>
@@ -13,6 +14,12 @@
 
     <BaseTable :columns="columns" :data="(list as unknown) as Record<string, unknown>[]" :loading="loading"
       min-width="1000px">
+      <template #cell-name="{ row }">
+        <span class="inline-flex items-center gap-1.5">
+          <span v-for="tag in (row as MemberRow).tags || []" :key="tag.id" class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: tag.color || '#64748b' }" :title="tag.name"></span>
+          <span>{{ (row as MemberRow).name || '-' }}</span>
+        </span>
+      </template>
       <template #cell-balance="{ row }">
         {{ fmtMoney((row as MemberRow).balance) }}
       </template>
@@ -361,10 +368,11 @@ const userStore = useUserStore()
 const currentStoreId = computed(() => Number(userStore.currentStoreId || 0))
 const canChooseTagStore = computed(() => currentStoreId.value === 0)
 const keyword = ref('')
+const tagFilterId = ref<number | undefined>(undefined)
 const page = ref(1)
 const pageSize = ref(10)
 
-const queryKey = computed(() => ['members', page.value, pageSize.value, keyword.value.trim()] as const)
+const queryKey = computed(() => ['members', page.value, pageSize.value, keyword.value.trim(), tagFilterId.value || 0] as const)
 
 const { data: pageData, isLoading: loading } = useQuery({
   queryKey,
@@ -373,11 +381,18 @@ const { data: pageData, isLoading: loading } = useQuery({
       page: page.value,
       page_size: pageSize.value,
       keyword: keyword.value.trim() || undefined,
+      tag_id: tagFilterId.value || undefined,
     }),
 })
 
 const list = computed(() => pageData.value?.list ?? [])
 const total = computed(() => pageData.value?.total ?? 0)
+const { data: memberTagData } = useQuery({
+  queryKey: computed(() => ['member-tags', 'member-filter', currentStoreId.value] as const),
+  queryFn: () => listMemberTags(currentStoreId.value > 0 ? { store_id: currentStoreId.value } : undefined),
+  enabled: computed(() => hasPerm('marketing:sms:list')),
+})
+const tagFilterOptions = computed(() => (memberTagData.value ?? []).map((tag) => ({ label: tag.name, value: tag.id })))
 
 function reload(): void {
   page.value = 1
@@ -387,10 +402,11 @@ function reload(): void {
 watch([page, pageSize], () => {
   void qc.invalidateQueries({ queryKey: ['members'] })
 })
+watch(tagFilterId, reload)
 
 const columns: BaseTableColumn[] = [
+  { key: 'name', label: '姓名', minWidth: '130px' },
   { key: 'phone', label: '手机', prop: 'phone', width: '140px' },
-  { key: 'name', label: '姓名', prop: 'name', width: '100px' },
   { key: 'balance', label: '余额', width: '100px' },
   { key: 'total_consumption_amount', label: '累计消费', width: '120px' },
   { key: 'unsettled_amount', label: '未结算', width: '110px' },

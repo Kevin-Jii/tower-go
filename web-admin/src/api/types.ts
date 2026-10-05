@@ -933,6 +933,7 @@ export interface MemberRow {
   recent_consumption_at?: string
   consumption_count?: number
   total_consumption_amount?: string | number
+  tags?: MemberTag[]
   createTime?: string
 }
 

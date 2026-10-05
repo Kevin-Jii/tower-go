@@ -172,13 +172,18 @@ func (m *MemberModule) GetMemberByUID(uid string) (*model.Member, error) {
 }
 
 // ListMembers 获取会员列表
-func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID uint, isAdmin bool) ([]model.Member, int64, error) {
+func (m *MemberModule) ListMembers(keyword string, tagID uint, page, pageSize int, storeID uint, isAdmin bool) ([]model.Member, int64, error) {
 	var members []model.Member
 	var total int64
 
 	query := m.scopedMemberQuery(storeID, isAdmin)
 	if keyword != "" {
 		query = query.Where("phone LIKE ? OR uid LIKE ? OR name LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+	}
+	if tagID > 0 {
+		query = query.Where("EXISTS (?)", m.db.Model(&model.MemberTagBinding{}).
+			Select("1").
+			Where("member_tag_bindings.member_id = t_member.id AND member_tag_bindings.store_id = t_member.store_id AND member_tag_bindings.tag_id = ?", tagID))
 	}
 
 	// 统计总数
@@ -200,7 +205,52 @@ func (m *MemberModule) ListMembers(keyword string, page, pageSize int, storeID u
 	if err := m.fillMemberConsumptionSummaries(members, storeID, isAdmin); err != nil {
 		return nil, 0, err
 	}
+	if err := m.fillMemberTags(members); err != nil {
+		return nil, 0, err
+	}
 	return members, total, nil
+}
+
+func (m *MemberModule) fillMemberTags(members []model.Member) error {
+	if len(members) == 0 {
+		return nil
+	}
+	ids := make([]uint, 0, len(members))
+	index := make(map[uint]int, len(members))
+	for i := range members {
+		ids = append(ids, members[i].ID)
+		index[members[i].ID] = i
+	}
+	type memberTagRow struct {
+		MemberID    uint
+		ID          uint
+		StoreID     uint
+		Name        string
+		Color       string
+		Description string
+		MemberCount int64
+		CreatedAt   time.Time
+		UpdatedAt   time.Time
+	}
+	rows := make([]memberTagRow, 0)
+	if err := m.db.Table("member_tags").
+		Select("b.member_id, member_tags.id, member_tags.store_id, member_tags.name, member_tags.color, member_tags.description, member_tags.created_at, member_tags.updated_at").
+		Joins("JOIN member_tag_bindings b ON b.tag_id = member_tags.id AND b.store_id = member_tags.store_id").
+		Where("b.member_id IN ?", ids).
+		Order("member_tags.id ASC").
+		Scan(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if i, ok := index[row.MemberID]; ok {
+			members[i].Tags = append(members[i].Tags, model.MemberTag{
+				ID: row.ID, StoreID: row.StoreID, Name: row.Name, Color: row.Color,
+				Description: row.Description, MemberCount: row.MemberCount,
+				CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+			})
+		}
+	}
+	return nil
 }
 
 func (m *MemberModule) fillMemberConsumptionSummaries(members []model.Member, storeID uint, isAdmin bool) error {

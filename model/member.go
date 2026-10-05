@@ -30,6 +30,7 @@ type Member struct {
 	RecentConsumptionAt    *time.Time      `json:"recent_consumption_at" gorm:"-"`
 	ConsumptionCount       int64           `json:"consumption_count" gorm:"-"`
 	TotalConsumptionAmount float64         `json:"total_consumption_amount" gorm:"-"`
+	Tags                   []MemberTag     `json:"tags,omitempty" gorm:"-"`
 	CreateTime             time.Time       `json:"createTime" gorm:"autoCreateTime"`
 	UpdateTime             time.Time       `json:"updateTime" gorm:"autoUpdateTime"`
 }

@@ -7,6 +7,7 @@ export async function listMembers(params?: {
   page?: number
   page_size?: number
   keyword?: string
+  tag_id?: number
 }): Promise<Paginated<MemberRow>> {
   const res = await http.get<import('./types').ApiEnvelope<Paginated<MemberRow>>>('/members', { params })
   return unwrap(res)

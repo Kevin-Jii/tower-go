@@ -80,6 +80,9 @@ var autoMigrateModels = []interface{}{
 	&model.SmsSendRecord{},
 	&model.AliyunSmsTemplate{},
 	&model.StoreSmsConfig{},
+	&model.AIAssistantConfig{},
+	&model.AIAssistantConversation{},
+	&model.AIAssistantMessage{},
 }
 
 func AutoMigrateAndSeeds() {

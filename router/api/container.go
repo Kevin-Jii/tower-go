@@ -35,6 +35,7 @@ type Controllers struct {
 	StoreReturn              *controller.StoreReturnController
 	MeituanAI                *controller.MeituanAIController
 	Statistics               *controller.StatisticsController
+	AIAssistant              *controller.AIAssistantController
 	MessageTemplate          *controller.MessageTemplateController
 	SmsCampaign              *controller.SmsCampaignController
 	AliyunSmsTemplate        *controller.AliyunSmsTemplateController
@@ -162,6 +163,7 @@ func BuildControllers() *Controllers {
 	storeReturnService := service.NewStoreReturnService(storeReturnModule, userModule)
 	meituanAIService := service.NewMeituanAIService(meituanAIModule)
 	statisticsService := service.NewStatisticsService(statisticsModule)
+	aiAssistantService := service.NewAIAssistantService(userModulePkg.NewAIAssistantModule(database.DB), statisticsService)
 	memberService := service.NewMemberService(memberModule)
 	memberService.SetDependencies(storeModule, dingTalkBotModule, dictModule, userModule, dingTalkService)
 	priceListService := service.NewPriceListService(priceListModule, storeModule, supplierProductModule)
@@ -225,6 +227,7 @@ func BuildControllers() *Controllers {
 		StoreReturn:              controller.NewStoreReturnController(storeReturnService),
 		MeituanAI:                controller.NewMeituanAIController(meituanAIService),
 		Statistics:               controller.NewStatisticsController(statisticsService),
+		AIAssistant:              controller.NewAIAssistantController(aiAssistantService),
 		MessageTemplate:          controller.NewMessageTemplateController(messageTemplateService),
 		SmsCampaign:              controller.NewSmsCampaignController(smsCampaignService),
 		AliyunSmsTemplate:        controller.NewAliyunSmsTemplateController(aliyunSmsTemplateService),

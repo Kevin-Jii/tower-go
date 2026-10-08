@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "arco-design-vue": {
+      "source": "arco-design/arco-design-skill",
+      "sourceType": "github",
+      "skillPath": "skills/arco-design-vue/SKILL.md",
+      "computedHash": "92466fec2856d1c041aa04bb460a093857b004919641360360919a5b6572a1f9"
+    }
+  }
+}

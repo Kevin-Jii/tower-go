@@ -13,6 +13,8 @@ type StatisticsService struct {
 	statisticsModule *module.StatisticsModule
 }
 
+func (s *StatisticsService) BusinessModule() *module.StatisticsModule { return s.statisticsModule }
+
 func NewStatisticsService(statisticsModule *module.StatisticsModule) *StatisticsService {
 	return &StatisticsService{statisticsModule: statisticsModule}
 }

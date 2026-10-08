@@ -29,6 +29,24 @@ func HasPermission(c *gin.Context, code string) (bool, error) {
 	return false, nil
 }
 
+// PermissionOrRoles allows the permission code or one of the explicitly listed roles.
+// Role bypasses should remain route-specific so they cannot widen unrelated APIs.
+func PermissionOrRoles(code string, roleCodes ...string) gin.HandlerFunc {
+	allowedRoles := make(map[string]struct{}, len(roleCodes))
+	for _, roleCode := range roleCodes {
+		allowedRoles[roleCode] = struct{}{}
+	}
+	checkPermission := Permission(code)
+
+	return func(c *gin.Context) {
+		if _, ok := allowedRoles[GetRoleCode(c)]; ok {
+			c.Next()
+			return
+		}
+		checkPermission(c)
+	}
+}
+
 // Permission 按权限码进行接口鉴权
 func Permission(code string) gin.HandlerFunc {
 	return func(c *gin.Context) {

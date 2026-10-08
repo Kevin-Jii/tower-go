@@ -18,7 +18,7 @@ func TestInitializationMarkerLifecycle(t *testing.T) {
 	if !initializationComplete(markerPath, seedDataVersion) {
 		t.Fatal("current marker version must be treated as complete")
 	}
-	if initializationComplete(markerPath, "4") {
+	if initializationComplete(markerPath, seedDataVersion+"-newer") {
 		t.Fatal("older marker version must not skip a newer initialization")
 	}
 }

@@ -15,9 +15,11 @@
     "@vueuse/core": "^11.3.0",
     "axios": "^1.7.9",
     "countup.js": "^2.10.0",
+    "dompurify": "^3.4.16",
     "echarts": "^5.6.0",
     "handsontable": "^17.0.1",
     "html2canvas": "^1.4.1",
+    "marked": "^18.1.0",
     "pinia": "^2.3.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"

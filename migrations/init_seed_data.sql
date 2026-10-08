@@ -388,6 +388,13 @@ WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@printer_id AND name='prin
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
 SELECT @store_id, 'statistics-dash', '数据统计', 'DataBoard', '/store/statistics', 'store/statistics/index', 2, 9, 'statistics:dashboard', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@store_id AND name='statistics-dash' AND type=2);
+SET @statistics_id = (SELECT id FROM menus WHERE parent_id=@store_id AND name='statistics-dash' AND type=2 ORDER BY id LIMIT 1);
+
+-- AI 经营助手（仪表盘按钮权限）
+INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
+SELECT @statistics_id, 'ai-assistant-use', '使用 AI 经营助手', '', '', '', 3, 1, 'ai:assistant:use', 1, 1, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM menus WHERE parent_id=@statistics_id AND name='ai-assistant-use' AND type=3);
+SET @ai_assistant_use_id = (SELECT id FROM menus WHERE parent_id=@statistics_id AND name='ai-assistant-use' AND type=3 ORDER BY id LIMIT 1);
 
 -- 价目单（门店下）
 INSERT INTO menus (parent_id, name, title, icon, path, component, type, sort, permission, visible, status, created_at, updated_at)
@@ -646,9 +653,13 @@ WHERE name IN (
 )
 ON DUPLICATE KEY UPDATE permissions=15;
 
--- 门店管理员：数据统计、价目单
+-- 门店管理员：数据统计、AI 经营助手、价目单
 INSERT INTO role_menus (role_id, menu_id, permissions)
-SELECT 2, id, 15 FROM menus WHERE permission IN ('statistics:dashboard', 'price:list', 'price:add', 'price:edit', 'price:delete')
+SELECT r.id, m.id, 15
+FROM roles r
+CROSS JOIN menus m
+WHERE r.code = 'store_admin'
+  AND m.permission IN ('statistics:dashboard', 'ai:assistant:use', 'price:list', 'price:add', 'price:edit', 'price:delete')
 ON DUPLICATE KEY UPDATE permissions=15;
 
 -- 门店管理员：系统管理目录 + 图库（与路由 /galleries 的 system:gallery:* 鉴权一致；未配置 store_role_menus 时走角色默认菜单）
@@ -677,6 +688,34 @@ INNER JOIN menus m
   ON m.parent_id = (SELECT id FROM menus WHERE parent_id=0 AND name='store' AND type=1 ORDER BY id LIMIT 1)
  AND m.name = 'store-sms-promotion'
 WHERE NOT EXISTS (SELECT 1 FROM store_role_menus srm2 WHERE srm2.store_id = srm.store_id AND srm2.role_id = srm.role_id AND srm2.menu_id = m.id)
+ON DUPLICATE KEY UPDATE permissions = 15;
+
+-- 已定制门店权限中，仅为原本拥有数据统计菜单的角色补齐 AI 助手按钮权限。
+INSERT INTO store_role_menus (store_id, role_id, menu_id, permissions)
+SELECT DISTINCT srm.store_id, srm.role_id, @ai_assistant_use_id, 15
+FROM store_role_menus srm
+WHERE srm.menu_id = @statistics_id
+  AND @ai_assistant_use_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM store_role_menus srm2
+    WHERE srm2.store_id = srm.store_id
+      AND srm2.role_id = srm.role_id
+      AND srm2.menu_id = @ai_assistant_use_id
+  )
+ON DUPLICATE KEY UPDATE permissions = 15;
+
+-- 门店管理员始终可以使用 AI 经营助手；自定义权限表存在时也显式补齐，避免覆盖角色默认授权。
+INSERT INTO store_role_menus (store_id, role_id, menu_id, permissions)
+SELECT DISTINCT srm.store_id, srm.role_id, @ai_assistant_use_id, 15
+FROM store_role_menus srm
+INNER JOIN roles r ON r.id = srm.role_id AND r.code = 'store_admin'
+WHERE @ai_assistant_use_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM store_role_menus srm2
+    WHERE srm2.store_id = srm.store_id
+      AND srm2.role_id = srm.role_id
+      AND srm2.menu_id = @ai_assistant_use_id
+  )
 ON DUPLICATE KEY UPDATE permissions = 15;
 
 -- ============================================

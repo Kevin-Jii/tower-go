@@ -1,6 +1,7 @@
 <template>
   <div class="dashboard-fullscreen-shell">
     <StoreAnalyticsScreen fullscreen />
+    <AIAssistant />
   </div>
 </template>
 
@@ -9,6 +10,7 @@ import { defineAsyncComponent, nextTick, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppPageLoading from '@/components/AppPageLoading.vue'
 import DashboardChunkError from './DashboardChunkError.vue'
+import AIAssistant from '@/components/ai-assistant/AIAssistant.vue'
 
 const StoreAnalyticsScreen = defineAsyncComponent({
   loader: () => import('./StoreAnalyticsScreen.vue'),

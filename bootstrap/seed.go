@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const seedDataVersion = "3"
+const seedDataVersion = "5"
 
 // RunSeedSQL 执行种子数据 SQL 文件
 func RunSeedSQL() {

@@ -63,7 +63,7 @@ func (c *AIAssistantController) storeID(ctx *gin.Context) uint {
 	return middleware.ResolveQueryStoreID(ctx, "store_id")
 }
 func (c *AIAssistantController) Conversations(ctx *gin.Context) {
-	rows, e := c.svc.Conversations(c.storeID(ctx))
+	rows, e := c.svc.Conversations(middleware.GetUserID(ctx), c.storeID(ctx))
 	if e != nil {
 		httpPkg.ErrorFrom(ctx, e)
 		return
@@ -84,7 +84,7 @@ func (c *AIAssistantController) Messages(ctx *gin.Context) {
 		httpPkg.Error(ctx, http.StatusBadRequest, "无效的会话 ID")
 		return
 	}
-	rows, e := c.svc.Messages(uint(id), c.storeID(ctx))
+	rows, e := c.svc.Messages(uint(id), middleware.GetUserID(ctx), c.storeID(ctx))
 	if e != nil {
 		httpPkg.ErrorFrom(ctx, e)
 		return
@@ -103,7 +103,7 @@ func (c *AIAssistantController) Rename(ctx *gin.Context) {
 	if !httpPkg.BindJSON(ctx, &req) {
 		return
 	}
-	if e = c.svc.Rename(uint(id), c.storeID(ctx), req.Title); e != nil {
+	if e = c.svc.Rename(uint(id), middleware.GetUserID(ctx), c.storeID(ctx), req.Title); e != nil {
 		httpPkg.ErrorFrom(ctx, e)
 		return
 	}
@@ -115,7 +115,7 @@ func (c *AIAssistantController) Delete(ctx *gin.Context) {
 		httpPkg.Error(ctx, http.StatusBadRequest, "无效的会话 ID")
 		return
 	}
-	if e = c.svc.Delete(uint(id), c.storeID(ctx)); e != nil {
+	if e = c.svc.Delete(uint(id), middleware.GetUserID(ctx), c.storeID(ctx)); e != nil {
 		httpPkg.ErrorFrom(ctx, e)
 		return
 	}

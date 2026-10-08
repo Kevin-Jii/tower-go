@@ -34,14 +34,15 @@
         </header>
 
         <div class="flex min-h-0 flex-1">
-          <aside class="assistant-sidebar flex w-52 shrink-0 flex-col border-r border-slate-200 bg-slate-50 p-3 max-sm:w-36 max-sm:p-2">
-            <a-button class="mb-3 shrink-0" long @click="newConversation"><template #icon><IconPlus /></template>新对话</a-button>
-            <div class="min-h-0 flex-1 overflow-y-auto">
+          <aside class="assistant-sidebar flex w-60 shrink-0 flex-col border-r border-slate-200 bg-slate-50/80 p-3 sm:p-4 max-sm:w-40 max-sm:p-2.5">
+            <div class="mb-3 flex items-center justify-between px-1"><span class="text-xs font-semibold tracking-wide text-slate-500">对话</span><span class="text-[11px] tabular-nums text-slate-400">{{ conversations.length }}</span></div>
+            <a-button type="primary" class="assistant-new-chat mb-4 shrink-0" long @click="newConversation"><template #icon><IconPlus /></template>新对话</a-button>
+            <div class="min-h-0 flex-1 space-y-1 overflow-y-auto">
               <div v-if="!conversations.length" class="px-2 py-4 text-xs leading-5 text-slate-400">还没有对话</div>
-              <div v-for="item in conversations" :key="item.id" class="group mb-1 flex items-center rounded-md" :class="item.id === activeId ? 'bg-teal-100/70 text-teal-950' : 'text-slate-600 hover:bg-slate-200/70'">
-                <button class="min-w-0 flex-1 truncate px-2 py-2 text-left text-xs" @click="selectConversation(item.id)">{{ item.title || '新对话' }}</button>
+              <div v-for="item in conversations" :key="item.id" class="assistant-conversation-row flex items-center gap-1 rounded-md px-1" :class="item.id === activeId ? 'assistant-conversation-active' : ''">
+                <button class="assistant-conversation-title min-w-0 flex-1 truncate px-2 py-2.5 text-left text-xs" :title="item.title || '新对话'" @click="selectConversation(item.id)">{{ item.title || '新对话' }}</button>
                 <a-button type="text" size="mini" class="assistant-row-action" title="重命名" aria-label="重命名" @click="openRename(item)"><IconEdit /></a-button>
-                <a-popconfirm type="warning" :content="`删除“${item.title}”？`" ok-text="删除" @ok="remove(item)"><a-button type="text" size="mini" class="assistant-row-action" title="删除" aria-label="删除"><IconDelete /></a-button></a-popconfirm>
+                <a-popconfirm type="warning" :content="`删除“${item.title}”？`" ok-text="删除" @ok="remove(item)"><a-button type="text" size="mini" class="assistant-row-action assistant-delete-action" title="删除" aria-label="删除"><IconDelete /></a-button></a-popconfirm>
               </div>
             </div>
           </aside>
@@ -69,13 +70,14 @@
                 <h2 class="m-0 text-lg font-semibold text-slate-800">你好，需要分析什么？</h2><p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">可以询问经营表现、销售趋势、渠道结构与库存情况。</p>
                 <div class="mt-4 flex flex-wrap justify-center gap-2"><a-button size="small" shape="round" @click="usePrompt('分析近期销售趋势和主要变化')">分析近期销售趋势</a-button><a-button size="small" shape="round" @click="usePrompt('总结当前经营情况，并给出优先行动建议')">总结经营情况</a-button></div>
               </div>
-              <article v-for="message in messages" :key="message.id" class="mb-7" :class="message.role === 'user' ? 'ml-auto max-w-[88%]' : 'max-w-full'">
+              <article v-for="message in messages" :key="message.id" class="assistant-message mb-7" :class="message.role === 'user' ? 'ml-auto max-w-[88%]' : 'max-w-full'">
                 <div class="mb-2 flex items-center gap-2 text-xs text-slate-500" :class="message.role === 'user' ? 'justify-end' : ''"><span class="flex h-6 w-6 items-center justify-center rounded-full" :class="message.role === 'user' ? 'bg-slate-200 text-slate-700' : 'bg-teal-100 text-teal-800'"><IconUser v-if="message.role === 'user'" /><IconRobot v-else /></span><span>{{ message.role === 'user' ? '你' : '经营分析助手' }}</span><span v-if="message.model" class="text-slate-400">{{ message.model }}</span></div>
                 <div v-if="message.role === 'user'" class="ml-auto w-fit max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm bg-slate-100 px-4 py-3 text-sm leading-6 text-slate-800">{{ message.content }}</div>
                 <div v-else>
                   <div class="assistant-markdown text-sm leading-7 text-slate-800" v-html="renderMarkdown(message.content)" />
                   <details v-if="message.analysis_context" class="mt-3 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-600"><summary class="cursor-pointer px-3 py-2 font-medium">本次分析使用的数据</summary><pre class="m-0 max-h-56 overflow-auto border-t border-slate-200 p-3 font-mono text-[11px] leading-5">{{ formatAnalysisContext(message.analysis_context) }}</pre></details>
                 </div>
+                <div class="assistant-message-tools" :class="message.role === 'user' ? 'justify-end' : ''"><a-button type="text" size="mini" class="assistant-copy-button" title="复制消息" aria-label="复制消息" @click="copyMessage(message.content)"><IconCopy />复制</a-button></div>
               </article>
               <div v-if="sending" class="mb-5 flex items-center gap-2 text-xs text-slate-500"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-teal-800"><IconRobot /></span><span>正在分析</span><span class="assistant-thinking-dots"><i></i><i></i><i></i></span></div>
             </div>
@@ -84,7 +86,7 @@
               <div class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500"><span>分析区间</span><a-range-picker v-model="dateRange" size="mini" value-format="YYYY-MM-DD" :allow-clear="false" /><span>最多 366 天</span></div>
               <div class="rounded-xl border border-slate-300 bg-white p-2 transition focus-within:border-teal-600 focus-within:shadow-sm">
                 <a-textarea v-model="draft" :auto-size="{ minRows: 2, maxRows: 6 }" class="assistant-composer" placeholder="询问经营数据…" :disabled="sending" @keydown.enter.exact.prevent="send" />
-                <div class="flex items-center justify-between px-1 pt-1"><span class="text-[11px] text-slate-400">回答基于所选门店和日期范围的数据</span><a-button type="primary" shape="circle" html-type="submit" :disabled="!draft.trim() || sending" title="发送" aria-label="发送"><IconSend /></a-button></div>
+                <div class="flex items-center justify-between px-1 pt-1"><span class="text-[11px] text-slate-400">回答基于所选门店和日期范围的数据</span><a-button type="primary" class="assistant-composer-send" shape="circle" html-type="submit" :disabled="!draft.trim() || sending" title="发送" aria-label="发送"><IconSend /></a-button></div>
               </div>
             </form>
           </div>
@@ -100,7 +102,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { IconClose, IconDelete, IconEdit, IconFullscreen, IconFullscreenExit, IconPlus, IconRobot, IconSend, IconSettings, IconUser } from '@arco-design/web-vue/es/icon'
+import { IconClose, IconCopy, IconDelete, IconEdit, IconFullscreen, IconFullscreenExit, IconPlus, IconRobot, IconSend, IconSettings, IconUser } from '@arco-design/web-vue/es/icon'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useUserStore } from '@/store/user'
@@ -238,6 +240,14 @@ async function testConfig() {
   catch (error) { configError.value = errorMessage(error) }
   finally { saving.value = false }
 }
+async function copyMessage(content: string) {
+  try {
+    await navigator.clipboard.writeText(content)
+    toast.success('消息已复制')
+  } catch {
+    toast.error('复制失败，请检查浏览器剪贴板权限')
+  }
+}
 function usePrompt(text: string) { draft.value = text }
 function scrollBottom() { void nextTick(() => { if (scrollArea.value) scrollArea.value.scrollTop = scrollArea.value.scrollHeight }) }
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : '请求失败' }
@@ -249,16 +259,16 @@ watch(open, value => { if (value) { void loadConversations(); void loadConfig();
 .assistant-panel{width:min(860px,calc(100vw - 32px));height:min(720px,calc(100dvh - 32px));min-width:0;z-index:1}
 .assistant-panel-fullscreen{inset:0;width:100vw;height:100dvh;max-width:none;border-radius:0}
 .assistant-drag-handle{cursor:grab}.assistant-drag-handle:active{cursor:grabbing}
-.assistant-launch{width:56px!important;height:56px!important;background:#0f766e!important;font-size:23px!important;box-shadow:0 12px 28px #0f172a33!important;transition:transform .2s,background-color .2s!important}.assistant-launch:hover{background:#115e59!important;transform:translateY(-4px)}
+.assistant-launch{width:58px!important;height:58px!important;border:2px solid #fff!important;border-radius:50%!important;background:#0f766e!important;color:#fff!important;font-size:24px!important;box-shadow:0 8px 24px #0f172a55!important;transition:transform .2s,background-color .2s!important}.assistant-launch:hover{background:#115e59!important;transform:translateY(-3px)}.assistant-launch :deep(.arco-icon){color:#fff!important}
 .assistant-icon-button{display:flex!important;width:34px!important;height:34px!important;align-items:center;justify-content:center;color:#536273!important;font-size:18px!important}.assistant-icon-button:hover{background:#f1f5f9!important;color:#0f766e!important}
-.assistant-row-action{width:26px!important;height:30px!important;flex:none;opacity:0;color:#64748b!important}.group:hover .assistant-row-action,.assistant-row-action:focus-visible{opacity:1}.assistant-row-action:hover{color:#0f766e!important}
+.assistant-conversation-row{min-width:0;min-height:38px;border:1px solid transparent;transition:background-color .15s,border-color .15s}.assistant-conversation-row:hover{background:#eef2f5}.assistant-conversation-active{border-color:#b9ded8;background:#e7f4f1;color:#124e47}.assistant-conversation-active:hover{background:#e0f0ec}.assistant-conversation-title{min-width:0;border:0;background:transparent;color:inherit;font-size:12px;line-height:1.4}.assistant-row-action{width:28px!important;height:28px!important;min-width:28px!important;flex:none;opacity:1!important;color:#536273!important;font-size:14px!important}.assistant-row-action:hover{background:#dce6e8!important;color:#0f766e!important}.assistant-delete-action:hover{color:#be123c!important}.assistant-new-chat{height:38px!important;border-radius:6px!important;background:#0f766e!important;color:white!important;font-weight:600!important;box-shadow:0 1px 2px #0f172a1a!important}.assistant-new-chat:hover{background:#115e59!important}.assistant-new-chat :deep(.arco-icon){color:white!important}
 .assistant-field{display:block;margin-top:16px;color:#475569;font-size:13px}.assistant-field :deep(.arco-select),.assistant-field :deep(.arco-input-wrapper),.assistant-field :deep(.arco-textarea-wrapper){display:flex;width:100%;margin-top:6px}
-.assistant-composer:deep(.arco-textarea-wrapper),.assistant-composer:deep(.arco-textarea){border:0!important;background:transparent!important;box-shadow:none!important;resize:none!important}.assistant-composer :deep(textarea){padding:3px 1px!important}
+.assistant-composer:deep(.arco-textarea-wrapper),.assistant-composer:deep(.arco-textarea){border:0!important;background:transparent!important;box-shadow:none!important;resize:none!important}.assistant-composer :deep(textarea){padding:3px 1px!important}.assistant-composer-send{width:36px!important;height:36px!important;border:0!important;border-radius:8px!important;background:#0f766e!important;color:#fff!important;font-size:17px!important;box-shadow:0 2px 5px #0f766e44!important}.assistant-composer-send:hover{background:#115e59!important}.assistant-composer-send:disabled{background:#94a3b8!important;box-shadow:none!important}.assistant-composer-send :deep(.arco-icon){color:white!important}.assistant-message-tools{display:flex;margin-top:5px;min-height:28px}.assistant-copy-button{height:26px!important;padding:0 8px!important;color:#536273!important;font-size:11px!important}.assistant-copy-button:hover{background:#edf5f3!important;color:#0f766e!important}.assistant-copy-button :deep(.arco-icon){font-size:13px!important}
 .assistant-thinking-dots{display:flex;gap:3px}.assistant-thinking-dots i{width:4px;height:4px;border-radius:50%;background:#0f766e;animation:assistant-pulse .8s infinite alternate}.assistant-thinking-dots i:nth-child(2){animation-delay:.2s}.assistant-thinking-dots i:nth-child(3){animation-delay:.4s}@keyframes assistant-pulse{to{opacity:.25;transform:translateY(-3px)}}
 .assistant-markdown :deep(:first-child){margin-top:0}.assistant-markdown :deep(:last-child){margin-bottom:0}.assistant-markdown :deep(p){margin:0 0 14px;line-height:1.8}.assistant-markdown :deep(h1),.assistant-markdown :deep(h2),.assistant-markdown :deep(h3){margin:22px 0 9px;color:#172b36;font-weight:650;line-height:1.4}.assistant-markdown :deep(h1){font-size:20px}.assistant-markdown :deep(h2){font-size:17px}.assistant-markdown :deep(h3){font-size:15px}.assistant-markdown :deep(ul),.assistant-markdown :deep(ol){margin:8px 0 16px;padding-left:24px}.assistant-markdown :deep(li){padding-left:3px}.assistant-markdown :deep(li+li){margin-top:4px}.assistant-markdown :deep(strong){font-weight:650;color:#172b36}.assistant-markdown :deep(blockquote){margin:14px 0;border-left:3px solid #14b8a6;background:#f0fdfa;padding:8px 14px;color:#475569}.assistant-markdown :deep(code){border-radius:4px;background:#f1f5f9;padding:2px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}.assistant-markdown :deep(pre){margin:12px 0 16px;overflow-x:auto;border:1px solid #263746;border-radius:8px;background:#14212b;padding:15px 16px;color:#e2e8f0;line-height:1.6}.assistant-markdown :deep(pre code){background:transparent;padding:0;color:inherit;font-size:12px}.assistant-markdown :deep(table){display:block;width:100%;overflow-x:auto;border-collapse:collapse;font-size:12px;line-height:1.55}.assistant-markdown :deep(.table-wrap){max-width:100%;margin:14px 0;overflow-x:auto;border:1px solid #dbe4e7;border-radius:7px}.assistant-markdown :deep(th){background:#f1f5f6;color:#334155;font-weight:600;text-align:left}.assistant-markdown :deep(th),.assistant-markdown :deep(td){border-bottom:1px solid #e2e8f0;padding:8px 10px;white-space:nowrap}.assistant-markdown :deep(tr:last-child td){border-bottom:0}.assistant-markdown :deep(a){color:#0f766e;text-decoration:underline;text-underline-offset:2px}.assistant-markdown :deep(hr){margin:20px 0;border:0;border-top:1px solid #e2e8f0}
 .assistant-launch-enter-active,.assistant-launch-leave-active{transition:opacity .2s,transform .2s}.assistant-launch-enter-from,.assistant-launch-leave-to{opacity:0;transform:scale(.75) translateY(8px)}
 .assistant-panel-enter-active,.assistant-panel-leave-active{transition:opacity .22s ease,transform .22s ease}.assistant-panel-enter-from,.assistant-panel-leave-to{opacity:0;transform:translateY(14px) scale(.98)}
 .assistant-settings-enter-active,.assistant-settings-leave-active{transition:opacity .18s,transform .18s}.assistant-settings-enter-from,.assistant-settings-leave-to{opacity:0;transform:translateY(6px)}
-@media(max-width:640px){.assistant-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:760px}.assistant-panel-fullscreen{width:100vw;height:100dvh}.assistant-sidebar{width:118px}.assistant-row-action{width:21px;opacity:.7}.assistant-markdown{font-size:13px}.assistant-markdown :deep(table){font-size:11px}}
+@media(max-width:640px){.assistant-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:760px}.assistant-panel-fullscreen{width:100vw;height:100dvh}.assistant-sidebar{width:152px}.assistant-row-action{width:24px!important;min-width:24px!important;height:26px!important}.assistant-conversation-row{gap:0;padding-left:0;padding-right:0}.assistant-conversation-title{padding-left:6px;padding-right:3px;font-size:11px}.assistant-markdown{font-size:13px}.assistant-markdown :deep(table){font-size:11px}}
 @media(prefers-reduced-motion:reduce){.assistant-launch-enter-active,.assistant-launch-leave-active,.assistant-panel-enter-active,.assistant-panel-leave-active,.assistant-settings-enter-active,.assistant-settings-leave-active{transition:none}}
 </style>

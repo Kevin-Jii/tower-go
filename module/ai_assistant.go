@@ -23,23 +23,37 @@ func (m *AIAssistantModule) SaveConfig(row *model.AIAssistantConfig) error {
 func (m *AIAssistantModule) CreateConversation(row *model.AIAssistantConversation) error {
 	return m.db.Create(row).Error
 }
-func (m *AIAssistantModule) Conversation(id, storeID uint) (*model.AIAssistantConversation, error) {
+func conversationOwnerScope(db *gorm.DB, userID, storeID uint) *gorm.DB {
+	return db.Where("user_id = ? AND store_id = ?", userID, storeID)
+}
+func (m *AIAssistantModule) Conversation(id, userID, storeID uint) (*model.AIAssistantConversation, error) {
 	var row model.AIAssistantConversation
-	err := m.db.Where("id = ? AND store_id = ?", id, storeID).First(&row).Error
+	err := conversationOwnerScope(m.db, userID, storeID).Where("id = ?", id).First(&row).Error
 	return &row, err
 }
-func (m *AIAssistantModule) Conversations(storeID uint) ([]model.AIAssistantConversation, error) {
+func (m *AIAssistantModule) Conversations(userID, storeID uint) ([]model.AIAssistantConversation, error) {
 	var rows []model.AIAssistantConversation
-	err := m.db.Where("store_id = ?", storeID).Order("updated_at DESC").Limit(100).Find(&rows).Error
+	err := conversationOwnerScope(m.db, userID, storeID).Order("updated_at DESC").Limit(100).Find(&rows).Error
 	return rows, err
 }
-func (m *AIAssistantModule) RenameConversation(id, storeID uint, title string) error {
-	return m.db.Model(&model.AIAssistantConversation{}).Where("id = ? AND store_id = ?", id, storeID).Update("title", title).Error
+func (m *AIAssistantModule) RenameConversation(id, userID, storeID uint, title string) error {
+	result := conversationOwnerScope(m.db.Model(&model.AIAssistantConversation{}), userID, storeID).Where("id = ?", id).Update("title", title)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
-func (m *AIAssistantModule) DeleteConversation(id, storeID uint) error {
+func (m *AIAssistantModule) DeleteConversation(id, userID, storeID uint) error {
 	return m.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ? AND store_id = ?", id, storeID).Delete(&model.AIAssistantConversation{}).Error; err != nil {
-			return err
+		result := conversationOwnerScope(tx, userID, storeID).Where("id = ?", id).Delete(&model.AIAssistantConversation{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
 		}
 		return tx.Where("conversation_id = ?", id).Delete(&model.AIAssistantMessage{}).Error
 	})

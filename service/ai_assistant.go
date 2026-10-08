@@ -82,32 +82,29 @@ func (s *AIAssistantService) TestConfig(req *model.AIAssistantConfigRequest) err
 	_, err = client.Generate(context.Background(), []*schema.Message{schema.UserMessage("Reply with OK")})
 	return err
 }
-func (s *AIAssistantService) Conversations(storeID uint) ([]model.AIAssistantConversation, error) {
-	return s.module.Conversations(storeID)
+func (s *AIAssistantService) Conversations(userID, storeID uint) ([]model.AIAssistantConversation, error) {
+	return s.module.Conversations(userID, storeID)
 }
 func (s *AIAssistantService) CreateConversation(userID, storeID uint) (*model.AIAssistantConversation, error) {
 	row := &model.AIAssistantConversation{UserID: userID, StoreID: storeID, Title: "新对话"}
 	err := s.module.CreateConversation(row)
 	return row, err
 }
-func (s *AIAssistantService) Messages(id, storeID uint) ([]model.AIAssistantMessage, error) {
-	if _, err := s.module.Conversation(id, storeID); err != nil {
+func (s *AIAssistantService) Messages(id, userID, storeID uint) ([]model.AIAssistantMessage, error) {
+	if _, err := s.module.Conversation(id, userID, storeID); err != nil {
 		return nil, err
 	}
 	return s.module.Messages(id)
 }
-func (s *AIAssistantService) Rename(id, storeID uint, title string) error {
+func (s *AIAssistantService) Rename(id, userID, storeID uint, title string) error {
 	title = strings.TrimSpace(title)
 	if title == "" || len([]rune(title)) > 160 {
 		return errors.New("标题长度必须为 1 到 160 个字符")
 	}
-	return s.module.RenameConversation(id, storeID, title)
+	return s.module.RenameConversation(id, userID, storeID, title)
 }
-func (s *AIAssistantService) Delete(id, storeID uint) error {
-	if _, err := s.module.Conversation(id, storeID); err != nil {
-		return err
-	}
-	return s.module.DeleteConversation(id, storeID)
+func (s *AIAssistantService) Delete(id, userID, storeID uint) error {
+	return s.module.DeleteConversation(id, userID, storeID)
 }
 
 func (s *AIAssistantService) Chat(ctx context.Context, req *model.AIAssistantChatRequest, userID, storeID uint) (*model.AIAssistantMessage, error) {
@@ -126,7 +123,7 @@ func (s *AIAssistantService) Chat(ctx context.Context, req *model.AIAssistantCha
 	if req.ConversationID == 0 {
 		conversation, err = s.CreateConversation(userID, storeID)
 	} else {
-		conversation, err = s.module.Conversation(req.ConversationID, storeID)
+		conversation, err = s.module.Conversation(req.ConversationID, userID, storeID)
 	}
 	if err != nil {
 		return nil, err

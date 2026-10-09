@@ -9,7 +9,7 @@ Tower-Go 是一个面向连锁门店经营的供应链与门店运营管理系�
 - 数据库：MySQL，启动时可执行 AutoMigrate、种子数据和默认字典初始化
 - 缓存：Redis，可通过环境变量开关
 - 文件服务：RustFS/MinIO S3 兼容对象存储
-- API 文档：Swagger + Scalar
+- API 文档：OpenAPI 3.0 + Swagger UI + Scalar
 - 权限模型：JWT + RBAC + 门店业务隔离
 
 ## 核心功能
@@ -52,7 +52,7 @@ Tower-Go 是一个面向连锁门店经营的供应链与门店运营管理系�
 
 ### 工程能力
 
-- Swagger 自动生成
+- OpenAPI 3 自动生成与规范校验
 - 健康检查：`/health`、`/ready`、`/live`
 - WebSocket：`/ws`
 - 慢查询、缓存、本地热路径等性能配置
@@ -69,7 +69,7 @@ Tower-Go 是一个面向连锁门店经营的供应链与门店运营管理系�
 | 缓存      | Redis                                          |
 | 认证      | JWT                                            |
 | 日志      | Zap + Lumberjack                               |
-| API 文档  | swaggo/gin-swagger + Scalar                    |
+| API 文档  | OpenAPI 3.0（swag 注解转换）+ Swagger UI + Scalar |
 | 对象存储  | MinIO SDK / RustFS                             |
 | 实时通信  | gorilla/websocket、DingTalk Stream SDK         |
 | 前端      | Vue 3、Vite、TypeScript、Pinia、Vue Router     |
@@ -102,7 +102,7 @@ tower-go/
 │   └── xpyun/                   # 芯烨云打印 SDK 封装
 ├── utils/                       # 数据库、缓存、日志、通用工具
 ├── migrations/                  # 初始化 SQL 与种子数据
-├── docs/                        # Swagger 文档与架构资料
+├── docs/                        # OpenAPI 3 文档、Swagger 2 中间产物与架构资料
 ├── cron/                        # 定时任务
 └── web-admin/                   # Vue 3 管理端
 ```
@@ -116,7 +116,7 @@ tower-go/
 - MySQL `8.0+`
 - Redis，可选但默认开启
 - RustFS/MinIO，可选，启用文件/图库/通知图片时需要
-- `swag`，用于生成 Swagger 文档
+- `swag`，用于从 Go 注解生成 Swagger 2 中间产物（`make docs` 会继续转换为 OpenAPI 3）
 
 安装 `swag`：
 
@@ -189,7 +189,8 @@ npm run dev
 
 - 管理端：`http://localhost:5173`
 - 后端 API：`http://localhost:10024`
-- Swagger：`http://localhost:10024/swagger/index.html`
+- OpenAPI 3 JSON：`http://localhost:10024/swagger/doc.json`
+- Swagger UI：`http://localhost:10024/swagger/index.html`
 - Scalar 文档：`http://localhost:10024/docs`
 
 `web-admin/vite.config.ts` 默认把 `/api` 代理到线上地址。需要本地联调时，将代理目标改为：
@@ -201,10 +202,10 @@ target: "http://localhost:10024";
 ## 常用命令
 
 ```bash
-# 后端开发启动，先生成 Swagger
+# 后端开发启动，先生成并校验 OpenAPI 3
 make run
 
-# 只生成 Swagger
+# 从现有 swag 注解生成 Swagger 2 中间产物，再转换并校验 docs/openapi.json
 make docs
 
 # 构建后端二进制
@@ -242,7 +243,7 @@ cd web-admin && npm run build
 | `JWT_SECRET`                       | JWT 签名密钥                         | 建议 32 位以上随机字符串 |
 | `SKIP_AUTO_MIGRATE`                | 跳过启动 AutoMigrate                 | `1` 表示跳过             |
 | `SKIP_SEED_DATA`                   | 跳过启动种子数据、默认字典、默认模板 | `1` 表示跳过             |
-| `SWAG_AUTO`                        | 控制启动时自动生成 Swagger           | `0` 表示禁用             |
+| `SWAG_AUTO`                        | 控制启动时自动生成并校验 OpenAPI 3   | `0` 表示禁用             |
 | `RUSTFS_ENABLED`                   | 是否启用 RustFS/MinIO                | `true`/`false`           |
 | `RUSTFS_ENDPOINT`                  | S3 兼容服务地址                      | `127.0.0.1:9000`         |
 | `RUSTFS_PUBLIC_BASE_URL`           | 对外访问根地址                       | `https://example.com`    |
@@ -413,7 +414,7 @@ curl http://localhost:10024/api/v1/users/profile \
 - 门店业务接口优先加 `middleware.StoreBusinessGuard()`
 - 公共能力放入 `pkg/`，应用内通用工具放入 `utils/`
 - 新增前端页面时同步菜单、权限编码和动态路由配置
-- 修改 API 后运行 `make docs` 更新 Swagger
+- 修改 API 后运行 `make docs` 更新并校验 `docs/openapi.json`
 - 涉及表结构时同步维护 `migrations/init.sql` 与必要种子数据
 
 ## 部署提示

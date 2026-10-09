@@ -1806,7 +1806,7 @@ const docTemplate = `{
         },
         "/members": {
             "get": {
-                "description": "获取会员列表，支持关键字模糊查询手机号/UID，支持分页",
+                "description": "获取会员列表，支持关键字模糊查询手机号/UID/姓名、会员标签筛选和分页",
                 "produces": [
                     "application/json"
                 ],
@@ -1817,8 +1817,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "关键字(模糊匹配手机号/UID)",
+                        "description": "关键字(模糊匹配手机号/UID/姓名)",
                         "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "会员标签ID",
+                        "name": "tag_id",
                         "in": "query"
                     },
                     {
@@ -9120,6 +9126,10 @@ const docTemplate = `{
                 },
                 "remark": {
                     "type": "string"
+                },
+                "sms_sign_name": {
+                    "type": "string",
+                    "maxLength": 64
                 }
             }
         },
@@ -9700,6 +9710,12 @@ const docTemplate = `{
                 "store_id": {
                     "type": "integer"
                 },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MemberTag"
+                    }
+                },
                 "total_consumption_amount": {
                     "type": "number"
                 },
@@ -9754,6 +9770,35 @@ const docTemplate = `{
                 }
             }
         },
+        "model.MemberTag": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "member_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "model.MemberUnsettledAccounts": {
             "type": "object",
             "properties": {
@@ -9786,6 +9831,12 @@ const docTemplate = `{
                 },
                 "store_id": {
                     "type": "integer"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MemberTag"
+                    }
                 },
                 "total_consumption_amount": {
                     "type": "number"
@@ -10626,6 +10677,9 @@ const docTemplate = `{
                 },
                 "remark": {
                     "description": "备注",
+                    "type": "string"
+                },
+                "sms_sign_name": {
                     "type": "string"
                 },
                 "status": {
@@ -11644,6 +11698,11 @@ const docTemplate = `{
                 "remark": {
                     "description": "备注",
                     "type": "string"
+                },
+                "sms_sign_name": {
+                    "description": "本门店默认短信签名",
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "status": {
                     "description": "状态：1=正常，2=停业",

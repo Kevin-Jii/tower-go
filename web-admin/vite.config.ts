@@ -13,7 +13,6 @@ export default defineConfig({
           if (id.includes("@arco-design")) return "vendor-arco";
           if (id.includes("echarts") || id.includes("zrender"))
             return "vendor-echarts";
-          if (id.includes("handsontable")) return "vendor-handsontable";
           if (id.includes("@tanstack")) return "vendor-vue-query";
           if (id.includes("@vueuse")) return "vendor-vueuse";
           if (id.includes("axios")) return "vendor-axios";

@@ -2,7 +2,9 @@ package router
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/Kevin-Jii/tower-go/apidocs"
 	"github.com/Kevin-Jii/tower-go/config"
 	"github.com/Kevin-Jii/tower-go/controller"
 	"github.com/Kevin-Jii/tower-go/router/api"
@@ -62,13 +64,34 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 	// WebSocket
 	r.GET("/ws", controller.WebSocketHandler)
 
-	// Swagger - 保留原始JSON接口
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	registerDocumentationRoutes(r)
+
+	addr := fmt.Sprintf(":%d", config.GetConfig().App.Port)
+	fmt.Printf("📚 Swagger UI: http://localhost%s/swagger/index.html\n", addr)
+	fmt.Printf("📚 Scalar Docs: http://localhost%s/docs\n\n", addr)
+}
+
+func registerDocumentationRoutes(r *gin.Engine) {
+	// Swagger UI 仍由 gin-swagger 提供，但 doc.json 返回经过转换和校验的 OpenAPI 3 文档。
+	swaggerHandler := ginSwagger.WrapHandler(swaggerFiles.Handler)
+	r.GET("/swagger/*any", func(c *gin.Context) {
+		if c.Param("any") != "/doc.json" {
+			swaggerHandler(c)
+			return
+		}
+
+		document, err := apidocs.Document()
+		if err != nil {
+			_ = c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+		c.Data(http.StatusOK, "application/json; charset=utf-8", document)
+	})
 
 	// Scalar - 美化版API文档
 	r.GET("/docs", func(c *gin.Context) {
 		c.Header("Content-Type", "text/html")
-		c.String(200, `<!DOCTYPE html>
+		c.String(http.StatusOK, `<!DOCTYPE html>
 <html>
 <head>
     <title>API 文档</title>
@@ -81,8 +104,4 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 </body>
 </html>`)
 	})
-
-	addr := fmt.Sprintf(":%d", config.GetConfig().App.Port)
-	fmt.Printf("📚 Swagger UI: http://localhost%s/swagger/index.html\n", addr)
-	fmt.Printf("📚 Scalar Docs: http://localhost%s/docs\n\n", addr)
 }

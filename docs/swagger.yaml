@@ -944,6 +944,9 @@ definitions:
         type: string
       remark:
         type: string
+      sms_sign_name:
+        maxLength: 64
+        type: string
     required:
     - name
     type: object
@@ -1341,6 +1344,10 @@ definitions:
         type: string
       store_id:
         type: integer
+      tags:
+        items:
+          $ref: '#/definitions/model.MemberTag'
+        type: array
       total_consumption_amount:
         type: number
       uid:
@@ -1376,6 +1383,25 @@ definitions:
       total_points:
         type: integer
     type: object
+  model.MemberTag:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      member_count:
+        type: integer
+      name:
+        type: string
+      store_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
   model.MemberUnsettledAccounts:
     properties:
       balance:
@@ -1398,6 +1424,10 @@ definitions:
         type: string
       store_id:
         type: integer
+      tags:
+        items:
+          $ref: '#/definitions/model.MemberTag'
+        type: array
       total_consumption_amount:
         type: number
       uid:
@@ -1968,6 +1998,8 @@ definitions:
         type: string
       remark:
         description: 备注
+        type: string
+      sms_sign_name:
         type: string
       status:
         description: 状态：1=正常，2=停业
@@ -2661,6 +2693,10 @@ definitions:
         type: string
       remark:
         description: 备注
+        type: string
+      sms_sign_name:
+        description: 本门店默认短信签名
+        maxLength: 64
         type: string
       status:
         description: 状态：1=正常，2=停业
@@ -3925,12 +3961,16 @@ paths:
       - 系统
   /members:
     get:
-      description: 获取会员列表，支持关键字模糊查询手机号/UID，支持分页
+      description: 获取会员列表，支持关键字模糊查询手机号/UID/姓名、会员标签筛选和分页
       parameters:
-      - description: 关键字(模糊匹配手机号/UID)
+      - description: 关键字(模糊匹配手机号/UID/姓名)
         in: query
         name: keyword
         type: string
+      - description: 会员标签ID
+        in: query
+        name: tag_id
+        type: integer
       - description: 页码
         in: query
         name: page

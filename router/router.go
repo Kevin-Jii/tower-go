@@ -72,6 +72,30 @@ func Setup(r *gin.Engine, c *api.Controllers) {
 }
 
 func registerDocumentationRoutes(r *gin.Engine) {
+	// Serve the frontend brand asset for the documentation workbench.
+	r.GET("/docs-assets/tower-logo.svg", func(c *gin.Context) {
+		c.Data(http.StatusOK, "image/svg+xml; charset=utf-8", []byte(towerLogoSVG))
+	})
+
+	// Serve embedded Swagger UI assets under a path separate from gin-swagger's wildcard route.
+	for _, asset := range []string{"swagger-ui.css", "swagger-ui-bundle.js", "swagger-ui-standalone-preset.js"} {
+		asset := asset
+		r.GET("/docs-assets/"+asset, func(c *gin.Context) {
+			file, err := swaggerFiles.HTTP.Open("/" + asset)
+			if err != nil {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			defer file.Close()
+			info, err := file.Stat()
+			if err != nil {
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+			http.ServeContent(c.Writer, c.Request, asset, info.ModTime(), file)
+		})
+	}
+
 	// Swagger UI 仍由 gin-swagger 提供，但 doc.json 返回经过转换和校验的 OpenAPI 3 文档。
 	swaggerHandler := ginSwagger.WrapHandler(swaggerFiles.Handler)
 	r.GET("/swagger/*any", func(c *gin.Context) {
@@ -88,20 +112,10 @@ func registerDocumentationRoutes(r *gin.Engine) {
 		c.Data(http.StatusOK, "application/json; charset=utf-8", document)
 	})
 
-	// Scalar - 美化版API文档
+	// Custom Swagger UI workbench with the existing OpenAPI 3 endpoint.
 	r.GET("/docs", func(c *gin.Context) {
-		c.Header("Content-Type", "text/html")
-		c.String(http.StatusOK, `<!DOCTYPE html>
-<html>
-<head>
-    <title>API 文档</title>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-</head>
-<body>
-    <script id="api-reference" data-url="/swagger/doc.json"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
-</body>
-</html>`)
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		c.Header("Cache-Control", "no-cache")
+		c.String(http.StatusOK, documentationPage)
 	})
 }

@@ -141,8 +141,9 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 	accounts := make([]*model.StoreAccount, 0) // 初始化为空数组，避免返回null
 	var total int64
 
-	query := datascope.ApplyStoreAccountsList(m.db.Model(&model.StoreAccount{}), req).
-		Where("is_canceled = ?", false)
+	// 账务列表返回完整流水，包括作废单和 B2B 供货镜像单。
+	// 营业额统计在统计查询中单独排除作废单，不能在列表层丢失审计记录。
+	query := datascope.ApplyStoreAccountsList(m.db.Model(&model.StoreAccount{}), req)
 	if req.MemberID > 0 {
 		query = query.Where("member_id = ?", req.MemberID)
 	}

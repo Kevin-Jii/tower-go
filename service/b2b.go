@@ -319,6 +319,7 @@ func buildB2BSupplyOrderAccount(order *model.B2BSupplyOrder) *model.StoreAccount
 		Remark:          order.Remark,
 		OperatorID:      order.OperatorID,
 		AccountDate:     order.OrderDate,
+		IsCanceled:      order.DeliveryStatus == model.B2BDeliveryCancel,
 		Items:           items,
 	}
 }

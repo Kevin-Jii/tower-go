@@ -1,11 +1,23 @@
 <template>
   <div class="pointer-events-none fixed inset-0 z-[900]">
     <Transition name="assistant-launch">
-      <a-button v-if="!open && canUseAssistant" type="primary" shape="circle"
-        class="assistant-launch pointer-events-auto fixed bottom-6 right-6 max-sm:bottom-3 max-sm:right-3"
-        title="打开经营分析助手" aria-label="打开经营分析助手" @click="openAssistant">
-        <IconRobot />
-      </a-button>
+      <div v-if="!open && canUseAssistant" ref="launcher"
+        class="assistant-launch pointer-events-auto fixed touch-none"
+        :class="[`assistant-launch-${launchEdge}`, { 'assistant-launch-dragging': launchDragging, 'assistant-launch-align-end': launchRatio > .5 }]"
+        :style="launcherStyle" role="group" aria-label="经营分析助手">
+        <button class="assistant-launch-peek" type="button" title="拖动 AI 助手" aria-label="拖动 AI 助手"
+          @pointerdown="startLauncherDrag">
+          <IconRight v-if="launchEdge === 'left'" />
+          <IconLeft v-else-if="launchEdge === 'right'" />
+          <IconDown v-else-if="launchEdge === 'top'" />
+          <IconUp v-else />
+        </button>
+        <button class="assistant-launch-main" type="button" title="打开经营分析助手"
+          aria-label="打开经营分析助手" @click="openAssistantFromLauncher">
+          <IconRobot />
+          <span>AI 助手</span>
+        </button>
+      </div>
     </Transition>
 
     <Transition name="assistant-panel">
@@ -187,8 +199,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { IconClose, IconCopy, IconDelete, IconEdit, IconFullscreen, IconFullscreenExit, IconPlus, IconRobot, IconSend, IconSettings, IconUser } from '@arco-design/web-vue/es/icon'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch, type CSSProperties } from 'vue'
+import { IconClose, IconCopy, IconDelete, IconDown, IconEdit, IconFullscreen, IconFullscreenExit, IconLeft, IconPlus, IconRight, IconRobot, IconSend, IconSettings, IconUp, IconUser } from '@arco-design/web-vue/es/icon'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useUserStore } from '@/store/user'
@@ -200,7 +212,7 @@ marked.setOptions({ gfm: true, breaks: true })
 const user = useUserStore()
 const { hasPerm } = usePermission()
 const open = ref(false), settings = ref(false), fullscreen = ref(false), sending = ref(false), saving = ref(false)
-const panel = ref<HTMLElement>(), scrollArea = ref<HTMLElement>()
+const panel = ref<HTMLElement>(), launcher = ref<HTMLElement>(), scrollArea = ref<HTMLElement>()
 const position = reactive({ left: 0, top: 0 })
 const conversations = ref<AIConversation[]>([]), messages = ref<AIMessage[]>([]), activeId = ref(0), draft = ref(''), configError = ref('')
 const renameVisible = ref(false), renameTitle = ref(''), renameTarget = ref<AIConversation>()
@@ -217,7 +229,36 @@ const activeConversation = computed(() => conversations.value.find(item => item.
 const panelStyle = computed(() => fullscreen.value ? undefined : { left: `${position.left}px`, top: `${position.top}px` })
 const config = reactive<AIConfigInput & { api_key_configured: boolean; api_key_masked: string }>({ provider: 'openai', model: 'gpt-4o-mini', base_url: '', enabled: false, system_prompt: '', api_key: '', api_key_configured: false, api_key_masked: '' })
 
+type LaunchEdge = 'top' | 'right' | 'bottom' | 'left'
+const LAUNCHER_SIZE = 40
+const LAUNCHER_STORAGE_KEY = 'tower-ai-assistant-launcher'
+const launchEdge = ref<LaunchEdge>('right')
+const launchRatio = ref(.76)
+const launchDragging = ref(false)
+const launchPosition = reactive({ left: 0, top: 0 })
+const viewport = reactive({ width: window.innerWidth, height: window.innerHeight })
+const launcherStyle = computed<CSSProperties>(() => {
+  if (launchDragging.value) return { left: `${launchPosition.left}px`, top: `${launchPosition.top}px` }
+  const horizontal = Math.round(launchRatio.value * Math.max(0, viewport.width - LAUNCHER_SIZE))
+  const vertical = Math.round(launchRatio.value * Math.max(0, viewport.height - LAUNCHER_SIZE))
+  if (launchEdge.value === 'left') return { left: '0', top: `${vertical}px` }
+  if (launchEdge.value === 'right') return { right: '0', top: `${vertical}px` }
+  if (launchEdge.value === 'top') return { left: `${horizontal}px`, top: '0' }
+  return { bottom: '0', left: `${horizontal}px` }
+})
+
+function restoreLauncherPosition() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAUNCHER_STORAGE_KEY) ?? '') as { edge?: LaunchEdge; ratio?: number }
+    if (saved.edge && ['top', 'right', 'bottom', 'left'].includes(saved.edge)) launchEdge.value = saved.edge
+    if (typeof saved.ratio === 'number' && Number.isFinite(saved.ratio)) launchRatio.value = Math.max(0, Math.min(1, saved.ratio))
+  } catch { /* Use the default dock position when storage is empty or invalid. */ }
+}
+restoreLauncherPosition()
+
 let drag: { pointerId: number; x: number; y: number; left: number; top: number } | undefined
+let launchDrag: { pointerId: number; x: number; y: number; offsetX: number; offsetY: number; moved: boolean } | undefined
+let suppressLaunchClick = false
 function placePanel() {
   if (!panel.value || fullscreen.value) return
   const rect = panel.value.getBoundingClientRect()
@@ -225,6 +266,10 @@ function placePanel() {
   position.top = Math.max(10, window.innerHeight - rect.height - 24)
 }
 function openAssistant() { open.value = true; void nextTick(placePanel) }
+function openAssistantFromLauncher() {
+  if (suppressLaunchClick) { suppressLaunchClick = false; return }
+  openAssistant()
+}
 function closeAssistant() { open.value = false; settings.value = false }
 function toggleSettings() { settings.value = !settings.value }
 function toggleFullscreen() { fullscreen.value = !fullscreen.value; if (!fullscreen.value) void nextTick(placePanel) }
@@ -240,15 +285,72 @@ function moveDrag(event: PointerEvent) {
   position.top = Math.max(0, Math.min(window.innerHeight - rect.height, drag.top + event.clientY - drag.y))
 }
 function stopDrag(event: PointerEvent) { if (drag?.pointerId === event.pointerId) drag = undefined }
+function startLauncherDrag(event: PointerEvent) {
+  if (event.button !== 0 || !launcher.value) return
+  const peek = launcher.value.querySelector<HTMLElement>('.assistant-launch-peek')
+  const rect = (peek ?? launcher.value).getBoundingClientRect()
+  launchDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, moved: false }
+  launchPosition.left = rect.left
+  launchPosition.top = rect.top
+  launcher.value.setPointerCapture(event.pointerId)
+}
+function moveLauncherDrag(event: PointerEvent) {
+  if (!launchDrag || event.pointerId !== launchDrag.pointerId) return
+  if (!launchDrag.moved && Math.hypot(event.clientX - launchDrag.x, event.clientY - launchDrag.y) < 5) return
+  launchDrag.moved = true
+  launchDragging.value = true
+  launchPosition.left = Math.max(0, Math.min(window.innerWidth - LAUNCHER_SIZE, event.clientX - launchDrag.offsetX))
+  launchPosition.top = Math.max(0, Math.min(window.innerHeight - LAUNCHER_SIZE, event.clientY - launchDrag.offsetY))
+  event.preventDefault()
+}
+function clampLauncherPosition() {
+  launchPosition.left = Math.max(0, Math.min(window.innerWidth - LAUNCHER_SIZE, launchPosition.left))
+  launchPosition.top = Math.max(0, Math.min(window.innerHeight - LAUNCHER_SIZE, launchPosition.top))
+}
+function stopLauncherDrag(event: PointerEvent) {
+  if (!launchDrag || event.pointerId !== launchDrag.pointerId) return
+  if (launchDrag.moved) {
+    clampLauncherPosition()
+    const distances: Record<LaunchEdge, number> = {
+      left: launchPosition.left,
+      right: window.innerWidth - launchPosition.left - LAUNCHER_SIZE,
+      top: launchPosition.top,
+      bottom: window.innerHeight - launchPosition.top - LAUNCHER_SIZE,
+    }
+    launchEdge.value = (Object.keys(distances) as LaunchEdge[]).reduce((nearest, edge) => distances[edge] < distances[nearest] ? edge : nearest)
+    const vertical = launchEdge.value === 'left' || launchEdge.value === 'right'
+    const available = vertical ? window.innerHeight - LAUNCHER_SIZE : window.innerWidth - LAUNCHER_SIZE
+    const ratio = available > 0 ? (vertical ? launchPosition.top : launchPosition.left) / available : 0
+    launchRatio.value = Math.max(0, Math.min(1, ratio))
+    try { localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify({ edge: launchEdge.value, ratio: launchRatio.value })) }
+    catch { /* Docking still works when browser storage is unavailable. */ }
+    suppressLaunchClick = true
+    window.setTimeout(() => { suppressLaunchClick = false }, 0)
+  }
+  launchDragging.value = false
+  launchDrag = undefined
+}
+function handleResize() {
+  viewport.width = window.innerWidth
+  viewport.height = window.innerHeight
+  if (launchDragging.value) clampLauncherPosition()
+  placePanel()
+}
 window.addEventListener('pointermove', moveDrag)
 window.addEventListener('pointerup', stopDrag)
 window.addEventListener('pointercancel', stopDrag)
-window.addEventListener('resize', placePanel)
+window.addEventListener('pointermove', moveLauncherDrag, { passive: false })
+window.addEventListener('pointerup', stopLauncherDrag)
+window.addEventListener('pointercancel', stopLauncherDrag)
+window.addEventListener('resize', handleResize)
 onBeforeUnmount(() => {
   window.removeEventListener('pointermove', moveDrag)
   window.removeEventListener('pointerup', stopDrag)
   window.removeEventListener('pointercancel', stopDrag)
-  window.removeEventListener('resize', placePanel)
+  window.removeEventListener('pointermove', moveLauncherDrag)
+  window.removeEventListener('pointerup', stopLauncherDrag)
+  window.removeEventListener('pointercancel', stopLauncherDrag)
+  window.removeEventListener('resize', handleResize)
 })
 
 function renderMarkdown(content: string): string {
@@ -366,24 +468,148 @@ watch(open, value => { if (value) { void loadConversations(); void loadConfig();
 }
 
 .assistant-launch {
-  width: 58px !important;
-  height: 58px !important;
-  border: 2px solid #fff !important;
-  border-radius: 50% !important;
-  background: #0f766e !important;
-  color: #fff !important;
-  font-size: 24px !important;
-  box-shadow: 0 8px 24px #0f172a55 !important;
-  transition: transform .2s, background-color .2s !important
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 7px 14px #02061752);
+  user-select: none
 }
 
-.assistant-launch:hover {
-  background: #115e59 !important;
-  transform: translateY(-3px)
+.assistant-launch button {
+  position: absolute;
+  display: flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: #0f766e;
+  color: #fff;
+  cursor: pointer
+}
+
+.assistant-launch-peek {
+  inset: 0;
+  z-index: 1;
+  width: 40px;
+  padding: 0;
+  font-size: 17px
+}
+
+.assistant-launch-left .assistant-launch-peek {
+  border-radius: 0 7px 7px 0
+}
+
+.assistant-launch-right .assistant-launch-peek {
+  border-radius: 7px 0 0 7px
+}
+
+.assistant-launch-top .assistant-launch-peek {
+  border-radius: 0 0 7px 7px
+}
+
+.assistant-launch-bottom .assistant-launch-peek {
+  border-radius: 7px 7px 0 0
+}
+
+.assistant-launch-main {
+  gap: 7px;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: width .2s ease, height .2s ease, opacity .15s ease, padding .2s ease
+}
+
+.assistant-launch-left .assistant-launch-main,
+.assistant-launch-right .assistant-launch-main {
+  top: 0;
+  width: 0
+}
+
+.assistant-launch-left .assistant-launch-main {
+  left: 40px;
+  border-radius: 0 7px 7px 0
+}
+
+.assistant-launch-right .assistant-launch-main {
+  right: 40px;
+  border-radius: 7px 0 0 7px
+}
+
+.assistant-launch-top .assistant-launch-main,
+.assistant-launch-bottom .assistant-launch-main {
+  left: 0;
+  width: 102px;
+  height: 0
+}
+
+.assistant-launch-top.assistant-launch-align-end .assistant-launch-main,
+.assistant-launch-bottom.assistant-launch-align-end .assistant-launch-main {
+  right: 0;
+  left: auto
+}
+
+.assistant-launch-top .assistant-launch-main {
+  top: 40px;
+  border-radius: 0 0 7px 7px
+}
+
+.assistant-launch-bottom .assistant-launch-main {
+  bottom: 40px;
+  border-radius: 7px 7px 0 0
+}
+
+.assistant-launch-left:not(.assistant-launch-dragging):hover .assistant-launch-main,
+.assistant-launch-left:not(.assistant-launch-dragging):focus-within .assistant-launch-main,
+.assistant-launch-right:not(.assistant-launch-dragging):hover .assistant-launch-main,
+.assistant-launch-right:not(.assistant-launch-dragging):focus-within .assistant-launch-main {
+  width: 102px;
+  padding: 0 14px;
+  opacity: 1
+}
+
+.assistant-launch-top:not(.assistant-launch-dragging):hover .assistant-launch-main,
+.assistant-launch-top:not(.assistant-launch-dragging):focus-within .assistant-launch-main,
+.assistant-launch-bottom:not(.assistant-launch-dragging):hover .assistant-launch-main,
+.assistant-launch-bottom:not(.assistant-launch-dragging):focus-within .assistant-launch-main {
+  height: 40px;
+  padding: 0 14px;
+  opacity: 1
+}
+
+.assistant-launch:not(.assistant-launch-dragging):hover .assistant-launch-peek,
+.assistant-launch:not(.assistant-launch-dragging):focus-within .assistant-launch-peek {
+  border-radius: 0
+}
+
+.assistant-launch button:hover,
+.assistant-launch button:focus-visible {
+  background: #115e59;
+  outline: none
+}
+
+.assistant-launch button:focus-visible {
+  box-shadow: inset 0 0 0 2px #99f6e4
+}
+
+.assistant-launch-dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 10px 18px #02061770)
+}
+
+.assistant-launch-dragging button {
+  cursor: grabbing
 }
 
 .assistant-launch :deep(.arco-icon) {
-  color: #fff !important
+  flex: none;
+  color: #fff
+}
+
+.assistant-launch-main :deep(.arco-icon) {
+  font-size: 19px
 }
 
 .assistant-icon-button {

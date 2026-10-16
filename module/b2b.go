@@ -286,9 +286,16 @@ func (m *B2BModule) GetSupplyOrder(id uint) (*model.B2BSupplyOrder, error) {
 }
 
 func (m *B2BModule) UpdateSupplyOrderDelivery(id uint, deliveryStatus int) error {
-	return m.db.Model(&model.B2BSupplyOrder{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"delivery_status": deliveryStatus,
-	}).Error
+	return m.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.B2BSupplyOrder{}).Where("id = ?", id).Updates(map[string]interface{}{
+			"delivery_status": deliveryStatus,
+		}).Error; err != nil {
+			return err
+		}
+		return tx.Model(&model.StoreAccount{}).
+			Where("source_type = ? AND source_id = ?", model.StoreAccountSourceB2BSupplyOrder, id).
+			Update("is_canceled", deliveryStatus == model.B2BDeliveryCancel).Error
+	})
 }
 
 func (m *B2BModule) UpdateSupplyOrderPayment(id, customerID uint, paymentStatus int, paidAmount, unpaidAmount, receivableDelta float64) error {

@@ -10,14 +10,15 @@ import (
 func TestBuildB2BSupplyOrderAccount(t *testing.T) {
 	orderDate := time.Date(2026, time.August, 8, 0, 0, 0, 0, time.Local)
 	order := &model.B2BSupplyOrder{
-		OrderNo:       "B2B202608080001",
-		StoreID:       3,
-		OrderDate:     orderDate,
-		TotalAmount:   168.5,
-		ProfitAmount:  48.5,
-		PaymentStatus: model.B2BPaymentPartial,
-		Remark:        "送到后门",
-		OperatorID:    17,
+		OrderNo:        "B2B202608080001",
+		StoreID:        3,
+		OrderDate:      orderDate,
+		TotalAmount:    168.5,
+		ProfitAmount:   48.5,
+		PaymentStatus:  model.B2BPaymentPartial,
+		DeliveryStatus: model.B2BDeliveryCancel,
+		Remark:         "送到后门",
+		OperatorID:     17,
 		Items: []model.B2BSupplyOrderItem{
 			{
 				ProductID:   11,
@@ -46,6 +47,9 @@ func TestBuildB2BSupplyOrderAccount(t *testing.T) {
 	}
 	if account.TotalAmount != order.TotalAmount || account.NetIncomeAmount != order.ProfitAmount {
 		t.Fatalf("account amounts = %.2f / %.2f", account.TotalAmount, account.NetIncomeAmount)
+	}
+	if !account.IsCanceled {
+		t.Fatal("canceled B2B order should create a canceled account")
 	}
 	if account.StoreID != order.StoreID || account.OperatorID != order.OperatorID || !account.AccountDate.Equal(orderDate) {
 		t.Fatalf("account ownership/date mismatch: %#v", account)

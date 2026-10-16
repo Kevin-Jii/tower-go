@@ -10,6 +10,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const migrationVersionFile = ".migration_version"
@@ -88,6 +89,10 @@ var autoMigrateModels = []interface{}{
 func AutoMigrateAndSeeds() {
 	if err := ensureStoreAccountCompatibilityColumns(); err != nil {
 		logging.LogError("门店记账兼容字段迁移失败", zap.Error(err))
+		return
+	}
+	if err := backfillB2BSupplyOrderAccounts(); err != nil {
+		logging.LogError("B2B供货记账单回填失败", zap.Error(err))
 		return
 	}
 
@@ -212,6 +217,106 @@ func ensureStoreSmsConfigCompatibilityColumns() error {
 	if !migrator.HasColumn(cfg, "send_window_end") {
 		if err := migrator.AddColumn(cfg, "send_window_end"); err != nil {
 			return fmt.Errorf("add store_sms_configs send_window_end: %w", err)
+		}
+	}
+	return nil
+}
+
+// backfillB2BSupplyOrderAccounts makes /store-accounts the complete accounting
+// ledger for both legacy and new B2B supply orders. It is intentionally
+// idempotent and also synchronizes payment/cancellation state on existing rows.
+func backfillB2BSupplyOrderAccounts() error {
+	db := database.GetDB()
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+	migrator := db.Migrator()
+	if !migrator.HasTable(&model.B2BSupplyOrder{}) ||
+		!migrator.HasTable(&model.B2BSupplyOrderItem{}) ||
+		!migrator.HasTable(&model.StoreAccount{}) ||
+		!migrator.HasTable(&model.StoreAccountItem{}) {
+		return nil
+	}
+
+	var orders []*model.B2BSupplyOrder
+	if err := db.Preload("Items").Find(&orders).Error; err != nil {
+		return fmt.Errorf("list B2B supply orders: %w", err)
+	}
+	for _, order := range orders {
+		if order == nil {
+			continue
+		}
+		if err := db.Transaction(func(tx *gorm.DB) error {
+			var account model.StoreAccount
+			err := tx.Where("source_type = ? AND source_id = ?", model.StoreAccountSourceB2BSupplyOrder, order.ID).
+				First(&account).Error
+			if err == gorm.ErrRecordNotFound {
+				// Recover rows created before source_type/source_id existed by account number.
+				err = tx.Where("account_no = ?", "JZ-"+order.OrderNo).First(&account).Error
+			}
+			paymentStatus := model.StoreAccountPaymentUnpaid
+			if order.PaymentStatus == model.B2BPaymentPaid {
+				paymentStatus = model.StoreAccountPaymentPaid
+			}
+			updates := map[string]interface{}{
+				"store_id":          order.StoreID,
+				"payment_status":    paymentStatus,
+				"channel":           "B2B供货",
+				"order_no":          order.OrderNo,
+				"source_type":       model.StoreAccountSourceB2BSupplyOrder,
+				"source_id":         order.ID,
+				"total_amount":      order.TotalAmount,
+				"net_income_amount": order.ProfitAmount,
+				"item_count":        len(order.Items),
+				"remark":            order.Remark,
+				"operator_id":       order.OperatorID,
+				"account_date":      order.OrderDate,
+				"is_canceled":       order.DeliveryStatus == model.B2BDeliveryCancel,
+			}
+			if err == gorm.ErrRecordNotFound {
+				account = model.StoreAccount{
+					StoreID:         order.StoreID,
+					AccountNo:       "JZ-" + order.OrderNo,
+					PaymentStatus:   paymentStatus,
+					Channel:         "B2B供货",
+					OrderNo:         order.OrderNo,
+					SourceType:      model.StoreAccountSourceB2BSupplyOrder,
+					SourceID:        order.ID,
+					TotalAmount:     order.TotalAmount,
+					NetIncomeAmount: order.ProfitAmount,
+					ItemCount:       len(order.Items),
+					Remark:          order.Remark,
+					OperatorID:      order.OperatorID,
+					AccountDate:     order.OrderDate,
+					IsCanceled:      order.DeliveryStatus == model.B2BDeliveryCancel,
+				}
+				if err := tx.Create(&account).Error; err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
+			} else if err := tx.Model(&account).Updates(updates).Error; err != nil {
+				return err
+			}
+
+			var itemCount int64
+			if err := tx.Model(&model.StoreAccountItem{}).Where("account_id = ?", account.ID).Count(&itemCount).Error; err != nil {
+				return err
+			}
+			if itemCount > 0 || len(order.Items) == 0 {
+				return nil
+			}
+			items := make([]model.StoreAccountItem, 0, len(order.Items))
+			for _, line := range order.Items {
+				items = append(items, model.StoreAccountItem{
+					AccountID: account.ID, ProductID: line.ProductID, ProductName: line.ProductName,
+					Spec: line.UnitName, Quantity: line.Quantity, Unit: line.UnitName,
+					Price: line.SupplyPrice, Amount: line.Amount, Remark: line.Remark,
+				})
+			}
+			return tx.Create(&items).Error
+		}); err != nil {
+			return fmt.Errorf("backfill B2B supply order %d: %w", order.ID, err)
 		}
 	}
 	return nil

@@ -59,6 +59,7 @@ type StoreAccount struct {
 	CanBindConsumables  bool                     `json:"can_bind_consumables" gorm:"-"`
 	CanCancel           bool                     `json:"can_cancel" gorm:"-"`
 	IsReadOnly          bool                     `json:"is_read_only" gorm:"-"`
+	Title               string                   `json:"title,omitempty" gorm:"-"` // B2B客户名称等来源展示标题
 
 	// 关联
 	Store    *Store  `json:"store,omitempty" gorm:"foreignKey:StoreID"`

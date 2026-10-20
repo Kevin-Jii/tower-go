@@ -108,6 +108,9 @@ func (m *StoreAccountModule) GetByID(id uint) (*model.StoreAccount, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := m.fillB2BTitles([]*model.StoreAccount{&account}); err != nil {
+		return nil, err
+	}
 	return &account, nil
 }
 
@@ -118,6 +121,9 @@ func (m *StoreAccountModule) GetByIDScoped(id, storeID uint, hqUnbound bool) (*m
 		query = query.Where("store_id = ?", storeID)
 	}
 	if err := query.First(&account).Error; err != nil {
+		return nil, err
+	}
+	if err := m.fillB2BTitles([]*model.StoreAccount{&account}); err != nil {
 		return nil, err
 	}
 	return &account, nil
@@ -185,8 +191,37 @@ func (m *StoreAccountModule) List(req *model.ListStoreAccountReq) ([]*model.Stor
 		Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&accounts).Error; err != nil {
 		return accounts, 0, err
 	}
+	if err := m.fillB2BTitles(accounts); err != nil {
+		return accounts, 0, err
+	}
 
 	return accounts, total, nil
+}
+
+func (m *StoreAccountModule) fillB2BTitles(accounts []*model.StoreAccount) error {
+	sourceIDs := make([]uint, 0)
+	for _, account := range accounts {
+		if account != nil && account.IsB2BSupplyOrderAccount() && account.SourceID > 0 {
+			sourceIDs = append(sourceIDs, account.SourceID)
+		}
+	}
+	if len(sourceIDs) == 0 {
+		return nil
+	}
+	var orders []model.B2BSupplyOrder
+	if err := m.db.Select("id", "customer_name").Where("id IN ?", sourceIDs).Find(&orders).Error; err != nil {
+		return err
+	}
+	titles := make(map[uint]string, len(orders))
+	for _, order := range orders {
+		titles[order.ID] = strings.TrimSpace(order.CustomerName)
+	}
+	for _, account := range accounts {
+		if account != nil && account.IsB2BSupplyOrderAccount() {
+			account.Title = titles[account.SourceID]
+		}
+	}
+	return nil
 }
 
 // Update 更新记账

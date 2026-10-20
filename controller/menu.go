@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -22,13 +23,13 @@ func NewMenuController(menuService *service.MenuService) *MenuController {
 func requireStoreRoleScope(ctx *gin.Context) (uint, uint, bool) {
 	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	if storeID == 0 {
-		http.Error(ctx, 400, "Invalid store ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return 0, 0, false
 	}
 
 	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid role ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return 0, 0, false
 	}
 
@@ -47,13 +48,13 @@ func requireStoreRoleScope(ctx *gin.Context) (uint, uint, bool) {
 // @Router /menus [post]
 func (c *MenuController) CreateMenu(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "仅总部管理员可以创建菜单")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	var req model.CreateMenuReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -78,7 +79,7 @@ func (c *MenuController) CreateMenu(ctx *gin.Context) {
 func (c *MenuController) GetMenu(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid menu ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -142,19 +143,19 @@ func (c *MenuController) GetMenuTree(ctx *gin.Context) {
 // @Router /menus/{id} [put]
 func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "仅总部管理员可以更新菜单")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid menu ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	var req model.UpdateMenuReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -178,13 +179,13 @@ func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 // @Router /menus/{id} [delete]
 func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "仅总部管理员可以删除菜单")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid menu ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -208,13 +209,13 @@ func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 // @Router /menus/assign-role [post]
 func (c *MenuController) AssignMenusToRole(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "仅总部管理员可以分配角色菜单")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	var req model.AssignMenusToRoleReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -239,7 +240,7 @@ func (c *MenuController) AssignMenusToRole(ctx *gin.Context) {
 func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid role ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -265,7 +266,7 @@ func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid role ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -291,7 +292,7 @@ func (c *MenuController) GetRoleMenuIDs(ctx *gin.Context) {
 func (c *MenuController) GetRoleMenuPermissions(ctx *gin.Context) {
 	roleID, err := strconv.ParseUint(ctx.Query("role_id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid role ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -319,18 +320,18 @@ func (c *MenuController) AssignMenusToStoreRole(ctx *gin.Context) {
 
 	var req model.AssignStoreMenusReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	if middleware.HQUnboundAdmin(ctx) {
 		if req.StoreID == 0 {
-			http.Error(ctx, 400, "Invalid store ID")
+			http.ErrorApp(ctx, apicode.InvalidParameter)
 			return
 		}
 	} else {
 		if storeID == 0 {
-			http.Error(ctx, 403, "当前账号未绑定门店")
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		req.StoreID = storeID
@@ -434,13 +435,13 @@ func (c *MenuController) GetStoreRoleMenuPermissions(ctx *gin.Context) {
 // @Router /menus/copy-store [post]
 func (c *MenuController) CopyStoreMenus(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "仅总部管理员可以复制菜单权限")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	var req model.CopyStoreMenusReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

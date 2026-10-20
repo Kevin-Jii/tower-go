@@ -2,11 +2,14 @@ package service
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"text/template"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"gorm.io/gorm"
 )
 
 type MessageTemplateService struct {
@@ -74,7 +77,14 @@ func (s *MessageTemplateService) List() ([]*model.MessageTemplate, error) {
 
 // GetByID 获取模板详情
 func (s *MessageTemplateService) GetByID(id uint) (*model.MessageTemplate, error) {
-	return s.templateModule.GetByID(id)
+	template, err := s.templateModule.GetByID(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.NotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return template, nil
 }
 
 // Create 创建模板

@@ -1,10 +1,13 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
+	"gorm.io/gorm"
 )
 
 type PriceListService struct {
@@ -79,7 +82,14 @@ func (s *PriceListService) DeletePriceList(id uint) error {
 
 // GetPriceList 获取价目单详情
 func (s *PriceListService) GetPriceList(id uint) (*model.PriceList, error) {
-	return s.priceListModule.GetPriceListByID(id)
+	priceList, err := s.priceListModule.GetPriceListByID(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.PriceListNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return priceList, nil
 }
 
 // ListPriceLists 获取门店的价目单列表
@@ -90,8 +100,11 @@ func (s *PriceListService) ListPriceLists(storeID uint) ([]*model.PriceList, err
 // GetPriceListWithDetails 获取价目单完整结构
 func (s *PriceListService) GetPriceListWithDetails(id uint) (*model.PriceListResp, error) {
 	priceList, categories, itemsByCategory, err := s.priceListModule.GetPriceListWithDetails(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.PriceListNotFound)
+	}
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 
 	resp := &model.PriceListResp{

@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
 	httpx "github.com/Kevin-Jii/tower-go/utils/http"
@@ -26,14 +26,14 @@ func NewDailyTurnoverController(service *service.DailyTurnoverService) *DailyTur
 func (c *DailyTurnoverController) List(ctx *gin.Context) {
 	businessDate, err := resolveDailyTurnoverBusinessDate(ctx.Query("business_date"), time.Now())
 	if err != nil {
-		internalControllerError(ctx, http.StatusBadRequest, "business_date must use YYYY-MM-DD format")
+		httpx.ErrorApp(ctx, apicode.InvalidDate)
 		return
 	}
 
 	reports, err := c.service.List(ctx.Request.Context(), businessDate)
 	if err != nil {
-		logging.LogError("daily turnover report query failed", zap.Error(err))
-		internalControllerError(ctx, http.StatusInternalServerError, "internal server error")
+		logging.LogError("查询日营业额报表失败", zap.Error(err))
+		httpx.ErrorFrom(ctx, err)
 		return
 	}
 	httpx.Success(ctx, reports)
@@ -49,11 +49,4 @@ func resolveDailyTurnoverBusinessDate(raw string, now time.Time) (string, error)
 		return "", err
 	}
 	return parsed.Format("2006-01-02"), nil
-}
-
-func internalControllerError(ctx *gin.Context, status int, message string) {
-	ctx.JSON(status, httpx.Response{
-		Code:    status,
-		Message: message,
-	})
 }

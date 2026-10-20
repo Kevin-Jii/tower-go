@@ -6,6 +6,8 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/pkg/aliyunsms"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"gorm.io/gorm"
 )
 
 // AliyunSmsClient is the narrow provider contract needed by template management.
@@ -67,16 +69,24 @@ func NewAliyunSmsTemplateService(repository AliyunSmsTemplateRepository, resolve
 
 func (s *AliyunSmsTemplateService) resolveClient(storeID uint) (AliyunSmsClient, error) {
 	if s.resolver == nil {
-		return nil, errors.New("阿里云短信客户端解析器未配置")
+		return nil, apicode.New(apicode.ConfigMissing)
 	}
-	return s.resolver.Resolve(storeID)
+	client, err := s.resolver.Resolve(storeID)
+	if err != nil {
+		return nil, apicode.Wrap(apicode.ConfigMissing, err)
+	}
+	return client, nil
 }
 
 func (s *AliyunSmsTemplateService) List(storeID uint, allStores bool, keyword, auditStatus string) ([]model.AliyunSmsTemplate, error) {
 	// A specific store maps to one Aliyun account, so its list is read directly
 	// from Aliyun. HQ's unfiltered cross-account view reads the synchronized cache.
 	if allStores {
-		return s.repository.List(storeID, true, keyword, auditStatus)
+		rows, err := s.repository.List(storeID, true, keyword, auditStatus)
+		if err != nil {
+			return nil, apicode.Wrap(apicode.InternalError, err)
+		}
+		return rows, nil
 	}
 	rows, err := s.SyncTemplates(storeID)
 	if err != nil {
@@ -104,7 +114,7 @@ func (s *AliyunSmsTemplateService) SyncTemplates(storeID uint) ([]model.AliyunSm
 	}
 	snapshots, err := client.ListTemplates()
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	rows := make([]model.AliyunSmsTemplate, 0, len(snapshots))
 	for _, snap := range snapshots {
@@ -117,7 +127,7 @@ func (s *AliyunSmsTemplateService) SyncTemplates(storeID uint) ([]model.AliyunSm
 			AuditStatus: mapAliyunAuditStatus(snap.TemplateStatus), AuditReason: snap.Reason,
 		}
 		if err := s.repository.SyncFromAliyun(&row); err != nil {
-			return nil, err
+			return nil, apicode.Wrap(apicode.InternalError, err)
 		}
 		rows = append(rows, row)
 	}
@@ -135,7 +145,7 @@ func (s *AliyunSmsTemplateService) ListSignatures(storeID uint, approvedOnly boo
 	}
 	rows, err := client.ListSignatures()
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	if !approvedOnly {
 		return rows, nil
@@ -159,18 +169,18 @@ func (s *AliyunSmsTemplateService) Create(req *model.CreateAliyunSmsTemplateReq,
 	relatedSign := strings.TrimSpace(req.RelatedSign)
 	remark := strings.TrimSpace(req.Remark)
 	if name == "" || content == "" || req.TemplateType == nil {
-		return nil, errors.New("请填写模板名称、内容与类型")
+		return nil, apicode.New(apicode.InvalidParameter)
 	}
 	exists, err := s.repository.ExistsByName(name, ownerStoreID)
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	if exists {
-		return nil, errors.New("当前门店已存在同名模板")
+		return nil, apicode.New(apicode.Conflict)
 	}
 	templateCode, err := client.CreateTemplate(name, content, relatedSign, remark, *req.TemplateType)
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	row := &model.AliyunSmsTemplate{
 		OwnerStoreID:    ownerStoreID,
@@ -184,15 +194,18 @@ func (s *AliyunSmsTemplateService) Create(req *model.CreateAliyunSmsTemplateReq,
 		SourceCreatedBy: createdBy,
 	}
 	if err := s.repository.Upsert(row); err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	return row, nil
 }
 
 func (s *AliyunSmsTemplateService) Refresh(templateCode string, storeID uint, allStores bool) (*model.AliyunSmsTemplate, error) {
 	row, err := s.repository.GetByCode(templateCode, storeID, allStores)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.NotFound)
+	}
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	client, err := s.resolveClient(row.OwnerStoreID)
 	if err != nil {
@@ -200,7 +213,7 @@ func (s *AliyunSmsTemplateService) Refresh(templateCode string, storeID uint, al
 	}
 	snap, err := client.GetTemplate(templateCode)
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	row.AuditStatus = mapAliyunAuditStatus(snap.TemplateStatus)
 	row.AuditReason = snap.Reason
@@ -208,24 +221,30 @@ func (s *AliyunSmsTemplateService) Refresh(templateCode string, storeID uint, al
 		row.Content = snap.TemplateContent
 	}
 	if err := s.repository.Upsert(row); err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	return row, nil
 }
 
 func (s *AliyunSmsTemplateService) Delete(templateCode string, storeID uint, allStores bool) error {
 	row, err := s.repository.GetByCode(templateCode, storeID, allStores)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return apicode.New(apicode.NotFound)
+	}
 	if err != nil {
-		return err
+		return apicode.Wrap(apicode.InternalError, err)
 	}
 	client, err := s.resolveClient(row.OwnerStoreID)
 	if err != nil {
 		return err
 	}
 	if err := client.DeleteTemplate(templateCode); err != nil {
-		return err
+		return apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
-	return s.repository.Delete(row)
+	if err := s.repository.Delete(row); err != nil {
+		return apicode.Wrap(apicode.InternalError, err)
+	}
+	return nil
 }
 
 func mapAliyunAuditStatus(raw string) string {

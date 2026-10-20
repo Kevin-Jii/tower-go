@@ -27,7 +27,7 @@ func RegisterPermissionRoutes(v1 *gin.RouterGroup, c *Controllers) {
 	permission.PUT("/role/update", middleware.Permission("system:role:edit"), func(ctx *gin.Context) {
 		var req updateRoleRequest
 		if err := ctx.ShouldBindJSON(&req); err != nil {
-			http.Error(ctx, 400, err.Error())
+			http.ErrorApp(ctx, apicode.InvalidParameter)
 			return
 		}
 		role, err := service.UpdateRole(req.ID, &req.UpdateRoleReq)

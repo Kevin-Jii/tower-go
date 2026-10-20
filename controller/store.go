@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 
@@ -64,11 +65,11 @@ func (c *StoreController) GetStore(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
 		currentStoreID := middleware.GetStoreID(ctx)
 		if currentStoreID == 0 {
-			http.Error(ctx, 403, "当前账号未绑定门店")
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		if id != currentStoreID {
-			http.Error(ctx, 403, "无权查看其他门店")
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 	}
@@ -94,7 +95,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
 		storeID := middleware.GetStoreID(ctx)
 		if storeID == 0 {
-			http.Error(ctx, 403, "当前账号未绑定门店")
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		store, err := c.storeService.GetStore(storeID)
@@ -127,7 +128,7 @@ func (c *StoreController) ListStores(ctx *gin.Context) {
 func (c *StoreController) ListAllStores(ctx *gin.Context) {
 	// 权限限制：仅总部未绑定门店管理员，避免门店管理员看到其他门店
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "Only admin can list all stores")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	stores, _, err := c.storeService.ListStores()

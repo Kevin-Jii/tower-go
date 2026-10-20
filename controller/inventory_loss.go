@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -39,7 +40,7 @@ func (c *InventoryLossController) ListOrders(ctx *gin.Context) {
 
 	var req model.ListInventoryLossOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -60,12 +61,12 @@ func (c *InventoryLossController) ExportOrders(ctx *gin.Context) {
 
 	var req model.ListInventoryLossOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
 	if date == "" {
-		http.Error(ctx, 400, "请选择导出日期")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StartDate = startDate
@@ -123,7 +124,7 @@ func (c *InventoryLossController) GetOrderByID(ctx *gin.Context) {
 	}
 	order, err := c.inventoryLossService.GetOrderByIDScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 404, "未找到该单据")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -166,7 +167,7 @@ func (c *InventoryLossController) ListMemberGiftRecords(ctx *gin.Context) {
 
 	var req model.ListMemberGiftRecordsReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

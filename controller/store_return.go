@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,7 @@ func (c *StoreReturnController) List(ctx *gin.Context) {
 
 	var req model.ListStoreReturnReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	if !middleware.HQUnboundAdmin(ctx) {
@@ -60,7 +61,7 @@ func (c *StoreReturnController) Get(ctx *gin.Context) {
 	}
 	record, err := c.storeReturnService.Get(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 404, "未找到该返厂记录")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, record)
@@ -100,7 +101,7 @@ func (c *StoreReturnController) Stats(ctx *gin.Context) {
 	storeID := middleware.GetStoreID(ctx)
 	var req model.ListStoreReturnReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	if !middleware.HQUnboundAdmin(ctx) {
@@ -134,7 +135,7 @@ func (c *StoreReturnController) ListProducts(ctx *gin.Context) {
 
 	var req model.ListStoreReturnProductReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	if !middleware.HQUnboundAdmin(ctx) {

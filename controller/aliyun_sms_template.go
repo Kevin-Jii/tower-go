@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"strings"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -30,7 +31,7 @@ func templateMutationScope(ctx *gin.Context) (storeID uint, ok bool) {
 		return middleware.GetStoreID(ctx), true
 	}
 	if _, exists := ctx.GetQuery("owner_store_id"); !exists {
-		httpPkg.Error(ctx, 400, "总部操作模板时必须指定 owner_store_id")
+		httpPkg.ErrorApp(ctx, apicode.InvalidParameter)
 		return 0, false
 	}
 	return middleware.ResolveQueryStoreID(ctx, "owner_store_id"), true
@@ -110,7 +111,7 @@ func (c *AliyunSmsTemplateController) Refresh(ctx *gin.Context) {
 func (c *AliyunSmsTemplateController) Delete(ctx *gin.Context) {
 	code := ctx.Param("code")
 	if code == "" {
-		httpPkg.Error(ctx, 400, "缺少模板 CODE")
+		httpPkg.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID, ok := templateMutationScope(ctx)

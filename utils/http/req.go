@@ -1,23 +1,23 @@
 package http
 
 import (
-	"net/http"
 	"reflect"
 	"strconv"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/gin-gonic/gin"
 )
 
-// ParseUintParam 解析 path 参数为 uint，失败统一返回 400，并给出消息。返回 (value, ok)
+// ParseUintParam 解析路径参数为 uint，失败时返回统一业务错误。返回 (value, ok)
 func ParseUintParam(ctx *gin.Context, name string) (uint, bool) {
 	valStr := ctx.Param(name)
 	if valStr == "" {
-		Error(ctx, http.StatusBadRequest, "missing param: "+name)
+		ErrorApp(ctx, apicode.MissingParameter)
 		return 0, false
 	}
 	v, err := strconv.ParseUint(valStr, 10, 32)
 	if err != nil || v == 0 {
-		Error(ctx, http.StatusBadRequest, "invalid param: "+name)
+		ErrorApp(ctx, apicode.InvalidID)
 		return 0, false
 	}
 	return uint(v), true
@@ -52,7 +52,7 @@ func ParseUint(s string, result *uint) bool {
 // BindJSON 统一 JSON 绑定与错误处理，返回是否继续
 func BindJSON(ctx *gin.Context, dst interface{}) bool {
 	if err := ctx.ShouldBindJSON(dst); err != nil {
-		Error(ctx, http.StatusBadRequest, err.Error())
+		ErrorApp(ctx, apicode.ValidationFailed)
 		return false
 	}
 	return true
@@ -62,13 +62,13 @@ func BindJSON(ctx *gin.Context, dst interface{}) bool {
 func RequireAdmin(ctx *gin.Context) bool {
 	roleCodeVal, exists := ctx.Get("roleCode")
 	if !exists {
-		Error(ctx, http.StatusForbidden, "forbidden")
+		ErrorApp(ctx, apicode.OperationDenied)
 		return false
 	}
 	roleCode, _ := roleCodeVal.(string)
 	// 允许多种管理员角色
 	if roleCode != "admin" && roleCode != "super_admin" && roleCode != "store_admin" {
-		Error(ctx, http.StatusForbidden, "Only admin allowed")
+		ErrorApp(ctx, apicode.OperationDenied)
 		return false
 	}
 	return true

@@ -36,6 +36,12 @@
       },
       "controller.HealthResponse": {
         "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
           "services": {
             "additionalProperties": {
               "type": "string"
@@ -3064,6 +3070,10 @@
             "type": "string"
           },
           "tag_name": {
+            "type": "string"
+          },
+          "title": {
+            "description": "B2B客户名称等来源展示标题",
             "type": "string"
           },
           "total_amount": {

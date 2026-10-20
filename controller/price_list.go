@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
@@ -121,7 +122,7 @@ func (c *PriceListController) GetPriceList(ctx *gin.Context) {
 
 	priceList, err := c.priceListService.GetPriceList(id)
 	if err != nil {
-		http.Error(ctx, 404, "price list not found")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -138,7 +139,7 @@ func (c *PriceListController) GetPriceList(ctx *gin.Context) {
 func (c *PriceListController) ListPriceLists(ctx *gin.Context) {
 	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	if storeID == 0 {
-		http.Error(ctx, 400, "store_id is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -165,7 +166,7 @@ func (c *PriceListController) GetPriceListWithDetails(ctx *gin.Context) {
 
 	resp, err := c.priceListService.GetPriceListWithDetails(id)
 	if err != nil {
-		http.Error(ctx, 404, "price list not found")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

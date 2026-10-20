@@ -10,9 +10,11 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/encryption"
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/schema"
+	"gorm.io/gorm"
 )
 
 type AIAssistantService struct {
@@ -27,7 +29,7 @@ func NewAIAssistantService(m *module.AIAssistantModule, stats *StatisticsService
 func (s *AIAssistantService) GetConfig() (*model.AIAssistantConfigView, error) {
 	row, err := s.module.Config()
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	view := &model.AIAssistantConfigView{Provider: "openai", Model: "gpt-4o-mini"}
 	if row == nil {
@@ -46,7 +48,7 @@ func (s *AIAssistantService) GetConfig() (*model.AIAssistantConfigView, error) {
 func (s *AIAssistantService) SaveConfig(req *model.AIAssistantConfigRequest, userID uint) (*model.AIAssistantConfigView, error) {
 	row, err := s.module.Config()
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	if row == nil {
 		row = &model.AIAssistantConfig{ID: 1}
@@ -60,51 +62,76 @@ func (s *AIAssistantService) SaveConfig(req *model.AIAssistantConfigRequest, use
 	if key := strings.TrimSpace(req.APIKey); key != "" {
 		row.APIKeyCipher, err = encryption.Encrypt(key)
 		if err != nil {
-			return nil, fmt.Errorf("加密 API Key 失败: %w", err)
+			return nil, apicode.Wrap(apicode.InternalError, err)
 		}
 	}
 	if row.Enabled && row.APIKeyCipher == "" {
-		return nil, errors.New("启用助手前请配置 API Key")
+		return nil, apicode.New(apicode.ConfigMissing)
 	}
 	if err = s.module.SaveConfig(row); err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	return s.GetConfig()
 }
 func (s *AIAssistantService) TestConfig(req *model.AIAssistantConfigRequest) error {
 	if strings.TrimSpace(req.APIKey) == "" {
-		return errors.New("请填写 API Key 以测试连接")
+		return apicode.New(apicode.InvalidParameter)
 	}
 	client, err := openai.NewChatModel(context.Background(), &openai.ChatModelConfig{APIKey: strings.TrimSpace(req.APIKey), BaseURL: strings.TrimSpace(req.BaseURL), Model: strings.TrimSpace(req.Model)})
 	if err != nil {
-		return err
+		return apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
-	_, err = client.Generate(context.Background(), []*schema.Message{schema.UserMessage("Reply with OK")})
-	return err
+	if _, err = client.Generate(context.Background(), []*schema.Message{schema.UserMessage("Reply with OK")}); err != nil {
+		return apicode.Wrap(apicode.ExternalServiceFailed, err)
+	}
+	return nil
 }
 func (s *AIAssistantService) Conversations(userID, storeID uint) ([]model.AIAssistantConversation, error) {
-	return s.module.Conversations(userID, storeID)
+	rows, err := s.module.Conversations(userID, storeID)
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return rows, nil
 }
 func (s *AIAssistantService) CreateConversation(userID, storeID uint) (*model.AIAssistantConversation, error) {
 	row := &model.AIAssistantConversation{UserID: userID, StoreID: storeID, Title: "新对话"}
-	err := s.module.CreateConversation(row)
-	return row, err
+	if err := s.module.CreateConversation(row); err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return row, nil
 }
 func (s *AIAssistantService) Messages(id, userID, storeID uint) ([]model.AIAssistantMessage, error) {
 	if _, err := s.module.Conversation(id, userID, storeID); err != nil {
-		return nil, err
+		return nil, aiConversationError(err)
 	}
-	return s.module.Messages(id)
+	rows, err := s.module.Messages(id)
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return rows, nil
 }
 func (s *AIAssistantService) Rename(id, userID, storeID uint, title string) error {
 	title = strings.TrimSpace(title)
 	if title == "" || len([]rune(title)) > 160 {
-		return errors.New("标题长度必须为 1 到 160 个字符")
+		return apicode.New(apicode.InvalidParameter)
 	}
-	return s.module.RenameConversation(id, userID, storeID, title)
+	if err := s.module.RenameConversation(id, userID, storeID, title); err != nil {
+		return apicode.Wrap(apicode.InternalError, err)
+	}
+	return nil
 }
 func (s *AIAssistantService) Delete(id, userID, storeID uint) error {
-	return s.module.DeleteConversation(id, userID, storeID)
+	if err := s.module.DeleteConversation(id, userID, storeID); err != nil {
+		return apicode.Wrap(apicode.InternalError, err)
+	}
+	return nil
+}
+
+func aiConversationError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return apicode.New(apicode.NotFound)
+	}
+	return apicode.Wrap(apicode.InternalError, err)
 }
 
 func (s *AIAssistantService) Chat(ctx context.Context, req *model.AIAssistantChatRequest, userID, storeID uint) (*model.AIAssistantMessage, error) {

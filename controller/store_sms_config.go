@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	httpPkg "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,7 @@ func (c *StoreSmsConfigController) resolveStoreID(ctx *gin.Context) (uint, bool)
 	}
 	tid := middleware.GetStoreID(ctx)
 	if storeID != 0 && storeID != tid {
-		httpPkg.Error(ctx, 403, "门店用户只能配置所属门店")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return 0, false
 	}
 	return tid, true
@@ -37,7 +38,7 @@ func (c *StoreSmsConfigController) Get(ctx *gin.Context) {
 		return
 	}
 	if storeID == 0 {
-		httpPkg.Error(ctx, 400, "请指定门店 ID（?store_id=）")
+		httpPkg.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	row, err := c.svc.GetByStoreID(storeID)
@@ -54,7 +55,7 @@ func (c *StoreSmsConfigController) Upsert(ctx *gin.Context) {
 		return
 	}
 	if storeID == 0 {
-		httpPkg.Error(ctx, 400, "请指定门店 ID（?store_id=）")
+		httpPkg.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	var req model.UpsertStoreSmsConfigReq

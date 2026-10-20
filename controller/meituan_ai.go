@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -57,7 +58,7 @@ func (c *MeituanAIController) UpdateAccount(ctx *gin.Context) {
 func (c *MeituanAIController) Dashboard(ctx *gin.Context) {
 	var req model.ListMeituanAIReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	stats, err := c.svc.Dashboard(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
@@ -92,7 +93,7 @@ func (c *MeituanAIController) SyncOrders(ctx *gin.Context) {
 	}
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		http.Error(ctx, 400, "请选择美团订单导出文件")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	defer file.Close()
@@ -141,7 +142,7 @@ func (c *MeituanAIController) ImportReviews(ctx *gin.Context) {
 func (c *MeituanAIController) ListOrders(ctx *gin.Context) {
 	var req model.ListMeituanAIReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	rows, total, err := c.svc.ListOrders(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
@@ -155,7 +156,7 @@ func (c *MeituanAIController) ListOrders(ctx *gin.Context) {
 func (c *MeituanAIController) ListReviews(ctx *gin.Context) {
 	var req model.ListMeituanAIReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	rows, total, err := c.svc.ListReviews(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
@@ -173,7 +174,7 @@ func (c *MeituanAIController) GenerateSuggestions(ctx *gin.Context) {
 	}
 	var req model.ListMeituanAIReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	res, err := c.svc.GenerateSuggestions(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)
@@ -187,7 +188,7 @@ func (c *MeituanAIController) GenerateSuggestions(ctx *gin.Context) {
 func (c *MeituanAIController) ListSuggestions(ctx *gin.Context) {
 	var req model.ListMeituanAIReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	rows, total, err := c.svc.ListSuggestions(middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx), &req)

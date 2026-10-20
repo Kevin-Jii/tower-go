@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
+	"gorm.io/gorm"
 )
 
 type StoreExpenseService struct {
@@ -76,7 +78,14 @@ func (s *StoreExpenseService) Delete(id, storeID uint, hqUnbound bool) error {
 }
 
 func (s *StoreExpenseService) Get(id, storeID uint, hqUnbound bool) (*model.StoreExpense, error) {
-	return s.expenseModule.GetByIDScoped(id, storeID, hqUnbound)
+	record, err := s.expenseModule.GetByIDScoped(id, storeID, hqUnbound)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.ExpenseNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return record, nil
 }
 
 func (s *StoreExpenseService) List(ctx context.Context, req *model.ListStoreExpenseReq) ([]*model.StoreExpense, int64, error) {

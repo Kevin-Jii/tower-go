@@ -40,7 +40,7 @@ func (c *SmsCampaignController) Get(ctx *gin.Context) {
 	sid, all := campaignScope(ctx)
 	row, err := c.svc.GetByID(id, sid, all)
 	if err != nil {
-		httpPkg.Error(ctx, 404, "活动不存在")
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, row)
@@ -157,10 +157,8 @@ func (c *SmsCampaignController) RetryRecord(ctx *gin.Context) {
 	}
 	sid, all := campaignScope(ctx)
 	if err := c.svc.RetryFailedRecord(campaignID, recordID, sid, all); err != nil {
-		// Retry errors are actionable SMS/provider messages and must be visible to
-		// the operator as well as persisted on the failed send record.
-		httpPkg.Error(ctx, apicode.InvalidParameter.Num, err.Error())
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
-	httpPkg.Success(ctx, gin.H{"message": "resent"})
+	httpPkg.Success(ctx, gin.H{"message": "重新发送成功"})
 }

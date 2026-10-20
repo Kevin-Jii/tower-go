@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	httpx "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -22,7 +24,7 @@ func RecoveryMiddleware() gin.HandlerFunc {
 				stack := getStackTrace(3)
 
 				// 记录错误日志
-				logging.LogError("Panic Recovered",
+				logging.LogError("请求处理发生异常",
 					zap.String("path", c.Request.URL.Path),
 					zap.String("method", c.Request.Method),
 					zap.Any("error", err),
@@ -30,10 +32,7 @@ func RecoveryMiddleware() gin.HandlerFunc {
 				)
 
 				// 返回统一错误响应
-				c.JSON(500, gin.H{
-					"code":    500,
-					"message": "系统内部错误，请稍后重试",
-				})
+				httpx.ErrorAppStatus(c, http.StatusInternalServerError, apicode.InternalError)
 
 				// 中断请求
 				c.Abort()
@@ -46,7 +45,7 @@ func RecoveryMiddleware() gin.HandlerFunc {
 // getStackTrace 获取堆栈信息
 func getStackTrace(skip int) string {
 	var builder strings.Builder
-	builder.WriteString("\nStack trace:\n")
+	builder.WriteString("\n调用堆栈：\n")
 
 	for i := skip; i < skip+10; i++ {
 		pc, file, line, ok := runtime.Caller(i)

@@ -1,6 +1,10 @@
 package tenant
 
 import (
+	"net/http"
+
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	httpx "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -65,7 +69,7 @@ func RequireTenant() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tenant := GetTenantFromGin(c)
 		if tenant == nil || (tenant.TenantID == 0 && !tenant.IsAdmin) {
-			c.JSON(403, gin.H{"error": "tenant context required"})
+			httpx.ErrorAppStatus(c, http.StatusForbidden, apicode.StoreRequired)
 			c.Abort()
 			return
 		}

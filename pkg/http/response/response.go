@@ -1,12 +1,15 @@
 package response
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // StatusCode 标准状态码
@@ -150,8 +153,14 @@ func (r *Responder) ErrorApp(ginContext *gin.Context, code apicode.Code) {
 // ErrorFrom 将统一业务错误转换为响应，未识别错误统一返回内部错误。
 func (r *Responder) ErrorFrom(ginContext *gin.Context, err error) {
 	if code, ok := apicode.Resolve(err); ok {
+		if apicode.HTTPStatus(code.Num) >= http.StatusInternalServerError && errors.Unwrap(err) != nil {
+			logging.LogError("API 请求处理失败", zap.Error(err))
+		}
 		r.ErrorApp(ginContext, code)
 		return
+	}
+	if err != nil {
+		logging.LogError("API 请求处理失败", zap.Error(err))
 	}
 	r.ErrorApp(ginContext, apicode.InternalError)
 }
@@ -166,13 +175,12 @@ func (r *Responder) ErrorWithDetails(ginContext *gin.Context, code int, message 
 	ginContext.JSON(statusCode, resp)
 }
 
-// ErrorWithException 带异常的错误响应
+// ErrorWithException 记录内部异常并返回固定错误信息
 func (r *Responder) ErrorWithException(ginContext *gin.Context, code int, message string, err error) {
-	errorMsg := ""
-	if err != nil && r.config.StackTrace {
-		errorMsg = err.Error()
+	if err != nil {
+		logging.LogError("API 请求处理异常", zap.Error(err))
 	}
-	resp := r.buildResponse(ginContext, code, message, nil, errorMsg)
+	resp := r.buildResponse(ginContext, code, message, nil, "")
 	statusCode := r.getHTTPStatus(code)
 	ginContext.JSON(statusCode, resp)
 }
@@ -210,14 +218,14 @@ func (r *Responder) Paginated(ginContext *gin.Context, items interface{}, total 
 
 // Created 创建成功响应
 func (r *Responder) Created(ginContext *gin.Context, data interface{}) {
-	resp := r.buildResponse(ginContext, StatusCreated, "Created successfully", data, "")
+	resp := r.buildResponse(ginContext, StatusCreated, "创建成功", data, "")
 	ginContext.JSON(http.StatusCreated, resp)
 }
 
 // Accepted 已接受响应
 func (r *Responder) Accepted(ginContext *gin.Context, message string) {
 	if message == "" {
-		message = "Request accepted"
+		message = "请求已接受"
 	}
 	resp := r.buildResponse(ginContext, StatusAccepted, message, nil, "")
 	ginContext.JSON(http.StatusAccepted, resp)
@@ -335,37 +343,37 @@ func ErrorWithException(c *gin.Context, code int, message string, err error) {
 
 // BadRequest 400响应
 func BadRequest(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusBadRequest, message)
+	defaultResponder.ErrorApp(c, apicode.BadRequest.WithMessage(message))
 }
 
 // Unauthorized 401响应
 func Unauthorized(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusUnauthorized, message)
+	defaultResponder.ErrorApp(c, apicode.TokenInvalid.WithMessage(message))
 }
 
 // Forbidden 403响应
 func Forbidden(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusForbidden, message)
+	defaultResponder.ErrorApp(c, apicode.OperationDenied.WithMessage(message))
 }
 
 // NotFound 404响应
 func NotFound(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusNotFound, message)
+	defaultResponder.ErrorApp(c, apicode.NotFound.WithMessage(message))
 }
 
 // InternalServerError 500响应
 func InternalServerError(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusInternalServerError, message)
+	defaultResponder.ErrorApp(c, apicode.InternalError.WithMessage(message))
 }
 
 // ValidationFailed 验证失败响应
 func ValidationFailed(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusValidationFailed, message)
+	defaultResponder.ErrorApp(c, apicode.ValidationFailed.WithMessage(message))
 }
 
 // TooManyRequests 429响应
 func TooManyRequests(c *gin.Context, message string) {
-	defaultResponder.Error(c, StatusTooManyRequests, message)
+	defaultResponder.ErrorApp(c, apicode.TooManyRequests.WithMessage(message))
 }
 
 // SuccessWithPagination 分页成功响应

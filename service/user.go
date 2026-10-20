@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -14,6 +15,9 @@ import (
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils"
 	"github.com/Kevin-Jii/tower-go/utils/auth"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -176,7 +180,14 @@ func (s *UserService) DeleteUser(userID uint) error {
 // GetUser 获取用户详情（用于 Profile 接口）
 func (s *UserService) GetUser(id uint) (*model.User, error) {
 	// Profile 接口访问的是用户自己的信息，直接使用 ID 即可
-	return s.userModule.GetByID(id)
+	user, err := s.userModule.GetByID(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.UserNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return user, nil
 }
 
 // UpdateUser 更新用户（管理员全量更新 / 个人资料等）
@@ -354,9 +365,13 @@ func (s *UserService) exchangeWechatCode(code string) (string, error) {
 	}
 	if body.ErrCode != 0 {
 		if body.ErrCode == 40029 {
-			return "", apicode.Newf(apicode.InvalidCredentials, "微信登录失败: code无效")
+			return "", apicode.Newf(apicode.InvalidCredentials, "微信登录凭证无效")
 		}
-		return "", apicode.Newf(apicode.ExternalServiceFailed, "微信登录失败: %s", body.ErrMsg)
+		logging.LogError("微信登录接口返回错误",
+			zap.Int("provider_code", body.ErrCode),
+			zap.String("provider_message", body.ErrMsg),
+		)
+		return "", apicode.New(apicode.ExternalServiceFailed)
 	}
 	if strings.TrimSpace(body.OpenID) == "" {
 		return "", apicode.New(apicode.ExternalServiceFailed)

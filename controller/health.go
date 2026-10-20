@@ -1,8 +1,12 @@
 package controller
 
 import (
+	"net/http"
+
 	"github.com/Kevin-Jii/tower-go/config"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/database"
+	httpx "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/Kevin-Jii/tower-go/utils/redis"
 	"github.com/gin-gonic/gin"
@@ -19,6 +23,8 @@ func NewHealthController() *HealthController {
 
 // HealthResponse 健康检查响应
 type HealthResponse struct {
+	Code      int               `json:"code"`
+	Message   string            `json:"message"`
 	Status    string            `json:"status"`
 	Timestamp string            `json:"timestamp"`
 	Services  map[string]string `json:"services"`
@@ -35,6 +41,8 @@ type HealthResponse struct {
 // @Router /health [get]
 func (c *HealthController) Check(ctx *gin.Context) {
 	response := HealthResponse{
+		Code:      apicode.OK.Num,
+		Message:   apicode.OK.Msg,
 		Status:    "healthy",
 		Timestamp: "",
 		Services:  make(map[string]string),
@@ -47,14 +55,19 @@ func (c *HealthController) Check(ctx *gin.Context) {
 		sqlDB, err := database.GetDB().DB()
 		if err == nil {
 			if err := sqlDB.Ping(); err != nil {
-				response.Services["database"] = "unhealthy: " + err.Error()
+				logging.LogError("数据库健康检查失败", zap.Error(err))
+				response.Services["database"] = "unhealthy"
 				response.Status = "degraded"
 			} else {
 				response.Services["database"] = "healthy"
 			}
+		} else {
+			logging.LogError("获取数据库连接失败", zap.Error(err))
+			response.Services["database"] = "unhealthy"
+			response.Status = "degraded"
 		}
 	} else {
-		response.Services["database"] = "unhealthy: not initialized"
+		response.Services["database"] = "not initialized"
 		response.Status = "degraded"
 	}
 
@@ -62,7 +75,8 @@ func (c *HealthController) Check(ctx *gin.Context) {
 	if config.GetConfig().Redis.Enabled {
 		if redis.GetClient() != nil {
 			if err := redis.GetClient().Ping(ctx.Request.Context()).Err(); err != nil {
-				response.Services["redis"] = "unhealthy: " + err.Error()
+				logging.LogError("Redis 健康检查失败", zap.Error(err))
+				response.Services["redis"] = "unhealthy"
 				response.Status = "degraded"
 			} else {
 				response.Services["redis"] = "healthy"
@@ -74,9 +88,11 @@ func (c *HealthController) Check(ctx *gin.Context) {
 
 	// 设置状态码
 	if response.Status == "healthy" {
-		ctx.JSON(200, response)
+		ctx.JSON(http.StatusOK, response)
 	} else {
-		ctx.JSON(503, response)
+		response.Code = apicode.ExternalServiceFailed.Num
+		response.Message = apicode.ExternalServiceFailed.Msg
+		ctx.JSON(http.StatusServiceUnavailable, response)
 	}
 }
 
@@ -90,16 +106,15 @@ func (c *HealthController) Check(ctx *gin.Context) {
 func (c *HealthController) Ready(ctx *gin.Context) {
 	// 检查关键依赖
 	if database.GetDB() == nil {
-		ctx.JSON(503, gin.H{
-			"status": "not ready",
-			"reason": "database not connected",
+		ctx.JSON(http.StatusServiceUnavailable, httpx.Response{
+			Code:    apicode.ConfigMissing.Num,
+			Message: apicode.ConfigMissing.Msg,
+			Data:    gin.H{"status": "not ready"},
 		})
 		return
 	}
 
-	ctx.JSON(200, gin.H{
-		"status": "ready",
-	})
+	httpx.Success(ctx, gin.H{"status": "ready"})
 }
 
 // Live 存活检查
@@ -110,9 +125,7 @@ func (c *HealthController) Ready(ctx *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Router /live [get]
 func (c *HealthController) Live(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{
-		"status": "alive",
-	})
+	httpx.Success(ctx, gin.H{"status": "alive"})
 }
 
 // LogLevel 动态调整日志级别
@@ -130,17 +143,15 @@ func (c *HealthController) LogLevel(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(400, gin.H{
-			"error": "invalid level, must be one of: debug, info, warn, error",
-		})
+		httpx.ErrorApp(ctx, apicode.ValidationFailed)
 		return
 	}
 
 	// 注意：实际生产环境需要更复杂的实现
-	logging.LogInfo("Log level changed", zap.String("new_level", req.Level))
+	logging.LogInfo("日志级别已调整", zap.String("new_level", req.Level))
 
-	ctx.JSON(200, gin.H{
-		"status": "success",
+	httpx.Success(ctx, gin.H{
+		"status": "成功",
 		"level":  req.Level,
 	})
 }

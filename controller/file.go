@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -39,7 +40,7 @@ func NewFileController(rustfsService *service.RustFSService) *FileController {
 func (c *FileController) Upload(ctx *gin.Context) {
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		http.Error(ctx, 400, "请选择要上传的文件")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	defer file.Close()
@@ -68,7 +69,7 @@ func (c *FileController) Upload(ctx *gin.Context) {
 	// 上传文件
 	result, err := c.rustfsService.Upload(folder, uniqueName, file, header.Size, contentType)
 	if err != nil {
-		http.Error(ctx, 500, "上传失败: "+err.Error())
+		http.ErrorFrom(ctx, apicode.Wrap(apicode.FileUploadFailed, err))
 		return
 	}
 
@@ -92,7 +93,7 @@ func (c *FileController) Upload(ctx *gin.Context) {
 func (c *FileController) UploadImage(ctx *gin.Context) {
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		http.Error(ctx, 400, "请选择要上传的图片")
+		http.ErrorApp(ctx, apicode.ImageRequired)
 		return
 	}
 	defer file.Close()
@@ -101,13 +102,13 @@ func (c *FileController) UploadImage(ctx *gin.Context) {
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	allowedExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
 	if !allowedExts[ext] {
-		http.Error(ctx, 400, "仅支持jpg/png/gif/webp格式的图片")
+		http.ErrorApp(ctx, apicode.ImageFormatUnsupported)
 		return
 	}
 
 	// 限制文件大小（10MB）
 	if header.Size > 10*1024*1024 {
-		http.Error(ctx, 400, "图片大小不能超过10MB")
+		http.ErrorApp(ctx, apicode.ImageUploadTooLarge)
 		return
 	}
 
@@ -150,7 +151,7 @@ func (c *FileController) UploadImage(ctx *gin.Context) {
 
 	result, err := c.rustfsService.Upload(folder, uniqueName, file, header.Size, contentType)
 	if err != nil {
-		http.Error(ctx, 500, "上传失败: "+err.Error())
+		http.ErrorFrom(ctx, apicode.Wrap(apicode.FileUploadFailed, err))
 		return
 	}
 
@@ -173,7 +174,7 @@ func (c *FileController) List(ctx *gin.Context) {
 
 	objects, err := c.rustfsService.List(prefix, true)
 	if err != nil {
-		http.Error(ctx, 500, "获取文件列表失败: "+err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -204,13 +205,13 @@ func (c *FileController) List(ctx *gin.Context) {
 func (c *FileController) Delete(ctx *gin.Context) {
 	// 仅管理员可删除文件
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可删除文件")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	var req DeleteFileReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -220,7 +221,7 @@ func (c *FileController) Delete(ctx *gin.Context) {
 			path = req.Dir + "/" + name
 		}
 		if err := c.rustfsService.Delete(path); err != nil {
-			http.Error(ctx, 500, "删除失败: "+err.Error())
+			http.ErrorFrom(ctx, err)
 			return
 		}
 	}
@@ -242,7 +243,7 @@ func (c *FileController) Delete(ctx *gin.Context) {
 func (c *FileController) GetPresignedURL(ctx *gin.Context) {
 	path := ctx.Query("path")
 	if path == "" {
-		http.Error(ctx, 400, "请指定文件路径")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -253,7 +254,7 @@ func (c *FileController) GetPresignedURL(ctx *gin.Context) {
 
 	url, err := c.rustfsService.GetPresignedURL(path, time.Duration(expires)*time.Minute)
 	if err != nil {
-		http.Error(ctx, 500, "获取URL失败: "+err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

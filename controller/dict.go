@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -31,7 +32,7 @@ func NewDictController(dictService *service.DictService) *DictController {
 // @Router /dict-types [post]
 func (c *DictController) CreateType(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可以创建字典类型")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -58,7 +59,7 @@ func (c *DictController) CreateType(ctx *gin.Context) {
 func (c *DictController) GetType(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -109,13 +110,13 @@ func (c *DictController) ListTypes(ctx *gin.Context) {
 // @Router /dict-types/{id} [put]
 func (c *DictController) UpdateType(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可以更新字典类型")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -141,13 +142,13 @@ func (c *DictController) UpdateType(ctx *gin.Context) {
 // @Router /dict-types/{id} [delete]
 func (c *DictController) DeleteType(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可以删除字典类型")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -171,7 +172,7 @@ func (c *DictController) DeleteType(ctx *gin.Context) {
 // @Router /dict-data [post]
 func (c *DictController) CreateData(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可以创建字典数据")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -198,7 +199,7 @@ func (c *DictController) CreateData(ctx *gin.Context) {
 func (c *DictController) GetData(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -237,7 +238,7 @@ func (c *DictController) ListDataByType(ctx *gin.Context) {
 	if typeIDStr != "" {
 		typeID, err := strconv.ParseUint(typeIDStr, 10, 32)
 		if err != nil {
-			http.Error(ctx, 400, "无效的类型ID")
+			http.ErrorApp(ctx, apicode.InvalidParameter)
 			return
 		}
 		var status *int8
@@ -256,7 +257,7 @@ func (c *DictController) ListDataByType(ctx *gin.Context) {
 		return
 	}
 
-	http.Error(ctx, 400, "请提供 type_code 或 type_id")
+	http.ErrorApp(ctx, apicode.InvalidParameter)
 }
 
 // UpdateData godoc
@@ -271,13 +272,13 @@ func (c *DictController) ListDataByType(ctx *gin.Context) {
 // @Router /dict-data/{id} [put]
 func (c *DictController) UpdateData(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可以更新字典数据")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -303,13 +304,13 @@ func (c *DictController) UpdateData(ctx *gin.Context) {
 // @Router /dict-data/{id} [delete]
 func (c *DictController) DeleteData(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可以删除字典数据")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

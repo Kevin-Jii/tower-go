@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	httpx "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
 )
 
-// InternalServiceAuthMiddleware authenticates calls made by trusted backend services.
-// It deliberately does not accept user JWTs or store/user identity headers.
+// InternalServiceAuthMiddleware 验证受信任后端服务发起的调用。
+// 此中间件不接受用户 JWT 或门店、用户身份请求头。
 func InternalServiceAuthMiddleware(expectedToken string) gin.HandlerFunc {
 	expectedToken = strings.TrimSpace(expectedToken)
 
@@ -19,14 +20,14 @@ func InternalServiceAuthMiddleware(expectedToken string) gin.HandlerFunc {
 		ctx.Header("Cache-Control", "no-store")
 
 		if expectedToken == "" {
-			abortInternalAuth(ctx, http.StatusServiceUnavailable, "internal service authentication is not configured")
+			abortInternalAuth(ctx, http.StatusServiceUnavailable, apicode.ConfigMissing)
 			return
 		}
 
 		providedToken, ok := internalBearerToken(ctx.GetHeader("Authorization"))
 		if !ok || !secureTokenEqual(providedToken, expectedToken) {
 			ctx.Header("WWW-Authenticate", "Bearer")
-			abortInternalAuth(ctx, http.StatusUnauthorized, "unauthorized")
+			abortInternalAuth(ctx, http.StatusUnauthorized, apicode.TokenInvalid)
 			return
 		}
 
@@ -52,9 +53,9 @@ func secureTokenEqual(provided, expected string) bool {
 	return subtle.ConstantTimeCompare(providedHash[:], expectedHash[:]) == 1
 }
 
-func abortInternalAuth(ctx *gin.Context, status int, message string) {
+func abortInternalAuth(ctx *gin.Context, status int, code apicode.Code) {
 	ctx.AbortWithStatusJSON(status, httpx.Response{
-		Code:    status,
-		Message: message,
+		Code:    code.Num,
+		Message: code.Msg,
 	})
 }

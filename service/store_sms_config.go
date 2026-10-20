@@ -8,7 +8,9 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/aliyunsms"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/encryption"
+	"gorm.io/gorm"
 )
 
 type StoreSmsConfigService struct {
@@ -23,17 +25,19 @@ func NewStoreSmsConfigService(m *module.StoreSmsConfigModule, storeModule *modul
 func (s *StoreSmsConfigService) GetByStoreID(storeID uint) (*model.StoreSmsConfigResp, error) {
 	row, err := s.module.GetByStoreID(storeID)
 	if err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	return s.toResp(row, false), nil
 }
 
 func (s *StoreSmsConfigService) Upsert(storeID uint, req *model.UpsertStoreSmsConfigReq, userID uint) (*model.StoreSmsConfigResp, error) {
 	if storeID == 0 {
-		return nil, errors.New("缺少门店 ID")
+		return nil, apicode.New(apicode.MissingParameter)
 	}
-	if _, err := s.storeModule.GetByID(storeID); err != nil {
-		return nil, errors.New("门店不存在")
+	if _, err := s.storeModule.GetByID(storeID); errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.StoreNotFound)
+	} else if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	row, _ := s.module.GetByStoreID(storeID)
 	if row == nil {
@@ -55,15 +59,15 @@ func (s *StoreSmsConfigService) Upsert(storeID uint, req *model.UpsertStoreSmsCo
 	if secret := strings.TrimSpace(req.AccessKeySecret); secret != "" {
 		cipherText, err := encryption.Encrypt(secret)
 		if err != nil {
-			return nil, errors.New("加密 AccessKey Secret 失败")
+			return nil, apicode.Wrap(apicode.InternalError, err)
 		}
 		row.AccessKeySecretCipher = cipherText
 	} else if row.ID == 0 {
 		// 新建且未提供 Secret → 报错
-		return nil, errors.New("请填写 AccessKey Secret")
+		return nil, apicode.New(apicode.InvalidParameter)
 	}
 	if err := s.module.Upsert(row); err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 	return s.toResp(row, false), nil
 }
@@ -71,7 +75,7 @@ func (s *StoreSmsConfigService) Upsert(storeID uint, req *model.UpsertStoreSmsCo
 // TestConnection 用提供的密钥（不写库）查询签名列表，验证认证与短信 API 权限。
 func (s *StoreSmsConfigService) TestConnection(req *model.StoreSmsConfigTestReq) (string, error) {
 	if strings.TrimSpace(req.AccessKeyID) == "" || strings.TrimSpace(req.AccessKeySecret) == "" {
-		return "", errors.New("请填写 AccessKey ID 与 Secret")
+		return "", apicode.New(apicode.InvalidParameter)
 	}
 	region := strings.TrimSpace(req.RegionID)
 	if region == "" {
@@ -84,10 +88,10 @@ func (s *StoreSmsConfigService) TestConnection(req *model.StoreSmsConfigTestReq)
 		Enabled:         true,
 	})
 	if err != nil {
-		return "", err
+		return "", apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	if _, err := client.ListSignatures(); err != nil {
-		return "", err
+		return "", apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	return "OK：AccessKey 已通过阿里云认证并具备短信签名查询权限。", nil
 }

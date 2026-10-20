@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -54,7 +55,7 @@ func (c *B2BController) UpdateCustomer(ctx *gin.Context) {
 func (c *B2BController) ListCustomers(ctx *gin.Context) {
 	var req model.ListB2BCustomerReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
@@ -81,7 +82,7 @@ func (c *B2BController) UpsertPrice(ctx *gin.Context) {
 func (c *B2BController) ListPrices(ctx *gin.Context) {
 	var req model.ListB2BPriceReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
@@ -121,7 +122,7 @@ func (c *B2BController) CreateSupplyOrder(ctx *gin.Context) {
 func (c *B2BController) ListSupplyOrders(ctx *gin.Context) {
 	var req model.ListB2BSupplyOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StoreID = middleware.ResolveQueryStoreID(ctx, "store_id")
@@ -136,12 +137,12 @@ func (c *B2BController) ListSupplyOrders(ctx *gin.Context) {
 func (c *B2BController) ExportSupplyOrders(ctx *gin.Context) {
 	var req model.ListB2BSupplyOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
 	if date == "" {
-		http.Error(ctx, 400, "请选择导出日期")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StartDate = startDate

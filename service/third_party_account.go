@@ -13,6 +13,8 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"gorm.io/gorm"
 )
 
 const tsBeerLoginURL = "https://tp-api.tsbeer.com/api/identity/v2/user/token"
@@ -44,7 +46,14 @@ func (s *ThirdPartyAccountService) List(keyword string) ([]*model.ThirdPartyAcco
 }
 
 func (s *ThirdPartyAccountService) GetByID(id uint) (*model.ThirdPartyAccount, error) {
-	return s.module.GetByID(id)
+	account, err := s.module.GetByID(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.ThirdPartyAccountNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return account, nil
 }
 
 func (s *ThirdPartyAccountService) ListSyncedOrders(accountID uint, page, pageSize int) ([]*model.ThirdPartyOrder, int64, error) {

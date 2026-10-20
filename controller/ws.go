@@ -1,12 +1,14 @@
 package controller
 
 import (
-	authPkg "github.com/Kevin-Jii/tower-go/utils/auth"
-	"github.com/Kevin-Jii/tower-go/utils/session"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	authPkg "github.com/Kevin-Jii/tower-go/utils/auth"
+	httpx "github.com/Kevin-Jii/tower-go/utils/http"
+	"github.com/Kevin-Jii/tower-go/utils/session"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -21,13 +23,13 @@ var upgrader = websocket.Upgrader{
 func WebSocketHandler(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		c.JSON(401, gin.H{"error": "missing bearer token"})
+		httpx.ErrorAppStatus(c, http.StatusUnauthorized, apicode.AuthHeaderRequired)
 		return
 	}
 	token := strings.TrimPrefix(authHeader, "Bearer ")
 	claims, err := authPkg.ValidateToken(token)
 	if err != nil {
-		c.JSON(401, gin.H{"error": "invalid token"})
+		httpx.ErrorAppStatus(c, http.StatusUnauthorized, apicode.TokenInvalid)
 		return
 	}
 
@@ -45,7 +47,7 @@ func WebSocketHandler(c *gin.Context) {
 	if sm == nil { // 未初始化
 		msg := session.WebSocketMessage{
 			Type:    "error",
-			Payload: gin.H{"message": "session manager not ready"},
+			Payload: gin.H{"message": "会话管理器尚未就绪"},
 			Ts:      time.Now().Unix(),
 		}
 		conn.WriteJSON(msg)
@@ -58,7 +60,7 @@ func WebSocketHandler(c *gin.Context) {
 	for _, ks := range kicked {
 		kickMsg := session.WebSocketMessage{
 			Type:    "kick",
-			Payload: gin.H{"reason": "replaced"},
+			Payload: gin.H{"reason": "当前账号已在其他设备登录"},
 			Ts:      time.Now().Unix(),
 		}
 		_ = ks.Conn.WriteJSON(kickMsg)

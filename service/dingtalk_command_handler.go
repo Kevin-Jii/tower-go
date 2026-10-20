@@ -9,7 +9,9 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/utils/businessdate"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
+	"go.uber.org/zap"
 )
 
 // DingTalkCommandHandler 钉钉命令处理器
@@ -116,7 +118,8 @@ func (h *DingTalkCommandHandler) handleInventoryQuery(storeID uint) (string, str
 	}
 	list, total, err := h.inventoryModule.List(req)
 	if err != nil {
-		return "库存查询", fmt.Sprintf("查询失败: %v", err)
+		logging.LogError("钉钉机器人查询库存失败", zap.Uint("store_id", storeID), zap.Error(err))
+		return "库存查询", "查询失败，请稍后重试"
 	}
 
 	if total == 0 {
@@ -152,7 +155,8 @@ func (h *DingTalkCommandHandler) handleTodayAccount(storeID uint) (string, strin
 	today := businessdate.DateString(time.Now())
 	totalAmount, netIncomeAmount, count, err := h.storeAccountModule.GetStatsByDateRange(storeID, today, today)
 	if err != nil {
-		return "记账查询", fmt.Sprintf("查询失败: %v", err)
+		logging.LogError("钉钉机器人查询记账数据失败", zap.Uint("store_id", storeID), zap.Error(err))
+		return "记账查询", "查询失败，请稍后重试"
 	}
 
 	data := map[string]interface{}{
@@ -189,7 +193,8 @@ func (h *DingTalkCommandHandler) handleTodayInventoryIn(storeID uint) (string, s
 	}
 	list, total, err := h.inventoryModule.ListOrders(req)
 	if err != nil {
-		return "入库查询", fmt.Sprintf("查询失败: %v", err)
+		logging.LogError("钉钉机器人查询入库记录失败", zap.Uint("store_id", storeID), zap.Error(err))
+		return "入库查询", "查询失败，请稍后重试"
 	}
 
 	if total == 0 {
@@ -234,7 +239,8 @@ func (h *DingTalkCommandHandler) handleInventorySearch(storeID uint, keyword str
 	}
 	list, total, err := h.inventoryModule.List(req)
 	if err != nil {
-		return "库存搜索", fmt.Sprintf("查询失败: %v", err)
+		logging.LogError("钉钉机器人搜索库存失败", zap.Uint("store_id", storeID), zap.String("keyword", keyword), zap.Error(err))
+		return "库存搜索", "查询失败，请稍后重试"
 	}
 
 	if total == 0 {

@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	httpPkg "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func NewThirdPartyRouteController(svc *service.ThirdPartyRouteService) *ThirdPar
 
 func (c *ThirdPartyRouteController) List(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	rows, err := c.svc.List()
@@ -31,7 +32,7 @@ func (c *ThirdPartyRouteController) List(ctx *gin.Context) {
 
 func (c *ThirdPartyRouteController) Create(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can create")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	var req model.UpsertThirdPartyRouteReq
@@ -48,7 +49,7 @@ func (c *ThirdPartyRouteController) Create(ctx *gin.Context) {
 
 func (c *ThirdPartyRouteController) Update(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can update")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -68,7 +69,7 @@ func (c *ThirdPartyRouteController) Update(ctx *gin.Context) {
 
 func (c *ThirdPartyRouteController) Delete(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can delete")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -84,7 +85,7 @@ func (c *ThirdPartyRouteController) Delete(ctx *gin.Context) {
 
 func (c *ThirdPartyRouteController) ImportByDate(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can import")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -110,7 +111,7 @@ func (c *ThirdPartyRouteController) ImportByDate(ctx *gin.Context) {
 
 func (c *ThirdPartyRouteController) SaveLogisticsSheet(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can save")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -131,7 +132,7 @@ func (c *ThirdPartyRouteController) SaveLogisticsSheet(ctx *gin.Context) {
 
 func (c *ThirdPartyRouteController) ListLogisticsSheets(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")

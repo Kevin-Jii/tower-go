@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"log"
 	"strconv"
 
@@ -71,7 +72,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -97,7 +98,7 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 func (c *UserController) GetUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid user ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -107,7 +108,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	} else {
 		storeID := middleware.GetStoreID(ctx)
 		if storeID == 0 {
-			http.Error(ctx, 403, "当前账号未绑定门店")
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		user, err = c.userService.GetUserByStoreID(uint(id), storeID)
@@ -168,7 +169,7 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 
 	// 门店管理员、员工、或已绑定门店的 admin/super_admin：仅能查看本门店用户（忽略 store_id 查询参数）
 	if storeIDCtx == 0 {
-		http.Error(ctx, 403, "当前账号未绑定门店，无法查看用户列表")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -199,13 +200,13 @@ func (c *UserController) ListUsers(ctx *gin.Context) {
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid user ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	var req model.UpdateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -220,7 +221,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 
 	storeID := middleware.GetStoreID(ctx)
 	if storeID == 0 {
-		http.Error(ctx, 403, "当前账号未绑定门店")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	req.StoreID = nil
@@ -250,7 +251,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid user ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -266,7 +267,7 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 
 	// 门店侧账号：仅能删除本门店用户
 	if storeID == 0 {
-		http.Error(ctx, 403, "当前账号未绑定门店，无法删除用户")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	if err := c.userService.DeleteUserByStoreID(uint(id), storeID); err != nil {
@@ -293,25 +294,25 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "Invalid user ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	targetUser, err := c.userService.GetUser(uint(id))
 	if err != nil {
-		http.Error(ctx, 404, "user not found")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
 	if !middleware.HQUnboundAdmin(ctx) && targetUser.StoreID != requesterStoreID {
-		http.Error(ctx, 403, "无权重置其他门店用户密码")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	// 生成临时密码
 	tempPassword, err := auth.GenerateStrongPassword(12)
 	if err != nil {
-		http.Error(ctx, 500, "生成临时密码失败")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -339,7 +340,7 @@ func (c *UserController) ResetUserPassword(ctx *gin.Context) {
 func (c *UserController) Register(ctx *gin.Context) {
 	var req model.CreateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -364,13 +365,17 @@ func (c *UserController) Register(ctx *gin.Context) {
 func (c *UserController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	user, err := c.userService.ValidateUser(req.Phone, req.Password)
 	if err != nil {
-		http.Error(ctx, 401, "认证失败，用户名或密码不匹配！")
+		if apicode.Is(err, apicode.UserNotFound) {
+			http.ErrorApp(ctx, apicode.InvalidCredentials)
+		} else {
+			http.ErrorFrom(ctx, err)
+		}
 		return
 	}
 
@@ -386,12 +391,12 @@ func (c *UserController) Login(ctx *gin.Context) {
 func (c *UserController) WechatLogin(ctx *gin.Context) {
 	var req WechatCodeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	user, err := c.userService.ValidateWechatLogin(req.Code)
 	if err != nil {
-		http.Error(ctx, 401, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	resp, err := c.buildLoginResponse(ctx, user)
@@ -405,12 +410,12 @@ func (c *UserController) WechatLogin(ctx *gin.Context) {
 func (c *UserController) BindWechat(ctx *gin.Context) {
 	var req WechatCodeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	userID := middleware.GetUserID(ctx)
 	if userID == 0 {
-		http.Error(ctx, 401, "请先登录")
+		http.ErrorApp(ctx, apicode.TokenInvalid)
 		return
 	}
 	if err := c.userService.BindWechatCode(userID, req.Code); err != nil {
@@ -473,19 +478,19 @@ func (c *UserController) buildLoginResponse(ctx *gin.Context, user *model.User) 
 func (c *UserController) RefreshToken(ctx *gin.Context) {
 	var req RefreshTokenRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	claims, err := auth.ParseToken(req.RefreshToken)
 	if err != nil || claims.TokenUse != "refresh" {
-		http.Error(ctx, 401, "刷新令牌无效，请重新登录")
+		http.ErrorApp(ctx, apicode.TokenInvalid)
 		return
 	}
 
 	user, err := c.userService.GetUser(claims.UserID)
 	if err != nil || user == nil || user.Status == 2 {
-		http.Error(ctx, 401, "账号状态已变更，请重新登录")
+		http.ErrorApp(ctx, apicode.TokenInvalid)
 		return
 	}
 
@@ -496,7 +501,7 @@ func (c *UserController) RefreshToken(ctx *gin.Context) {
 		roleID = user.RoleID
 	}
 	if !model.IsSuperAdminRole(roleCode) && user.StoreID > 0 && user.Store != nil && user.Store.Status == 2 {
-		http.Error(ctx, 401, "该门店已停业，请重新登录")
+		http.ErrorApp(ctx, apicode.TokenInvalid)
 		return
 	}
 
@@ -509,12 +514,12 @@ func (c *UserController) RefreshToken(ctx *gin.Context) {
 
 	token, expiresIn, err := auth.GenerateToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
 	if err != nil {
-		http.Error(ctx, 500, "Failed to generate token")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	refreshToken, refreshExpiresIn, err := auth.GenerateRefreshToken(user.ID, user.Username, tokenStoreID, roleCode, roleID)
 	if err != nil {
-		http.Error(ctx, 500, "Failed to generate refresh token")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	_, _ = service.BuildUserPermissionCache(user.ID, tokenStoreID, roleID, roleCode)
@@ -533,7 +538,7 @@ func (c *UserController) RefreshToken(ctx *gin.Context) {
 func (c *UserController) AssignUserRole(ctx *gin.Context) {
 	var req AssignUserRoleRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -548,7 +553,7 @@ func (c *UserController) AssignUserRole(ctx *gin.Context) {
 	} else {
 		storeID := middleware.GetStoreID(ctx)
 		if storeID == 0 {
-			http.Error(ctx, 403, "当前账号未绑定门店")
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		if err := c.userService.UpdateUserByStoreID(req.UserID, storeID, updateReq); err != nil {
@@ -615,7 +620,7 @@ func (c *UserController) UpdateProfile(ctx *gin.Context) {
 
 	var req model.UpdateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	httpPkg "github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,7 @@ func NewAIAssistantController(s *service.AIAssistantService) *AIAssistantControl
 }
 func (c *AIAssistantController) GetConfig(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		httpPkg.Error(ctx, http.StatusForbidden, "仅总部管理员可查看 AI 配置")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	v, e := c.svc.GetConfig()
@@ -30,7 +30,7 @@ func (c *AIAssistantController) GetConfig(ctx *gin.Context) {
 }
 func (c *AIAssistantController) SaveConfig(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		httpPkg.Error(ctx, http.StatusForbidden, "仅总部管理员可配置 AI 助手")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	var req model.AIAssistantConfigRequest
@@ -46,7 +46,7 @@ func (c *AIAssistantController) SaveConfig(ctx *gin.Context) {
 }
 func (c *AIAssistantController) TestConfig(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		httpPkg.Error(ctx, http.StatusForbidden, "仅总部管理员可测试 AI 配置")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	var req model.AIAssistantConfigRequest
@@ -81,7 +81,7 @@ func (c *AIAssistantController) CreateConversation(ctx *gin.Context) {
 func (c *AIAssistantController) Messages(ctx *gin.Context) {
 	id, e := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if e != nil {
-		httpPkg.Error(ctx, http.StatusBadRequest, "无效的会话 ID")
+		httpPkg.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
 	rows, e := c.svc.Messages(uint(id), middleware.GetUserID(ctx), c.storeID(ctx))
@@ -94,7 +94,7 @@ func (c *AIAssistantController) Messages(ctx *gin.Context) {
 func (c *AIAssistantController) Rename(ctx *gin.Context) {
 	id, e := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if e != nil {
-		httpPkg.Error(ctx, http.StatusBadRequest, "无效的会话 ID")
+		httpPkg.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
 	var req struct {
@@ -112,7 +112,7 @@ func (c *AIAssistantController) Rename(ctx *gin.Context) {
 func (c *AIAssistantController) Delete(ctx *gin.Context) {
 	id, e := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if e != nil {
-		httpPkg.Error(ctx, http.StatusBadRequest, "无效的会话 ID")
+		httpPkg.ErrorApp(ctx, apicode.InvalidID)
 		return
 	}
 	if e = c.svc.Delete(uint(id), middleware.GetUserID(ctx), c.storeID(ctx)); e != nil {
@@ -129,7 +129,7 @@ func (c *AIAssistantController) Chat(ctx *gin.Context) {
 	sid := middleware.ResolveQueryStoreID(ctx, "store_id")
 	if req.StoreID > 0 {
 		if !middleware.HQUnboundAdmin(ctx) && req.StoreID != middleware.GetStoreID(ctx) {
-			httpPkg.Error(ctx, http.StatusForbidden, "无权访问该门店")
+			httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		if middleware.HQUnboundAdmin(ctx) {
@@ -137,7 +137,7 @@ func (c *AIAssistantController) Chat(ctx *gin.Context) {
 		}
 	}
 	if sid == 0 && !middleware.HQUnboundAdmin(ctx) {
-		httpPkg.Error(ctx, http.StatusBadRequest, "请先选择门店")
+		httpPkg.ErrorApp(ctx, apicode.StoreRequired)
 		return
 	}
 	msg, e := c.svc.Chat(ctx.Request.Context(), &req, middleware.GetUserID(ctx), sid)

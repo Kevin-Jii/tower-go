@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -20,7 +21,7 @@ func NewThirdPartyAccountController(svc *service.ThirdPartyAccountService) *Thir
 
 func (c *ThirdPartyAccountController) List(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	rows, err := c.svc.List(ctx.Query("keyword"))
@@ -33,7 +34,7 @@ func (c *ThirdPartyAccountController) List(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) Get(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -42,7 +43,7 @@ func (c *ThirdPartyAccountController) Get(ctx *gin.Context) {
 	}
 	row, err := c.svc.GetByID(id)
 	if err != nil {
-		httpPkg.Error(ctx, 404, "account not found")
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 	httpPkg.Success(ctx, row)
@@ -50,7 +51,7 @@ func (c *ThirdPartyAccountController) Get(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) Create(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can create")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	var req model.CreateThirdPartyAccountReq
@@ -67,7 +68,7 @@ func (c *ThirdPartyAccountController) Create(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) Update(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can update")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -87,7 +88,7 @@ func (c *ThirdPartyAccountController) Update(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) Delete(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can delete")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -103,7 +104,7 @@ func (c *ThirdPartyAccountController) Delete(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) TestLogin(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can test")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -120,7 +121,7 @@ func (c *ThirdPartyAccountController) TestLogin(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) SyncLatestOrders(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can sync")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")
@@ -137,7 +138,7 @@ func (c *ThirdPartyAccountController) SyncLatestOrders(ctx *gin.Context) {
 
 func (c *ThirdPartyAccountController) ListSyncedOrders(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 	id, ok := httpPkg.ParseUintParam(ctx, "id")

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"gorm.io/gorm"
 )
 
 type StoreReturnService struct {
@@ -226,7 +228,14 @@ func (s *StoreReturnService) Get(id, storeID uint, hqUnbound bool) (*model.Store
 	if !hqUnbound && storeID == 0 {
 		return nil, apicode.New(apicode.StoreRequired)
 	}
-	return s.returnModule.GetByIDScoped(id, storeID, hqUnbound)
+	record, err := s.returnModule.GetByIDScoped(id, storeID, hqUnbound)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.ReturnNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return record, nil
 }
 
 func (s *StoreReturnService) Delete(id, storeID uint, hqUnbound bool) error {

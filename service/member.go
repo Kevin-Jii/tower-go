@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"gorm.io/gorm"
 )
 
 // MemberService 会员服务
@@ -59,12 +61,26 @@ func (s *MemberService) DeleteMember(id uint, storeID uint, isAdmin bool) error 
 
 // GetMember 获取会员
 func (s *MemberService) GetMember(id uint, storeID uint, isAdmin bool) (*model.Member, error) {
-	return s.module.GetMember(id, storeID, isAdmin)
+	member, err := s.module.GetMember(id, storeID, isAdmin)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.MemberNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return member, nil
 }
 
 // GetMemberByPhone 通过手机号获取会员
 func (s *MemberService) GetMemberByPhone(phone string, storeID uint, isAdmin bool) (*model.Member, error) {
-	return s.module.GetMemberByPhone(phone, storeID, isAdmin)
+	member, err := s.module.GetMemberByPhone(phone, storeID, isAdmin)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.MemberNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return member, nil
 }
 
 // GetMemberByUID 通过UID获取会员
@@ -189,7 +205,14 @@ func (s *MemberService) CreateRechargeOrder(req *model.CreateRechargeOrderReq, s
 
 // GetRechargeOrder 获取充值单
 func (s *MemberService) GetRechargeOrder(id uint, storeID uint, isAdmin bool) (*model.RechargeOrder, error) {
-	return s.module.GetRechargeOrder(id, storeID, isAdmin)
+	order, err := s.module.GetRechargeOrder(id, storeID, isAdmin)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.OrderNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return order, nil
 }
 
 // GetRechargeOrderByNo 通过单号获取充值单

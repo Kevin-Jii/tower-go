@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -33,7 +34,7 @@ func (c *StoreExpenseController) Create(ctx *gin.Context) {
 func (c *StoreExpenseController) List(ctx *gin.Context) {
 	var req model.ListStoreExpenseReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	if !middleware.HQUnboundAdmin(ctx) {
@@ -50,12 +51,12 @@ func (c *StoreExpenseController) List(ctx *gin.Context) {
 func (c *StoreExpenseController) Export(ctx *gin.Context) {
 	var req model.ListStoreExpenseReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
 	if date == "" {
-		http.Error(ctx, 400, "请选择导出日期")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StartDate = startDate
@@ -100,7 +101,7 @@ func (c *StoreExpenseController) Get(ctx *gin.Context) {
 	}
 	record, err := c.storeExpenseService.Get(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 404, "未找到该支出记录")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, record)
@@ -138,7 +139,7 @@ func (c *StoreExpenseController) Delete(ctx *gin.Context) {
 func (c *StoreExpenseController) Stats(ctx *gin.Context) {
 	var req model.ListStoreExpenseReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	if !middleware.HQUnboundAdmin(ctx) {

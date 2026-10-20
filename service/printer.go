@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	"github.com/Kevin-Jii/tower-go/pkg/xpyun"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type PrinterService struct {
@@ -32,7 +35,7 @@ func NewPrinterService(printerModule *module.PrinterModule, storeModule *module.
 // InitXpyunClient 初始化芯烨云客户端（需要在应用启动时调用）
 func (s *PrinterService) InitXpyunClient(user, userKey, baseURL string) {
 	s.xpyunClient = xpyun.NewClientWithBaseURL(user, userKey, baseURL)
-	fmt.Printf(">>>>>> InitXpyunClient called: user=%s, baseURL=%s, xpyunClient=%v\n", user, baseURL, s.xpyunClient)
+	logging.LogInfo("芯烨云打印客户端已初始化", zap.String("base_url", baseURL))
 }
 
 // BindPrinter 绑定打印机到门店
@@ -53,7 +56,11 @@ func (s *PrinterService) BindPrinter(req *model.BindPrinterReq) error {
 	if s.xpyunClient != nil {
 		resp := s.xpyunClient.AddPrinter(req.Sn, req.Name)
 		if resp.Content != nil && !resp.Content.IsSuccess() {
-			return apicode.Newf(apicode.ExternalServiceFailed, "推送打印机失败: %s", resp.Content.Msg)
+			logging.LogError("推送打印机到芯烨云失败",
+				zap.Int("provider_code", resp.Content.Code),
+				zap.String("provider_message", resp.Content.Msg),
+			)
+			return apicode.New(apicode.ExternalServiceFailed)
 		}
 	}
 
@@ -139,7 +146,14 @@ func (s *PrinterService) GetPrinter(id uint) (*model.Printer, error) {
 
 // GetDefaultPrinter 获取门店默认打印机
 func (s *PrinterService) GetDefaultPrinter(storeID uint) (*model.Printer, error) {
-	return s.printerModule.GetDefaultByStoreID(storeID)
+	printer, err := s.printerModule.GetDefaultByStoreID(storeID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.PrinterNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return printer, nil
 }
 
 // QueryPrinterStatus 查询打印机在线状态
@@ -156,7 +170,8 @@ func (s *PrinterService) QueryPrinterStatus(sn string) (int, error) {
 	// 状态码: 0-离线, 1-在线正常, 2-在线异常
 	data, ok := resp.Content.Data.(map[string]interface{})
 	if !ok {
-		return 0, apicode.Newf(apicode.ExternalServiceFailed, "打印机状态响应无效: %v", resp.Content.Data)
+		logging.LogError("打印机状态接口响应格式无效", zap.Any("provider_data", resp.Content.Data))
+		return 0, apicode.New(apicode.ExternalServiceFailed)
 	}
 
 	status, _ := data["status"].(float64)
@@ -165,21 +180,23 @@ func (s *PrinterService) QueryPrinterStatus(sn string) (int, error) {
 
 // PrintReceipt 打印小票
 func (s *PrinterService) PrintReceipt(sn, content string, copies int) (string, error) {
-	fmt.Printf(">>>>>> PrintReceipt called: xpyunClient=%v, sn=%s\n", s.xpyunClient, sn)
 	if s.xpyunClient == nil {
 		return "", apicode.New(apicode.ConfigMissing)
 	}
 
 	resp := s.xpyunClient.PrintReceipt(sn, content, copies)
-	fmt.Printf(">>>>>> PrintReceipt resp: httpStatus=%d, code=%d, msg=%s, orderId=%s\n",
-		resp.HttpStatusCode, resp.Content.Code, resp.Content.Msg, resp.Content.OrderId)
-
 	if resp.Content == nil {
+		logging.LogError("打印接口响应内容为空", zap.Int("http_status", resp.HttpStatusCode))
 		return "", apicode.New(apicode.ExternalServiceFailed)
 	}
 
 	if !resp.Content.IsSuccess() {
-		return "", apicode.Newf(apicode.ExternalServiceFailed, "打印失败: %s", resp.Content.Msg)
+		logging.LogError("打印接口返回失败",
+			zap.Int("http_status", resp.HttpStatusCode),
+			zap.Int("provider_code", resp.Content.Code),
+			zap.String("provider_message", resp.Content.Msg),
+		)
+		return "", apicode.New(apicode.ExternalServiceFailed)
 	}
 
 	return resp.Content.OrderId, nil
@@ -330,7 +347,8 @@ func (s *PrinterService) PrintPurchaseOrder(printerID uint, orderID uint) (strin
 	// 获取采购单完整信息
 	order, err := s.purchaseOrderModule.GetByIDWithDetails(orderID)
 	if err != nil {
-		return "", apicode.Newf(apicode.OrderNotFound, "采购单不存在: %v", err)
+		logging.LogError("获取采购单失败", zap.Uint("order_id", orderID), zap.Error(err))
+		return "", apicode.New(apicode.OrderNotFound)
 	}
 
 	// 构建打印内容

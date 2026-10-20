@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -48,13 +49,13 @@ func (c *AuditLogController) List(ctx *gin.Context) {
 func (c *AuditLogController) Get(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil || id == 0 {
-		http.Error(ctx, 400, "无效的日志ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	row, err := c.service.Get(uint(id), middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
 		if errors.Is(err, service.ErrForbiddenAuditLog) {
-			http.Error(ctx, 403, err.Error())
+			http.ErrorApp(ctx, apicode.OperationDenied)
 			return
 		}
 		http.ErrorFrom(ctx, err)

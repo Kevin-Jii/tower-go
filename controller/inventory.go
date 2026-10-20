@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/excelxml"
 	"github.com/Kevin-Jii/tower-go/utils/http"
@@ -34,7 +35,7 @@ func (c *InventoryController) ListInventory(ctx *gin.Context) {
 
 	var req model.ListInventoryReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -98,7 +99,7 @@ func (c *InventoryController) ListOrders(ctx *gin.Context) {
 
 	var req model.ListInventoryOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -122,7 +123,7 @@ func (c *InventoryController) ExportOrders(ctx *gin.Context) {
 
 	var req model.ListInventoryOrderReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	date := ctx.Query("date")
@@ -130,7 +131,7 @@ func (c *InventoryController) ExportOrders(ctx *gin.Context) {
 		date = req.Date
 	}
 	if date == "" {
-		http.Error(ctx, 400, "请选择导出日期")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.Date = date
@@ -189,13 +190,13 @@ func (c *InventoryController) ExportOrders(ctx *gin.Context) {
 func (c *InventoryController) GetOrderByNo(ctx *gin.Context) {
 	orderNo := ctx.Param("order_no")
 	if orderNo == "" {
-		http.Error(ctx, 400, "单据编号不能为空")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
 	order, err := c.inventoryService.GetOrderByNoScoped(orderNo, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, "未找到该单据")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -218,7 +219,7 @@ func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
 
 	order, err := c.inventoryService.GetOrderByIDScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 500, "未找到该单据")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -238,7 +239,7 @@ func (c *InventoryController) GetOrderByID(ctx *gin.Context) {
 // @Router /inventories/{id} [put]
 func (c *InventoryController) UpdateInventory(ctx *gin.Context) {
 	if !middleware.IsStoreManager(ctx) {
-		http.Error(ctx, 403, "仅门店管理员或超级管理员可修改库存")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -254,7 +255,7 @@ func (c *InventoryController) UpdateInventory(ctx *gin.Context) {
 
 	// 检查库存是否存在
 	if _, err := c.inventoryService.GetInventoryByIDScoped(id, middleware.GetStoreID(ctx), middleware.HQUnboundAdmin(ctx)); err != nil {
-		http.Error(ctx, 404, "库存记录不存在")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 

@@ -26,12 +26,12 @@ import (
 func CreateRole(c *gin.Context) {
 	var req model.Role
 	if err := c.ShouldBindJSON(&req); err != nil {
-		http.Error(c, 400, err.Error())
+		http.ErrorApp(c, apicode.InvalidParameter)
 		return
 	}
 	role, err := service.CreateRole(&req)
 	if err != nil {
-		http.Error(c, 500, err.Error())
+		http.ErrorFrom(c, err)
 		return
 	}
 	http.Success(c, role)
@@ -52,17 +52,17 @@ func UpdateRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(c, 400, "invalid id")
+		http.ErrorApp(c, apicode.InvalidParameter)
 		return
 	}
 	var req model.UpdateRoleReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		http.Error(c, 400, err.Error())
+		http.ErrorApp(c, apicode.InvalidParameter)
 		return
 	}
 	role, err := service.UpdateRole(uint(id), &req)
 	if err != nil {
-		http.Error(c, 500, err.Error())
+		http.ErrorFrom(c, err)
 		return
 	}
 	http.Success(c, role)
@@ -82,7 +82,7 @@ func DeleteRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(c, 400, "invalid id")
+		http.ErrorApp(c, apicode.InvalidParameter)
 		return
 	}
 	if err := service.DeleteRole(uint(id)); err != nil {
@@ -90,7 +90,7 @@ func DeleteRole(c *gin.Context) {
 			http.ErrorApp(c, apicode.BuiltinRoleNotDeletable)
 			return
 		}
-		http.Error(c, 500, err.Error())
+		http.ErrorFrom(c, err)
 		return
 	}
 	http.Success(c, nil)
@@ -109,17 +109,17 @@ func GetRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(c, 400, "invalid id")
+		http.ErrorApp(c, apicode.InvalidParameter)
 		return
 	}
 	role, err := service.GetRole(uint(id))
 	if err != nil {
-		http.Error(c, 404, err.Error())
+		http.ErrorFrom(c, err)
 		return
 	}
 	// 超级管理员角色不对非超管暴露（避免枚举/误配）
 	if role.Code == model.RoleCodeSuperAdmin && middleware.GetRoleCode(c) != model.RoleCodeSuperAdmin {
-		http.Error(c, 404, "not found")
+		http.ErrorApp(c, apicode.NotFound)
 		return
 	}
 	http.Success(c, role)
@@ -148,13 +148,13 @@ func ListRoles(c *gin.Context) {
 			}
 			statusPtr = &v
 		} else {
-			http.Error(c, 400, "invalid status, must be 0 or 1")
+			http.ErrorApp(c, apicode.InvalidParameter)
 			return
 		}
 	}
 	roles, err := service.ListRolesFiltered(keyword, statusPtr)
 	if err != nil {
-		http.Error(c, 500, err.Error())
+		http.ErrorFrom(c, err)
 		return
 	}
 	http.Success(c, roles)

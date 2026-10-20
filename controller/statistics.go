@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -139,7 +140,7 @@ func (c *StatisticsController) BusinessOverview(ctx *gin.Context) {
 	endDate := ctx.Query("end_date")
 	stats, err := c.statisticsService.GetBusinessOverview(queryStoreID, startDate, endDate)
 	if err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -164,7 +165,7 @@ func (c *StatisticsController) HomeCharts(ctx *gin.Context) {
 	granularity := ctx.DefaultQuery("granularity", "day")
 	stats, err := c.statisticsService.GetHomeChartsStats(queryStoreID, startDate, endDate, granularity)
 	if err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

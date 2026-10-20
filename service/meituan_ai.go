@@ -21,6 +21,8 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"go.uber.org/zap"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
@@ -430,12 +432,16 @@ func (s *MeituanAIService) generateDeepSeekSuggestions(storeID, accountID uint, 
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if result.Error != nil && result.Error.Message != "" {
-			return nil, apicode.Newf(apicode.ExternalServiceFailed, "%s", result.Error.Message)
+			logging.LogError("DeepSeek 接口返回错误",
+				zap.Int("status_code", resp.StatusCode),
+				zap.String("provider_message", result.Error.Message),
+			)
 		}
-		return nil, apicode.Newf(apicode.ExternalServiceFailed, "deepseek request failed: %d", resp.StatusCode)
+		return nil, apicode.New(apicode.ExternalServiceFailed)
 	}
 	if len(result.Choices) == 0 || strings.TrimSpace(result.Choices[0].Message.Content) == "" {
-		return nil, apicode.Newf(apicode.ExternalServiceFailed, "deepseek empty response")
+		logging.LogError("DeepSeek 接口返回内容为空")
+		return nil, apicode.New(apicode.ExternalServiceFailed)
 	}
 
 	var payload deepSeekSuggestionPayload
@@ -767,10 +773,15 @@ func (s *MeituanAIService) callMeituanOpenAPI(account *model.MeituanAIOperatorAc
 		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, apicode.Newf(apicode.ExternalServiceFailed, "美团接口请求失败: %d %s", resp.StatusCode, truncateText(string(raw), 200))
+		logging.LogError("美团接口请求失败",
+			zap.Int("status_code", resp.StatusCode),
+			zap.String("response", truncateText(string(raw), 200)),
+		)
+		return nil, apicode.New(apicode.ExternalServiceFailed)
 	}
 	if ok, msg := meituanOpenAPISuccess(raw); !ok {
-		return nil, apicode.Newf(apicode.ExternalServiceFailed, "美团接口返回失败: %s", msg)
+		logging.LogError("美团接口返回业务错误", zap.String("provider_message", msg))
+		return nil, apicode.New(apicode.ExternalServiceFailed)
 	}
 	return raw, nil
 }
@@ -796,7 +807,7 @@ func signMeituanOpenAPI(values map[string]string, signKey string) string {
 func meituanOpenAPISuccess(raw []byte) (bool, string) {
 	var body map[string]interface{}
 	if err := json.Unmarshal(raw, &body); err != nil {
-		return false, "返回不是JSON: " + err.Error()
+		return false, "返回内容不是有效 JSON"
 	}
 	if code, ok := body["code"]; ok {
 		switch v := code.(type) {

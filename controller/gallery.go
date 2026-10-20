@@ -280,7 +280,7 @@ func (c *GalleryController) List(ctx *gin.Context) {
 func (c *GalleryController) Get(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -305,7 +305,7 @@ func (c *GalleryController) Get(ctx *gin.Context) {
 func (c *GalleryController) Update(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -331,13 +331,13 @@ func (c *GalleryController) Update(ctx *gin.Context) {
 // @Router /galleries/{id} [delete]
 func (c *GalleryController) Delete(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可删除图片")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		http.Error(ctx, 400, "无效的ID")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -359,7 +359,7 @@ func (c *GalleryController) Delete(ctx *gin.Context) {
 // @Router /galleries/batch-delete [post]
 func (c *GalleryController) BatchDelete(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "仅管理员可删除图片")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 

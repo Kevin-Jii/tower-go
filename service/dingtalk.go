@@ -18,9 +18,12 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/utils"
 	"github.com/Kevin-Jii/tower-go/utils/logging"
 	updatesPkg "github.com/Kevin-Jii/tower-go/utils/updates"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type DingTalkService struct {
@@ -1026,7 +1029,14 @@ func (s *DingTalkService) CreateBot(req *model.CreateDingTalkBotReq) (*model.Din
 
 // GetBot 获取机器人配置
 func (s *DingTalkService) GetBot(id uint) (*model.DingTalkBot, error) {
-	return s.botModule.GetByID(id)
+	bot, err := s.botModule.GetByID(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.NotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return bot, nil
 }
 
 // ListBots 获取机器人列表
@@ -1296,10 +1306,15 @@ func (s *DingTalkService) getOpenConversationIdByOldAPI(bot *model.DingTalkBot, 
 			errMsg = msg
 		}
 
-		// 返回详细的错误信息和建议
+		logging.LogError("钉钉旧版接口获取群信息失败",
+			zap.Uint("bot_id", botID),
+			zap.String("chat_id", chatId),
+			zap.Float64("error_code", errCode),
+			zap.String("error_message", errMsg),
+		)
 		return map[string]interface{}{
 			"success": false,
-			"error":   fmt.Sprintf("钉钉API错误: code=%v, msg=%v", errCode, errMsg),
+			"error":   apicode.ExternalServiceFailed.Msg,
 			"suggestion": "无法通过API直接获取openConversationId，请使用以下方法：\n" +
 				"1. 在群聊中@机器人发送消息\n" +
 				"2. 查看应用日志中的Stream事件回调\n" +

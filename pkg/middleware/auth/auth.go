@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/pkg/auth/jwt"
 	"github.com/Kevin-Jii/tower-go/pkg/http/response"
 	"github.com/gin-gonic/gin"
@@ -142,7 +143,7 @@ func (m *JWTMiddleware) RefreshMiddleware() gin.HandlerFunc {
 		// 生成新的token对
 		newTokenPair, err := m.jwtManager.GenerateTokenPair(claims)
 		if err != nil {
-			m.handleError(c, http.StatusInternalServerError, "failed to refresh token")
+			m.handleError(c, apicode.InternalError)
 			return
 		}
 
@@ -261,19 +262,19 @@ func (m *JWTMiddleware) handleUnauthorized(c *gin.Context, err error) {
 	if m.config.SendUnauthorizedHeader {
 		c.Header("WWW-Authenticate", m.config.AuthScheme+" realm=\"Restricted\"")
 	}
-	response.Error(c, m.config.UnauthorizedStatusCode, "Unauthorized")
+	response.ErrorApp(c, apicode.TokenInvalid)
 	c.Abort()
 }
 
 // handleForbidden 处理禁止访问错误
 func (m *JWTMiddleware) handleForbidden(c *gin.Context, err error) {
-	response.Error(c, http.StatusForbidden, "Forbidden")
+	response.ErrorApp(c, apicode.OperationDenied)
 	c.Abort()
 }
 
 // handleError 处理一般错误
-func (m *JWTMiddleware) handleError(c *gin.Context, statusCode int, message string) {
-	response.Error(c, statusCode, message)
+func (m *JWTMiddleware) handleError(c *gin.Context, code apicode.Code) {
+	response.ErrorApp(c, code)
 	c.Abort()
 }
 

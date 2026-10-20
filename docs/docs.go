@@ -7808,6 +7808,12 @@ const docTemplate = `{
         "controller.HealthResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
                 "services": {
                     "type": "object",
                     "additionalProperties": {
@@ -10836,6 +10842,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tag_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "description": "B2B客户名称等来源展示标题",
                     "type": "string"
                 },
                 "total_amount": {

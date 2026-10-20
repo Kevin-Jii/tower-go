@@ -16,12 +16,14 @@ var (
 	ImageRequired          = Code{40006, "请选择要上传的图片"}
 	ImageTooLarge          = Code{41301, "图片大小不能超过20MB"}
 	MultipartFileTooLarge  = Code{41302, "文件超过分片上传上限"}
+	ImageUploadTooLarge    = Code{41303, "图片大小不能超过10MB"}
 	ValidationFailed       = Code{42201, "数据校验失败"}
 	ExpenseCategoryInvalid = Code{42202, "支出分类无效"}
 	ReturnDateInvalid      = Code{42203, "返厂日期格式无效"}
 	PaymentStatusInvalid   = Code{42204, "支付状态无效"}
 	ImageFormatUnsupported = Code{42205, "仅支持jpg/png/gif/webp格式的图片"}
 	InvalidUploadPart      = Code{42206, "上传分片无效"}
+	TooManyRequests        = Code{42901, "请求过于频繁，请稍后重试"}
 
 	// 资源 404xx
 	UserNotFound              = Code{40410, "用户不存在"}
@@ -45,6 +47,8 @@ var (
 	ThirdPartyAccountNotFound = Code{40428, "第三方账号不存在"}
 	WechatNotBound            = Code{40429, "微信未绑定账号"}
 	UploadSessionNotFound     = Code{40430, "上传会话不存在"}
+	SmsCampaignNotFound       = Code{40431, "短信活动不存在"}
+	SmsSendRecordNotFound     = Code{40432, "短信发送记录不存在"}
 
 	// 已过期资源 410xx
 	UploadSessionExpired = Code{41001, "上传会话已过期，请重新上传"}
@@ -72,6 +76,7 @@ var (
 	UploadIncomplete          = Code{40928, "文件分片尚未上传完整"}
 	UploadAlreadyCompleting   = Code{40929, "文件正在合并，请稍后查询"}
 	UploadSessionConflict     = Code{40930, "上传会话与当前文件不匹配"}
+	SmsCampaignStateConflict  = Code{40931, "短信活动状态不允许当前操作"}
 
 	// 服务与外部依赖 500xx / 502xx
 	ConfigMissing           = Code{50002, "服务配置缺失"}

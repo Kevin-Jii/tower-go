@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"strconv"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
@@ -35,7 +36,7 @@ func NewMemberController(s *service.MemberService) *MemberController {
 func (c *MemberController) CreateMember(ctx *gin.Context) {
 	var req model.CreateMemberReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -62,12 +63,12 @@ func (c *MemberController) UpdateMember(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	var req model.UpdateMemberReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -92,7 +93,7 @@ func (c *MemberController) DeleteMember(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -116,13 +117,13 @@ func (c *MemberController) GetMember(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
 	member, err := c.service.GetMember(uint(id), storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 404, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, member)
@@ -202,7 +203,7 @@ func (c *MemberController) ListMembersWithUnsettledAccounts(ctx *gin.Context) {
 		var err error
 		needPagination, err = strconv.ParseBool(raw)
 		if err != nil {
-			http.Error(ctx, 400, "need_pagination must be a boolean")
+			http.ErrorApp(ctx, apicode.InvalidParameter)
 			return
 		}
 	}
@@ -236,7 +237,7 @@ func (c *MemberController) ListMembersWithUnsettledAccounts(ctx *gin.Context) {
 func (c *MemberController) ListPointRules(ctx *gin.Context) {
 	var req model.ListMemberPointRuleReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.Page = http.GetPage(ctx)
@@ -255,7 +256,7 @@ func (c *MemberController) ListPointRules(ctx *gin.Context) {
 func (c *MemberController) CreatePointRule(ctx *gin.Context) {
 	var req model.UpsertMemberPointRuleReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -271,12 +272,12 @@ func (c *MemberController) CreatePointRule(ctx *gin.Context) {
 func (c *MemberController) UpdatePointRule(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	var req model.UpsertMemberPointRuleReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -292,7 +293,7 @@ func (c *MemberController) UpdatePointRule(ctx *gin.Context) {
 func (c *MemberController) DeletePointRule(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -307,7 +308,7 @@ func (c *MemberController) DeletePointRule(ctx *gin.Context) {
 func (c *MemberController) ListWineStorages(ctx *gin.Context) {
 	var req model.ListMemberWineStorageReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.Page = http.GetPage(ctx)
@@ -326,7 +327,7 @@ func (c *MemberController) ListWineStorages(ctx *gin.Context) {
 func (c *MemberController) DepositWine(ctx *gin.Context) {
 	var req model.MemberWineAdjustReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -342,7 +343,7 @@ func (c *MemberController) DepositWine(ctx *gin.Context) {
 func (c *MemberController) WithdrawWine(ctx *gin.Context) {
 	var req model.MemberWineAdjustReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -358,7 +359,7 @@ func (c *MemberController) WithdrawWine(ctx *gin.Context) {
 func (c *MemberController) ListWineTransactions(ctx *gin.Context) {
 	var req model.ListMemberWineTransactionReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.Page = http.GetPage(ctx)
@@ -388,19 +389,19 @@ func (c *MemberController) ListWineTransactions(ctx *gin.Context) {
 func (c *MemberController) AdjustBalance(ctx *gin.Context) {
 	// 检查是否是管理员
 	if !middleware.IsAdmin(ctx) {
-		http.Error(ctx, 403, "permission denied: admin only")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	var req model.AdjustBalanceReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -428,13 +429,13 @@ func (c *MemberController) AdjustBalance(ctx *gin.Context) {
 func (c *MemberController) GetMemberByPhone(ctx *gin.Context) {
 	phone := ctx.Query("phone")
 	if phone == "" {
-		http.Error(ctx, 400, "phone is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
 	member, err := c.service.GetMemberByPhone(phone, storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 404, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, member)
@@ -458,7 +459,7 @@ func (c *MemberController) GetMemberByPhone(ctx *gin.Context) {
 func (c *MemberController) ListWalletLogs(ctx *gin.Context) {
 	var req model.ListWalletLogReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	pageStr := ctx.DefaultQuery("page", "1")
@@ -495,7 +496,7 @@ func (c *MemberController) ListWalletLogs(ctx *gin.Context) {
 func (c *MemberController) CreateRechargeOrder(ctx *gin.Context) {
 	var req model.CreateRechargeOrderReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -524,13 +525,13 @@ func (c *MemberController) GetRechargeOrder(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
 	order, err := c.service.GetRechargeOrder(uint(id), storeID, middleware.HQUnboundAdmin(ctx))
 	if err != nil {
-		http.Error(ctx, 404, err.Error())
+		http.ErrorFrom(ctx, err)
 		return
 	}
 	http.Success(ctx, order)
@@ -594,7 +595,7 @@ func (c *MemberController) ListRechargeOrders(ctx *gin.Context) {
 func (c *MemberController) PayRechargeOrder(ctx *gin.Context) {
 	var req model.PayRechargeOrderReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -623,7 +624,7 @@ func (c *MemberController) PayRechargeOrder(ctx *gin.Context) {
 func (c *MemberController) CancelRechargeOrder(ctx *gin.Context) {
 	orderNo := ctx.Param("orderNo")
 	if orderNo == "" {
-		http.Error(ctx, 400, "orderNo is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	storeID := middleware.GetStoreID(ctx)
@@ -651,7 +652,7 @@ func (c *MemberController) ListMemberConsumptions(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -686,7 +687,7 @@ func (c *MemberController) ExportMemberConsumptions(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(ctx, 400, "invalid id")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -695,7 +696,7 @@ func (c *MemberController) ExportMemberConsumptions(ctx *gin.Context) {
 		date = ctx.Query("start_date")
 	}
 	if date == "" {
-		http.Error(ctx, 400, "请选择导出日期")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

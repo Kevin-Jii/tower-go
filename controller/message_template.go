@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/gin-gonic/gin"
 
@@ -26,7 +27,7 @@ func NewMessageTemplateController(svc *service.MessageTemplateService) *MessageT
 // @Router /message-templates [get]
 func (c *MessageTemplateController) List(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view templates")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -49,7 +50,7 @@ func (c *MessageTemplateController) List(ctx *gin.Context) {
 // @Router /message-templates/{id} [get]
 func (c *MessageTemplateController) Get(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can view templates")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -60,7 +61,7 @@ func (c *MessageTemplateController) Get(ctx *gin.Context) {
 
 	template, err := c.svc.GetByID(id)
 	if err != nil {
-		httpPkg.Error(ctx, 404, "template not found")
+		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -78,7 +79,7 @@ func (c *MessageTemplateController) Get(ctx *gin.Context) {
 // @Router /message-templates [post]
 func (c *MessageTemplateController) Create(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can create templates")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -108,7 +109,7 @@ func (c *MessageTemplateController) Create(ctx *gin.Context) {
 // @Router /message-templates/{id} [put]
 func (c *MessageTemplateController) Update(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can update templates")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -140,7 +141,7 @@ func (c *MessageTemplateController) Update(ctx *gin.Context) {
 // @Router /message-templates/{id} [delete]
 func (c *MessageTemplateController) Delete(ctx *gin.Context) {
 	if !middleware.IsAdmin(ctx) {
-		httpPkg.Error(ctx, 403, "only admin can delete templates")
+		httpPkg.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 

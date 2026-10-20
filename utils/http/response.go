@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -46,9 +47,14 @@ func printResponse(c *gin.Context, resp Response) {
 	fmt.Println(strings.Repeat("=", 60))
 }
 
-// ErrorApp 使用统一错误码结构响应（推荐新业务与鉴权链路使用）
+// ErrorApp 使用统一错误码结构响应（推荐新业务使用）
 func ErrorApp(c *gin.Context, co apicode.Code) {
 	Error(c, co.Num, co.Msg)
+}
+
+// ErrorAppStatus 使用真实 HTTP 状态与统一业务错误码响应，供协议敏感链路使用。
+func ErrorAppStatus(c *gin.Context, status int, co apicode.Code) {
+	c.JSON(status, Response{Code: co.Num, Message: co.Msg})
 }
 
 // ErrorFrom 将 Service/Module 返回的统一业务错误转换为 API 响应。
@@ -59,10 +65,13 @@ func ErrorFrom(c *gin.Context, err error) {
 		return
 	}
 	if code, ok := apicode.Resolve(err); ok {
+		if apicode.HTTPStatus(code.Num) >= http.StatusInternalServerError && errors.Unwrap(err) != nil {
+			logging.LogError("API 请求处理失败", zap.Error(err))
+		}
 		ErrorApp(c, code)
 		return
 	}
-	logging.LogError("API Error", zap.Error(err))
+	logging.LogError("API 请求处理失败", zap.Error(err))
 	ErrorApp(c, apicode.InternalError)
 }
 
@@ -79,18 +88,15 @@ func Error(c *gin.Context, code int, message string) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// WithError 带错误信息的响应
+// WithError 记录内部错误并返回固定错误信息，不向客户端暴露底层错误
 func WithError(c *gin.Context, code int, message string, err error) {
-	errorMsg := ""
 	if err != nil {
-		errorMsg = err.Error()
-		logging.LogError("API Error", zap.String("message", message), zap.Error(err))
+		logging.LogError("API 请求处理失败", zap.String("message", message), zap.Error(err))
 	}
 
 	resp := Response{
 		Code:    code,
 		Message: message,
-		Error:   errorMsg,
 	}
 
 	// 打印错误响应到控制台（已禁用）
@@ -111,37 +117,37 @@ func printErrorResponse(c *gin.Context, resp Response) {
 
 // BadRequest 400 响应
 func BadRequest(c *gin.Context, message string) {
-	Error(c, 400, message)
+	ErrorApp(c, apicode.BadRequest.WithMessage(message))
 }
 
 // Unauthorized 401 响应
 func Unauthorized(c *gin.Context, message string) {
-	Error(c, 401, message)
+	ErrorApp(c, apicode.TokenInvalid.WithMessage(message))
 }
 
 // Forbidden 403 响应
 func Forbidden(c *gin.Context, message string) {
-	Error(c, 403, message)
+	ErrorApp(c, apicode.OperationDenied.WithMessage(message))
 }
 
 // NotFound 404 响应
 func NotFound(c *gin.Context, message string) {
-	Error(c, 404, message)
+	ErrorApp(c, apicode.NotFound.WithMessage(message))
 }
 
 // InternalServerError 500 响应
 func InternalServerError(c *gin.Context, message string) {
-	Error(c, 500, message)
+	ErrorApp(c, apicode.InternalError.WithMessage(message))
 }
 
 // ValidationFailed 验证失败响应
 func ValidationFailed(c *gin.Context, message string) {
-	Error(c, 422, message)
+	ErrorApp(c, apicode.ValidationFailed.WithMessage(message))
 }
 
 // TooManyRequests 429 响应
 func TooManyRequests(c *gin.Context, message string) {
-	Error(c, 429, message)
+	ErrorApp(c, apicode.TooManyRequests.WithMessage(message))
 }
 
 // Custom 自定义响应

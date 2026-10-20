@@ -95,7 +95,7 @@ func (c *StoreAccountController) List(ctx *gin.Context) {
 
 	var req model.ListStoreAccountReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 
@@ -120,12 +120,12 @@ func (c *StoreAccountController) Export(ctx *gin.Context) {
 
 	var req model.ListStoreAccountReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	startDate, endDate, date := exportDateQuery(ctx.Query("date"), req.StartDate, req.EndDate)
 	if date == "" {
-		http.Error(ctx, 400, "请选择导出日期")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	req.StartDate = startDate
@@ -216,7 +216,7 @@ func (c *StoreAccountController) Update(ctx *gin.Context) {
 // @Success 200 {object} http.Response
 // @Router /store-accounts/{id} [delete]
 func (c *StoreAccountController) Delete(ctx *gin.Context) {
-	http.Error(ctx, 400, "记账记录不允许删除")
+	http.ErrorApp(ctx, apicode.InvalidParameter)
 }
 
 // Cancel godoc
@@ -297,7 +297,7 @@ func (c *StoreAccountController) ListConsumableProducts(ctx *gin.Context) {
 
 	var req model.ListStoreAccountConsumableProductReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	if !middleware.HQUnboundAdmin(ctx) {

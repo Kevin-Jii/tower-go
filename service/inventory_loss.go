@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"gorm.io/gorm"
 )
 
 type InventoryLossService struct {
@@ -177,7 +179,14 @@ func (s *InventoryLossService) GetOrderByIDScoped(id, storeID uint, hqUnbound bo
 	if !hqUnbound && storeID == 0 {
 		return nil, apicode.New(apicode.StoreRequired)
 	}
-	return s.lossModule.GetByIDScoped(id, storeID, hqUnbound)
+	order, err := s.lossModule.GetByIDScoped(id, storeID, hqUnbound)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apicode.New(apicode.OrderNotFound)
+	}
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	return order, nil
 }
 
 func (s *InventoryLossService) CancelOrder(id, storeID uint, hqUnbound bool) error {

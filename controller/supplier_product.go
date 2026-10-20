@@ -86,7 +86,7 @@ func (c *SupplierProductController) GetProduct(ctx *gin.Context) {
 func (c *SupplierProductController) ListProducts(ctx *gin.Context) {
 	var req model.ListSupplierProductReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		http.Error(ctx, 400, err.Error())
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	products, err := c.productService.ListProducts(&req)
@@ -184,7 +184,7 @@ func (c *SupplierProductController) CreateCategory(ctx *gin.Context) {
 func (c *SupplierProductController) ListCategories(ctx *gin.Context) {
 	supplierID, ok := http.ParseUintQuery(ctx, "supplier_id")
 	if !ok {
-		http.Error(ctx, 400, "supplier_id is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	categories, err := c.productService.ListCategories(supplierID)
@@ -282,7 +282,7 @@ func (c *SupplierProductController) CreateProductUnitSpec(ctx *gin.Context) {
 func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 	productID, ok := http.ParseUintQuery(ctx, "product_id")
 	if !ok {
-		http.Error(ctx, 400, "product_id is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 	// 门店账号：仅允许查询本店已绑定供应商下的商品单位，防止凭 product_id 枚举其它供应商商品
@@ -318,7 +318,7 @@ func (c *SupplierProductController) ListProductUnitSpecs(ctx *gin.Context) {
 func (c *SupplierProductController) BatchListProductUnitSpecs(ctx *gin.Context) {
 	productIDs := parseProductIDs(ctx)
 	if len(productIDs) == 0 {
-		http.Error(ctx, 400, "product_ids is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

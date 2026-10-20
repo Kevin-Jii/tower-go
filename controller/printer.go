@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
@@ -22,11 +23,11 @@ func NewPrinterController(printerService *service.PrinterService) *PrinterContro
 func resolvePrinterStoreID(ctx *gin.Context) (uint, bool) {
 	storeID := middleware.ResolveQueryStoreID(ctx, "store_id")
 	if middleware.HQUnboundAdmin(ctx) && storeID == 0 {
-		http.Error(ctx, 400, "store_id is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return 0, false
 	}
 	if storeID == 0 {
-		http.Error(ctx, 403, "当前账号未绑定门店")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return 0, false
 	}
 	return storeID, true
@@ -196,7 +197,7 @@ func (c *PrinterController) ListPrinters(ctx *gin.Context) {
 // @Router /printers/all [get]
 func (c *PrinterController) ListAllPrinters(ctx *gin.Context) {
 	if !middleware.HQUnboundAdmin(ctx) {
-		http.Error(ctx, 403, "admin only")
+		http.ErrorApp(ctx, apicode.OperationDenied)
 		return
 	}
 
@@ -227,7 +228,7 @@ func (c *PrinterController) GetStoreDefaultPrinter(ctx *gin.Context) {
 
 	printer, err := c.printerService.GetDefaultPrinter(storeID)
 	if err != nil {
-		http.Error(ctx, 404, "no default printer")
+		http.ErrorFrom(ctx, err)
 		return
 	}
 
@@ -247,7 +248,7 @@ func (c *PrinterController) GetStoreDefaultPrinter(ctx *gin.Context) {
 func (c *PrinterController) QueryPrinterStatus(ctx *gin.Context) {
 	sn := ctx.Query("sn")
 	if sn == "" {
-		http.Error(ctx, 400, "sn is required")
+		http.ErrorApp(ctx, apicode.InvalidParameter)
 		return
 	}
 

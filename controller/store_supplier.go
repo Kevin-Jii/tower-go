@@ -5,6 +5,7 @@ import (
 
 	"github.com/Kevin-Jii/tower-go/middleware"
 	"github.com/Kevin-Jii/tower-go/model"
+	"github.com/Kevin-Jii/tower-go/pkg/apicode"
 	"github.com/Kevin-Jii/tower-go/service"
 	"github.com/Kevin-Jii/tower-go/utils/http"
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,7 @@ func NewStoreSupplierController(storeSupplierService *service.StoreSupplierServi
 // 总部未绑店账号无 token 门店时，列表类接口必须带 query store_id，否则按 store_id=0 查询永远为空。
 func requireStoreIDForHQStoreSupplierRead(ctx *gin.Context, storeID uint) bool {
 	if middleware.HQUnboundAdmin(ctx) && storeID == 0 {
-		http.Error(ctx, 400, "总部账号查看门店绑定供应商时，请在查询参数中传入 store_id（门店 ID）")
+		http.ErrorApp(ctx, apicode.MissingParameter)
 		return false
 	}
 	return true
@@ -31,7 +32,7 @@ func resolveStoreSupplierWriteStoreID(ctx *gin.Context, bodyStoreID uint) (uint,
 	if !middleware.HQUnboundAdmin(ctx) {
 		storeID := middleware.GetStoreID(ctx)
 		if storeID == 0 {
-			http.Error(ctx, 400, "当前账号未绑定门店")
+			http.ErrorApp(ctx, apicode.StoreRequired)
 			return 0, false
 		}
 		return storeID, true
@@ -45,7 +46,7 @@ func resolveStoreSupplierWriteStoreID(ctx *gin.Context, bodyStoreID uint) (uint,
 			return storeID, true
 		}
 	}
-	http.Error(ctx, 400, "总部账号绑定/解绑供应商时，请传入 store_id（门店 ID）")
+	http.ErrorApp(ctx, apicode.MissingParameter)
 	return 0, false
 }
 

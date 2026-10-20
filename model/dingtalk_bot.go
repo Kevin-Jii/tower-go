@@ -28,6 +28,49 @@ func (DingTalkBot) TableName() string {
 	return "ding_talk_bots"
 }
 
+// DingTalkBotResp 钉钉机器人公开响应，不回显调用凭证。
+type DingTalkBotResp struct {
+	ID                     uint      `json:"id"`
+	Name                   string    `json:"name"`
+	BotType                string    `json:"bot_type"`
+	StoreID                *uint     `json:"store_id"`
+	StoreCode              string    `json:"store_code"`
+	StoreName              string    `json:"store_name"`
+	IsEnabled              bool      `json:"is_enabled"`
+	MsgType                string    `json:"msg_type"`
+	CardMsgKey             string    `json:"card_msg_key"`
+	Remark                 string    `json:"remark"`
+	RobotCode              string    `json:"robot_code"`
+	WebhookConfigured      bool      `json:"webhook_configured"`
+	SecretConfigured       bool      `json:"secret_configured"`
+	ClientIDConfigured     bool      `json:"client_id_configured"`
+	ClientSecretConfigured bool      `json:"client_secret_configured"`
+	AgentIDConfigured      bool      `json:"agent_id_configured"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
+}
+
+func NewDingTalkBotResp(bot *DingTalkBot) *DingTalkBotResp {
+	if bot == nil {
+		return nil
+	}
+	resp := &DingTalkBotResp{
+		ID: bot.ID, Name: bot.Name, BotType: bot.BotType, StoreID: bot.StoreID,
+		IsEnabled: bot.IsEnabled, MsgType: bot.MsgType, CardMsgKey: bot.CardMsgKey,
+		Remark: bot.Remark, RobotCode: bot.RobotCode,
+		WebhookConfigured: bot.Webhook != "", SecretConfigured: bot.Secret != "",
+		ClientIDConfigured: bot.ClientID != "", ClientSecretConfigured: bot.ClientSecret != "",
+		AgentIDConfigured: bot.AgentID != "", CreatedAt: bot.CreatedAt, UpdatedAt: bot.UpdatedAt,
+	}
+	if bot.Store != nil {
+		if bot.Store.StoreCode != nil {
+			resp.StoreCode = *bot.Store.StoreCode
+		}
+		resp.StoreName = bot.Store.Name
+	}
+	return resp
+}
+
 // CreateDingTalkBotReq 创建钉钉机器人请求
 type CreateDingTalkBotReq struct {
 	Name         string `json:"name"`                                              // 可选，如果不提供则自动生成（门店名称_机器人ID）

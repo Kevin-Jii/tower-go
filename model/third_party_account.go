@@ -38,6 +38,49 @@ func (ThirdPartyAccount) TableName() string {
 	return "third_party_accounts"
 }
 
+// ThirdPartyAccountResp 第三方账号公开响应，不包含密码、密钥和访问令牌。
+type ThirdPartyAccountResp struct {
+	ID                       uint       `json:"id"`
+	PlatformName             string     `json:"platform_name"`
+	Name                     string     `json:"name"`
+	LoginName                string     `json:"login_name"`
+	Phone                    string     `json:"phone"`
+	LoginType                string     `json:"login_type"`
+	Channel                  string     `json:"channel"`
+	ShopID                   string     `json:"shop_id"`
+	CustomerID               string     `json:"customer_id"`
+	IsEnabled                bool       `json:"is_enabled"`
+	PasswordConfigured       bool       `json:"password_configured"`
+	ApplicationKeyConfigured bool       `json:"application_key_configured"`
+	TokenConfigured          bool       `json:"token_configured"`
+	LastTestOK               bool       `json:"last_test_ok"`
+	LastTestMsg              string     `json:"last_test_msg"`
+	TokenValidTime           int64      `json:"token_valid_time"`
+	LastTestAt               *time.Time `json:"last_test_at"`
+	LastSyncAt               *time.Time `json:"last_sync_at"`
+	LastSyncMsg              string     `json:"last_sync_msg"`
+	LastSyncCount            int        `json:"last_sync_count"`
+	Remark                   string     `json:"remark"`
+	CreatedAt                time.Time  `json:"created_at"`
+	UpdatedAt                time.Time  `json:"updated_at"`
+}
+
+func NewThirdPartyAccountResp(row *ThirdPartyAccount) *ThirdPartyAccountResp {
+	if row == nil {
+		return nil
+	}
+	return &ThirdPartyAccountResp{
+		ID: row.ID, PlatformName: row.PlatformName, Name: row.Name, LoginName: row.LoginName,
+		Phone: row.Phone, LoginType: row.LoginType, Channel: row.Channel, ShopID: row.ShopID,
+		CustomerID: row.CustomerID, IsEnabled: row.IsEnabled,
+		PasswordConfigured: row.Password != "", ApplicationKeyConfigured: row.ApplicationKey != "",
+		TokenConfigured: row.LastToken != "", LastTestOK: row.LastTestOK, LastTestMsg: row.LastTestMsg,
+		TokenValidTime: row.TokenValidTime, LastTestAt: row.LastTestAt, LastSyncAt: row.LastSyncAt,
+		LastSyncMsg: row.LastSyncMsg, LastSyncCount: row.LastSyncCount, Remark: row.Remark,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	}
+}
+
 type CreateThirdPartyAccountReq struct {
 	PlatformName   string `json:"platform_name" binding:"required,max=50"`
 	Name           string `json:"name" binding:"required,max=100"`

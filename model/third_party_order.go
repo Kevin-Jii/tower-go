@@ -18,7 +18,7 @@ type ThirdPartyOrder struct {
 	PayAmount        float64        `json:"pay_amount" gorm:"type:decimal(12,2);comment:支付金额"`
 	TotalAmount      float64        `json:"total_amount" gorm:"type:decimal(12,2);comment:订单金额"`
 	TotalItemNum     float64        `json:"total_item_num" gorm:"type:decimal(12,2);comment:总件数"`
-	RawJSON          string         `json:"raw_json" gorm:"type:longtext;comment:原始订单JSON"`
+	RawJSON          string         `json:"-" gorm:"type:longtext;comment:原始订单JSON"`
 	SyncedAt         time.Time      `json:"synced_at" gorm:"index;comment:同步时间"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`

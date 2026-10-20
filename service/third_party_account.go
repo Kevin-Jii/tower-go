@@ -14,6 +14,8 @@ import (
 	"github.com/Kevin-Jii/tower-go/model"
 	"github.com/Kevin-Jii/tower-go/module"
 	"github.com/Kevin-Jii/tower-go/pkg/apicode"
+	"github.com/Kevin-Jii/tower-go/utils/logging"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -41,11 +43,19 @@ func isThirdPartySyncDebugEnabled() bool {
 	return v == "1" || v == "true" || v == "yes" || v == "on"
 }
 
-func (s *ThirdPartyAccountService) List(keyword string) ([]*model.ThirdPartyAccount, error) {
-	return s.module.List(strings.TrimSpace(keyword))
+func (s *ThirdPartyAccountService) List(keyword string) ([]*model.ThirdPartyAccountResp, error) {
+	rows, err := s.module.List(strings.TrimSpace(keyword))
+	if err != nil {
+		return nil, apicode.Wrap(apicode.InternalError, err)
+	}
+	result := make([]*model.ThirdPartyAccountResp, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, model.NewThirdPartyAccountResp(row))
+	}
+	return result, nil
 }
 
-func (s *ThirdPartyAccountService) GetByID(id uint) (*model.ThirdPartyAccount, error) {
+func (s *ThirdPartyAccountService) getAccount(id uint) (*model.ThirdPartyAccount, error) {
 	account, err := s.module.GetByID(id)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, apicode.New(apicode.ThirdPartyAccountNotFound)
@@ -56,14 +66,26 @@ func (s *ThirdPartyAccountService) GetByID(id uint) (*model.ThirdPartyAccount, e
 	return account, nil
 }
 
-func (s *ThirdPartyAccountService) ListSyncedOrders(accountID uint, page, pageSize int) ([]*model.ThirdPartyOrder, int64, error) {
-	if _, err := s.module.GetByID(accountID); err != nil {
-		return nil, 0, err
+func (s *ThirdPartyAccountService) GetByID(id uint) (*model.ThirdPartyAccountResp, error) {
+	account, err := s.getAccount(id)
+	if err != nil {
+		return nil, err
 	}
-	return s.orderModule.ListByAccount(accountID, page, pageSize)
+	return model.NewThirdPartyAccountResp(account), nil
 }
 
-func (s *ThirdPartyAccountService) Create(req *model.CreateThirdPartyAccountReq) (*model.ThirdPartyAccount, error) {
+func (s *ThirdPartyAccountService) ListSyncedOrders(accountID uint, page, pageSize int) ([]*model.ThirdPartyOrder, int64, error) {
+	if _, err := s.getAccount(accountID); err != nil {
+		return nil, 0, err
+	}
+	rows, total, err := s.orderModule.ListByAccount(accountID, page, pageSize)
+	if err != nil {
+		return nil, 0, apicode.Wrap(apicode.InternalError, err)
+	}
+	return rows, total, nil
+}
+
+func (s *ThirdPartyAccountService) Create(req *model.CreateThirdPartyAccountReq) (*model.ThirdPartyAccountResp, error) {
 	row := &model.ThirdPartyAccount{
 		PlatformName:   strings.TrimSpace(req.PlatformName),
 		Name:           strings.TrimSpace(req.Name),
@@ -88,12 +110,15 @@ func (s *ThirdPartyAccountService) Create(req *model.CreateThirdPartyAccountReq)
 		row.IsEnabled = *req.IsEnabled
 	}
 	if err := s.module.Create(row); err != nil {
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
-	return row, nil
+	return model.NewThirdPartyAccountResp(row), nil
 }
 
 func (s *ThirdPartyAccountService) Update(id uint, req *model.UpdateThirdPartyAccountReq) error {
+	if _, err := s.getAccount(id); err != nil {
+		return err
+	}
 	updates := map[string]interface{}{}
 	if req.PlatformName != nil {
 		updates["platform_name"] = strings.TrimSpace(*req.PlatformName)
@@ -134,20 +159,29 @@ func (s *ThirdPartyAccountService) Update(id uint, req *model.UpdateThirdPartyAc
 	if len(updates) == 0 {
 		return nil
 	}
-	return s.module.Update(id, updates)
+	if err := s.module.Update(id, updates); err != nil {
+		return apicode.Wrap(apicode.InternalError, err)
+	}
+	return nil
 }
 
 func (s *ThirdPartyAccountService) Delete(id uint) error {
-	return s.module.Delete(id)
+	if _, err := s.getAccount(id); err != nil {
+		return err
+	}
+	if err := s.module.Delete(id); err != nil {
+		return apicode.Wrap(apicode.InternalError, err)
+	}
+	return nil
 }
 
 func (s *ThirdPartyAccountService) TestLogin(id uint) (map[string]interface{}, error) {
-	row, err := s.module.GetByID(id)
+	row, err := s.getAccount(id)
 	if err != nil {
 		return nil, err
 	}
 	if !row.IsEnabled {
-		return nil, errors.New("账号已禁用")
+		return nil, apicode.New(apicode.OperationDenied)
 	}
 
 	payload := map[string]string{
@@ -169,32 +203,44 @@ func (s *ThirdPartyAccountService) TestLogin(id uint) (map[string]interface{}, e
 
 	resp, err := s.client.Do(req)
 	if err != nil {
+		logging.LogError("第三方账号登录请求失败", zap.Uint("account_id", id), zap.Error(err))
 		_ = s.module.Update(id, map[string]interface{}{
 			"last_test_ok":  false,
-			"last_test_msg": err.Error(),
+			"last_test_msg": apicode.ExternalServiceFailed.Msg,
 			"last_test_at":  time.Now(),
 		})
-		return nil, err
+		return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 	defer resp.Body.Close()
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		logging.LogError("解析第三方登录响应失败", zap.Uint("account_id", id), zap.Error(err))
 		_ = s.module.Update(id, map[string]interface{}{
 			"last_test_ok":  false,
-			"last_test_msg": "返回解析失败",
+			"last_test_msg": apicode.ExternalServiceFailed.Msg,
 			"last_test_at":  time.Now(),
 		})
-		return nil, err
+		return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 	}
 
 	resultCode, _ := result["resultCode"].(string)
 	resultMsg, _ := result["resultMsg"].(string)
 	ok := resp.StatusCode >= 200 && resp.StatusCode < 300 && resultCode == "0"
+	publicMessage := "登录测试成功"
+	if !ok {
+		publicMessage = apicode.ExternalServiceFailed.Msg
+		logging.LogError("第三方账号登录被供应商拒绝",
+			zap.Uint("account_id", id),
+			zap.Int("status", resp.StatusCode),
+			zap.String("result_code", resultCode),
+			zap.String("result_message", resultMsg),
+		)
+	}
 
 	updates := map[string]interface{}{
 		"last_test_ok":  ok,
-		"last_test_msg": resultMsg,
+		"last_test_msg": publicMessage,
 		"last_test_at":  time.Now(),
 	}
 
@@ -211,13 +257,13 @@ func (s *ThirdPartyAccountService) TestLogin(id uint) (map[string]interface{}, e
 	}
 	_ = s.module.Update(id, updates)
 	if !ok {
-		return result, errors.New(ifEmpty(resultMsg, "登录测试失败"))
+		return nil, apicode.New(apicode.ExternalServiceFailed)
 	}
-	return result, nil
+	return map[string]interface{}{"success": true, "message": publicMessage}, nil
 }
 
 func (s *ThirdPartyAccountService) SyncLatestOrders(id uint) (map[string]interface{}, error) {
-	row, err := s.module.GetByID(id)
+	row, err := s.getAccount(id)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +276,7 @@ func (s *ThirdPartyAccountService) SyncLatestOrders(id uint) (map[string]interfa
 		if _, err := s.TestLogin(id); err != nil {
 			return nil, fmt.Errorf("登录失败，无法同步订单: %w", err)
 		}
-		row, err = s.module.GetByID(id)
+		row, err = s.getAccount(id)
 		if err != nil {
 			return nil, err
 		}
@@ -282,12 +328,13 @@ func (s *ThirdPartyAccountService) SyncLatestOrders(id uint) (map[string]interfa
 
 		resp, err := s.client.Do(req)
 		if err != nil {
+			logging.LogError("第三方订单同步请求失败", zap.Uint("account_id", id), zap.Error(err))
 			_ = s.module.Update(id, map[string]interface{}{
 				"last_sync_at":    time.Now(),
-				"last_sync_msg":   err.Error(),
+				"last_sync_msg":   apicode.ExternalServiceFailed.Msg,
 				"last_sync_count": 0,
 			})
-			return nil, err
+			return nil, apicode.Wrap(apicode.ExternalServiceFailed, err)
 		}
 
 		var result map[string]interface{}
@@ -389,12 +436,13 @@ func (s *ThirdPartyAccountService) SyncLatestOrders(id uint) (map[string]interfa
 	}
 
 	if err := s.orderModule.UpsertBatch(rows); err != nil {
+		logging.LogError("保存第三方同步订单失败", zap.Uint("account_id", id), zap.Error(err))
 		_ = s.module.Update(id, map[string]interface{}{
 			"last_sync_at":    now,
-			"last_sync_msg":   err.Error(),
+			"last_sync_msg":   apicode.InternalError.Msg,
 			"last_sync_count": 0,
 		})
-		return nil, err
+		return nil, apicode.Wrap(apicode.InternalError, err)
 	}
 
 	msg := fmt.Sprintf("同步成功，时间范围 %s ~ %s，共 %d 单", placeTimeUp, placeTimeEnd, len(rows))

@@ -55,7 +55,7 @@ func (c *DingTalkBotController) CreateBot(ctx *gin.Context) {
 		return
 	}
 
-	httpPkg.Success(ctx, bot)
+	httpPkg.Success(ctx, model.NewDingTalkBotResp(bot))
 }
 
 // GetBot godoc
@@ -84,7 +84,7 @@ func (c *DingTalkBotController) GetBot(ctx *gin.Context) {
 		return
 	}
 
-	httpPkg.Success(ctx, bot)
+	httpPkg.Success(ctx, model.NewDingTalkBotResp(bot))
 }
 
 // ListBots godoc
@@ -112,20 +112,9 @@ func (c *DingTalkBotController) ListBots(ctx *gin.Context) {
 		return
 	}
 
-	// 自定义返回结构，去掉嵌套 store，直接返回 store_code 和 store_name
-	var result []map[string]interface{}
+	result := make([]*model.DingTalkBotResp, 0, len(bots))
 	for _, bot := range bots {
-		m := httpPkg.StructToMap(bot)
-		if bot.Store != nil {
-			m["store_code"] = bot.Store.StoreCode
-			m["store_name"] = bot.Store.Name
-		} else {
-			m["store_code"] = ""
-			m["store_name"] = ""
-		}
-		// 移除嵌套 store 字段
-		delete(m, "store")
-		result = append(result, m)
+		result = append(result, model.NewDingTalkBotResp(bot))
 	}
 	httpPkg.SuccessWithPagination(ctx, result, total, page, pageSize)
 }
@@ -176,7 +165,7 @@ func (c *DingTalkBotController) UpdateBot(ctx *gin.Context) {
 		httpPkg.ErrorFrom(ctx, err)
 		return
 	}
-	httpPkg.Success(ctx, updatedBot)
+	httpPkg.Success(ctx, model.NewDingTalkBotResp(updatedBot))
 }
 
 // DeleteBot godoc
